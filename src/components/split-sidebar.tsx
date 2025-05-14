@@ -79,32 +79,17 @@ export function SplitSidebar() {
                 </Link>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <Link href="/content-strategy" passHref legacyBehavior>
+                <Link href="/performance-reports" passHref legacyBehavior>
                   <SidebarMenuButton 
                     className={cn(
                       "flex items-center gap-3 rounded-md px-3 py-2 transition-colors",
-                      pathname === "/content-strategy" 
+                      pathname === "/performance-reports" 
                         ? "bg-[#222222] text-white" 
                         : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
                     )}
                   >
-                    <FileTextIcon className="h-5 w-5" />
-                    <span>Content Strategy</span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <Link href="/agent-activity" passHref legacyBehavior>
-                  <SidebarMenuButton 
-                    className={cn(
-                      "flex items-center gap-3 rounded-md px-3 py-2 transition-colors",
-                      pathname === "/agent-activity" 
-                        ? "bg-[#222222] text-white" 
-                        : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
-                    )}
-                  >
-                    <ActivityIcon className="h-5 w-5" />
-                    <span>Agent Activity</span>
+                    <BarChartIcon className="h-5 w-5" />
+                    <span>Visibility</span>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
@@ -135,28 +120,34 @@ export function SplitSidebar() {
                 </Link>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton 
-                  className="text-gray-400 hover:bg-[#161616] hover:text-gray-200 flex items-center gap-3 rounded-md px-3 py-2 transition-colors"
-                >
-                  <DatabaseIcon className="h-5 w-5" />
-                  <span>Long-tail Keywords</span>
-                </SidebarMenuButton>
+                <Link href="/content-strategy" passHref legacyBehavior>
+                  <SidebarMenuButton 
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 transition-colors",
+                      pathname === "/content-strategy" 
+                        ? "bg-[#222222] text-white" 
+                        : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
+                    )}
+                  >
+                    <FileTextIcon className="h-5 w-5" />
+                    <span>Content Strategy</span>
+                  </SidebarMenuButton>
+                </Link>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton 
-                  className="text-gray-400 hover:bg-[#161616] hover:text-gray-200 flex items-center gap-3 rounded-md px-3 py-2 transition-colors"
-                >
-                  <BarChartIcon className="h-5 w-5" />
-                  <span>Performance Reports</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  className="text-gray-400 hover:bg-[#161616] hover:text-gray-200 flex items-center gap-3 rounded-md px-3 py-2 transition-colors"
-                >
-                  <GlobeIcon className="h-5 w-5" />
-                  <span>Site Connector</span>
-                </SidebarMenuButton>
+                <Link href="/site-connector" passHref legacyBehavior>
+                  <SidebarMenuButton 
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 transition-colors",
+                      pathname === "/site-connector" 
+                        ? "bg-[#222222] text-white" 
+                        : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
+                    )}
+                  >
+                    <GlobeIcon className="h-5 w-5" />
+                    <span>Site Connector</span>
+                  </SidebarMenuButton>
+                </Link>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>

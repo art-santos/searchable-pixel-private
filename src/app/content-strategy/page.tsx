@@ -4,21 +4,71 @@ import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Checkbox } from "@/components/ui/checkbox"
 import { 
   Plus, 
   FileText, 
-  Zap, 
-  Calendar, 
-  ChevronDown,
-  Search,
-  Clock,
-  CheckCircle2,
   FileEdit,
+  Lightbulb,
+  PlusCircle,
+  CalendarDays,
+  BookCopy,
+  Zap,
+  Search,
+  KeyRound,
+  Clock,
   Upload,
-  PlusCircle
+  FileUp,
+  AlignLeft,
+  BarChart3,
+  Sparkles,
+  Tag,
+  BookMarked,
+  Settings,
+  Shuffle,
+  ListChecks,
+  MessageSquare,
+  FilePlus,
+  Trash2,
+  Bookmark,
+  MoreHorizontal,
+  ChevronDown,
+  CheckCircle2,
+  PauseCircle,
+  Sliders
 } from 'lucide-react'
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Slider } from "@/components/ui/slider"
+import { Separator } from "@/components/ui/separator"
+import { Label } from "@/components/ui/label"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface Keyword {
   id: string;
@@ -28,49 +78,69 @@ interface Keyword {
   dateAdded: string;
 }
 
+interface ContentSettings {
+  minLength: number;
+  maxLength: number;
+  frequency: number;
+  useVariation: boolean;
+  contentMix: {
+    blog: number;
+    article: number;
+    social: number;
+    guide: number;
+  }
+}
+
+interface ContentPrompt {
+  id: string;
+  text: string;
+  status: 'queued' | 'processing' | 'completed';
+  type: 'blog' | 'article' | 'social' | 'guide';
+  createdAt: string;
+  wordCount?: number;
+}
+
 export default function ContentStrategy() {
-  const [keywords, setKeywords] = useState<Keyword[]>([
-    { 
-      id: '1', 
-      keyword: 'AI content optimization techniques', 
-      status: 'indexed', 
-      difficulty: 45,
-      dateAdded: '2023-05-15'
-    },
-    { 
-      id: '2', 
-      keyword: 'How to get content visible in ChatGPT', 
-      status: 'published', 
-      difficulty: 68,
-      dateAdded: '2023-05-20'
-    },
-    { 
-      id: '3', 
-      keyword: 'Best practices for AI Engine Optimization', 
-      status: 'drafted', 
-      difficulty: 52,
-      dateAdded: '2023-05-25'
-    },
-    { 
-      id: '4', 
-      keyword: 'Is AEO better than SEO for LLMs', 
-      status: 'planned', 
-      difficulty: 33,
-      dateAdded: '2023-06-01'
-    },
-    { 
-      id: '5', 
-      keyword: 'Content visibility in Perplexity AI', 
-      status: 'planned', 
-      difficulty: 41,
-      dateAdded: '2023-06-05'
-    },
-  ])
-  
+  const [keywords, setKeywords] = useState<Keyword[]>([])
   const [newKeyword, setNewKeyword] = useState('')
-  const [selectedTone, setSelectedTone] = useState('conversational')
-  const [selectedFormat, setSelectedFormat] = useState('how-to')
-  const [weeklyPosts, setWeeklyPosts] = useState(2)
+  const [promptText, setPromptText] = useState('')
+  const [contentSettings, setContentSettings] = useState<ContentSettings>({
+    minLength: 800,
+    maxLength: 2000,
+    frequency: 2,
+    useVariation: true,
+    contentMix: {
+      blog: 40,
+      article: 30,
+      social: 20,
+      guide: 10
+    }
+  })
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [contentPrompts, setContentPrompts] = useState<ContentPrompt[]>([
+    {
+      id: '1',
+      text: 'Write an article about AI Engine Optimization best practices for beginners',
+      status: 'completed',
+      type: 'article',
+      createdAt: '2023-06-15T09:30:00Z',
+      wordCount: 1240
+    },
+    {
+      id: '2',
+      text: 'Create a short guide explaining the difference between SEO and AEO for website owners',
+      status: 'processing',
+      type: 'guide',
+      createdAt: '2023-06-15T10:45:00Z'
+    },
+    {
+      id: '3',
+      text: 'Draft a quick social media post about the importance of AI-friendly content',
+      status: 'queued',
+      type: 'social',
+      createdAt: '2023-06-15T11:15:00Z'
+    }
+  ])
   
   const handleAddKeyword = () => {
     if (!newKeyword.trim()) return
@@ -87,287 +157,750 @@ export default function ContentStrategy() {
     setNewKeyword('')
   }
 
-  const statusIcons = {
-    planned: <Clock className="h-4 w-4 text-yellow-400" />,
-    drafted: <FileEdit className="h-4 w-4 text-blue-400" />,
-    published: <Upload className="h-4 w-4 text-purple-400" />,
-    indexed: <CheckCircle2 className="h-4 w-4 text-green-400" />
+  const updateContentMix = (type: keyof ContentSettings['contentMix'], value: number) => {
+    // Calculate remaining percentage
+    const others = Object.entries(contentSettings.contentMix).filter(([key]) => key !== type);
+    const currentTotal = others.reduce((sum, [_, val]) => sum + val, 0);
+    const remainingPercent = 100 - value;
+    
+    // Distribute the remaining percentage proportionally among other types
+    const newMix = { ...contentSettings.contentMix, [type]: value };
+    
+    if (currentTotal > 0) {
+      others.forEach(([key, val]) => {
+        const ratio = val / currentTotal;
+        newMix[key as keyof ContentSettings['contentMix']] = Math.round(remainingPercent * ratio);
+      });
+    }
+    
+    // Make sure the total is exactly 100%
+    let total = Object.values(newMix).reduce((sum, val) => sum + val, 0);
+    if (total !== 100) {
+      const diff = 100 - total;
+      const largestKey = Object.entries(newMix)
+        .filter(([k]) => k !== type)
+        .sort((a, b) => b[1] - a[1])[0][0] as keyof ContentSettings['contentMix'];
+      newMix[largestKey] += diff;
+    }
+    
+    setContentSettings({
+      ...contentSettings,
+      contentMix: newMix
+    });
+  }
+
+  const getAverageWordCount = () => {
+    if (contentSettings.useVariation) {
+      const avg = Math.round((contentSettings.minLength + contentSettings.maxLength) / 2);
+      return `~${avg} words (varied)`;
+    }
+    return `${contentSettings.minLength} words`;
   }
   
-  const getStatusColor = (status: string) => {
+  const addContentPrompt = () => {
+    if (!promptText.trim()) return;
+    
+    // Determine content type based on mix percentages (simplified)
+    const rand = Math.random() * 100;
+    let cumulative = 0;
+    let selectedType: keyof ContentSettings['contentMix'] = 'blog';
+    
+    for (const [type, percentage] of Object.entries(contentSettings.contentMix)) {
+      cumulative += percentage;
+      if (rand <= cumulative) {
+        selectedType = type as keyof ContentSettings['contentMix'];
+        break;
+      }
+    }
+    
+    const newPrompt: ContentPrompt = {
+      id: Date.now().toString(),
+      text: promptText,
+      status: 'queued',
+      type: selectedType as 'blog' | 'article' | 'social' | 'guide',
+      createdAt: new Date().toISOString()
+    };
+    
+    setContentPrompts([newPrompt, ...contentPrompts]);
+    setPromptText('');
+  }
+  
+  const getStatusBadgeClass = (status: string) => {
     switch(status) {
-      case 'planned':
-        return 'bg-yellow-900/30 text-yellow-400 border-yellow-800/50'
-      case 'drafted':
-        return 'bg-blue-900/30 text-blue-400 border-blue-800/50'
-      case 'published':
-        return 'bg-purple-900/30 text-purple-400 border-purple-800/50'
-      case 'indexed':
-        return 'bg-green-900/30 text-green-400 border-green-800/50'
+      case 'queued':
+      case 'processing':
+      case 'completed':
       default:
-        return 'bg-gray-800 text-gray-300'
+        return 'bg-[#222222] text-gray-300 border-[#333333]';
     }
   }
   
-  const getDifficultyColor = (difficulty: number) => {
-    if (difficulty < 40) return 'bg-green-900/30 text-green-400 border-green-800/50'
-    if (difficulty < 60) return 'bg-yellow-900/30 text-yellow-400 border-yellow-800/50'
-    return 'bg-red-900/30 text-red-400 border-red-800/50'
+  const getStatusBadgeStyle = () => {
+    return {};
+  }
+  
+  const getStatusIcon = (status: string) => {
+    switch(status) {
+      case 'queued':
+        return <Clock className="h-3 w-3 mr-1" />;
+      case 'processing':
+        return <Shuffle className="h-3 w-3 mr-1" />;
+      case 'completed':
+        return <CheckCircle2 className="h-3 w-3 mr-1" />;
+      default:
+        return null;
+    }
   }
   
   return (
-    <main className="flex flex-1 flex-col gap-8 p-8 bg-[#0c0c0c] overflow-auto">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Content Strategy</h1>
-          <p className="text-gray-400">Plan and manage your AI-optimized content</p>
-        </div>
+    <main className="flex flex-1 flex-col gap-8 p-8 overflow-auto bg-[#0c0c0c] bg-[radial-gradient(#222222_0.7px,transparent_0.7px)] bg-[size:24px_24px]">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-white">Content Strategy</h1>
         
-        <Button 
-          className="flex items-center gap-2 self-start md:self-auto bg-white hover:bg-gray-100 text-[#0c0c0c]"
-        >
-          <Zap className="h-4 w-4" />
-          Generate Content Ideas
-        </Button>
-      </div>
-      
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* Long-tail Keyword Planner */}
-        <div className="md:col-span-2 space-y-6">
-          <Card className="bg-[#161616] border-[#333333] text-white">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-xl font-medium text-white">
-                Long-tail Keyword Planner
-              </CardTitle>
-              <Button 
-                variant="outline" 
-                className="flex items-center gap-2 text-sm border-[#333333] bg-[#222222] hover:bg-[#2a2a2a] text-white"
-              >
-                <Search className="h-4 w-4" />
-                Agent Suggestions
-              </Button>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2 mb-6">
-                <Input
-                  className="bg-[#222222] border-[#333333] text-white placeholder:text-gray-500 focus-visible:ring-gray-500"
-                  placeholder="Add a new keyword target..."
-                  value={newKeyword}
-                  onChange={(e) => setNewKeyword(e.target.value)}
-                />
-                <Button 
-                  className="flex-shrink-0 bg-[#333333] hover:bg-[#444444] text-white"
-                  onClick={handleAddKeyword}
-                >
-                  <Plus className="h-4 w-4" />
-                  Add
-                </Button>
+        <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+          <DialogTrigger asChild>
+            <Button 
+              variant="outline" 
+              className="border-[#222222] bg-[#161616] text-white hover:bg-[#1d1d1d] hover:text-white"
+            >
+              <Sliders className="h-4 w-4 mr-2" />
+              Configuration
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[500px] bg-[#101010] border-[#222222] text-white">
+            <DialogHeader>
+              <DialogTitle className="text-xl">Content Strategy Settings</DialogTitle>
+              <DialogDescription className="text-gray-400">
+                Configure your content generation preferences and mix
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="py-4 space-y-6">
+              {/* Content Length Range */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium text-white flex items-center gap-2">
+                    <AlignLeft className="h-4 w-4 text-gray-400" />
+                    Content Length
+                  </Label>
+                  <Badge className="bg-[#161616] text-gray-300 border-[#222222] h-7 px-3">
+                    {getAverageWordCount()}
+                  </Badge>
+                </div>
+                
+                <div className="flex items-center space-x-4 mb-2">
+                  <div className="flex-1">
+                    <Label className="text-xs text-gray-400 mb-1 block">Min words</Label>
+                    <Input 
+                      type="number" 
+                      className="bg-[#161616] border-[#222222] text-white h-8"
+                      value={contentSettings.minLength}
+                      onChange={(e) => setContentSettings({...contentSettings, minLength: Number(e.target.value)})}
+                      min={300}
+                      max={contentSettings.maxLength - 100}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Label className="text-xs text-gray-400 mb-1 block">Max words</Label>
+                    <Input 
+                      type="number" 
+                      className="bg-[#161616] border-[#222222] text-white h-8"
+                      value={contentSettings.maxLength}
+                      onChange={(e) => setContentSettings({...contentSettings, maxLength: Number(e.target.value)})}
+                      min={contentSettings.minLength + 100}
+                      max={5000}
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="variation" 
+                    checked={contentSettings.useVariation}
+                    onCheckedChange={(checked) => 
+                      setContentSettings({...contentSettings, useVariation: checked === true})
+                    }
+                    className="border-[#222222] data-[state=checked]:bg-[#333333] data-[state=checked]:border-[#333333]"
+                  />
+                  <Label 
+                    htmlFor="variation" 
+                    className="text-sm text-gray-300 cursor-pointer"
+                  >
+                    Use variable word counts for natural variation
+                  </Label>
+                </div>
               </div>
               
-              <div className="rounded-md border border-[#333333] overflow-hidden">
-                <div className="grid grid-cols-10 gap-4 bg-[#222222] px-4 py-3 text-sm font-medium text-gray-400">
-                  <div className="col-span-6">Keyword</div>
-                  <div className="col-span-2">Status</div>
-                  <div className="col-span-2">Difficulty</div>
+              <Separator className="bg-[#222222]" />
+              
+              {/* Publishing Frequency */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium text-white flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-gray-400" />
+                    Publishing Frequency
+                  </Label>
+                  <span className="text-sm text-gray-300">{contentSettings.frequency} posts/week</span>
                 </div>
-                <div className="divide-y divide-[#333333]">
-                  {keywords.map((keyword) => (
-                    <div key={keyword.id} className="grid grid-cols-10 gap-4 px-4 py-3 items-center hover:bg-[#1a1a1a]">
-                      <div className="col-span-6 font-medium text-white">
-                        {keyword.keyword}
+                <Slider
+                  value={[contentSettings.frequency]}
+                  min={1}
+                  max={7}
+                  step={1}
+                  onValueChange={(value) => setContentSettings({...contentSettings, frequency: value[0]})}
+                  className="mt-2"
+                />
+                <div className="flex justify-between mt-1">
+                  <span className="text-xs text-gray-500">Less frequent</span>
+                  <span className="text-xs text-gray-500">More frequent</span>
+                </div>
+              </div>
+              
+              <Separator className="bg-[#222222]" />
+              
+              {/* Content Mix */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium text-white flex items-center gap-2">
+                    <Shuffle className="h-4 w-4 text-gray-400" />
+                    Content Mix
+                  </Label>
+                  <Badge className="bg-[#161616] text-gray-300 border-[#222222] h-7 px-3">
+                    {Object.keys(contentSettings.contentMix).length} types
+                  </Badge>
+                </div>
+                
+                <p className="text-xs text-gray-400">Adjust the percentage of each content type in your strategy</p>
+                
+                <div className="space-y-3">
+                  {Object.entries(contentSettings.contentMix).map(([type, percentage]) => (
+                    <div key={type} className="space-y-1">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-300 capitalize">{type}</span>
+                        <span className="text-gray-400">{percentage}%</span>
                       </div>
-                      <div className="col-span-2">
-                        <Badge variant="outline" className={`flex items-center gap-1.5 ${getStatusColor(keyword.status)}`}>
-                          {statusIcons[keyword.status as keyof typeof statusIcons]}
-                          <span className="capitalize">{keyword.status}</span>
-                        </Badge>
-                      </div>
-                      <div className="col-span-2">
-                        <Badge variant="outline" className={getDifficultyColor(keyword.difficulty)}>
-                          {keyword.difficulty}%
-                        </Badge>
-                      </div>
+                      <Slider
+                        value={[percentage]}
+                        min={0}
+                        max={100}
+                        step={5}
+                        onValueChange={(value) => updateContentMix(type as keyof ContentSettings['contentMix'], value[0])}
+                        className="mt-1"
+                      />
                     </div>
                   ))}
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-        
-        {/* Settings Panel */}
-        <div className="space-y-6">
-          <Card className="bg-[#161616] border-[#333333] text-white">
-            <CardHeader>
-              <CardTitle className="text-xl font-medium text-white">
-                Publishing Settings
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Tone & Format Settings */}
-              <div>
-                <h3 className="text-sm font-medium text-white mb-3">Tone & Format</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm text-gray-400 mb-1.5 block">Content Tone</label>
-                    <div className="flex items-center justify-between rounded-md border border-[#333333] bg-[#222222] px-3 py-2">
-                      <span className="text-sm text-white capitalize">{selectedTone}</span>
-                      <ChevronDown className="h-4 w-4 text-gray-400" />
+              
+              {/* Content Mix Summary */}
+              <div className="bg-[#161616] border border-[#222222] rounded-lg p-4">
+                <h4 className="text-sm font-medium text-white mb-3">Content Mix Preview</h4>
+                <div className="grid grid-cols-4 gap-2">
+                  {Object.entries(contentSettings.contentMix).map(([type, percentage]) => (
+                    <div key={type} className="bg-[#1a1a1a] border border-[#222222] rounded-md p-3 text-center">
+                      <div className="text-xl font-bold text-white mb-1">{percentage}%</div>
+                      <div className="text-xs text-gray-400 capitalize">{type}</div>
                     </div>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm text-gray-400 mb-1.5 block">Content Format</label>
-                    <div className="flex items-center justify-between rounded-md border border-[#333333] bg-[#222222] px-3 py-2">
-                      <span className="text-sm text-white capitalize">{selectedFormat}</span>
-                      <ChevronDown className="h-4 w-4 text-gray-400" />
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
-              
-              {/* Schedule & Cadence */}
-              <div>
-                <h3 className="text-sm font-medium text-white mb-3">Schedule & Cadence</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm text-gray-400 mb-1.5 block">Weekly Posts</label>
-                    <div className="flex items-center gap-3">
+            </div>
+            
+            <DialogFooter className="border-t border-[#222222] pt-4">
+              <Button 
+                className="w-full bg-gradient-to-r from-[#222222] to-[#2a2a2a] text-white hover:from-[#282828] hover:to-[#333333] border border-[#333333]"
+                onClick={() => setIsSettingsOpen(false)}
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                Apply Settings
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Content Tabs */}
+      <Tabs defaultValue="strategy">
+        <TabsList className="bg-[#0c0c0c] border-b border-[#222222] mb-6 rounded-none px-0 h-[40px] w-auto">
+          <TabsTrigger 
+            value="strategy" 
+            className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-[#FF914D] text-gray-400 rounded-none h-[40px] px-4"
+          >
+            Content Strategy
+          </TabsTrigger>
+          <TabsTrigger 
+            value="keywords" 
+            className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-[#FF914D] text-gray-400 rounded-none h-[40px] px-4"
+          >
+            Keywords
+          </TabsTrigger>
+        </TabsList>
+        
+        {/* Content Strategy Tab */}
+        <TabsContent value="strategy" className="space-y-6">
+          {/* Content Creation Input */}
+          <Card className="bg-gradient-to-b from-[#101010] to-[#151515] border-[#222222] border shadow-lg">
+            <CardHeader className="border-b border-[#222222]/50 pb-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="text-xl font-medium text-white flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-[#FF914D]" />
+                    Content Creation
+                  </CardTitle>
+                  <p className="text-sm text-gray-400 mt-1">Quickly create optimized content using AI</p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                <div>
+                  <div className="text-sm text-gray-300 mb-3">
+                    Enter ideas, topics, or paste existing content to transform into optimized content
+                  </div>
+                  <Textarea 
+                    className="min-h-[140px] bg-[#161616] border-[#222222] text-white placeholder:text-gray-500 focus:ring-[#FF914D]/20 focus:border-[#FF914D]/30"
+                    placeholder="What would you like to create? E.g., 'Write an article about AI Engine Optimization best practices...' or paste content to rewrite"
+                    value={promptText}
+                    onChange={(e) => setPromptText(e.target.value)}
+                  />
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="flex gap-2">
                       <Button 
-                        size="sm"
                         variant="outline" 
-                        className="border-[#333333] text-white hover:bg-[#222222]"
-                        onClick={() => weeklyPosts > 1 && setWeeklyPosts(weeklyPosts - 1)}
+                        size="sm"
+                        className="bg-[#161616] border-[#222222] text-gray-400 h-8 px-3 hover:text-white"
                       >
-                        -
+                        <Upload className="h-3 w-3 mr-1" />
+                        Upload File
                       </Button>
-                      <span className="text-white font-medium w-6 text-center">{weeklyPosts}</span>
                       <Button 
-                        size="sm"
                         variant="outline" 
-                        className="border-[#333333] text-white hover:bg-[#222222]"
-                        onClick={() => setWeeklyPosts(weeklyPosts + 1)}
+                        size="sm"
+                        className="bg-[#161616] border-[#222222] text-gray-400 h-8 px-3 hover:text-white"
                       >
-                        +
+                        <PlusCircle className="h-3 w-3 mr-1" />
+                        Add Reference
                       </Button>
                     </div>
+                    
+                    <Button 
+                      className="bg-[#161616] hover:bg-[#1d1d1d] text-white border border-[#222222]"
+                      onClick={addContentPrompt}
+                      disabled={!promptText.trim()}
+                    >
+                      <Zap className="h-4 w-4 mr-2" />
+                      Generate Content
+                    </Button>
                   </div>
-                  
-                  <div>
-                    <label className="text-sm text-gray-400 mb-1.5 block">Publishing Days</label>
-                    <div className="flex items-center gap-1.5">
-                      {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((day, i) => (
-                        <div 
-                          key={i} 
-                          className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium border ${
-                            i < 2 ? 'bg-white border-white text-[#0c0c0c]' : 'border-[#333333] text-gray-400 hover:border-gray-300 cursor-pointer'
-                          }`}
-                        >
-                          {day}
-                        </div>
-                      ))}
+                </div>
+                <div className="px-4 py-3 bg-[#161616] rounded-md border border-[#222222] text-xs text-gray-400 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="font-medium">Content Settings:</div>
+                    <div>
+                      {contentSettings.frequency} posts/week • {getAverageWordCount()} • Mixed Content
                     </div>
                   </div>
-                  
-                  <div>
-                    <label className="text-sm text-gray-400 mb-1.5 block">Publishing Time</label>
-                    <div className="flex items-center justify-between rounded-md border border-[#333333] bg-[#222222] px-3 py-2">
-                      <span className="text-sm text-white">9:00 AM</span>
-                      <Clock className="h-4 w-4 text-gray-400" />
-                    </div>
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-400 hover:text-white h-6 px-2"
+                    onClick={() => setIsSettingsOpen(true)}
+                  >
+                    <Settings className="h-3 w-3 mr-1" />
+                    <span className="text-xs">Edit</span>
+                  </Button>
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Button className="w-full bg-[#333333] hover:bg-[#444444] text-white flex items-center gap-2 justify-center">
-            <Calendar className="h-4 w-4" />
-            View Publishing Calendar
-          </Button>
-        </div>
-      </div>
-      
-      {/* Content Queue */}
-      <Card className="bg-[#161616] border-[#333333] text-white">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-xl font-medium text-white">
-            Content Queue
-          </CardTitle>
-          <Button 
-            variant="outline" 
-            className="flex items-center gap-2 text-sm border-[#333333] bg-[#222222] hover:bg-[#2a2a2a] text-white"
-          >
-            <PlusCircle className="h-4 w-4" />
-            Add to Queue
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="upcoming" className="w-full">
-            <TabsList className="bg-[#222222] border border-[#333333]">
-              <TabsTrigger value="upcoming" className="data-[state=active]:bg-[#333333]">
-                Upcoming (3)
-              </TabsTrigger>
-              <TabsTrigger value="published" className="data-[state=active]:bg-[#333333]">
-                Published (8)
-              </TabsTrigger>
-              <TabsTrigger value="indexed" className="data-[state=active]:bg-[#333333]">
-                Indexed (5)
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="upcoming" className="pt-4">
-              <div className="rounded-md border border-[#333333] overflow-hidden">
-                <div className="grid grid-cols-12 gap-4 bg-[#222222] px-4 py-3 text-sm font-medium text-gray-400">
-                  <div className="col-span-6">Article Title</div>
-                  <div className="col-span-2">Status</div>
-                  <div className="col-span-2">Date</div>
-                  <div className="col-span-2">Actions</div>
+          {/* Publishing Calendar */}
+          <Card className="bg-[#101010] border-[#222222] border">
+            <CardHeader className="border-b border-[#222222]/50 pb-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                  <CalendarDays className="h-4 w-4 text-gray-400 mr-2" />
+                  <CardTitle className="text-md font-medium text-white">Publishing Calendar</CardTitle>
                 </div>
-                <div className="divide-y divide-[#333333]">
-                  {[
-                    { title: "AEO vs SEO: What's the Difference?", status: "drafted", date: "June 20, 2023" },
-                    { title: "10 Ways to Improve Your AI Visibility", status: "planned", date: "June 25, 2023" },
-                    { title: "How ChatGPT Finds and Ranks Content", status: "planned", date: "June 30, 2023" }
-                  ].map((item, i) => (
-                    <div key={i} className="grid grid-cols-12 gap-4 px-4 py-3 items-center hover:bg-[#1a1a1a]">
-                      <div className="col-span-6 font-medium text-white">
-                        {item.title}
-                      </div>
-                      <div className="col-span-2">
-                        <Badge variant="outline" className={`flex items-center gap-1.5 ${getStatusColor(item.status)}`}>
-                          {statusIcons[item.status as keyof typeof statusIcons]}
-                          <span className="capitalize">{item.status}</span>
+                <Badge className="bg-[#161616] text-gray-300 border-[#222222] h-7 px-3">
+                  {contentSettings.frequency} posts/week
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-5">
+              {/* Calendar Preview - Empty State */}
+              <div className="flex flex-col items-center justify-center text-center py-10">
+                <div className="h-12 w-12 rounded-full bg-[#1a1a1a] flex items-center justify-center mb-3 border border-[#222222]">
+                  <CalendarDays className="h-6 w-6 text-gray-500" />
+                </div>
+                <h3 className="text-md font-medium text-white mb-2">No content scheduled</h3>
+                <p className="text-sm text-gray-400 max-w-md mb-4">
+                  Set up your publishing calendar to maintain a consistent content cadence
+                </p>
+                <Button 
+                  variant="outline"
+                  className="border-[#222222] bg-[#161616] text-white hover:bg-[#1d1d1d]"
+                  onClick={() => setIsSettingsOpen(true)}
+                >
+                  <Sliders className="h-4 w-4 mr-2" />
+                  Edit Configuration
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Content Queue */}
+          <Card className="bg-[#101010] border-[#222222] border">
+            <CardHeader className="border-b border-[#222222]/50 pb-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                  <ListChecks className="h-4 w-4 text-gray-400 mr-2" />
+                  <CardTitle className="text-md font-medium text-white">Content Queue</CardTitle>
+                </div>
+                <Badge className="bg-[#161616] text-gray-300 border-[#222222] h-7 px-3">
+                  {contentPrompts.length} items
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-5">
+              {contentPrompts.length > 0 ? (
+                <div className="space-y-3">
+                  {contentPrompts.map((prompt) => (
+                    <div 
+                      key={prompt.id} 
+                      className="p-3 bg-[#161616] border border-[#222222] rounded-lg"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-start gap-3">
+                          <div className="bg-[#222222] rounded-full p-1.5 w-6 h-6 flex items-center justify-center">
+                            {prompt.type === 'blog' && <BookMarked className="h-3 w-3 text-gray-400" />}
+                            {prompt.type === 'article' && <FileText className="h-3 w-3 text-gray-400" />}
+                            {prompt.type === 'social' && <FileUp className="h-3 w-3 text-gray-400" />}
+                            {prompt.type === 'guide' && <BarChart3 className="h-3 w-3 text-gray-400" />}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <p className="text-xs text-gray-400">
+                                {new Date(prompt.createdAt).toLocaleString(undefined, { 
+                                  month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                                })}
+                              </p>
+                              <Badge 
+                                className={getStatusBadgeClass(prompt.status)}
+                              >
+                                {getStatusIcon(prompt.status)}
+                                <span className="capitalize">{prompt.status}</span>
+                              </Badge>
+                              <Badge 
+                                className="bg-[#222222] text-gray-300 border-[#333333]"
+                              >
+                                <span className="capitalize">{prompt.type}</span>
+                              </Badge>
+                              {prompt.wordCount && (
+                                <p className="text-xs text-gray-400">
+                                  {prompt.wordCount} words
+                                </p>
+                              )}
+                            </div>
+                            <p className="text-sm text-white">{prompt.text}</p>
+                            
+                            {/* Actions Row */}
+                            <div className="mt-3 pt-2 flex gap-1">
+                              {prompt.status === 'completed' && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-7 px-2 text-gray-400 hover:text-white hover:bg-[#222222]"
+                                >
+                                  <FileText className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-7 px-2 text-gray-400 hover:text-white hover:bg-[#222222]"
+                              >
+                                <FileEdit className="h-3.5 w-3.5" />
+                              </Button>
+                              {prompt.status === 'processing' && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-7 px-2 text-gray-400 hover:text-white hover:bg-[#222222]"
+                                >
+                                  <PauseCircle className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-7 px-2 text-gray-400 hover:text-white hover:bg-[#222222]"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <Badge 
+                          className="h-6 px-2 text-xs bg-[#161616] border-[#222222] text-gray-300 cursor-pointer hover:bg-[#222222] transition-colors"
+                        >
+                          {prompt.wordCount ? `${prompt.wordCount} words` : 'Pending'}
                         </Badge>
-                      </div>
-                      <div className="col-span-2 text-gray-400">
-                        {item.date}
-                      </div>
-                      <div className="col-span-2 flex gap-2">
-                        <Button variant="outline" size="sm" className="border-[#333333] text-white hover:bg-[#222222]">
-                          Edit
-                        </Button>
-                        <Button variant="outline" size="sm" className="border-[#333333] text-white hover:bg-[#222222]">
-                          Skip
-                        </Button>
                       </div>
                     </div>
                   ))}
                 </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center text-center py-8">
+                  <div className="h-12 w-12 rounded-full bg-[#1a1a1a] flex items-center justify-center mb-3 border border-[#222222]">
+                    <FilePlus className="h-6 w-6 text-gray-500" />
+                  </div>
+                  <h3 className="text-md font-medium text-white mb-2">Your content queue is empty</h3>
+                  <p className="text-sm text-gray-400 max-w-md mb-4">
+                    Create your first piece of content by entering a prompt
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Keywords Tab */}
+        <TabsContent value="keywords" className="space-y-6">
+          {/* Consolidated Keywords Management */}
+          <Card className="bg-[#101010] border-[#222222] border shadow-md">
+            <CardHeader className="border-b border-[#222222]/50 pb-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <CardTitle className="text-lg font-medium text-white">Keywords</CardTitle>
+                  <p className="text-sm text-gray-400 mt-1">Manage keywords for AI engine optimization</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Select defaultValue="all">
+                    <SelectTrigger className="w-[160px] bg-[#161616] border-[#222222] text-white">
+                      <SelectValue placeholder="Filter by type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#161616] border-[#222222] text-white">
+                      <SelectGroup>
+                        <SelectLabel>Keyword Type</SelectLabel>
+                        <SelectItem value="all">All Keywords</SelectItem>
+                        <SelectItem value="primary">Primary Keywords</SelectItem>
+                        <SelectItem value="longtail">Long-tail Keywords</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    className="border-[#222222] text-white bg-[#161616] hover:bg-[#1d1d1d]"
+                  >
+                    <Zap className="h-4 w-4 mr-2" />
+                    Generate
+                  </Button>
+                </div>
               </div>
-            </TabsContent>
-            <TabsContent value="published" className="pt-4">
-              <div className="rounded-md border border-[#333333] p-6 text-center text-gray-400">
-                Published content will appear here
-              </div>
-            </TabsContent>
-            <TabsContent value="indexed" className="pt-4">
-              <div className="rounded-md border border-[#333333] p-6 text-center text-gray-400">
-                Indexed content will appear here
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {/* Empty State */}
+              {keywords.length === 0 ? (
+                <div className="flex flex-col items-center justify-center text-center py-12">
+                  <div className="h-16 w-16 rounded-full bg-[#1a1a1a] flex items-center justify-center mb-4 border border-[#222222]">
+                    <KeyRound className="h-8 w-8 text-gray-500" />
+                  </div>
+                  <h3 className="text-lg font-medium text-white mb-2">No keywords tracked yet</h3>
+                  <p className="text-sm text-gray-400 max-w-md mb-6">
+                    Add keywords you want to target in AI engines or discover new keyword opportunities
+                  </p>
+                  <div className="flex gap-3">
+                    <Button 
+                      className="border border-[#333333] bg-gradient-to-r from-[#222222] to-[#2a2a2a] text-white hover:from-[#282828] hover:to-[#333333]"
+                    >
+                      <Search className="h-4 w-4 mr-2" />
+                      Discover Keywords
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      className="border-[#222222] text-white bg-[#161616] hover:bg-[#1d1d1d]"
+                      onClick={() => document.getElementById('add-keyword-input')?.focus()}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Manually
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Keyword Table */}
+                  <div className="rounded-md border border-[#222222] overflow-hidden">
+                    <div className="grid grid-cols-12 gap-4 bg-[#161616] px-4 py-3 text-sm font-medium text-gray-400">
+                      <div className="col-span-5">Keyword</div>
+                      <div className="col-span-2">Type</div>
+                      <div className="col-span-2">Status</div>
+                      <div className="col-span-2">Difficulty</div>
+                      <div className="col-span-1">Actions</div>
+                    </div>
+                    <div className="divide-y divide-[#222222]">
+                      {keywords.map((keyword) => (
+                        <div key={keyword.id} className="grid grid-cols-12 gap-4 px-4 py-3 items-center">
+                          <div className="col-span-5 font-medium text-white">
+                            {keyword.keyword}
+                          </div>
+                          <div className="col-span-2">
+                            <Badge className="bg-[#222222] text-gray-300 border-[#333333]">
+                              Primary
+                            </Badge>
+                          </div>
+                          <div className="col-span-2">
+                            <Badge className="bg-[#222222] text-gray-300 border-[#333333]">
+                              {keyword.status}
+                            </Badge>
+                          </div>
+                          <div className="col-span-2">
+                            <div className="w-full bg-[#222222] h-1.5 rounded-full overflow-hidden">
+                              <div 
+                                className="bg-[#333333] h-full rounded-full"
+                                style={{ width: `${keyword.difficulty}%` }}
+                              ></div>
+                            </div>
+                            <div className="flex justify-between mt-1">
+                              <span className="text-[10px] text-gray-500">Easy</span>
+                              <span className="text-[10px] text-gray-500">{keyword.difficulty}%</span>
+                              <span className="text-[10px] text-gray-500">Hard</span>
+                            </div>
+                          </div>
+                          <div className="col-span-1 flex justify-end">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                  <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent className="bg-[#161616] border-[#222222] text-white">
+                                <DropdownMenuItem className="focus:bg-[#222222] focus:text-white cursor-pointer">
+                                  <FileEdit className="h-4 w-4 mr-2" />
+                                  <span>Edit</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="focus:bg-[#222222] focus:text-white cursor-pointer">
+                                  <Tag className="h-4 w-4 mr-2" />
+                                  <span>Change Type</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator className="bg-[#222222]" />
+                                <DropdownMenuItem className="focus:bg-[#222222] focus:text-white cursor-pointer text-red-400 focus:text-red-400">
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  <span>Delete</span>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Add Keyword Row */}
+                  <div className="flex items-end gap-4 mt-6 pt-4 border-t border-[#222222]">
+                    <div className="flex-1">
+                      <Label className="text-xs text-gray-400 mb-1.5 block">Add new keyword</Label>
+                      <Input
+                        id="add-keyword-input"
+                        className="bg-[#161616] border-[#222222] text-white placeholder:text-gray-500"
+                        placeholder="Enter keyword or phrase..."
+                        value={newKeyword}
+                        onChange={(e) => setNewKeyword(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddKeyword()}
+                      />
+                    </div>
+                    <div className="w-[140px]">
+                      <Label className="text-xs text-gray-400 mb-1.5 block">Type</Label>
+                      <Select defaultValue="primary">
+                        <SelectTrigger className="bg-[#161616] border-[#222222] text-white">
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#161616] border-[#222222] text-white">
+                          <SelectGroup>
+                            <SelectItem value="primary">Primary</SelectItem>
+                            <SelectItem value="longtail">Long-tail</SelectItem>
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button 
+                      className="bg-[#161616] hover:bg-[#1d1d1d] text-white border border-[#222222] h-10"
+                      onClick={handleAddKeyword}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+            {/* Primary Keywords Performance */}
+            <Card className="bg-[#101010] border-[#222222] border shadow-md">
+              <CardHeader className="border-b border-[#222222]/50 pb-4">
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-lg font-medium text-white">Primary Keywords</CardTitle>
+                  <Badge className="bg-[#161616] text-gray-400 border-[#222222] h-7 px-3">
+                    No Data
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="flex flex-col items-center justify-center text-center py-8">
+                  <div className="h-14 w-14 rounded-full bg-[#1a1a1a] flex items-center justify-center mb-4 border border-[#222222]">
+                    <Tag className="h-6 w-6 text-gray-500" />
+                  </div>
+                  <h3 className="text-md font-medium text-white mb-2">No performance data</h3>
+                  <p className="text-sm text-gray-400 max-w-md mb-4">
+                    Track how your primary keywords perform across AI engines
+                  </p>
+                  <Button 
+                    variant="outline"
+                    className="border-[#222222] text-white bg-[#161616] hover:bg-[#1d1d1d]"
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    Analyze Keywords
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Long-tail Keywords Performance */}
+            <Card className="bg-[#101010] border-[#222222] border shadow-md">
+              <CardHeader className="border-b border-[#222222]/50 pb-4">
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-lg font-medium text-white">Long-tail Keywords</CardTitle>
+                  <Badge className="bg-[#161616] text-gray-400 border-[#222222] h-7 px-3">
+                    No Data
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <div className="flex flex-col items-center justify-center text-center py-8">
+                  <div className="h-14 w-14 rounded-full bg-[#1a1a1a] flex items-center justify-center mb-4 border border-[#222222]">
+                    <KeyRound className="h-6 w-6 text-gray-500" />
+                  </div>
+                  <h3 className="text-md font-medium text-white mb-2">No performance data</h3>
+                  <p className="text-sm text-gray-400 max-w-md mb-4">
+                    Track how long-tail phrases perform in conversational AI
+                  </p>
+                  <Button 
+                    variant="outline"
+                    className="border-[#222222] text-white bg-[#161616] hover:bg-[#1d1d1d]"
+                  >
+                    <Zap className="h-4 w-4 mr-2" />
+                    Generate Phrases
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
     </main>
   )
 } 
