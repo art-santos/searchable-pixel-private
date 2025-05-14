@@ -1,0 +1,443 @@
+'use client'
+
+import { useState } from 'react'
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { 
+  Settings,
+  Globe, 
+  Refresh, 
+  UserPlus, 
+  CheckCircle2, 
+  XCircle,
+  Link as LinkIcon,
+  ExternalLink,
+  FileText,
+  Code,
+  ToggleRight,
+  Users,
+  Mail,
+  Lock,
+  Save,
+  AlertTriangle,
+  Info
+} from 'lucide-react'
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Label } from "@/components/ui/label"
+
+export default function SettingsPage() {
+  const [siteUrl, setSiteUrl] = useState('https://yoursitename.com')
+  const [cmsType, setCmsType] = useState('Webflow')
+  const [isConnected, setIsConnected] = useState(true)
+  
+  // Toggle states
+  const [autoPublish, setAutoPublish] = useState(true)
+  const [autoSitemap, setAutoSitemap] = useState(true)
+  const [structuredData, setStructuredData] = useState(true)
+  
+  // Team members
+  const teamMembers = [
+    { id: 1, name: 'Jane Smith', email: 'jane@example.com', role: 'Admin', pending: false },
+    { id: 2, name: 'John Doe', email: 'john@example.com', role: 'Editor', pending: false },
+    { id: 3, name: 'Alex Johnson', email: 'alex@example.com', role: 'Viewer', pending: true }
+  ]
+  
+  const [newEmail, setNewEmail] = useState('')
+  const [newRole, setNewRole] = useState('Viewer')
+  
+  const handleReconnect = () => {
+    // Simulate reconnection
+    setIsConnected(false)
+    setTimeout(() => {
+      setIsConnected(true)
+    }, 1500)
+  }
+  
+  const handleToggle = (setting: string, value: boolean) => {
+    switch(setting) {
+      case 'autoPublish':
+        setAutoPublish(value)
+        break
+      case 'autoSitemap':
+        setAutoSitemap(value)
+        break
+      case 'structuredData':
+        setStructuredData(value)
+        break
+    }
+  }
+  
+  const handleInvite = () => {
+    if (!newEmail.trim()) return
+    // Would normally add a new team member here
+    setNewEmail('')
+  }
+  
+  return (
+    <main className="flex flex-1 flex-col gap-8 p-8 bg-[#0c0c0c] overflow-auto">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Settings</h1>
+          <p className="text-gray-400">Configure your AEO Agent and manage site connections</p>
+        </div>
+        
+        <Button 
+          className="flex items-center gap-2 self-start md:self-auto bg-white hover:bg-gray-100 text-[#0c0c0c]"
+        >
+          <Save className="h-4 w-4" />
+          Save Changes
+        </Button>
+      </div>
+      
+      <Tabs defaultValue="site" className="w-full">
+        <TabsList className="bg-[#222222] border border-[#333333] mb-6">
+          <TabsTrigger value="site" className="data-[state=active]:bg-[#333333]">
+            Site Connection
+          </TabsTrigger>
+          <TabsTrigger value="agent" className="data-[state=active]:bg-[#333333]">
+            AEO Agent Controls
+          </TabsTrigger>
+          <TabsTrigger value="team" className="data-[state=active]:bg-[#333333]">
+            Team Access
+          </TabsTrigger>
+        </TabsList>
+        
+        {/* Site Connection Tab */}
+        <TabsContent value="site">
+          <Card className="bg-[#161616] border-[#333333] text-white">
+            <CardHeader>
+              <CardTitle className="text-xl font-medium text-white">
+                Site Connection
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between py-4 border-b border-[#222222]">
+                <div className="flex items-center gap-2">
+                  <Globe className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <p className="font-medium text-white">Connected Website</p>
+                    <p className="text-sm text-gray-400">{siteUrl}</p>
+                  </div>
+                </div>
+                <Button 
+                  variant="outline"
+                  className="border-[#333333] text-white hover:bg-[#222222]"
+                  onClick={() => setSiteUrl(prompt('Enter site URL', siteUrl) || siteUrl)}
+                >
+                  Edit
+                </Button>
+              </div>
+              
+              <div className="flex items-center justify-between py-4 border-b border-[#222222]">
+                <div className="flex items-center gap-2">
+                  <Code className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <p className="font-medium text-white">CMS Platform</p>
+                    <p className="text-sm text-gray-400">{cmsType}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="relative inline-flex items-center rounded-md bg-[#222222] p-1 text-sm font-medium">
+                    {['Webflow', 'Next.js', 'Framer'].map((cms) => (
+                      <button
+                        key={cms}
+                        type="button"
+                        className={`relative rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${
+                          cmsType === cms 
+                            ? 'bg-white text-black' 
+                            : 'text-gray-400 hover:text-white'
+                        }`}
+                        onClick={() => setCmsType(cms)}
+                      >
+                        {cms}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between py-4">
+                <div className="flex items-center gap-2">
+                  <LinkIcon className="h-5 w-5 text-gray-400" />
+                  <div>
+                    <p className="font-medium text-white">Connection Status</p>
+                    <p className="text-sm text-gray-400">Last verified: June 15, 2023</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Badge 
+                    variant="outline" 
+                    className={isConnected 
+                      ? "bg-green-900/30 text-green-400 border-green-800/50 flex items-center gap-1.5" 
+                      : "bg-red-900/30 text-red-400 border-red-800/50 flex items-center gap-1.5"
+                    }
+                  >
+                    {isConnected ? (
+                      <>
+                        <CheckCircle2 className="h-3 w-3" />
+                        Connected
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-3 w-3" />
+                        Disconnected
+                      </>
+                    )}
+                  </Badge>
+                  <Button 
+                    variant="outline"
+                    className="border-[#333333] text-white hover:bg-[#222222] flex items-center gap-1.5"
+                    onClick={handleReconnect}
+                    disabled={!isConnected}
+                  >
+                    <Refresh className="h-4 w-4" />
+                    {isConnected ? 'Refresh' : 'Connecting...'}
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="pt-4 border-t border-[#222222]">
+                <h3 className="text-sm font-medium text-white mb-4">Integration Methods</h3>
+                <div className="space-y-4">
+                  <div className="rounded-md border border-[#333333] p-4 hover:bg-[#1a1a1a] cursor-pointer">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge className="bg-white text-[#0c0c0c]">Recommended</Badge>
+                        </div>
+                        <h4 className="font-medium text-white mb-1">API Integration</h4>
+                        <p className="text-sm text-gray-400">Connect your CMS via API for full automation capabilities</p>
+                      </div>
+                      <Button 
+                        variant="outline"
+                        className="border-[#333333] text-white hover:bg-[#222222]"
+                      >
+                        Configure
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="rounded-md border border-[#333333] p-4 hover:bg-[#1a1a1a] cursor-pointer">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="font-medium text-white mb-1">JavaScript Snippet</h4>
+                        <p className="text-sm text-gray-400">Add our script to your site's header for basic tracking</p>
+                      </div>
+                      <Button 
+                        variant="outline"
+                        className="border-[#333333] text-white hover:bg-[#222222]"
+                      >
+                        Copy Code
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="rounded-md border border-[#333333] p-4 hover:bg-[#1a1a1a] cursor-pointer">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h4 className="font-medium text-white mb-1">Manual Configuration</h4>
+                        <p className="text-sm text-gray-400">Manually upload llms.txt and implement structured data</p>
+                      </div>
+                      <Button 
+                        variant="outline"
+                        className="border-[#333333] text-white hover:bg-[#222222]"
+                      >
+                        View Guide
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* AEO Agent Controls Tab */}
+        <TabsContent value="agent">
+          <Card className="bg-[#161616] border-[#333333] text-white">
+            <CardHeader>
+              <CardTitle className="text-xl font-medium text-white">
+                AEO Agent Controls
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between py-4 border-b border-[#222222]">
+                <div className="flex items-start gap-2">
+                  <FileText className="h-5 w-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-white">Auto-publish Content</p>
+                    <p className="text-sm text-gray-400">Let the agent automatically publish generated content to your site</p>
+                  </div>
+                </div>
+                <div 
+                  className={`h-6 w-11 rounded-full transition-colors cursor-pointer flex items-center ${autoPublish ? 'bg-white justify-end' : 'bg-[#333333] justify-start'}`}
+                  onClick={() => handleToggle('autoPublish', !autoPublish)}
+                >
+                  <div className={`h-5 w-5 rounded-full mx-0.5 ${autoPublish ? 'bg-[#0c0c0c]' : 'bg-gray-500'}`}></div>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between py-4 border-b border-[#222222]">
+                <div className="flex items-start gap-2">
+                  <Globe className="h-5 w-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-white">Auto-sitemap + llms.txt</p>
+                    <p className="text-sm text-gray-400">Update sitemap.xml and llms.txt with new content</p>
+                  </div>
+                </div>
+                <div 
+                  className={`h-6 w-11 rounded-full transition-colors cursor-pointer flex items-center ${autoSitemap ? 'bg-white justify-end' : 'bg-[#333333] justify-start'}`}
+                  onClick={() => handleToggle('autoSitemap', !autoSitemap)}
+                >
+                  <div className={`h-5 w-5 rounded-full mx-0.5 ${autoSitemap ? 'bg-[#0c0c0c]' : 'bg-gray-500'}`}></div>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between py-4 border-b border-[#222222]">
+                <div className="flex items-start gap-2">
+                  <Code className="h-5 w-5 text-gray-400 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-white">Structured Data Injection</p>
+                    <p className="text-sm text-gray-400">Add Schema.org markup to help LLMs understand your content</p>
+                  </div>
+                </div>
+                <div 
+                  className={`h-6 w-11 rounded-full transition-colors cursor-pointer flex items-center ${structuredData ? 'bg-white justify-end' : 'bg-[#333333] justify-start'}`}
+                  onClick={() => handleToggle('structuredData', !structuredData)}
+                >
+                  <div className={`h-5 w-5 rounded-full mx-0.5 ${structuredData ? 'bg-[#0c0c0c]' : 'bg-gray-500'}`}></div>
+                </div>
+              </div>
+              
+              <div className="rounded-md bg-[#222222] p-4 mt-6">
+                <div className="flex items-start gap-3">
+                  <Info className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-white mb-1">AEO Agent Status</h4>
+                    <p className="text-sm text-gray-400">Your agent is active and monitoring your content. Last active: 10 minutes ago.</p>
+                    <p className="text-sm text-gray-400 mt-2">
+                      <span className="text-white">Usage this month:</span> 8/50 articles (16%)
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        {/* Team Access Tab */}
+        <TabsContent value="team">
+          <Card className="bg-[#161616] border-[#333333] text-white">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-xl font-medium text-white">
+                Team Access
+              </CardTitle>
+              <Badge className="bg-[#222222] text-white border-[#333333]">
+                {teamMembers.length} members
+              </Badge>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex gap-2">
+                <Input
+                  className="bg-[#222222] border-[#333333] text-white placeholder:text-gray-500 focus-visible:ring-gray-500"
+                  placeholder="Add team member email..."
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                />
+                <div className="relative inline-flex items-center rounded-md bg-[#222222] p-1 text-sm font-medium">
+                  {['Viewer', 'Editor', 'Admin'].map((role) => (
+                    <button
+                      key={role}
+                      type="button"
+                      className={`relative rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${
+                        newRole === role 
+                          ? 'bg-white text-black' 
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                      onClick={() => setNewRole(role)}
+                    >
+                      {role}
+                    </button>
+                  ))}
+                </div>
+                <Button 
+                  className="bg-[#333333] hover:bg-[#444444] text-white flex-shrink-0"
+                  onClick={handleInvite}
+                >
+                  <UserPlus className="h-4 w-4 mr-1" />
+                  Invite
+                </Button>
+              </div>
+              
+              <div className="rounded-md border border-[#333333] overflow-hidden">
+                <div className="grid grid-cols-12 gap-4 bg-[#222222] px-4 py-3 text-sm font-medium text-gray-400">
+                  <div className="col-span-5">User</div>
+                  <div className="col-span-3">Role</div>
+                  <div className="col-span-2">Status</div>
+                  <div className="col-span-2">Actions</div>
+                </div>
+                <div className="divide-y divide-[#333333]">
+                  {teamMembers.map((member) => (
+                    <div key={member.id} className="grid grid-cols-12 gap-4 px-4 py-4 items-center hover:bg-[#1a1a1a]">
+                      <div className="col-span-5">
+                        <p className="font-medium text-white">{member.name}</p>
+                        <p className="text-xs text-gray-400">{member.email}</p>
+                      </div>
+                      <div className="col-span-3">
+                        <Badge 
+                          variant="outline" 
+                          className={
+                            member.role === 'Admin' 
+                              ? "bg-purple-900/30 text-purple-400 border-purple-800/50" 
+                              : member.role === 'Editor'
+                              ? "bg-blue-900/30 text-blue-400 border-blue-800/50"
+                              : "bg-gray-800 text-gray-300 border-gray-700"
+                          }
+                        >
+                          {member.role}
+                        </Badge>
+                      </div>
+                      <div className="col-span-2">
+                        {member.pending ? (
+                          <Badge className="bg-yellow-900/30 text-yellow-400 border-yellow-800/50">
+                            Pending
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-green-900/30 text-green-400 border-green-800/50">
+                            Active
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="col-span-2 flex gap-2">
+                        <Button variant="outline" size="sm" className="border-[#333333] text-white hover:bg-[#222222]">
+                          Edit
+                        </Button>
+                        <Button variant="outline" size="sm" className="border-[#333333] text-white hover:bg-[#222222]">
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="rounded-md bg-[#222222] p-4 flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-medium text-white mb-1">Role Permissions</h4>
+                  <div className="space-y-2 text-sm text-gray-400">
+                    <p><span className="text-white">Admin:</span> Full access to all features including billing and team management</p>
+                    <p><span className="text-white">Editor:</span> Can create and edit content, but cannot manage team or billing</p>
+                    <p><span className="text-white">Viewer:</span> Can view content and reports, but cannot make changes</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </main>
+  )
+} 

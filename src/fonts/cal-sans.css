@@ -1,0 +1,12 @@
+@font-face {
+  font-family: 'Cal Sans';
+  src: url('./CalSans-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Add the font to the font family stack */
+:root {
+  --font-cal: 'Cal Sans', system-ui, sans-serif;
+} 
