@@ -202,7 +202,15 @@ export default function Dashboard() {
         <CardContent className="pt-6">
           <div className="grid gap-6 md:grid-cols-3">
             {/* Step 1: Connect Site */}
-            <div 
+            <motion.div 
+              animate={{ 
+                opacity: siteConnected ? 0.75 : 1,
+                scale: onboardingStep === 1 ? 1.02 : 1
+              }}
+              transition={{ 
+                duration: 0.5, 
+                ease: "easeInOut" 
+              }}
               className={`flex items-start p-5 rounded-lg border shadow-sm relative ${
                 onboardingStep === 1 
                   ? "bg-[#171717] border-white/20 ring-1 ring-white/10" 
@@ -220,7 +228,19 @@ export default function Dashboard() {
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <p className="text-sm font-medium text-white">Connect Your Site</p>
-                  {siteConnected && <CheckCircle className="h-4 w-4 text-green-400" />}
+                  {siteConnected && 
+                    <motion.div 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ 
+                        type: "spring",
+                        stiffness: 500,
+                        damping: 15
+                      }}
+                    >
+                      <CheckCircle className="h-4 w-4 text-green-400" />
+                    </motion.div>
+                  }
                 </div>
                 <p className="text-xs text-gray-400 mb-3">Connect your website to allow Split to analyze and optimize your content</p>
                 <Button 
@@ -246,10 +266,18 @@ export default function Dashboard() {
                   <ChevronRight size={20} />
                 </motion.div>
               )}
-            </div>
+            </motion.div>
             
             {/* Step 2: Run Audit */}
-            <div 
+            <motion.div 
+              animate={{ 
+                opacity: onboardingStep < 2 ? 0.5 : auditRun ? 0.75 : 1,
+                scale: onboardingStep === 2 ? 1.02 : 1
+              }}
+              transition={{ 
+                duration: 0.5, 
+                ease: "easeInOut"
+              }}
               className={`flex items-start p-5 rounded-lg border shadow-sm relative ${
                 onboardingStep === 2 
                   ? "bg-[#171717] border-white/20 ring-1 ring-white/10" 
@@ -269,7 +297,19 @@ export default function Dashboard() {
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <p className="text-sm font-medium text-white">Run Site Audit</p>
-                  {auditRun && <CheckCircle className="h-4 w-4 text-green-400" />}
+                  {auditRun && 
+                    <motion.div 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ 
+                        type: "spring",
+                        stiffness: 500,
+                        damping: 15
+                      }}
+                    >
+                      <CheckCircle className="h-4 w-4 text-green-400" />
+                    </motion.div>
+                  }
                 </div>
                 <p className="text-xs text-gray-400 mb-3">Analyze your content for AI visibility opportunities and get recommendations</p>
                 <Button 
@@ -295,10 +335,18 @@ export default function Dashboard() {
                   <ChevronRight size={20} />
                 </motion.div>
               )}
-            </div>
+            </motion.div>
             
             {/* Step 3: Create Project */}
-            <div 
+            <motion.div 
+              animate={{ 
+                opacity: onboardingStep < 3 ? 0.5 : displayProjects.length > 0 ? 0.75 : 1,
+                scale: onboardingStep === 3 ? 1.02 : 1
+              }}
+              transition={{ 
+                duration: 0.5, 
+                ease: "easeInOut"
+              }}
               className={`flex items-start p-5 rounded-lg border shadow-sm relative ${
                 onboardingStep === 3 
                   ? "bg-[#171717] border-white/20 ring-1 ring-white/10" 
@@ -318,7 +366,19 @@ export default function Dashboard() {
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <p className="text-sm font-medium text-white">Create AEO Project</p>
-                  {displayProjects.length > 0 && <CheckCircle className="h-4 w-4 text-green-400" />}
+                  {displayProjects.length > 0 && 
+                    <motion.div 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ 
+                        type: "spring",
+                        stiffness: 500,
+                        damping: 15
+                      }}
+                    >
+                      <CheckCircle className="h-4 w-4 text-green-400" />
+                    </motion.div>
+                  }
                 </div>
                 <p className="text-xs text-gray-400 mb-3">Set up your first optimization project based on audit results</p>
                 <Button 
@@ -335,18 +395,24 @@ export default function Dashboard() {
                   {displayProjects.length > 0 ? "Project Created" : "Create Project"}
                 </Button>
               </div>
-            </div>
+            </motion.div>
           </div>
           
           {/* Onboarding progress bar */}
           <div className="mt-6 bg-[#161616] h-2 rounded-full overflow-hidden">
-            <div 
+            <motion.div 
               className="h-full"
+              animate={{ 
+                width: displayProjects.length > 0 ? '100%' : `${((onboardingStep - 1) / 3) * 100}%` 
+              }}
+              transition={{ 
+                duration: 0.8, 
+                ease: "easeOut" 
+              }}
               style={{ 
-                width: `${(onboardingStep / 3) * 100}%`,
                 background: "linear-gradient(to right, #FF914D, #FFEC9F)" 
               }}
-            ></div>
+            ></motion.div>
           </div>
         </CardContent>
       </Card>
@@ -365,11 +431,17 @@ export default function Dashboard() {
                 <span className="text-sm text-white">Site Status</span>
               </div>
               {siteConnected ? (
-                <Badge className={customBadgeClass} style={customBadgeStyle}>
-                  Connected
-                </Badge>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                >
+                  <Badge className={customBadgeClass} style={customBadgeStyle}>
+                    Connected
+                  </Badge>
+                </motion.div>
               ) : (
-                <Badge className="bg-[#222222] text-gray-400 border-[#333333]/30 h-7 px-3">
+                <Badge className="bg-[#222222] text-gray-400 border-[#333333]/30 h-7 px-3 pointer-events-none">
                   Not Connected
                 </Badge>
               )}
@@ -381,11 +453,17 @@ export default function Dashboard() {
                 <span className="text-sm text-white">Audit Status</span>
               </div>
               {auditRun ? (
-                <Badge className={customBadgeClass} style={customBadgeStyle}>
-                  Complete
-                </Badge>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                >
+                  <Badge className={customBadgeClass} style={customBadgeStyle}>
+                    Complete
+                  </Badge>
+                </motion.div>
               ) : (
-                <Badge className="bg-[#222222] text-gray-400 border-[#333333]/30 h-7 px-3">
+                <Badge className="bg-[#222222] text-gray-400 border-[#333333]/30 h-7 px-3 pointer-events-none">
                   Not Started
                 </Badge>
               )}
