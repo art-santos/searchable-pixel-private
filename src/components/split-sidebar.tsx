@@ -21,7 +21,8 @@ import {
   UsersIcon,
   GlobeIcon,
   BarChartIcon,
-  FolderIcon
+  FolderIcon,
+  KeyIcon
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -174,6 +175,21 @@ export function SplitSidebar() {
                   >
                     <SettingsIcon className="h-5 w-5" />
                     <span>Settings</span>
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <Link href="/api-keys" passHref legacyBehavior>
+                  <SidebarMenuButton 
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 transition-colors",
+                      pathname === "/api-keys" 
+                        ? "bg-[#222222] text-white" 
+                        : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
+                    )}
+                  >
+                    <KeyIcon className="h-5 w-5" />
+                    <span>API Keys</span>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>

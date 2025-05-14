@@ -72,6 +72,7 @@ export async function registerSite(options: CLIOptions): Promise<void> {
       
       // Save the site ID to .env.local
       if (data.site_id) {
+        const envPath = path.join(projectDir, '.env.local');
         let envContent = await fs.readFile(envPath, 'utf8');
         envContent += `\nSPLIT_SITE_ID=${data.site_id}`;
         await fs.writeFile(envPath, envContent);

@@ -20,9 +20,10 @@ program
       console.log(chalk.cyan('Your Next.js site is now connected to Split.'));
       console.log(chalk.cyan('Visit https://app.split.run to manage your content strategy and'));
       console.log(chalk.cyan('monitor AI-generated content delivery to your site.'));
-    } catch (error) {
+    } catch (error: unknown) {
       // Handle specific errors
-      if (error.message && error.message.includes('credentials')) {
+      if (typeof error === 'object' && error !== null && 'message' in error && 
+          typeof error.message === 'string' && error.message.includes('credentials')) {
         console.error(chalk.red('\n❌ Setup failed: Invalid credentials'));
         console.error(chalk.yellow('Please ensure you have valid credentials from the Split dashboard'));
         console.error(chalk.yellow('Sign up or log in at https://app.split.run to get your credentials'));

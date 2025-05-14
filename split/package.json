@@ -6,6 +6,11 @@
   "bin": {
     "create-split": "dist/bin.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "start": "node dist/bin.js",
@@ -22,6 +27,13 @@
   ],
   "author": "Split",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/splitrun/create-split"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "chalk": "^4.1.2",
     "commander": "^11.0.0",
