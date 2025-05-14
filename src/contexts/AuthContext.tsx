@@ -25,8 +25,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Initial session load + Listener
   useEffect(() => {
     if (!supabase) {
-      console.error("AuthContext: Supabase client not available on mount.");
-      setLoading(false);
+        console.error("AuthContext: Supabase client not available on mount.");
+        setLoading(false);
       return;
     }
 
@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log("Initial session fetched:", session);
     }).catch((error) => {
       console.error("Error fetching initial session:", error);
-      setLoading(false);
+        setLoading(false);
     });
 
     // Set up the auth state change listener
@@ -50,17 +50,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Simplified navigation logic
       setTimeout(() => {
-        if (event === 'SIGNED_IN' && session?.user) {
+          if (event === 'SIGNED_IN' && session?.user) {
           // If signed in and on the login page, redirect to dashboard
           if (pathname === '/login') {
             console.log('SIGNED_IN on login page, redirecting to dashboard');
             router.push('/dashboard');
-          }
-        } else if (event === 'SIGNED_OUT') {
+            }
+          } else if (event === 'SIGNED_OUT') {
           // If signed out, redirect to landing page
           console.log('SIGNED_OUT, redirecting to landing page');
           router.push('/landing-page');
-        }
+          }
       }, 0);
     });
 

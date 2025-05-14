@@ -1,6 +1,5 @@
 'use client'
 
-import { Sidebar } from '@/components/Sidebar'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
@@ -34,11 +33,8 @@ export default function AuthenticatedLayout({
   }
   
   return (
-    <div className="flex min-h-screen flex-col bg-[#0c0c0c]">
-      <Sidebar />
-      <div className="ml-64 flex-1 flex flex-col min-h-screen">
-        <main className="flex-1">{children}</main>
-      </div>
+    <div className="min-h-screen bg-[#0c0c0c]">
+      {children}
     </div>
   )
 } 
