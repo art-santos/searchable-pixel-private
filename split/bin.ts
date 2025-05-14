@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+// Suppress punycode deprecation warning
+process.removeAllListeners('warning');
+
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { runCLI } from './index';
@@ -18,7 +21,7 @@ program
       await runCLI();
       console.log(chalk.green('\n✅ Setup completed successfully!\n'));
       console.log(chalk.cyan('Your Next.js site is now connected to Split.'));
-      console.log(chalk.cyan('Visit https://app.split.run to manage your content strategy and'));
+      console.log(chalk.cyan('Visit https://split.dev to manage your content strategy and'));
       console.log(chalk.cyan('monitor AI-generated content delivery to your site.'));
     } catch (error: unknown) {
       // Handle specific errors
@@ -26,7 +29,7 @@ program
           typeof error.message === 'string' && error.message.includes('credentials')) {
         console.error(chalk.red('\n❌ Setup failed: Invalid credentials'));
         console.error(chalk.yellow('Please ensure you have valid credentials from the Split dashboard'));
-        console.error(chalk.yellow('Sign up or log in at https://app.split.run to get your credentials'));
+        console.error(chalk.yellow('Sign up or log in at https://split.dev to get your credentials'));
       } else {
         console.error(chalk.red('\n❌ Setup failed:'), error);
       }

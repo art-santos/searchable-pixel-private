@@ -15,7 +15,7 @@ const writeFileSafe_1 = require("../utils/writeFileSafe");
 async function installWebhook(options) {
     const projectDir = process.cwd();
     console.log(chalk_1.default.cyan('\nSplit credentials are required to connect your site to the Split AI content delivery system.'));
-    console.log(chalk_1.default.cyan('These credentials can be obtained from your Split dashboard at https://app.split.run\n'));
+    console.log(chalk_1.default.cyan('These credentials can be obtained from your Split dashboard at https://split.dev\n'));
     // Get credentials from user
     const credentials = await inquirer_1.default.prompt([
         {

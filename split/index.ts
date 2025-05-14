@@ -1,11 +1,10 @@
 import chalk from 'chalk';
-import ora from 'ora';
-import { promptUser } from './steps/promptUser';
 import { installWebhook } from './steps/installWebhook';
 import { createContentFolder } from './steps/createContentFolder';
 import { updateSitemap } from './steps/updateSitemap';
 import { updateLlmsTxt } from './steps/updateLlmsTxt';
 import { registerSite } from './steps/registerSite';
+import inquirer from 'inquirer';
 
 export interface CLIOptions {
   hasBlog: boolean;
@@ -17,43 +16,108 @@ export interface CLIOptions {
   agentSecret?: string;
 }
 
+/**
+ * Get basic project configuration
+ */
+async function getConfig(): Promise<CLIOptions> {
+  const answers = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'hasBlog',
+      message: 'Do you have a blog?',
+      default: false,
+    },
+    {
+      type: 'input',
+      name: 'contentPath',
+      message: 'Content directory:',
+      default: 'content/split',
+    },
+    {
+      type: 'confirm',
+      name: 'usesTailwind',
+      message: 'Using Tailwind?',
+      default: false,
+    },
+    {
+      type: 'list',
+      name: 'routerType',
+      message: 'Router type:',
+      choices: [
+        { name: 'App Router', value: 'app' },
+        { name: 'Pages Router', value: 'pages' },
+      ],
+      default: 'app',
+    },
+    {
+      type: 'input',
+      name: 'domain',
+      message: 'Production domain:',
+      validate: (input: string) => {
+        return /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+$/.test(input) 
+          ? true 
+          : 'Enter valid domain (e.g. example.com)';
+      },
+    },
+  ]);
+  
+  return {
+    hasBlog: answers.hasBlog,
+    contentPath: answers.contentPath.startsWith('/')
+      ? answers.contentPath.slice(1)
+      : answers.contentPath,
+    usesTailwind: answers.usesTailwind,
+    usesAppRouter: answers.routerType === 'app',
+    domain: answers.domain,
+  };
+}
+
 export async function runCLI(): Promise<void> {
-  console.log(chalk.cyan('Setting up Split for your Next.js site...\n'));
+  console.log('Setting up Split webhook for your Next.js site');
   
-  // Step 1: Get user inputs
-  const spinner = ora('Gathering information...').start();
-  const options = await promptUser();
-  spinner.succeed('Information gathered');
-  
-  // Step 2: Install webhook endpoint
-  spinner.text = 'Installing webhook endpoint...';
-  spinner.start();
-  await installWebhook(options);
-  spinner.succeed('Webhook endpoint installed');
-  
-  // Step 3: Create content folder
-  spinner.text = 'Setting up content folder...';
-  spinner.start();
-  await createContentFolder(options);
-  spinner.succeed('Content folder created');
-  
-  // Step 4: Update sitemap.xml
-  spinner.text = 'Updating sitemap.xml...';
-  spinner.start();
-  await updateSitemap(options);
-  spinner.succeed('Sitemap.xml updated');
-  
-  // Step 5: Update llms.txt
-  spinner.text = 'Setting up LLM crawler support...';
-  spinner.start();
-  await updateLlmsTxt(options);
-  spinner.succeed('LLM crawler support configured');
-  
-  // Step 6: Register site with Split backend
-  spinner.text = 'Registering your site with Split...';
-  spinner.start();
-  await registerSite(options);
-  spinner.succeed('Site registered successfully');
-  
-  console.log(chalk.bold.green('\nYour site is now connected to Split!'));
+  try {
+    // Get project config
+    const options = await getConfig();
+    
+    // Install webhook
+    try {
+      await installWebhook(options);
+    } catch (error) {
+      console.error('Failed to install webhook:', error);
+      process.exit(1);
+    }
+    
+    // Create content folder
+    try {
+      await createContentFolder(options);
+    } catch (error) {
+      console.error('Warning: Could not create content folder');
+    }
+    
+    // Update sitemap
+    try {
+      await updateSitemap(options);
+    } catch (error) {
+      console.error('Warning: Could not update sitemap');
+    }
+    
+    // Update llms.txt
+    try {
+      await updateLlmsTxt(options);
+    } catch (error) {
+      console.error('Warning: Could not update llms.txt');
+    }
+    
+    // Register site
+    try {
+      await registerSite(options);
+    } catch (error) {
+      console.error('Warning: Could not register site');
+    }
+    
+    console.log('Setup complete!');
+  } catch (error) {
+    console.error('Setup failed:', error);
+    process.exit(1);
+  }
 } 

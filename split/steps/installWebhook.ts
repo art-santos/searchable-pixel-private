@@ -12,7 +12,7 @@ export async function installWebhook(options: CLIOptions): Promise<void> {
   const projectDir = process.cwd();
   
   console.log(chalk.cyan('\nSplit credentials are required to connect your site to the Split AI content delivery system.'));
-  console.log(chalk.cyan('These credentials can be obtained from your Split dashboard at https://app.split.run\n'));
+  console.log(chalk.cyan('These credentials can be obtained from your Split dashboard at https://split.dev\n'));
   
   // Get credentials from user
   const credentials = await inquirer.prompt([

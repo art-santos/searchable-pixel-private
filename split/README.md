@@ -22,7 +22,7 @@ This will:
 ## Prerequisites
 
 - A Next.js project
-- Credentials from your [Split dashboard](https://app.split.run)
+- Credentials from your [Split dashboard](https://split.dev)
 
 ## How it Works
 

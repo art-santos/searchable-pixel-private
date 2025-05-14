@@ -81,6 +81,6 @@ async function registerSite(options) {
         console.error(chalk_1.default.dim('- Split API being temporarily unavailable'));
         console.error(chalk_1.default.dim('- Invalid domain name format'));
         console.error(chalk_1.default.dim(`Technical details: ${error instanceof Error ? error.message : String(error)}`));
-        console.log(chalk_1.default.cyan('\nYou can manually register your site later at https://app.split.run'));
+        console.log(chalk_1.default.cyan('\nYou can manually register your site later at https://split.dev'));
     }
 }

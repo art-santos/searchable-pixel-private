@@ -88,6 +88,6 @@ export async function registerSite(options: CLIOptions): Promise<void> {
     console.error(chalk.dim('- Invalid domain name format'));
     console.error(chalk.dim(`Technical details: ${error instanceof Error ? error.message : String(error)}`));
     
-    console.log(chalk.cyan('\nYou can manually register your site later at https://app.split.run'));
+    console.log(chalk.cyan('\nYou can manually register your site later at https://split.dev'));
   }
 } 
