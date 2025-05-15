@@ -1,6 +1,6 @@
 {
   "name": "create-split",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CLI tool to connect Next.js sites to Split AI content delivery system",
   "main": "dist/index.js",
   "bin": {
@@ -29,7 +29,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/splitrun/create-split"
+    "url": "https://github.com/1000xit/create-split"
   },
   "publishConfig": {
     "access": "public"

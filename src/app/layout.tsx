@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = {
   title: "Split | Agentic AEO for LLM Visibility",
   description: "Split helps you automate your LLM site visibility through intelligent content structuring, generation, and optimization tailored for AI understanding.",
-  metadataBase: new URL('https://split.dev'),
+  metadataBase: new URL('https://www.split.dev'),
   keywords: ['agentic SEO', 'AEO', 'LLM visibility', 'content generation', 'AI-friendly content', 'semantic structuring', 'automated optimization'],
   authors: [{ name: 'Split' }],
   creator: 'Split',
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://split.dev',
+    url: 'https://www.split.dev',
     title: 'Split | Agentic AEO for LLM Visibility',
     description: 'Automate your content strategy for LLM visibility with Split\'s agentic approach. Build structured, semantically-rich content that AI can understand and surface.',
     siteName: 'Split',
@@ -51,8 +51,8 @@ export const metadata: Metadata = {
     title: 'Split | Agentic AEO for LLM Visibility',
     description: 'Automate your content strategy for LLM visibility with Split\'s agentic approach. Build structured, semantically-rich content that AI can understand and surface.',
     images: ['/twitter-image.png'],
-    creator: '@SplitAEO',
-    site: '@SplitAEO',
+    creator: '@Split.dev',
+    site: '@Split.dev',
   },
   viewport: {
     width: 'device-width',
@@ -60,8 +60,7 @@ export const metadata: Metadata = {
     maximumScale: 1,
   },
   themeColor: '#6366F1',
-  manifest: '/manifest.json',
-};
+}
 
 export default function RootLayout({
   children,

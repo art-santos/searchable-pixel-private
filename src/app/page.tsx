@@ -9,6 +9,10 @@ export default function HomePage() {
   const router = useRouter()
 
   useEffect(() => {
+    // Test to see if Supabase environment variables are available
+    console.log("SUPABASE URL exists:", !!process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log("SUPABASE KEY exists:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+    
     if (!loading) {
       if (user) {
         // If user is authenticated, redirect to dashboard
