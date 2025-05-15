@@ -22,7 +22,8 @@ import {
   GlobeIcon,
   BarChartIcon,
   FolderIcon,
-  KeyIcon
+  KeyIcon,
+  TagIcon
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -136,17 +137,17 @@ export function SplitSidebar() {
                 </Link>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <Link href="/site-connector" passHref legacyBehavior>
+                <Link href="/keywords" passHref legacyBehavior>
                   <SidebarMenuButton 
                     className={cn(
                       "flex items-center gap-3 rounded-md px-3 py-2 transition-colors",
-                      pathname === "/site-connector" 
+                      pathname === "/keywords" 
                         ? "bg-[#222222] text-white" 
                         : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
                     )}
                   >
-                    <GlobeIcon className="h-5 w-5" />
-                    <span>Site Connector</span>
+                    <TagIcon className="h-5 w-5" />
+                    <span>Keywords</span>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>

@@ -5,7 +5,7 @@ import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { useEffect } from 'react'
 
-export default function SiteAuditLayout({
+export default function KeywordsLayout({
   children,
 }: {
   children: React.ReactNode

@@ -10,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/dashboard',
     '/api-keys',
     '/content-strategy',
+    '/keywords',
     '/site-audit',
     '/performance-reports',
     '/site-connector',

@@ -1,6 +1,6 @@
 {
   "name": "create-split",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "CLI tool to connect Next.js sites to Split AI content delivery system",
   "main": "dist/index.js",
   "bin": {
