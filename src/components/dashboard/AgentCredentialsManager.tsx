@@ -45,7 +45,11 @@ interface AgentCredential {
   is_active: boolean;
 }
 
-export default function AgentCredentialsManager() {
+interface AgentCredentialsManagerProps {
+  onCredentialDeleted?: () => void;
+}
+
+export default function AgentCredentialsManager({ onCredentialDeleted }: AgentCredentialsManagerProps = {}) {
   const { user, supabase, loading } = useAuth()
   const [credentials, setCredentials] = useState<AgentCredential[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -63,37 +67,41 @@ export default function AgentCredentialsManager() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [regeneratedSecret, setRegeneratedSecret] = useState<{id: string, secret: string} | null>(null)
 
-  useEffect(() => {
-    const fetchCredentials = async () => {
-      if (!supabase || !user) return
-      
-      try {
-        if (!supabase) {
-          setError('Database connection not available')
-          setIsLoading(false)
-          return
-        }
-        
-        const { data, error } = await supabase
-          .from('agent_credentials')
-          .select('id, domain, agent_id, created_at, is_active')
-          .order('created_at', { ascending: false })
-        
-        if (error) {
-          console.error('Error fetching credentials:', error)
-          setError('Failed to load credentials')
-          return
-        }
-        
-        setCredentials(data || [])
-      } catch (err) {
-        console.error('Failed to fetch credentials:', err)
-        setError('Failed to load credentials')
-      } finally {
-        setIsLoading(false)
-      }
-    }
+  // Extract the fetchCredentials function to be reusable
+  const fetchCredentials = async () => {
+    if (!supabase || !user) return
     
+    try {
+      if (!supabase) {
+        setError('Database connection not available')
+        setIsLoading(false)
+        return
+      }
+      
+      // Force fresh data with no caching
+      const { data, error } = await supabase
+        .from('agent_credentials')
+        .select('id, domain, agent_id, created_at, is_active')
+        .order('created_at', { ascending: false })
+        .limit(100)
+      
+      if (error) {
+        console.error('Error fetching credentials:', error)
+        setError('Failed to load credentials')
+        return
+      }
+      
+      console.log('Fetched credentials:', data)
+      setCredentials(data || [])
+    } catch (err) {
+      console.error('Failed to fetch credentials:', err)
+      setError('Failed to load credentials')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+  
+  useEffect(() => {
     if (user && supabase) {
       fetchCredentials()
     } else if (!supabase) {
@@ -170,6 +178,10 @@ export default function AgentCredentialsManager() {
     try {
       const response = await fetch(`/api/agent-credentials?id=${id}`, {
         method: 'DELETE',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
       })
       
       const data = await response.json()
@@ -178,9 +190,24 @@ export default function AgentCredentialsManager() {
         throw new Error(data.error || 'Failed to delete credentials')
       }
       
-      // Remove from state
-      setCredentials(credentials.filter(cred => cred.id !== id))
+      // Remove from local state immediately
+      setCredentials(prevCreds => prevCreds.filter(cred => cred.id !== id))
       setShowDeleteDialog(false)
+
+      // Notify parent component that a credential was deleted
+      if (onCredentialDeleted) {
+        onCredentialDeleted()
+      }
+
+      // Also dispatch an event for other components
+      window.dispatchEvent(new Event('credential-deleted'))
+      
+      console.log('Credential deleted successfully, forcing refresh...')
+      
+      // Force a hard refresh after a short delay
+      setTimeout(() => {
+        window.location.reload()
+      }, 500)
     } catch (err: any) {
       console.error('Error deleting credentials:', err)
       setError(err.message || 'Failed to delete credentials')
@@ -565,26 +592,65 @@ export default function AgentCredentialsManager() {
       
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent className="bg-[#171717] border border-[#333333] text-white">
+        <AlertDialogContent className="bg-[#171717] border border-red-600/40 text-white">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Delete Credentials?</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
-              This will permanently delete these credentials. Any applications using them will no longer be able to authenticate.
+            <AlertDialogTitle className="text-white flex items-center gap-2">
+              <div className="bg-red-500/20 p-1.5 rounded-full">
+                <Trash2 className="h-5 w-5 text-red-400" />
+              </div>
+              Delete API Credentials
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-300">
+              <div className="space-y-4 mt-2">
+                <p>
+                  Are you sure you want to permanently delete these credentials?
+                </p>
+                
+                <div className="bg-red-950/30 border border-red-500/30 rounded-md p-3 text-sm text-red-200">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-5 w-5 mt-0.5 text-red-400 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium mb-1">Warning: This action cannot be undone</p>
+                      <ul className="list-disc pl-5 space-y-1 text-xs text-red-300/90">
+                        <li>Any applications using these credentials will no longer be able to authenticate</li>
+                        <li>Connected websites will stop receiving content from Split</li>
+                        <li>You will need to generate new credentials and update your applications</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                
+                {credentials.find(c => c.id === selectedCredential)?.domain && (
+                  <div className="bg-[#0c0c0c] border border-[#333333] rounded-md p-3">
+                    <p className="text-xs font-medium text-gray-400 mb-1">Affected domain:</p>
+                    <p className="text-sm text-white font-mono">
+                      {credentials.find(c => c.id === selectedCredential)?.domain}
+                    </p>
+                  </div>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="mt-2">
             <AlertDialogCancel className="bg-[#222222] text-white border-[#333333] hover:bg-[#282828]">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction 
-              className="bg-red-600/90 hover:bg-red-700 text-white border-none"
+              className="bg-red-700 hover:bg-red-800 text-white border-none"
               onClick={() => selectedCredential && deleteCredential(selectedCredential)}
               disabled={isDeleting}
             >
               {isDeleting ? (
-                <RefreshCw className="h-4 w-4 animate-spin mr-1" />
-              ) : null}
-              Delete
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Permanently Delete
+                </>
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

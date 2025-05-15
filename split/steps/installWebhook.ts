@@ -72,6 +72,11 @@ export async function installWebhook(options: CLIOptions): Promise<void> {
   
   console.log(chalk.green(`Webhook endpoint installed at: ${webhookEndpoint}`));
   console.log(chalk.dim('This endpoint will receive content from the Split AI agent.'));
+  
+  // Verify the webhook is accessible if we're in a development environment
+  if (options.verifyWebhook !== false) {
+    await verifyWebhookInstallation(options, webhookEndpoint);
+  }
 }
 
 /**
@@ -106,4 +111,54 @@ async function updateEnvFile(
   await writeFileSafe(envPath, envContent.trim());
   
   console.log(chalk.dim('Updated .env.local with Split agent credentials'));
+}
+
+/**
+ * Verify the webhook installation by sending a ping request
+ */
+async function verifyWebhookInstallation(options: CLIOptions, webhookEndpoint: string): Promise<void> {
+  console.log(chalk.cyan('\nVerifying webhook installation...'));
+  
+  try {
+    // Check if there's a local development server running
+    const devServerUrl = process.env.NEXT_PUBLIC_VERCEL_URL || 'http://localhost:3000';
+    const pingUrl = `${devServerUrl}${webhookEndpoint}?ping=true`;
+    
+    console.log(chalk.dim(`Pinging ${pingUrl}`));
+    
+    // Try to ping the webhook
+    const response = await fetch(pingUrl, {
+      method: 'GET',
+      headers: {
+        'Cache-Control': 'no-cache'
+      }
+    });
+    
+    if (response.ok) {
+      // Successfully pinged
+      const data = await response.json();
+      console.log(chalk.green('✅ Webhook verification successful!'));
+      console.log(chalk.dim('Response:'), chalk.dim(JSON.stringify(data, null, 2)));
+      
+      // If we got agent_id back, verify it matches what was provided
+      if (data.agent_id && data.agent_id !== options.agentId) {
+        console.log(chalk.yellow('⚠️ Warning: Agent ID mismatch in response'));
+        console.log(chalk.dim(`Expected: ${options.agentId}`));
+        console.log(chalk.dim(`Received: ${data.agent_id}`));
+      }
+    } else {
+      // Failed to ping
+      console.log(chalk.yellow('⚠️ Webhook verification failed'));
+      console.log(chalk.dim(`Status: ${response.status}`));
+      console.log(chalk.dim(`Message: ${await response.text()}`));
+      console.log(chalk.cyan('\nThis is normal if your development server is not running.'));
+      console.log(chalk.cyan('Start your Next.js development server with `npm run dev` and try again.'));
+    }
+  } catch (error) {
+    console.log(chalk.yellow('⚠️ Could not verify webhook installation'));
+    console.log(chalk.dim(`Error: ${error instanceof Error ? error.message : String(error)}`));
+    console.log(chalk.cyan('\nThis is normal during installation. Your webhook has been installed correctly,'));
+    console.log(chalk.cyan('but we could not verify it because your development server is not running.'));
+    console.log(chalk.cyan('\nStart your Next.js development server with `npm run dev` to activate the webhook.'));
+  }
 } 

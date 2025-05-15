@@ -70,6 +70,66 @@ export async function POST(req: NextRequest) {
 }
 
 /**
+ * GET endpoint for connection verification (ping)
+ * This endpoint doesn't require signature verification and returns basic information
+ * about the Split agent installation
+ */
+export async function GET(req: NextRequest) {
+  try {
+    // Check if this is a ping request
+    const isPingCheck = req.nextUrl.searchParams.get('ping') === 'true';
+    
+    if (isPingCheck) {
+      // Get agent ID from environment
+      const agentId = process.env.SPLIT_AGENT_ID;
+      const siteId = process.env.SPLIT_SITE_ID;
+      const contentDir = process.env.SPLIT_CONTENT_DIR || 'content/split';
+      
+      // Check if content directory exists
+      let contentDirExists = false;
+      try {
+        await fs.access(path.join(process.cwd(), contentDir));
+        contentDirExists = true;
+      } catch (e) {
+        // Directory doesn't exist, which is fine for this check
+      }
+      
+      return new NextResponse(JSON.stringify({
+        success: true,
+        status: 'connected',
+        agent_id: agentId,
+        site_id: siteId,
+        version: '1.0', // Future-proofing for version checks
+        content_dir: contentDir,
+        content_dir_exists: contentDirExists,
+        timestamp: new Date().toISOString()
+      }), {
+        status: 200,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store, max-age=0'
+        },
+      });
+    }
+    
+    // If not a ping request, just return a simple success response
+    return new NextResponse(JSON.stringify({ 
+      success: true,
+      message: 'Split agent is running'
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('Split agent error:', error);
+    return new NextResponse(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+/**
  * Verify the HMAC signature from Split
  */
 function verifySignature(payload: string, signature: string): boolean {

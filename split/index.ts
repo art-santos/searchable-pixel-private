@@ -7,13 +7,14 @@ import { registerSite } from './steps/registerSite';
 import inquirer from 'inquirer';
 
 export interface CLIOptions {
-  hasBlog: boolean;
+  domain: string;
   contentPath: string;
+  hasBlog: boolean;
   usesTailwind: boolean;
   usesAppRouter: boolean;
-  domain: string;
   agentId?: string;
   agentSecret?: string;
+  verifyWebhook?: boolean;
 }
 
 /**

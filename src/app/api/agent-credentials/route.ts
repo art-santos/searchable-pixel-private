@@ -126,17 +126,27 @@ export async function DELETE(req: NextRequest) {
       );
     }
     
-    // Delete the credential
+    // Temporarily using direct table operations until the RPC function is available
+    // Delete the credential directly from the table
     const { error } = await supabase
       .from('agent_credentials')
       .delete()
       .eq('id', id)
-      .eq('user_id', session.user.id); // Ensure the user owns this credential
+      .eq('user_id', session.user.id);
     
     if (error) {
       console.error('Error deleting agent credentials:', error);
+      
+      // More detailed error message
+      let errorMessage = 'Failed to delete credentials';
+      if (error.code === '42501') {
+        errorMessage = 'Permission denied: You cannot delete these credentials';
+      } else if (error.code === 'PGRST116') {
+        errorMessage = 'Credentials not found or already deleted';
+      }
+      
       return NextResponse.json(
-        { error: 'Failed to delete credentials' },
+        { error: errorMessage, details: error },
         { status: 500 }
       );
     }
