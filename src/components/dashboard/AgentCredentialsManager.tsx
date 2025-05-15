@@ -19,10 +19,23 @@ import {
   CheckCircle, 
   AlertCircle,
   Globe,
-  ArrowRight
+  ArrowRight,
+  Trash2,
+  Eye,
+  EyeOff
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface AgentCredential {
   id: string;
@@ -42,12 +55,25 @@ export default function AgentCredentialsManager() {
   const [copySuccess, setCopySuccess] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState('')
+  
+  // New state for managing actions
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [isRegenerating, setIsRegenerating] = useState(false)
+  const [selectedCredential, setSelectedCredential] = useState<string | null>(null)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [regeneratedSecret, setRegeneratedSecret] = useState<{id: string, secret: string} | null>(null)
 
   useEffect(() => {
     const fetchCredentials = async () => {
       if (!supabase || !user) return
       
       try {
+        if (!supabase) {
+          setError('Database connection not available')
+          setIsLoading(false)
+          return
+        }
+        
         const { data, error } = await supabase
           .from('agent_credentials')
           .select('id, domain, agent_id, created_at, is_active')
@@ -70,6 +96,9 @@ export default function AgentCredentialsManager() {
     
     if (user && supabase) {
       fetchCredentials()
+    } else if (!supabase) {
+      setError('Database connection not available. Check your environment configuration.')
+      setIsLoading(false)
     } else {
       setIsLoading(false)
     }
@@ -84,6 +113,11 @@ export default function AgentCredentialsManager() {
   const generateCredentials = async () => {
     if (!domain) {
       setError('Please enter a domain')
+      return
+    }
+    
+    if (!supabase) {
+      setError('Database connection not available. Check your environment configuration.')
       return
     }
     
@@ -129,6 +163,61 @@ export default function AgentCredentialsManager() {
     }
   }
 
+  const deleteCredential = async (id: string) => {
+    setIsDeleting(true)
+    setError('')
+    
+    try {
+      const response = await fetch(`/api/agent-credentials?id=${id}`, {
+        method: 'DELETE',
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete credentials')
+      }
+      
+      // Remove from state
+      setCredentials(credentials.filter(cred => cred.id !== id))
+      setShowDeleteDialog(false)
+    } catch (err: any) {
+      console.error('Error deleting credentials:', err)
+      setError(err.message || 'Failed to delete credentials')
+    } finally {
+      setIsDeleting(false)
+      setSelectedCredential(null)
+    }
+  }
+
+  const regenerateSecret = async (id: string) => {
+    setIsRegenerating(true)
+    setError('')
+    setRegeneratedSecret(null)
+    
+    try {
+      const response = await fetch(`/api/agent-credentials?id=${id}`, {
+        method: 'PUT',
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to regenerate secret')
+      }
+      
+      setRegeneratedSecret({
+        id,
+        secret: data.agent_secret
+      })
+    } catch (err: any) {
+      console.error('Error regenerating secret:', err)
+      setError(err.message || 'Failed to regenerate secret')
+    } finally {
+      setIsRegenerating(false)
+    }
+  }
+
   if (loading || isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -166,6 +255,7 @@ export default function AgentCredentialsManager() {
             
             <div className="flex gap-3">
               <Input
+                id="domain-input"
                 type="text"
                 placeholder="example.com"
                 value={domain}
@@ -276,6 +366,71 @@ export default function AgentCredentialsManager() {
               </motion.div>
             )}
           </AnimatePresence>
+          
+          {/* Regenerated secret display */}
+          <AnimatePresence>
+            {regeneratedSecret && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="bg-[#171717] border border-amber-500/20 rounded-lg p-4 mb-6"
+              >
+                <h3 className="text-sm font-medium text-white mb-3 flex items-center gap-2">
+                  <span>Regenerated Secret</span>
+                  <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-xs">
+                    New
+                  </Badge>
+                </h3>
+                
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs text-gray-400">Agent Secret</span>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 px-2 text-xs text-gray-400 hover:text-white hover:bg-[#222222]"
+                          onClick={() => setShowSecret(!showSecret)}
+                        >
+                          {showSecret ? 'Hide' : 'Show'}
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 px-2 text-xs text-gray-400 hover:text-white hover:bg-[#222222]"
+                          onClick={() => copyToClipboard(regeneratedSecret.secret, 'Agent Secret')}
+                        >
+                          <Copy className="h-3 w-3 mr-1" />
+                          Copy
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="bg-[#0c0c0c] rounded p-2 text-xs font-mono text-white overflow-x-auto">
+                      {showSecret ? regeneratedSecret.secret : '••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••'}
+                    </div>
+                  </div>
+                  
+                  {copySuccess && (
+                    <div className="flex items-center text-green-400 text-xs gap-1 mt-2">
+                      <CheckCircle className="h-3.5 w-3.5" />
+                      <span>{copySuccess}</span>
+                    </div>
+                  )}
+                  
+                  <div className="pt-2">
+                    <p className="text-xs text-amber-400/90 flex items-start gap-1.5">
+                      <AlertCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                      <span>
+                        Your old secret has been replaced. Update your application with this new secret immediately.
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Existing credentials list */}
           <div>
@@ -301,38 +456,74 @@ export default function AgentCredentialsManager() {
                 {credentials.map((cred) => (
                   <div 
                     key={cred.id}
-                    className="bg-[#171717] border border-[#222222] rounded-lg p-4 flex justify-between items-center"
+                    className="bg-[#171717] border border-[#222222] rounded-lg p-4"
                   >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-white text-sm font-medium">{cred.domain}</span>
-                        {cred.is_active ? (
-                          <Badge className="bg-green-500/20 text-green-300 border-green-500/30 text-xs">
-                            Active
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-gray-500/20 text-gray-300 border-gray-500/30 text-xs">
-                            Inactive
-                          </Badge>
-                        )}
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-white text-sm font-medium">{cred.domain}</span>
+                          {cred.is_active ? (
+                            <Badge className="bg-green-500/20 text-green-300 border-green-500/30 text-xs">
+                              Active
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-gray-500/20 text-gray-300 border-gray-500/30 text-xs">
+                              Inactive
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-gray-400">ID: {cred.agent_id.slice(0, 8)}...</span>
+                          <span className="text-xs text-gray-500">•</span>
+                          <span className="text-xs text-gray-400">
+                            Created: {new Date(cred.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-gray-400">ID: {cred.agent_id.slice(0, 8)}...</span>
-                        <span className="text-xs text-gray-500">•</span>
-                        <span className="text-xs text-gray-400">
-                          Created: {new Date(cred.created_at).toLocaleDateString()}
-                        </span>
+                      
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 px-2 text-xs text-gray-400 hover:text-white hover:bg-[#222222]"
+                          onClick={() => copyToClipboard(cred.agent_id, 'Agent ID')}
+                        >
+                          <Copy className="h-3.5 w-3.5 mr-1" />
+                          Copy ID
+                        </Button>
+                        
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 px-2 text-xs text-amber-400/90 hover:text-amber-400 hover:bg-[#222222]"
+                          onClick={() => {
+                            setSelectedCredential(cred.id);
+                            regenerateSecret(cred.id);
+                          }}
+                          disabled={isRegenerating && selectedCredential === cred.id}
+                        >
+                          {isRegenerating && selectedCredential === cred.id ? (
+                            <RefreshCw className="h-3.5 w-3.5 animate-spin mr-1" />
+                          ) : (
+                            <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                          )}
+                          Regenerate Secret
+                        </Button>
+                        
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-8 px-2 text-xs text-red-400/90 hover:text-red-400 hover:bg-[#222222]"
+                          onClick={() => {
+                            setSelectedCredential(cred.id);
+                            setShowDeleteDialog(true);
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 mr-1" />
+                          Delete
+                        </Button>
                       </div>
                     </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-8 px-2 text-xs text-gray-400 hover:text-white hover:bg-[#222222]"
-                      onClick={() => copyToClipboard(cred.agent_id, 'Agent ID')}
-                    >
-                      <Copy className="h-3.5 w-3.5 mr-1" />
-                      Copy ID
-                    </Button>
                   </div>
                 ))}
               </div>
@@ -371,6 +562,33 @@ export default function AgentCredentialsManager() {
           </div>
         </CardContent>
       </Card>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="bg-[#171717] border border-[#333333] text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Delete Credentials?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400">
+              This will permanently delete these credentials. Any applications using them will no longer be able to authenticate.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-[#222222] text-white border-[#333333] hover:bg-[#282828]">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              className="bg-red-600/90 hover:bg-red-700 text-white border-none"
+              onClick={() => selectedCredential && deleteCredential(selectedCredential)}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <RefreshCw className="h-4 w-4 animate-spin mr-1" />
+              ) : null}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 } 

@@ -1,6 +1,6 @@
 {
   "name": "create-split",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "CLI tool to connect Next.js sites to Split AI content delivery system",
   "main": "dist/index.js",
   "bin": {
@@ -8,11 +8,12 @@
   },
   "files": [
     "dist",
+    "templates",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp -r templates dist/",
     "start": "node dist/bin.js",
     "dev": "ts-node bin.ts",
     "prepublishOnly": "npm run build"
