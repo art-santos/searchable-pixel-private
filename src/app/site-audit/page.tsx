@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Checkbox } from "@/components/ui/checkbox"
 import { 
   Search, 
   AlertTriangle, 
@@ -27,7 +28,11 @@ import {
   Clock,
   Zap,
   FileWarning,
-  Slash
+  Slash,
+  Image,
+  FileDown,
+  Settings,
+  ScreenShare
 } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast"
 
@@ -41,9 +46,28 @@ export default function SiteAudit() {
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
   
+  // Add options for enhanced features
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
+  const [maxPages, setMaxPages] = useState(100)
+  const [includeDocuments, setIncludeDocuments] = useState(true)
+  const [checkMediaAccessibility, setCheckMediaAccessibility] = useState(true)
+  const [performInteractiveActions, setPerformInteractiveActions] = useState(false)
+  
+  // Add a timeout state to detect issues with long-running crawls
+  const [crawlStartTime, setCrawlStartTime] = useState<number | null>(null)
+  const [showTimeoutWarning, setShowTimeoutWarning] = useState(false)
+  
+  // Add page filter state
+  const [pageFilter, setPageFilter] = useState<string | null>(null)
+  
   // Poll for crawl status updates
   useEffect(() => {
     if (!crawlId || crawlComplete) return;
+    
+    // Set the start time when polling begins
+    if (!crawlStartTime) {
+      setCrawlStartTime(Date.now());
+    }
     
     console.log('Setting up polling for crawl ID:', crawlId);
     
@@ -52,6 +76,17 @@ export default function SiteAudit() {
       title: "Crawl processing",
       description: "The crawler is initializing. This may take a moment.",
     });
+    
+    // Check for timeout after 2 minutes
+    if (crawlStartTime && Date.now() - crawlStartTime > 120000 && !showTimeoutWarning) {
+      setShowTimeoutWarning(true);
+      toast({
+        title: "Crawl taking longer than expected",
+        description: "The website may be blocking our crawler or is very slow to respond. You may want to try a different site.",
+        variant: "destructive",
+        duration: 10000
+      });
+    }
     
     // Auto-increment progress slightly to show activity
     const minProgressInterval = setInterval(() => {
@@ -195,12 +230,6 @@ export default function SiteAudit() {
       return;
     }
     
-    // Check for localhost
-    if (siteUrl.includes('localhost') || siteUrl.includes('127.0.0.1')) {
-      setError('Cannot crawl localhost URLs. Please use a public URL.');
-      return;
-    }
-    
     try {
       console.log('Starting crawl for URL:', siteUrl);
       setIsCrawling(true);
@@ -208,8 +237,17 @@ export default function SiteAudit() {
       setCrawlComplete(false);
       setCrawlData(null);
       setCrawlId(null);
+      setCrawlStartTime(Date.now());
+      setShowTimeoutWarning(false);
       
-      console.log('Sending request to /api/site-audit/start');
+      console.log('Sending request to /api/site-audit/start with options:', {
+        siteUrl,
+        maxPages,
+        includeDocuments,
+        checkMediaAccessibility,
+        performInteractiveActions
+      });
+      
       const response = await fetch('/api/site-audit/start', {
         method: 'POST',
         headers: {
@@ -217,7 +255,10 @@ export default function SiteAudit() {
         },
         body: JSON.stringify({
           siteUrl,
-          maxPages: 100,
+          maxPages,
+          includeDocuments,
+          checkMediaAccessibility,
+          performInteractiveActions
         }),
       });
       
@@ -237,7 +278,7 @@ export default function SiteAudit() {
       
       toast({
         title: "Crawl started",
-        description: "Your site audit has been initiated.",
+        description: "Your site is being crawled with Firecrawl. This may take a few minutes.",
       });
       
     } catch (error) {
@@ -343,8 +384,94 @@ export default function SiteAudit() {
     return /^[a-zA-Z0-9][a-zA-Z0-9-]+\.[a-zA-Z]{2,}/.test(cleanUrl);
   };
   
+  // Add a cancel function
+  const cancelCrawl = () => {
+    if (!crawlId) return;
+    
+    // Clear intervals and reset UI state
+    setCrawlProgress(0);
+    setIsCrawling(false);
+    setCrawlComplete(false);
+    setCrawlData(null);
+    setCrawlId(null);
+    setCrawlStartTime(null);
+    setShowTimeoutWarning(false);
+    
+    toast({
+      title: "Crawl cancelled",
+      description: "You can try with a different website.",
+    });
+  };
+  
+  // Add function to filter pages
+  const getFilteredPages = () => {
+    if (!crawlData || !crawlData.pages) return [];
+    
+    if (!pageFilter) return crawlData.pages;
+    
+    switch (pageFilter) {
+      case 'document':
+        return crawlData.pages.filter(page => page.is_document);
+      case 'issues':
+        return crawlData.pages.filter(page => page.issues && page.issues.length > 0);
+      case 'schema':
+        return crawlData.pages.filter(page => page.has_schema);
+      default:
+        return crawlData.pages;
+    }
+  };
+  
+  // Function to get status code breakdown
+  const getStatusCodeBreakdown = () => {
+    if (!crawlData || !crawlData.pages) return [];
+    
+    const statusCounts = {};
+    
+    // Count status codes
+    crawlData.pages.forEach(page => {
+      const statusCode = Math.floor(page.status_code / 100) * 100;
+      if (!statusCounts[statusCode]) {
+        statusCounts[statusCode] = 0;
+      }
+      statusCounts[statusCode]++;
+    });
+    
+    // Convert to array for rendering
+    return Object.entries(statusCounts)
+      .map(([status, count]) => ({ status: parseInt(status), count }))
+      .sort((a, b) => a.status - b.status);
+  };
+  
+  // Computed values for recommendations
+  const issueCount = crawlData 
+    ? crawlData.issues.critical + crawlData.issues.warning + crawlData.issues.info 
+    : 0;
+
+  // Function to get critical issues for the recommendations panel
+  const getCriticalIssues = () => {
+    if (!crawlData || !crawlData.pages) return [];
+    
+    const allIssues = [];
+    
+    // Collect all critical issues
+    for (const page of crawlData.pages) {
+      if (page.issues && page.issues.length > 0) {
+        const criticalIssues = page.issues
+          .filter(issue => issue.type === 'critical')
+          .map(issue => ({
+            ...issue,
+            pageUrl: page.url
+          }));
+        allIssues.push(...criticalIssues);
+      }
+    }
+    
+    // Return top 3 critical issues
+    return allIssues.slice(0, 3);
+  };
+  
   return (
-    <main className="flex flex-1 flex-col gap-8 p-8 overflow-auto bg-[#0c0c0c] bg-[radial-gradient(#222222_0.7px,transparent_0.7px)] bg-[size:24px_24px]">
+    <main className="flex flex-1 flex-col gap-8 p-8 overflow-auto bg-[#0c0c0c]">
       {/* Debug info - Remove this in production */}
       <div className="bg-[#161616] p-4 rounded border border-[#222222] text-xs text-gray-300">
         <h3 className="font-bold mb-2 text-white">Debug Info:</h3>
@@ -389,7 +516,7 @@ export default function SiteAudit() {
               Site Crawler
             </CardTitle>
             <CardDescription className="text-gray-400">
-              Analyze your website for SEO and AI Engine Optimization issues
+              Analyze your website for SEO and AI Engine Optimization using Firecrawl
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
@@ -418,6 +545,87 @@ export default function SiteAudit() {
                   Start Crawl
                 </Button>
               </div>
+              
+              {/* Advanced options toggle */}
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#222222]/50">
+                <Button 
+                  variant="link" 
+                  onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                  className="text-[#FF914D] p-0 flex items-center gap-2"
+                >
+                  <Settings className="h-4 w-4" />
+                  {showAdvancedOptions ? 'Hide Advanced Options' : 'Show Advanced Options'}
+                </Button>
+              </div>
+              
+              {/* Advanced options panel */}
+              {showAdvancedOptions && (
+                <div className="mt-2 pt-4 border-t border-[#222222]/30 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm text-gray-300 mb-1 block">Maximum Pages</label>
+                      <div className="flex items-center">
+                        <Input
+                          className="bg-[#161616] border-[#222222] text-white"
+                          type="number"
+                          min="1"
+                          max="500"
+                          value={maxPages}
+                          onChange={(e) => setMaxPages(parseInt(e.target.value) || 100)}
+                        />
+                        <span className="ml-2 text-sm text-gray-400">pages</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="includeDocuments" 
+                        checked={includeDocuments}
+                        onCheckedChange={(checked) => setIncludeDocuments(checked as boolean)}
+                      />
+                      <label 
+                        htmlFor="includeDocuments" 
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center"
+                      >
+                        <FileDown className="h-4 w-4 mr-2 text-gray-400" />
+                        <span className="text-white">Include documents (PDF, DOCX, etc.)</span>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="checkMediaAccessibility" 
+                        checked={checkMediaAccessibility}
+                        onCheckedChange={(checked) => setCheckMediaAccessibility(checked as boolean)}
+                      />
+                      <label 
+                        htmlFor="checkMediaAccessibility" 
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center"
+                      >
+                        <Image className="h-4 w-4 mr-2 text-gray-400" />
+                        <span className="text-white">Analyze media accessibility</span>
+                      </label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="performInteractiveActions" 
+                        checked={performInteractiveActions}
+                        onCheckedChange={(checked) => setPerformInteractiveActions(checked as boolean)}
+                      />
+                      <label 
+                        htmlFor="performInteractiveActions" 
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center"
+                      >
+                        <ScreenShare className="h-4 w-4 mr-2 text-gray-400" />
+                        <span className="text-white">Perform interactive checks (cookies, popups)</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-4 border-t border-[#222222]">
                 <div className="bg-[#161616] rounded-md p-4 border border-[#222222]">
@@ -460,11 +668,21 @@ export default function SiteAudit() {
         <Card className="bg-[#101010] border-[#222222] border shadow-md">
           <CardHeader className="border-b border-[#222222]/50 pb-4">
             <div className="flex justify-between items-center">
-              <CardTitle className="text-lg font-medium text-white">Crawling Site</CardTitle>
-              <Badge className="bg-[#161616] text-yellow-400 border-[#222222] h-7 px-3 animate-pulse">
-                <Clock className="h-3.5 w-3.5 mr-1" />
-                In Progress
-              </Badge>
+              <CardTitle className="text-lg font-medium text-white">Crawling Site with Firecrawl</CardTitle>
+              <div className="flex gap-2">
+                <Badge className="bg-[#161616] text-yellow-400 border-[#222222] h-7 px-3 animate-pulse">
+                  <Clock className="h-3.5 w-3.5 mr-1" />
+                  In Progress
+                </Badge>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="h-7 px-3 text-gray-400 hover:text-white"
+                  onClick={cancelCrawl}
+                >
+                  Cancel
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="pt-6">
@@ -547,8 +765,8 @@ export default function SiteAudit() {
                           </div>
                         </div>
                       ))}
-                    </div>
-                  </div>
+              </div>
+            </div>
                   
                   {/* Show live issues summary if available */}
                   {(crawlData.issues.critical > 0 || crawlData.issues.warning > 0) && (
@@ -568,7 +786,7 @@ export default function SiteAudit() {
                         {crawlData.issues.info > 0 && (
                           <Badge className="bg-blue-900/30 text-blue-400 border-blue-900/50">
                             {crawlData.issues.info} Info
-                          </Badge>
+              </Badge>
                         )}
                       </div>
                     </div>
@@ -586,47 +804,47 @@ export default function SiteAudit() {
           {/* Summary Cards */}
           <div className="grid gap-6 grid-cols-1 md:grid-cols-4">
             {/* Pages Crawled */}
-            <Card className="bg-[#101010] border-[#222222] border shadow-md">
-              <CardContent className="pt-6 px-6">
-                <div className="flex justify-between items-start">
-                  <div>
+        <Card className="bg-[#101010] border-[#222222] border shadow-md">
+          <CardContent className="pt-6 px-6">
+            <div className="flex justify-between items-start">
+              <div>
                     <p className="text-sm text-gray-400">Pages Crawled</p>
                     <h2 className="text-2xl font-bold text-white mt-1">{crawlData.totalPages}</h2>
-                  </div>
-                  <div className="rounded-full bg-[#1a1a1a] p-2 border border-[#222222]">
+              </div>
+              <div className="rounded-full bg-[#1a1a1a] p-2 border border-[#222222]">
                     <LayoutGrid className="h-5 w-5 text-gray-400" />
-                  </div>
-                </div>
-                <div className="mt-4 flex items-center text-xs">
+              </div>
+            </div>
+            <div className="mt-4 flex items-center text-xs">
                   <div className="w-full bg-[#222222] h-1.5 rounded-full overflow-hidden">
                     <div className="bg-[#333333] h-full rounded-full w-full"></div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-            
+            </div>
+          </CardContent>
+        </Card>
+        
             {/* Critical Issues */}
-            <Card className="bg-[#101010] border-[#222222] border shadow-md">
-              <CardContent className="pt-6 px-6">
-                <div className="flex justify-between items-start">
-                  <div>
+        <Card className="bg-[#101010] border-[#222222] border shadow-md">
+          <CardContent className="pt-6 px-6">
+            <div className="flex justify-between items-start">
+              <div>
                     <p className="text-sm text-gray-400">Critical Issues</p>
                     <h2 className="text-2xl font-bold text-white mt-1">{crawlData.issues.critical}</h2>
-                  </div>
-                  <div className="rounded-full bg-[#1a1a1a] p-2 border border-[#222222]">
+              </div>
+              <div className="rounded-full bg-[#1a1a1a] p-2 border border-[#222222]">
                     <XCircle className="h-5 w-5 text-red-500" />
-                  </div>
-                </div>
-                <div className="mt-4 flex items-center text-xs">
+              </div>
+            </div>
+            <div className="mt-4 flex items-center text-xs">
                   <Badge className="bg-red-900/30 text-red-400 border-red-900/50 h-6 px-2">
                     High Priority
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-            
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      
             {/* Warnings */}
-            <Card className="bg-[#101010] border-[#222222] border shadow-md">
+      <Card className="bg-[#101010] border-[#222222] border shadow-md">
               <CardContent className="pt-6 px-6">
                 <div className="flex justify-between items-start">
                   <div>
@@ -640,454 +858,36 @@ export default function SiteAudit() {
                 <div className="mt-4 flex items-center text-xs">
                   <Badge className="bg-yellow-900/30 text-yellow-400 border-yellow-900/50 h-6 px-2">
                     Medium Priority
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-            
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+      
             {/* AI Visibility Score */}
-            <Card className="bg-[#101010] border-[#222222] border shadow-md">
+      <Card className="bg-[#101010] border-[#222222] border shadow-md">
               <CardContent className="pt-6 px-6">
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="text-sm text-gray-400">AI Visibility Score</p>
                     <h2 className="text-2xl font-bold text-white mt-1">{crawlData.metricScores.aiVisibility}/100</h2>
-                  </div>
+          </div>
                   <div className="rounded-full bg-[#1a1a1a] p-2 border border-[#222222]">
                     <Bot className="h-5 w-5 text-[#FF914D]" />
-                  </div>
-                </div>
+              </div>
+            </div>
                 <div className="mt-4 flex items-center text-xs">
                   <div className="w-full bg-[#222222] h-1.5 rounded-full overflow-hidden">
                     <div 
                       className="bg-gradient-to-r from-[#FF914D] to-[#FFEC9F] h-full rounded-full" 
                       style={{ width: `${crawlData.metricScores.aiVisibility}%` }}
                     ></div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            </div>
           </div>
-          
-          {/* Audit Results Tabs */}
-          <Card className="bg-[#101010] border-[#222222] border shadow-md">
-            <CardHeader className="border-b border-[#222222]/50 pb-4">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-lg font-medium text-white">Audit Results</CardTitle>
-                <Button 
-                  variant="outline"
-                  className="border-[#222222] bg-[#161616] text-white hover:bg-[#1d1d1d]"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Export Report
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <Tabs defaultValue="pages" className="w-full">
-                <TabsList className="bg-[#161616] border-b border-[#222222] mb-6 rounded-none px-0 h-[40px] w-auto">
-                  <TabsTrigger 
-                    value="pages" 
-                    className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-[#FF914D] text-gray-400 rounded-none h-[40px] px-4"
-                  >
-                    Pages
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="issues" 
-                    className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-[#FF914D] text-gray-400 rounded-none h-[40px] px-4"
-                  >
-                    Issues
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="performance" 
-                    className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-[#FF914D] text-gray-400 rounded-none h-[40px] px-4"
-                  >
-                    Performance
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="ai-visibility" 
-                    className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-[#FF914D] text-gray-400 rounded-none h-[40px] px-4"
-                  >
-                    AI Visibility
-                  </TabsTrigger>
-                </TabsList>
-                
-                {/* Pages Tab */}
-                <TabsContent value="pages" className="space-y-4">
-                  <div className="rounded-md border border-[#222222] overflow-hidden">
-                    <div className="grid grid-cols-12 gap-4 bg-[#161616] px-4 py-3 text-sm font-medium text-gray-400">
-                      <div className="col-span-5">URL</div>
-                      <div className="col-span-1">Status</div>
-                      <div className="col-span-3">Title</div>
-                      <div className="col-span-1">Content</div>
-                      <div className="col-span-1">Issues</div>
-                      <div className="col-span-1">AI Visibility</div>
-                    </div>
-                    <div className="divide-y divide-[#222222]">
-                      {crawlData.pages.map((page, index) => (
-                        <div key={index} className="grid grid-cols-12 gap-4 px-4 py-3 items-center">
-                          <div className="col-span-5 font-medium text-white flex items-center">
-                            <Link className="h-3.5 w-3.5 mr-2 text-gray-400" />
-                            {page.url}
-                          </div>
-                          <div className="col-span-1">
-                            <Badge className={`${getStatusBadgeClass(page.status_code)}`}>
-                              {page.status_code}
-                            </Badge>
-                          </div>
-                          <div className="col-span-3 text-sm text-gray-300 truncate">
-                            {page.title}
-                          </div>
-                          <div className="col-span-1 text-sm text-gray-400">
-                            {page.content_length > 0 ? `${Math.round(page.content_length / 100) / 10}k` : '-'}
-                          </div>
-                          <div className="col-span-1">
-                            {page.issues && page.issues.length > 0 ? (
-                              <Badge className="bg-[#222222] text-gray-300 border-[#333333]">
-                                {page.issues.length}
-                              </Badge>
-                            ) : (
-                              <CheckCircle2 className="h-4 w-4 text-green-500" />
-                            )}
-                          </div>
-                          <div className="col-span-1">
-                            {getVisibilityBadge(page.ai_visibility_score || 0)}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </TabsContent>
-                
-                {/* Issues Tab */}
-                <TabsContent value="issues" className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4">
-                    {crawlData.pages.flatMap((page, pageIndex) => 
-                      (page.issues || []).map((issue, issueIndex) => (
-                        <div 
-                          key={`${pageIndex}-${issueIndex}`} 
-                          className="bg-[#161616] border border-[#222222] rounded-md p-4"
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="mt-0.5">
-                              {issue.type === 'critical' && <XCircle className="h-5 w-5 text-red-500" />}
-                              {issue.type === 'warning' && <AlertTriangle className="h-5 w-5 text-yellow-500" />}
-                              {issue.type === 'info' && <HelpCircle className="h-5 w-5 text-blue-500" />}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <Badge className={getIssueBadgeClass(issue.type)}>
-                                  {issue.type}
-                                </Badge>
-                                <span className="text-sm text-gray-400">{page.url}</span>
-                              </div>
-                              <p className="text-sm text-white font-medium">{issue.message}</p>
-                              
-                              <div className="mt-4 pt-2 border-t border-[#222222] flex items-center justify-between">
-                                <div className="text-xs text-gray-400">
-                                  Impact: <span className="text-white">
-                                    {issue.type === 'critical' ? 'High' : issue.type === 'warning' ? 'Medium' : 'Low'}
-                                  </span>
-                                </div>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-7 px-3 text-gray-400 hover:text-white hover:bg-[#222222]"
-                                >
-                                  <ExternalLink className="h-3.5 w-3.5 mr-1" />
-                                  Fix Issue
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </TabsContent>
-                
-                {/* Performance Tab */}
-                <TabsContent value="performance" className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card className="bg-[#161616] border-[#222222] border">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-md font-medium text-white">Content Quality</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-3xl font-bold text-white">{crawlData.metricScores.contentQuality}</span>
-                          <span className="text-sm text-gray-400">/100</span>
-                        </div>
-                        <div className="w-full bg-[#222222] h-2 rounded-full overflow-hidden mb-4">
-                          <div 
-                            className="bg-gradient-to-r from-[#FF914D] to-[#FFEC9F] h-full rounded-full" 
-                            style={{ width: `${crawlData.metricScores.contentQuality}%` }}
-                          ></div>
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          Analysis based on content structure, headings, readability, and keyword optimization
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="bg-[#161616] border-[#222222] border">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-md font-medium text-white">Technical Health</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-3xl font-bold text-white">{crawlData.metricScores.technical}</span>
-                          <span className="text-sm text-gray-400">/100</span>
-                        </div>
-                        <div className="w-full bg-[#222222] h-2 rounded-full overflow-hidden mb-4">
-                          <div 
-                            className="bg-gradient-to-r from-[#FF914D] to-[#FFEC9F] h-full rounded-full" 
-                            style={{ width: `${crawlData.metricScores.technical}%` }}
-                          ></div>
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          Analysis based on HTTP status codes, redirects, broken links, and page load speed
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                    <div className="bg-[#161616] rounded-md p-4 border border-[#222222]">
-                      <div className="flex items-center mb-2">
-                        <Zap className="h-4 w-4 text-gray-400 mr-2" />
-                        <h3 className="text-sm font-medium text-white">Page Speed</h3>
-                      </div>
-                      <p className="text-2xl font-bold text-white">87<span className="text-sm text-gray-400">/100</span></p>
-                    </div>
-                    
-                    <div className="bg-[#161616] rounded-md p-4 border border-[#222222]">
-                      <div className="flex items-center mb-2">
-                        <FileWarning className="h-4 w-4 text-gray-400 mr-2" />
-                        <h3 className="text-sm font-medium text-white">Error Pages</h3>
-                      </div>
-                      <p className="text-2xl font-bold text-white">1</p>
-                    </div>
-                    
-                    <div className="bg-[#161616] rounded-md p-4 border border-[#222222]">
-                      <div className="flex items-center mb-2">
-                        <Slash className="h-4 w-4 text-gray-400 mr-2" />
-                        <h3 className="text-sm font-medium text-white">Redirects</h3>
-                      </div>
-                      <p className="text-2xl font-bold text-white">2</p>
-                    </div>
-                  </div>
-                </TabsContent>
-                
-                {/* AI Visibility Tab */}
-                <TabsContent value="ai-visibility" className="space-y-4">
-                  <div className="bg-[#161616] border border-[#222222] rounded-md p-5">
-                    <div className="flex items-start gap-4">
-                      <div className="rounded-full bg-[#1a1a1a] p-3 border border-[#222222]">
-                        <Bot className="h-6 w-6 text-[#FF914D]" />
-                      </div>
-                      <div>
-                        <h3 className="text-md font-medium text-white mb-1">AI Engine Optimization Score</h3>
-                        <p className="text-sm text-gray-400 mb-4">
-                          Analysis of how well your content is structured for AI engines like ChatGPT, Claude, and Perplexity
-                        </p>
-                        
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="text-3xl font-bold text-white">{crawlData.metricScores.aiVisibility}</div>
-                          <div className="text-sm text-gray-400">/ 100</div>
-                        </div>
-                        
-                        <div className="w-full bg-[#222222] h-2.5 rounded-full overflow-hidden mb-6">
-                          <div 
-                            className="bg-gradient-to-r from-[#FF914D] to-[#FFEC9F] h-full rounded-full" 
-                            style={{ width: `${crawlData.metricScores.aiVisibility}%` }}
-                          ></div>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                          <div className="bg-[#1a1a1a] rounded-md p-4 border border-[#222222]">
-                            <p className="text-xs text-gray-400 mb-1">ChatGPT</p>
-                            <div className="flex items-center justify-between">
-                              <span className="text-lg font-bold text-white">62</span>
-                              <Badge className="bg-yellow-900/30 text-yellow-400 border-yellow-900/50">
-                                Moderate
-                              </Badge>
-                            </div>
-                          </div>
-                          
-                          <div className="bg-[#1a1a1a] rounded-md p-4 border border-[#222222]">
-                            <p className="text-xs text-gray-400 mb-1">Claude</p>
-                            <div className="flex items-center justify-between">
-                              <span className="text-lg font-bold text-white">71</span>
-                              <Badge className="bg-green-900/30 text-green-400 border-green-900/50">
-                                Good
-                              </Badge>
-                            </div>
-                          </div>
-                          
-                          <div className="bg-[#1a1a1a] rounded-md p-4 border border-[#222222]">
-                            <p className="text-xs text-gray-400 mb-1">Perplexity</p>
-                            <div className="flex items-center justify-between">
-                              <span className="text-lg font-bold text-white">58</span>
-                              <Badge className="bg-yellow-900/30 text-yellow-400 border-yellow-900/50">
-                                Moderate
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                    <Card className="bg-[#161616] border-[#222222] border">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-md font-medium text-white">AI Optimization Issues</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          <div className="bg-[#1a1a1a] rounded-md p-3 border border-[#222222]">
-                            <div className="flex items-start gap-2">
-                              <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5" />
-                              <div>
-                                <p className="text-sm text-white">Missing structured data</p>
-                                <p className="text-xs text-gray-400">Add schema markup to improve AI understanding</p>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="bg-[#1a1a1a] rounded-md p-3 border border-[#222222]">
-                            <div className="flex items-start gap-2">
-                              <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5" />
-                              <div>
-                                <p className="text-sm text-white">Inconsistent heading structure</p>
-                                <p className="text-xs text-gray-400">Improve hierarchy with clear H1-H3 headings</p>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="bg-[#1a1a1a] rounded-md p-3 border border-[#222222]">
-                            <div className="flex items-start gap-2">
-                              <HelpCircle className="h-4 w-4 text-blue-500 mt-0.5" />
-                              <div>
-                                <p className="text-sm text-white">Consider adding FAQ sections</p>
-                                <p className="text-xs text-gray-400">AI engines often pull from Q&A content</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="bg-[#161616] border-[#222222] border">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-md font-medium text-white">Recommendations</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          <div className="bg-[#1a1a1a] rounded-md p-3 border border-[#222222]">
-                            <div className="flex items-start gap-2">
-                              <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5" />
-                              <div>
-                                <p className="text-sm text-white">Add structured data with schema.org markup</p>
-                                <p className="text-xs text-gray-400">Implement for products, services, and content</p>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="bg-[#1a1a1a] rounded-md p-3 border border-[#222222]">
-                            <div className="flex items-start gap-2">
-                              <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5" />
-                              <div>
-                                <p className="text-sm text-white">Improve content structure for /about page</p>
-                                <p className="text-xs text-gray-400">Add clear headings and semantic HTML5 elements</p>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="bg-[#1a1a1a] rounded-md p-3 border border-[#222222]">
-                            <div className="flex items-start gap-2">
-                              <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5" />
-                              <div>
-                                <p className="text-sm text-white">Fix 404 error on /blog/old-post</p>
-                                <p className="text-xs text-gray-400">Either restore content or implement proper redirect</p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-          
-          {/* Recommendations */}
-          <Card className="bg-[#101010] border-[#222222] border shadow-md">
-            <CardHeader className="border-b border-[#222222]/50 pb-4">
-              <div className="flex justify-between items-center">
-                    <CardTitle className="text-lg font-medium text-white">Improvement Plan</CardTitle>
-                    <Badge className="bg-[#161616] text-gray-300 border-[#222222] h-7 px-3">
-                      3 Critical Issues
-                    </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    <div className="bg-red-900/10 border border-red-900/30 rounded-md p-4">
-                      <h3 className="text-md font-medium text-white mb-2 flex items-center">
-                        <XCircle className="h-4 w-4 text-red-500 mr-2" />
-                        Fix Critical Issues First
-                      </h3>
-                      
-                      <div className="space-y-2 mt-3">
-                        <div className="bg-[#161616] border border-[#222222] rounded-md p-3 flex items-center justify-between">
-                          <div className="flex items-center">
-                            <span className="text-sm text-white mr-3">Fix 404 page: /blog/old-post</span>
-                            <Badge className="bg-red-900/30 text-red-400 border-red-900/50">
-                              Critical
-                            </Badge>
-                          </div>
-                          <Button variant="ghost" size="sm" className="h-7 text-gray-400 hover:text-white">
-                            Fix Now
-                          </Button>
-                        </div>
-                        
-                        <div className="bg-[#161616] border border-[#222222] rounded-md p-3 flex items-center justify-between">
-                          <div className="flex items-center">
-                            <span className="text-sm text-white mr-3">Fix redirect: /contact → /contact-us</span>
-                            <Badge className="bg-red-900/30 text-red-400 border-red-900/50">
-                              Critical
-                            </Badge>
-                          </div>
-                          <Button variant="ghost" size="sm" className="h-7 text-gray-400 hover:text-white">
-                            Fix Now
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                      <Button className="w-full border border-[#333333] bg-gradient-to-r from-[#222222] to-[#2a2a2a] text-white hover:from-[#282828] hover:to-[#333333] h-auto py-3">
-                        <div className="flex flex-col items-center">
-                          <span className="mb-1">Fix Technical Issues</span>
-                          <span className="text-xs text-gray-400">Improve site performance and structure</span>
-                        </div>
-                      </Button>
-                      
-                      <Button className="w-full border border-[#333333] bg-gradient-to-r from-[#222222] to-[#2a2a2a] text-white hover:from-[#282828] hover:to-[#333333] h-auto py-3">
-                        <div className="flex flex-col items-center">
-                          <span className="mb-1">Optimize for AI Engines</span>
-                          <span className="text-xs text-gray-400">Improve visibility in AI responses</span>
-                        </div>
-                      </Button>
-                    </div>
-              </div>
-            </CardContent>
-          </Card>
+        </CardContent>
+      </Card>
+          </div>
         </>
       )}
     </main>
-  )
+  );
 } 

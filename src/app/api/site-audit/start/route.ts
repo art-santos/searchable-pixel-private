@@ -41,8 +41,9 @@ export async function POST(req: NextRequest) {
         process.env.SUPABASE_SERVICE_KEY,
         {
           cookies: {
-            get(name) {
-              return cookieStore.get(name)?.value;
+            async get(name) {
+              const cookie = await cookieStore.get(name);
+              return cookie?.value;
             },
           },
         }
@@ -65,16 +66,36 @@ export async function POST(req: NextRequest) {
         );
       }
       
-      // Start the site audit
+      // Extract the audit options from the request body
+      const {
+        maxPages = 100,
+        includeDocuments = true,
+        checkMediaAccessibility = true,
+        performInteractiveActions = false
+      } = body;
+      
+      // Start the site audit with enhanced options
       try {
         const { crawlId } = await startSiteAudit({
           siteUrl: body.siteUrl,
           userId: session.user.id,
-          maxPages: body.maxPages || 100
+          maxPages,
+          includeDocuments,
+          checkMediaAccessibility,
+          performInteractiveActions
         });
         
         // Return the crawl ID
-        return NextResponse.json({ crawlId });
+        return NextResponse.json({ 
+          crawlId,
+          message: 'Site audit started successfully',
+          options: {
+            maxPages,
+            includeDocuments,
+            checkMediaAccessibility,
+            performInteractiveActions
+          }
+        });
       } catch (crawlError) {
         console.error('Error in startSiteAudit:', crawlError);
         return NextResponse.json(

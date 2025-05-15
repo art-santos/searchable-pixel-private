@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPartialCrawlResults } from '@/services/crawler';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export async function GET(
   req: NextRequest,
@@ -16,23 +18,39 @@ export async function GET(
       );
     }
     
-    // Get partial results - no auth check for simplicity
-    try {
-      const results = await getPartialCrawlResults(crawlId);
-      return NextResponse.json(results);
-    } catch (resultsError) {
-      console.error('Error getting partial site audit results:', resultsError);
+    // Check authentication
+    const cookieStore = cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_KEY || '',
+      {
+        cookies: {
+          get(name) {
+            return cookieStore.get(name)?.value;
+          },
+        },
+      }
+    );
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.user) {
       return NextResponse.json(
-        { error: resultsError.message || 'Failed to get partial site audit results' },
-        { status: 500 }
+        { error: 'Unauthorized' },
+        { status: 401 }
       );
     }
     
+    // Get the partial crawl results
+    const results = await getPartialCrawlResults(crawlId);
+    
+    // Return the results
+    return NextResponse.json(results);
   } catch (error) {
-    console.error('Error in partial results API:', error);
+    console.error('Error getting partial crawl results:', error);
     
     return NextResponse.json(
-      { error: error.message || 'Failed to get partial site audit results' },
+      { error: 'Failed to get partial crawl results' },
       { status: 500 }
     );
   }

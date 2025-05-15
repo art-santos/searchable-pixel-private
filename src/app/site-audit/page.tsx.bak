@@ -1,0 +1,1518 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Progress } from "@/components/ui/progress"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Checkbox } from "@/components/ui/checkbox"
+import { 
+  Search, 
+  AlertTriangle, 
+  CheckCircle2, 
+  XCircle,
+  HelpCircle,
+  MessageSquare, 
+  ArrowUpRight,
+  FileText,
+  Rocket,
+  Bot,
+  Download,
+  Globe,
+  BarChart3,
+  Link,
+  ExternalLink,
+  LayoutGrid,
+  Clock,
+  Zap,
+  FileWarning,
+  Slash,
+  Image,
+  FileDown,
+  Settings,
+  ScreenShare
+} from 'lucide-react'
+import { useToast } from "@/hooks/use-toast"
+
+export default function SiteAudit() {
+  const [siteUrl, setSiteUrl] = useState('')
+  const [isCrawling, setIsCrawling] = useState(false)
+  const [crawlProgress, setCrawlProgress] = useState(0)
+  const [crawlComplete, setCrawlComplete] = useState(false)
+  const [crawlData, setCrawlData] = useState<any>(null)
+  const [crawlId, setCrawlId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const { toast } = useToast()
+  
+  // Add options for enhanced features
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
+  const [maxPages, setMaxPages] = useState(100)
+  const [includeDocuments, setIncludeDocuments] = useState(true)
+  const [checkMediaAccessibility, setCheckMediaAccessibility] = useState(true)
+  const [performInteractiveActions, setPerformInteractiveActions] = useState(false)
+  
+  // Add a timeout state to detect issues with long-running crawls
+  const [crawlStartTime, setCrawlStartTime] = useState<number | null>(null)
+  const [showTimeoutWarning, setShowTimeoutWarning] = useState(false)
+  
+  // Add page filter state
+  const [pageFilter, setPageFilter] = useState<string | null>(null)
+  
+  // Poll for crawl status updates
+  useEffect(() => {
+    if (!crawlId || crawlComplete) return;
+    
+    // Set the start time when polling begins
+    if (!crawlStartTime) {
+      setCrawlStartTime(Date.now());
+    }
+    
+    console.log('Setting up polling for crawl ID:', crawlId);
+    
+    // Show initial activity
+    toast({
+      title: "Crawl processing",
+      description: "The crawler is initializing. This may take a moment.",
+    });
+    
+    // Check for timeout after 2 minutes
+    if (crawlStartTime && Date.now() - crawlStartTime > 120000 && !showTimeoutWarning) {
+      setShowTimeoutWarning(true);
+      toast({
+        title: "Crawl taking longer than expected",
+        description: "The website may be blocking our crawler or is very slow to respond. You may want to try a different site.",
+        variant: "destructive",
+        duration: 10000
+      });
+    }
+    
+    // Auto-increment progress slightly to show activity
+    const minProgressInterval = setInterval(() => {
+      setCrawlProgress(prev => {
+        // Only auto-increment if below 90% and no significant change in last 10 seconds
+        if (prev < 90) {
+          return prev + 0.1;
+        }
+        return prev;
+      });
+    }, 1000);
+    
+    // Poll for status updates
+    const statusInterval = setInterval(async () => {
+      try {
+        console.log("Polling status for crawl ID:", crawlId);
+        
+        const response = await fetch(`/api/site-audit/status/${crawlId}`);
+        console.log("Status response status:", response.status);
+        
+        if (!response.ok) {
+          console.error("Status API returned error:", response.status);
+          throw new Error('Failed to get crawl status');
+        }
+        
+        const data = await response.json();
+        console.log("Crawl status data:", data);
+        
+        // Only update if the returned progress is higher than current
+        if (data.progress > crawlProgress) {
+          console.log(`Updating progress: ${crawlProgress} -> ${data.progress}`);
+          setCrawlProgress(data.progress || 0);
+        }
+        
+        // Fetch partial results if crawl is in progress
+        if (data.status === 'started' || data.status === 'processing') {
+          console.log("Fetching partial results for crawl in progress");
+          fetchPartialResults();
+        }
+        
+        if (data.status === 'completed') {
+          console.log("Crawl completed, fetching final results");
+          clearInterval(statusInterval);
+          clearInterval(minProgressInterval);
+          setCrawlProgress(100); // Ensure 100% when complete
+          fetchCrawlResults();
+        }
+      } catch (error) {
+        console.error('Error checking crawl status:', error);
+        
+        // Don't stop polling on errors
+        if (error.message === 'Failed to get crawl status' && error.response?.status === 404) {
+          clearInterval(statusInterval);
+          clearInterval(minProgressInterval);
+          setError('Crawl not found');
+        }
+      }
+    }, 3000);
+    
+    return () => {
+      console.log("Clearing polling intervals");
+      clearInterval(statusInterval);
+      clearInterval(minProgressInterval);
+    };
+  }, [crawlId, crawlComplete]);
+  
+  // Function to fetch partial results
+  const fetchPartialResults = async () => {
+    if (!crawlId) return;
+    
+    try {
+      console.log(`Fetching partial results for crawl ${crawlId}`);
+      const response = await fetch(`/api/site-audit/partial-results/${crawlId}`);
+      
+      if (!response.ok) {
+        console.log("Partial results not available yet, status:", response.status);
+        // Create a minimal placeholder data structure if we don't have real data yet
+        if (!crawlData) {
+          setCrawlData({
+            status: 'processing',
+            totalPages: 0,
+            crawledPages: 0,
+            aeoScore: 0,
+            issues: { critical: 0, warning: 0, info: 0 },
+            pages: [],
+            metricScores: {
+              aiVisibility: 0,
+              contentQuality: 0,
+              technical: 0,
+              performance: 0
+            },
+            isPartial: true
+          });
+        }
+        return;
+      }
+      
+      const data = await response.json();
+      console.log("Partial crawl results:", data);
+      
+      if (data.pages && data.pages.length > 0) {
+        console.log(`Received ${data.pages.length} pages in partial results`);
+      }
+      
+      // Update the UI with partial results
+      setCrawlData(data);
+    } catch (error) {
+      console.error('Error fetching partial results:', error);
+      // Don't show error to user as this is a background update
+      // Create fallback data if we don't have any yet
+      if (!crawlData) {
+        setCrawlData({
+          status: 'processing',
+          totalPages: 0,
+          crawledPages: 0,
+          aeoScore: 0,
+          issues: { critical: 0, warning: 0, info: 0 },
+          pages: [],
+          metricScores: {
+            aiVisibility: 0,
+            contentQuality: 0,
+            technical: 0,
+            performance: 0
+          },
+          isPartial: true
+        });
+      }
+    }
+  };
+  
+  // Function to start a crawl
+  const startCrawl = async () => {
+    if (!siteUrl) return;
+    
+    // Clear previous errors
+    setError(null);
+    
+    // Validate URL format
+    if (!validateUrl(siteUrl)) {
+      setError('Please enter a valid website URL (e.g., example.com)');
+      return;
+    }
+    
+    try {
+      console.log('Starting crawl for URL:', siteUrl);
+      setIsCrawling(true);
+      setCrawlProgress(0);
+      setCrawlComplete(false);
+      setCrawlData(null);
+      setCrawlId(null);
+      setCrawlStartTime(Date.now());
+      setShowTimeoutWarning(false);
+      
+      console.log('Sending request to /api/site-audit/start with options:', {
+        siteUrl,
+        maxPages,
+        includeDocuments,
+        checkMediaAccessibility,
+        performInteractiveActions
+      });
+      
+      const response = await fetch('/api/site-audit/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          siteUrl,
+          maxPages,
+          includeDocuments,
+          checkMediaAccessibility,
+          performInteractiveActions
+        }),
+      });
+      
+      console.log('Response status:', response.status);
+      
+      // Get detailed error message if response is not ok
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Server error response:', errorData);
+        const errorMessage = errorData.error || 'Failed to start crawl';
+        throw new Error(errorMessage);
+      }
+      
+      const data = await response.json();
+      console.log('Crawl started successfully with ID:', data.crawlId);
+      setCrawlId(data.crawlId);
+      
+      toast({
+        title: "Crawl started",
+        description: "Your site is being crawled with Firecrawl. This may take a few minutes.",
+      });
+      
+    } catch (error) {
+      console.error('Error starting crawl:', error);
+      setError(error.message || 'Failed to start the site audit. Please try again.');
+      setIsCrawling(false);
+      
+      toast({
+        title: "Crawl failed",
+        description: error.message || "There was an error starting the crawl.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Function to fetch crawl results
+  const fetchCrawlResults = async () => {
+    try {
+      console.log(`Fetching final results for crawl ${crawlId}`);
+      const response = await fetch(`/api/site-audit/results/${crawlId}`);
+      
+      if (!response.ok) {
+        console.error("Error getting final results, status:", response.status);
+        throw new Error('Failed to get crawl results');
+      }
+      
+      const data = await response.json();
+      console.log("Final crawl results:", data);
+      
+      if (data.status === 'completed') {
+        console.log("Setting crawl as complete with data");
+        setCrawlComplete(true);
+        setCrawlData(data);
+        setIsCrawling(false);
+        
+        toast({
+          title: "Crawl completed",
+          description: "Your site audit is complete.",
+        });
+      } else {
+        // Keep waiting if status is still processing
+        console.log("Results not complete yet, trying again in 3s");
+        setTimeout(fetchCrawlResults, 3000);
+      }
+    } catch (error) {
+      console.error('Error fetching crawl results:', error);
+      setError('Failed to fetch the audit results. Please try again later.');
+      setIsCrawling(false);
+      
+      toast({
+        title: "Error fetching results",
+        description: error.message || "There was an error retrieving the crawl results.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Helper function to get issue badge color
+  const getIssueBadgeClass = (type: string) => {
+    switch(type) {
+      case 'critical':
+        return 'bg-red-900/30 text-red-400 border-red-900/50';
+      case 'warning':
+        return 'bg-yellow-900/30 text-yellow-400 border-yellow-900/50';
+      case 'info':
+      default:
+        return 'bg-blue-900/30 text-blue-400 border-blue-900/50';
+    }
+  };
+  
+  // Helper function to get status code badge color
+  const getStatusBadgeClass = (statusCode: number) => {
+    if (statusCode >= 200 && statusCode < 300) {
+      return 'bg-green-900/30 text-green-400 border-green-900/50';
+    } else if (statusCode >= 300 && statusCode < 400) {
+      return 'bg-yellow-900/30 text-yellow-400 border-yellow-900/50';
+    } else {
+      return 'bg-red-900/30 text-red-400 border-red-900/50';
+    }
+  };
+  
+  // Helper function to get visibility badge
+  const getVisibilityBadge = (score: number) => {
+    if (score >= 80) {
+      return <Badge className="bg-green-900/30 text-green-400 border-green-900/50">Good</Badge>;
+    } else if (score >= 50) {
+      return <Badge className="bg-yellow-900/30 text-yellow-400 border-yellow-900/50">Moderate</Badge>;
+    } else if (score > 0) {
+      return <Badge className="bg-red-900/30 text-red-400 border-red-900/50">Poor</Badge>;
+    } else {
+      return <Badge className="bg-[#222222] text-gray-400 border-[#333333]/30">None</Badge>;
+    }
+  };
+  
+  // Function to validate URL
+  const validateUrl = (url: string) => {
+    if (!url) return false;
+    
+    // Remove protocol for basic validation
+    const cleanUrl = url.replace(/^https?:\/\//, '');
+    
+    // Check for valid domain format (basic check)
+    return /^[a-zA-Z0-9][a-zA-Z0-9-]+\.[a-zA-Z]{2,}/.test(cleanUrl);
+  };
+  
+  // Add a cancel function
+  const cancelCrawl = () => {
+    if (!crawlId) return;
+    
+    // Clear intervals and reset UI state
+    setCrawlProgress(0);
+    setIsCrawling(false);
+    setCrawlComplete(false);
+    setCrawlData(null);
+    setCrawlId(null);
+    setCrawlStartTime(null);
+    setShowTimeoutWarning(false);
+    
+    toast({
+      title: "Crawl cancelled",
+      description: "You can try with a different website.",
+    });
+  };
+  
+  // Add function to filter pages
+  const getFilteredPages = () => {
+    if (!crawlData || !crawlData.pages) return [];
+    
+    if (!pageFilter) return crawlData.pages;
+    
+    switch (pageFilter) {
+      case 'document':
+        return crawlData.pages.filter(page => page.is_document);
+      case 'issues':
+        return crawlData.pages.filter(page => page.issues && page.issues.length > 0);
+      case 'schema':
+        return crawlData.pages.filter(page => page.has_schema);
+      default:
+        return crawlData.pages;
+    }
+  };
+  
+  // Function to get status code breakdown
+  const getStatusCodeBreakdown = () => {
+    if (!crawlData || !crawlData.pages) return [];
+    
+    const statusCounts = {};
+    
+    // Count status codes
+    crawlData.pages.forEach(page => {
+      const statusCode = Math.floor(page.status_code / 100) * 100;
+      if (!statusCounts[statusCode]) {
+        statusCounts[statusCode] = 0;
+      }
+      statusCounts[statusCode]++;
+    });
+    
+    // Convert to array for rendering
+    return Object.entries(statusCounts)
+      .map(([status, count]) => ({ status: parseInt(status), count }))
+      .sort((a, b) => a.status - b.status);
+  };
+  
+  // Computed values for recommendations
+  const issueCount = crawlData 
+    ? crawlData.issues.critical + crawlData.issues.warning + crawlData.issues.info 
+    : 0;
+
+  // Function to get critical issues for the recommendations panel
+  const getCriticalIssues = () => {
+    if (!crawlData || !crawlData.pages) return [];
+    
+    const allIssues = [];
+    
+    // Collect all critical issues
+    for (const page of crawlData.pages) {
+      if (page.issues && page.issues.length > 0) {
+        const criticalIssues = page.issues
+          .filter(issue => issue.type === 'critical')
+          .map(issue => ({
+            ...issue,
+            pageUrl: page.url
+          }));
+        allIssues.push(...criticalIssues);
+      }
+    }
+    
+    // Return top 3 critical issues
+    return allIssues.slice(0, 3);
+  };
+  
+  return (
+    <main className="flex flex-1 flex-col gap-8 p-8 overflow-auto bg-[#0c0c0c] bg-[radial-gradient(#222222_0.7px,transparent_0.7px)] bg-[size:24px_24px]">
+      {/* Debug info - Remove this in production */}
+      <div className="bg-[#161616] p-4 rounded border border-[#222222] text-xs text-gray-300">
+        <h3 className="font-bold mb-2 text-white">Debug Info:</h3>
+        <div>isCrawling: {isCrawling ? 'true' : 'false'}</div>
+        <div>crawlProgress: {crawlProgress}</div>
+        <div>crawlComplete: {crawlComplete ? 'true' : 'false'}</div>
+        <div>crawlId: {crawlId || 'null'}</div>
+        <div>error: {error || 'null'}</div>
+        <div>crawlData: {crawlData ? `has ${crawlData.pages?.length || 0} pages` : 'null'}</div>
+        <button 
+          onClick={() => console.log('Current state:', { isCrawling, crawlProgress, crawlComplete, crawlId, error, crawlData })}
+          className="mt-2 px-2 py-1 bg-[#222222] text-white rounded"
+        >
+          Log State
+        </button>
+      </div>
+      
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-white">Site Audit</h1>
+        
+        {crawlComplete && crawlData && (
+        <Button 
+          className="bg-gradient-to-r from-[#222222] to-[#2a2a2a] text-white hover:from-[#282828] hover:to-[#333333] border border-[#333333]"
+            onClick={() => {
+              setCrawlComplete(false);
+              setCrawlData(null);
+            }}
+        >
+          <Search className="h-4 w-4 mr-2" />
+            New Audit
+        </Button>
+        )}
+      </div>
+
+      {/* URL Input and Crawl Initiation */}
+      {!isCrawling && !crawlComplete && (
+        <Card className="bg-gradient-to-b from-[#101010] to-[#151515] border-[#222222] border shadow-lg">
+          <CardHeader className="border-b border-[#222222]/50 pb-4">
+            <CardTitle className="text-xl font-medium text-white flex items-center gap-2">
+              <Globe className="h-5 w-5 text-[#FF914D]" />
+              Site Crawler
+            </CardTitle>
+            <CardDescription className="text-gray-400">
+              Analyze your website for SEO and AI Engine Optimization using Firecrawl
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+              <div className="text-sm text-gray-300 mb-3">
+                Enter your website URL to start a comprehensive site audit
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <Input
+                    className="bg-[#161616] border-[#222222] text-white placeholder:text-gray-500"
+                    placeholder="https://yourdomain.com"
+                    value={siteUrl}
+                    onChange={(e) => setSiteUrl(e.target.value)}
+                  />
+                  {error && (
+                    <p className="text-red-400 text-xs mt-1">{error}</p>
+                  )}
+                </div>
+                <Button 
+                  className="bg-gradient-to-r from-[#222222] to-[#2a2a2a] text-white hover:from-[#282828] hover:to-[#333333] border border-[#333333]"
+                  onClick={startCrawl}
+                  disabled={!validateUrl(siteUrl) || isCrawling}
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  Start Crawl
+                </Button>
+              </div>
+              
+              {/* Advanced options toggle */}
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#222222]/50">
+                <Button 
+                  variant="link" 
+                  onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                  className="text-[#FF914D] p-0 flex items-center gap-2"
+                >
+                  <Settings className="h-4 w-4" />
+                  {showAdvancedOptions ? 'Hide Advanced Options' : 'Show Advanced Options'}
+                </Button>
+              </div>
+              
+              {/* Advanced options panel */}
+              {showAdvancedOptions && (
+                <div className="mt-2 pt-4 border-t border-[#222222]/30 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm text-gray-300 mb-1 block">Maximum Pages</label>
+                      <div className="flex items-center">
+                        <Input
+                          className="bg-[#161616] border-[#222222] text-white"
+                          type="number"
+                          min="1"
+                          max="500"
+                          value={maxPages}
+                          onChange={(e) => setMaxPages(parseInt(e.target.value) || 100)}
+                        />
+                        <span className="ml-2 text-sm text-gray-400">pages</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="includeDocuments" 
+                        checked={includeDocuments}
+                        onCheckedChange={(checked) => setIncludeDocuments(checked as boolean)}
+                      />
+                      <label 
+                        htmlFor="includeDocuments" 
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center"
+                      >
+                        <FileDown className="h-4 w-4 mr-2 text-gray-400" />
+                        <span className="text-white">Include documents (PDF, DOCX, etc.)</span>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="checkMediaAccessibility" 
+                        checked={checkMediaAccessibility}
+                        onCheckedChange={(checked) => setCheckMediaAccessibility(checked as boolean)}
+                      />
+                      <label 
+                        htmlFor="checkMediaAccessibility" 
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center"
+                      >
+                        <Image className="h-4 w-4 mr-2 text-gray-400" />
+                        <span className="text-white">Analyze media accessibility</span>
+                      </label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="performInteractiveActions" 
+                        checked={performInteractiveActions}
+                        onCheckedChange={(checked) => setPerformInteractiveActions(checked as boolean)}
+                      />
+                      <label 
+                        htmlFor="performInteractiveActions" 
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center"
+                      >
+                        <ScreenShare className="h-4 w-4 mr-2 text-gray-400" />
+                        <span className="text-white">Perform interactive checks (cookies, popups)</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-4 border-t border-[#222222]">
+                <div className="bg-[#161616] rounded-md p-4 border border-[#222222]">
+                  <div className="flex items-center mb-2">
+                    <FileText className="h-4 w-4 text-gray-400 mr-2" />
+                    <h3 className="text-sm font-medium text-white">Content Analysis</h3>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    Analyzes headings, content structure, metadata, and keyword usage
+                  </p>
+                </div>
+                
+                <div className="bg-[#161616] rounded-md p-4 border border-[#222222]">
+                  <div className="flex items-center mb-2">
+                    <Zap className="h-4 w-4 text-gray-400 mr-2" />
+                    <h3 className="text-sm font-medium text-white">Technical Audit</h3>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    Checks for broken links, redirects, performance issues, and more
+                  </p>
+                </div>
+                
+                <div className="bg-[#161616] rounded-md p-4 border border-[#222222]">
+                  <div className="flex items-center mb-2">
+                    <Bot className="h-4 w-4 text-gray-400 mr-2" />
+                    <h3 className="text-sm font-medium text-white">AI Optimization</h3>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    Evaluates how well your content is optimized for AI engines
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Crawl Progress Indicator */}
+      {isCrawling && (
+        <Card className="bg-[#101010] border-[#222222] border shadow-md">
+          <CardHeader className="border-b border-[#222222]/50 pb-4">
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-lg font-medium text-white">Crawling Site with Firecrawl</CardTitle>
+              <div className="flex gap-2">
+                <Badge className="bg-[#161616] text-yellow-400 border-[#222222] h-7 px-3 animate-pulse">
+                  <Clock className="h-3.5 w-3.5 mr-1" />
+                  In Progress
+                </Badge>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="h-7 px-3 text-gray-400 hover:text-white"
+                  onClick={cancelCrawl}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center mb-2">
+                <p className="text-sm text-gray-400">Analyzing {siteUrl}</p>
+                <p className="text-sm text-gray-400">
+                  {Math.round(crawlProgress)}% 
+                  {crawlData && ` • ${crawlData.crawledPages || 0} pages analyzed`}
+                </p>
+              </div>
+              <Progress 
+                value={crawlProgress} 
+                className="h-2 bg-[#222222]" 
+                indicatorClassName={`bg-gradient-to-r from-[#FF914D] to-[#FFEC9F] ${crawlProgress < 100 ? 'animate-pulse' : ''}`} 
+              />
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div className="bg-[#161616] rounded-md p-3 border border-[#222222]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400">Content Analysis</span>
+                    <span className="text-xs text-gray-400 animate-pulse">
+                      {crawlData?.metricScores?.contentQuality 
+                        ? `${crawlData.metricScores.contentQuality}%` 
+                        : (crawlProgress > 30 ? 'In Progress' : 'Initializing...')}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="bg-[#161616] rounded-md p-3 border border-[#222222]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400">Technical Audit</span>
+                    <span className="text-xs text-gray-400 animate-pulse">
+                      {crawlData?.metricScores?.technical 
+                        ? `${crawlData.metricScores.technical}%` 
+                        : (crawlProgress > 60 ? 'In Progress' : 'Waiting...')}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="bg-[#161616] rounded-md p-3 border border-[#222222]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-400">AI Optimization</span>
+                    <span className="text-xs text-gray-400 animate-pulse">
+                      {crawlData?.metricScores?.aiVisibility 
+                        ? `${crawlData.metricScores.aiVisibility}%` 
+                        : (crawlProgress > 80 ? 'In Progress' : 'Waiting...')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Show live results if available */}
+              {crawlData && crawlData.pages && crawlData.pages.length > 0 && (
+                <div className="mt-6 pt-4 border-t border-[#222222]">
+                  <h3 className="text-sm font-medium text-white mb-3">Live Results ({crawlData.pages.length} pages)</h3>
+                  <div className="max-h-[200px] overflow-y-auto rounded-md border border-[#222222]">
+                    <div className="grid grid-cols-12 gap-4 bg-[#161616] px-4 py-3 text-xs font-medium text-gray-400">
+                      <div className="col-span-6">URL</div>
+                      <div className="col-span-1">Status</div>
+                      <div className="col-span-3">Title</div>
+                      <div className="col-span-2">AI Visibility</div>
+                    </div>
+                    <div className="divide-y divide-[#222222]">
+                      {crawlData.pages.map((page, index) => (
+                        <div key={index} className="grid grid-cols-12 gap-4 px-4 py-2 items-center text-xs">
+                          <div className="col-span-6 font-medium text-white truncate">
+                            {page.url}
+                          </div>
+                          <div className="col-span-1">
+                            <Badge className={`${getStatusBadgeClass(page.status_code)}`}>
+                              {page.status_code}
+                            </Badge>
+                          </div>
+                          <div className="col-span-3 text-gray-300 truncate">
+                            {page.title}
+                          </div>
+                          <div className="col-span-2">
+                            {getVisibilityBadge(page.ai_visibility_score || 0)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Show live issues summary if available */}
+                  {(crawlData.issues.critical > 0 || crawlData.issues.warning > 0) && (
+                    <div className="mt-4 bg-[#161616] rounded-md p-3 border border-[#222222]">
+                      <h4 className="text-xs font-medium text-white mb-2">Issues Found</h4>
+                      <div className="flex gap-3">
+                        {crawlData.issues.critical > 0 && (
+                          <Badge className="bg-red-900/30 text-red-400 border-red-900/50">
+                            {crawlData.issues.critical} Critical
+                          </Badge>
+                        )}
+                        {crawlData.issues.warning > 0 && (
+                          <Badge className="bg-yellow-900/30 text-yellow-400 border-yellow-900/50">
+                            {crawlData.issues.warning} Warnings
+                          </Badge>
+                        )}
+                        {crawlData.issues.info > 0 && (
+                          <Badge className="bg-blue-900/30 text-blue-400 border-blue-900/50">
+                            {crawlData.issues.info} Info
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Crawl Results */}
+      {crawlComplete && crawlData && (
+        <>
+          {/* Summary Cards */}
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-4">
+            {/* Pages Crawled */}
+            <Card className="bg-[#101010] border-[#222222] border shadow-md">
+              <CardContent className="pt-6 px-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm text-gray-400">Pages Crawled</p>
+                    <h2 className="text-2xl font-bold text-white mt-1">{crawlData.totalPages}</h2>
+                  </div>
+                  <div className="rounded-full bg-[#1a1a1a] p-2 border border-[#222222]">
+                    <LayoutGrid className="h-5 w-5 text-gray-400" />
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center text-xs">
+                  <div className="w-full bg-[#222222] h-1.5 rounded-full overflow-hidden">
+                    <div className="bg-[#333333] h-full rounded-full w-full"></div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Critical Issues */}
+            <Card className="bg-[#101010] border-[#222222] border shadow-md">
+              <CardContent className="pt-6 px-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm text-gray-400">Critical Issues</p>
+                    <h2 className="text-2xl font-bold text-white mt-1">{crawlData.issues.critical}</h2>
+                  </div>
+                  <div className="rounded-full bg-[#1a1a1a] p-2 border border-[#222222]">
+                    <XCircle className="h-5 w-5 text-red-500" />
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center text-xs">
+                  <Badge className="bg-red-900/30 text-red-400 border-red-900/50 h-6 px-2">
+                    High Priority
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Warnings */}
+            <Card className="bg-[#101010] border-[#222222] border shadow-md">
+              <CardContent className="pt-6 px-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm text-gray-400">Warnings</p>
+                    <h2 className="text-2xl font-bold text-white mt-1">{crawlData.issues.warning}</h2>
+                  </div>
+                  <div className="rounded-full bg-[#1a1a1a] p-2 border border-[#222222]">
+                    <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center text-xs">
+                  <Badge className="bg-yellow-900/30 text-yellow-400 border-yellow-900/50 h-6 px-2">
+                    Medium Priority
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* AI Visibility Score */}
+            <Card className="bg-[#101010] border-[#222222] border shadow-md">
+              <CardContent className="pt-6 px-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm text-gray-400">AI Visibility Score</p>
+                    <h2 className="text-2xl font-bold text-white mt-1">{crawlData.metricScores.aiVisibility}/100</h2>
+                  </div>
+                  <div className="rounded-full bg-[#1a1a1a] p-2 border border-[#222222]">
+                    <Bot className="h-5 w-5 text-[#FF914D]" />
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center text-xs">
+                  <div className="w-full bg-[#222222] h-1.5 rounded-full overflow-hidden">
+                    <div 
+                      className="bg-gradient-to-r from-[#FF914D] to-[#FFEC9F] h-full rounded-full" 
+                      style={{ width: `${crawlData.metricScores.aiVisibility}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Audit Results Tabs */}
+          <Card className="bg-[#101010] border-[#222222] border shadow-md">
+            <CardHeader className="border-b border-[#222222]/50 pb-4">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg font-medium text-white">Audit Results</CardTitle>
+                <Button 
+                  variant="outline"
+                  className="border-[#222222] bg-[#161616] text-white hover:bg-[#1d1d1d]"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Export Report
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <Tabs defaultValue="pages" className="w-full">
+                <TabsList className="bg-[#161616] border-b border-[#222222] mb-6 rounded-none px-0 h-[40px] w-auto">
+                  <TabsTrigger 
+                    value="pages" 
+                    className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-[#FF914D] text-gray-400 rounded-none h-[40px] px-4"
+                  >
+                    Pages
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="issues" 
+                    className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-[#FF914D] text-gray-400 rounded-none h-[40px] px-4"
+                  >
+                    Issues
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="performance" 
+                    className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-[#FF914D] text-gray-400 rounded-none h-[40px] px-4"
+                  >
+                    Performance
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="ai-visibility" 
+                    className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-[#FF914D] text-gray-400 rounded-none h-[40px] px-4"
+                  >
+                    AI Visibility
+                  </TabsTrigger>
+                </TabsList>
+                
+                {/* Pages Tab */}
+                <TabsContent value="pages" className="space-y-4">
+                  {/* Add filter controls */}
+                  <div className="flex flex-wrap items-center gap-2 mb-4">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className={`h-7 px-3 text-xs ${!pageFilter ? 'bg-[#222222]' : 'bg-transparent'}`}
+                      onClick={() => setPageFilter(null)}
+                    >
+                      All Pages
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className={`h-7 px-3 text-xs ${pageFilter === 'document' ? 'bg-[#222222]' : 'bg-transparent'}`}
+                      onClick={() => setPageFilter('document')}
+                    >
+                      Documents
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className={`h-7 px-3 text-xs ${pageFilter === 'issues' ? 'bg-[#222222]' : 'bg-transparent'}`}
+                      onClick={() => setPageFilter('issues')}
+                    >
+                      With Issues
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className={`h-7 px-3 text-xs ${pageFilter === 'schema' ? 'bg-[#222222]' : 'bg-transparent'}`}
+                      onClick={() => setPageFilter('schema')}
+                    >
+                      With Schema
+                    </Button>
+                  </div>
+
+                  <div className="rounded-md border border-[#222222] overflow-hidden">
+                    <div className="grid grid-cols-12 gap-4 bg-[#161616] px-4 py-3 text-sm font-medium text-gray-400">
+                      <div className="col-span-5">URL</div>
+                      <div className="col-span-1">Status</div>
+                      <div className="col-span-2">Type</div>
+                      <div className="col-span-1">Content</div>
+                      <div className="col-span-1">Issues</div>
+                      <div className="col-span-2">AI Visibility</div>
+                    </div>
+                    <div className="divide-y divide-[#222222]">
+                      {getFilteredPages().map((page, index) => (
+                        <div key={index} className="grid grid-cols-12 gap-4 px-4 py-3 items-center hover:bg-[#161616]">
+                          <div className="col-span-5 font-medium text-white flex items-center">
+                            {page.is_document ? (
+                              <FileDown className="h-3.5 w-3.5 mr-2 text-blue-400" />
+                            ) : (
+                              <Link className="h-3.5 w-3.5 mr-2 text-gray-400" />
+                            )}
+                            <a 
+                              href={page.url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="truncate hover:text-[#FF914D] hover:underline transition-colors"
+                            >
+                              {page.url}
+                            </a>
+                          </div>
+                          <div className="col-span-1">
+                            <Badge className={`${getStatusBadgeClass(page.status_code)}`}>
+                              {page.status_code}
+                            </Badge>
+                          </div>
+                          <div className="col-span-2 text-sm">
+                            {page.is_document ? (
+                              <Badge className="bg-blue-900/30 text-blue-400 border-blue-900/50">
+                                {page.document_type ? page.document_type.toUpperCase() : 'Document'}
+                              </Badge>
+                            ) : (
+                              page.has_schema ? (
+                                <div className="flex items-center">
+                                  <Badge className="bg-green-900/30 text-green-400 border-green-900/50">
+                                    Schema
+                                  </Badge>
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">HTML</span>
+                              )
+                            )}
+                          </div>
+                          <div className="col-span-1 text-sm text-gray-400">
+                            {page.content_length > 0 ? `${Math.round(page.content_length / 100) / 10}k` : '-'}
+                          </div>
+                          <div className="col-span-1">
+                            {page.issues && page.issues.length > 0 ? (
+                              <div className="group relative">
+                                <Badge className="bg-[#222222] text-gray-300 border-[#333333] cursor-pointer">
+                                  {page.issues.length}
+                                </Badge>
+                                {/* Issue tooltip */}
+                                <div className="absolute z-10 hidden group-hover:block bg-[#1a1a1a] border border-[#333333] rounded-md p-3 shadow-lg w-72 -translate-x-1/2 left-1/2 mt-1">
+                                  <h4 className="text-xs font-medium text-white mb-2">Issues</h4>
+                                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                                    {page.issues.map((issue, i) => (
+                                      <div key={i} className="flex items-start gap-2 pb-2 border-b border-[#222222] last:border-0">
+                                        <div>
+                                          {issue.type === 'critical' && <XCircle className="h-3.5 w-3.5 text-red-500" />}
+                                          {issue.type === 'warning' && <AlertTriangle className="h-3.5 w-3.5 text-yellow-500" />}
+                                          {issue.type === 'info' && <HelpCircle className="h-3.5 w-3.5 text-blue-500" />}
+                                        </div>
+                                        <div>
+                                          <p className="text-xs text-white leading-tight">{issue.message}</p>
+                                          {issue.fixSuggestion && (
+                                            <p className="text-xs text-gray-400 mt-1 leading-tight">{issue.fixSuggestion}</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                            )}
+                          </div>
+                          <div className="col-span-2 flex items-center gap-2">
+                            {getVisibilityBadge(page.ai_visibility_score || 0)}
+                            {page.media_count > 0 && (
+                              <Badge className="bg-[#222222] text-gray-300 border-[#333333]" title="Media elements">
+                                <Image className="h-3 w-3 mr-1" />
+                                {page.media_count}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {/* Show a message if no pages match the filter */}
+                      {getFilteredPages().length === 0 && (
+                        <div className="px-4 py-8 text-center text-gray-400">
+                          No pages found matching your filter criteria
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                {/* Issues Tab */}
+                <TabsContent value="issues" className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4">
+                    {crawlData.pages.flatMap((page, pageIndex) => 
+                      (page.issues || []).map((issue, issueIndex) => (
+                        <div 
+                          key={`${pageIndex}-${issueIndex}`} 
+                          className="bg-[#161616] border border-[#222222] rounded-md p-4"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="mt-0.5">
+                              {issue.type === 'critical' && <XCircle className="h-5 w-5 text-red-500" />}
+                              {issue.type === 'warning' && <AlertTriangle className="h-5 w-5 text-yellow-500" />}
+                              {issue.type === 'info' && <HelpCircle className="h-5 w-5 text-blue-500" />}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge className={getIssueBadgeClass(issue.type)}>
+                                  {issue.type}
+                                </Badge>
+                                <span className="text-sm text-gray-400">{page.url}</span>
+                              </div>
+                              <p className="text-sm text-white font-medium">{issue.message}</p>
+                              
+                              <div className="mt-4 pt-2 border-t border-[#222222] flex items-center justify-between">
+                                <div className="text-xs text-gray-400">
+                                  Impact: <span className="text-white">
+                                    {issue.type === 'critical' ? 'High' : issue.type === 'warning' ? 'Medium' : 'Low'}
+                                  </span>
+                                </div>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-7 px-3 text-gray-400 hover:text-white hover:bg-[#222222]"
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                                  Fix Issue
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </TabsContent>
+                
+                {/* Performance Tab */}
+                <TabsContent value="performance" className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card className="bg-[#161616] border-[#222222] border">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-md font-medium text-white">Content Quality</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-3xl font-bold text-white">{crawlData.metricScores.contentQuality}</span>
+                          <span className="text-sm text-gray-400">/100</span>
+                        </div>
+                        <div className="w-full bg-[#222222] h-2 rounded-full overflow-hidden mb-4">
+                          <div 
+                            className="bg-gradient-to-r from-[#FF914D] to-[#FFEC9F] h-full rounded-full" 
+                            style={{ width: `${crawlData.metricScores.contentQuality}%` }}
+                          ></div>
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          Analysis based on content structure, headings, readability, and keyword optimization
+                        </div>
+                        
+                        {/* Add document breakdown if documents exist */}
+                        {crawlData.documentPercentage > 0 && (
+                          <div className="mt-4 pt-4 border-t border-[#222222]">
+                            <h4 className="text-sm font-medium text-white mb-2">Document Types</h4>
+                            <div className="grid grid-cols-2 gap-2">
+                              {Object.entries(crawlData.documentTypes || {}).map(([type, count], index) => (
+                                <div key={index} className="flex items-center justify-between bg-[#1a1a1a] rounded p-2">
+                                  <span className="text-xs text-gray-300 uppercase">{type}</span>
+                                  <Badge className="bg-[#222222] text-gray-300 border-[#333333]">
+                                    {count}
+                                  </Badge>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-[#161616] border-[#222222] border">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-md font-medium text-white">Technical Health</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-3xl font-bold text-white">{crawlData.metricScores.technical}</span>
+                          <span className="text-sm text-gray-400">/100</span>
+                        </div>
+                        <div className="w-full bg-[#222222] h-2 rounded-full overflow-hidden mb-4">
+                          <div 
+                            className="bg-gradient-to-r from-[#FF914D] to-[#FFEC9F] h-full rounded-full" 
+                            style={{ width: `${crawlData.metricScores.technical}%` }}
+                          ></div>
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          Analysis based on HTTP status codes, redirects, broken links, and page load speed
+                        </div>
+                        
+                        {/* Status code breakdown */}
+                        <div className="mt-4 pt-4 border-t border-[#222222]">
+                          <h4 className="text-sm font-medium text-white mb-2">Status Codes</h4>
+                          <div className="grid grid-cols-4 gap-2">
+                            {getStatusCodeBreakdown().map(({status, count}, index) => (
+                              <div key={index} className="flex flex-col items-center bg-[#1a1a1a] rounded p-2">
+                                <Badge className={`${getStatusBadgeClass(status)} mb-1`}>
+                                  {status}
+                                </Badge>
+                                <span className="text-xs text-gray-300">{count}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                    <div className="bg-[#161616] rounded-md p-4 border border-[#222222]">
+                      <div className="flex items-center mb-2">
+                        <Zap className="h-4 w-4 text-gray-400 mr-2" />
+                        <h3 className="text-sm font-medium text-white">Page Speed</h3>
+                      </div>
+                      <p className="text-2xl font-bold text-white">87<span className="text-sm text-gray-400">/100</span></p>
+                    </div>
+                    
+                    <div className="bg-[#161616] rounded-md p-4 border border-[#222222]">
+                      <div className="flex items-center mb-2">
+                        <Image className="h-4 w-4 text-gray-400 mr-2" />
+                        <h3 className="text-sm font-medium text-white">Media Accessibility</h3>
+                      </div>
+                      <p className="text-2xl font-bold text-white">{crawlData.mediaAccessibilityScore || 'N/A'}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {crawlData.mediaAccessibilityScore > 80 ? 'Excellent' : 
+                         crawlData.mediaAccessibilityScore > 60 ? 'Good' :
+                         crawlData.mediaAccessibilityScore > 40 ? 'Fair' : 'Poor'}
+                      </p>
+                    </div>
+                    
+                    <div className="bg-[#161616] rounded-md p-4 border border-[#222222]">
+                      <div className="flex items-center mb-2">
+                        <FileDown className="h-4 w-4 text-gray-400 mr-2" />
+                        <h3 className="text-sm font-medium text-white">Documents</h3>
+                      </div>
+                      <p className="text-2xl font-bold text-white">{crawlData.documentPercentage || 0}<span className="text-sm text-gray-400">%</span></p>
+                      <p className="text-xs text-gray-400 mt-1">of pages are documents</p>
+                    </div>
+                  </div>
+                  
+                  {/* Add screenshots if available */}
+                  {crawlData.screenshots && crawlData.screenshots.length > 0 && (
+                    <Card className="bg-[#161616] border-[#222222] border mt-4">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-md font-medium text-white">Interactive Analysis</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-gray-400 mb-4">Screenshots captured during interactive crawling</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {crawlData.screenshots.map((screenshot, i) => (
+                            <div key={i} className="border border-[#222222] rounded overflow-hidden">
+                              <div className="bg-[#1a1a1a] px-3 py-2">
+                                <p className="text-xs text-gray-300 truncate">{screenshot.url}</p>
+                              </div>
+                              <img 
+                                src={screenshot.screenshot_url} 
+                                alt={`Screenshot of ${screenshot.url}`}
+                                className="w-full h-auto"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </TabsContent>
+                
+                {/* AI Visibility Tab */}
+                <TabsContent value="ai-visibility" className="space-y-4">
+                  <div className="bg-[#161616] border border-[#222222] rounded-md p-5">
+                    <div className="flex items-start gap-4">
+                      <div className="rounded-full bg-[#1a1a1a] p-3 border border-[#222222]">
+                        <Bot className="h-6 w-6 text-[#FF914D]" />
+                      </div>
+                      <div>
+                        <h3 className="text-md font-medium text-white mb-1">AI Engine Optimization Score</h3>
+                        <p className="text-sm text-gray-400 mb-4">
+                          Analysis of how well your content is structured for AI engines like ChatGPT, Claude, and Perplexity
+                        </p>
+                        
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="text-3xl font-bold text-white">{crawlData?.metricScores?.aiVisibility}</div>
+                          <div className="text-sm text-gray-400">/ 100</div>
+                        </div>
+                        
+                        <div className="w-full bg-[#222222] h-2.5 rounded-full overflow-hidden mb-6">
+                          <div 
+                            className="bg-gradient-to-r from-[#FF914D] to-[#FFEC9F] h-full rounded-full" 
+                            style={{ width: `${crawlData?.metricScores?.aiVisibility || 0}%` }}
+                          ></div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6 mb-6">
+                          <div className="bg-[#1a1a1a] rounded-md p-4 border border-[#222222]">
+                            <p className="text-xs text-gray-400 mb-1">LLMS.txt Available</p>
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-lg font-bold text-white">{crawlData?.llmsCoverage || 0}%</span>
+                              <Badge className={crawlData?.llmsCoverage > 0 ? "bg-green-900/30 text-green-400 border-green-900/50" : "bg-red-900/30 text-red-400 border-red-900/50"}>
+                                {crawlData?.llmsCoverage > 0 ? "Yes" : "No"}
+                              </Badge>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-[#1a1a1a] rounded-md p-4 border border-[#222222]">
+                            <p className="text-xs text-gray-400 mb-1">Schema.org Markup</p>
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-lg font-bold text-white">{crawlData?.schemaPercentage || 0}%</span>
+                              {getVisibilityBadge(crawlData?.schemaPercentage || 0)}
+                            </div>
+                          </div>
+                          
+                          <div className="bg-[#1a1a1a] rounded-md p-4 border border-[#222222]">
+                            <p className="text-xs text-gray-400 mb-1">Media Accessibility</p>
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-lg font-bold text-white">{crawlData?.mediaAccessibilityScore || 0}</span>
+                              {getVisibilityBadge(crawlData?.mediaAccessibilityScore || 0)}
+                            </div>
+                          </div>
+                          
+                          <div className="bg-[#1a1a1a] rounded-md p-4 border border-[#222222]">
+                            <p className="text-xs text-gray-400 mb-1">Documents</p>
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-lg font-bold text-white">{crawlData?.documentPercentage || 0}%</span>
+                              <Badge className="bg-blue-900/30 text-blue-400 border-blue-900/50">
+                                {(crawlData?.documentTypes && Object.keys(crawlData.documentTypes).length > 0) 
+                                  ? Object.keys(crawlData.documentTypes).length + ' types' 
+                                  : 'None'}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Display detected schema types if available */}
+                        {crawlData?.schemaTypes && crawlData.schemaTypes.length > 0 && (
+                          <div className="mt-4 pt-4 border-t border-[#222222]">
+                            <h4 className="text-sm font-medium text-white mb-3">Schema Types Detected</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {crawlData.schemaTypes.map((type, index) => (
+                                <Badge key={index} className="bg-[#222222] text-gray-300 border-[#333333]">
+                                  {type}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Display interactive screenshots if available */}
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                      <Button className="w-full border border-[#333333] bg-gradient-to-r from-[#222222] to-[#2a2a2a] text-white hover:from-[#282828] hover:to-[#333333] h-auto py-3">
+                        <div className="flex flex-col items-center">
+                          <span className="mb-1">Fix Technical Issues</span>
+                          <span className="text-xs text-gray-400">Improve site performance and structure</span>
+                        </div>
+                      </Button>
+                      
+                      <Button className="w-full border border-[#333333] bg-gradient-to-r from-[#222222] to-[#2a2a2a] text-white hover:from-[#282828] hover:to-[#333333] h-auto py-3">
+                        <div className="flex flex-col items-center">
+                          <span className="mb-1">Optimize for AI Engines</span>
+                          <span className="text-xs text-gray-400">Improve visibility in AI responses</span>
+                        </div>
+                      </Button>
+                    </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+          
+          {/* Recommendations */}
+          <Card className="bg-[#101010] border-[#222222] border shadow-md">
+            <CardHeader className="border-b border-[#222222]/50 pb-4">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-lg font-medium text-white">Improvement Plan</CardTitle>
+                <Badge className="bg-[#161616] text-gray-300 border-[#222222] h-7 px-3">
+                  {issueCount} {issueCount === 1 ? 'Issue' : 'Issues'} Found
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                {/* Critical issues section */}
+                {crawlData.issues.critical > 0 && (
+                  <div className="bg-red-900/10 border border-red-900/30 rounded-md p-4">
+                    <h3 className="text-md font-medium text-white mb-2 flex items-center">
+                      <XCircle className="h-4 w-4 text-red-500 mr-2" />
+                      Fix Critical Issues First
+                    </h3>
+                    
+                    <div className="space-y-2 mt-3">
+                      {getCriticalIssues().map((issue, index) => (
+                        <div key={index} className="bg-[#161616] border border-[#222222] rounded-md p-3 flex items-center justify-between">
+                          <div className="flex items-center">
+                            <span className="text-sm text-white mr-3">{issue.message}</span>
+                            <Badge className="bg-red-900/30 text-red-400 border-red-900/50">
+                              Critical
+                            </Badge>
+                          </div>
+                          {issue.resourceUrl && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-7 text-gray-400 hover:text-white"
+                              onClick={() => window.open(issue.resourceUrl, '_blank')}
+                            >
+                              View
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Global recommendations */}
+                {crawlData.recommendations && crawlData.recommendations.length > 0 && (
+                  <div className="bg-[#161616] border border-[#222222] rounded-md p-4">
+                    <h3 className="text-md font-medium text-white mb-3 flex items-center">
+                      <Zap className="h-4 w-4 text-[#FF914D] mr-2" />
+                      Key Recommendations
+                    </h3>
+                    
+                    <ul className="space-y-2">
+                      {crawlData.recommendations.map((recommendation, index) => (
+                        <li key={index} className="flex items-start">
+                          <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 mr-2 shrink-0" />
+                          <span className="text-sm text-gray-300">{recommendation}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                {/* AI Optimization Focus Areas */}
+                <div className="bg-[#161616] border border-[#222222] rounded-md p-4">
+                  <h3 className="text-md font-medium text-white mb-3 flex items-center">
+                    <Bot className="h-4 w-4 text-[#FF914D] mr-2" />
+                    AI Optimization Focus Areas
+                  </h3>
+                  
+                  <div className="space-y-3">
+                    {/* LLMS.txt Optimization */}
+                    <div className="bg-[#1a1a1a] rounded-md p-3 border border-[#222222] flex items-start">
+                      <div className={`h-8 w-1 rounded-full mr-3 ${crawlData.llmsCoverage > 0 ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                      <div>
+                        <p className="text-sm text-white mb-1">LLMS.txt Implementation</p>
+                        <p className="text-xs text-gray-400">
+                          {crawlData.llmsCoverage > 0 
+                            ? 'Great! Your site has an llms.txt file to guide AI crawlers.' 
+                            : 'Create an llms.txt file in your root directory to explicitly allow AI crawlers.'}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Schema Implementation */}
+                    <div className="bg-[#1a1a1a] rounded-md p-3 border border-[#222222] flex items-start">
+                      <div className={`h-8 w-1 rounded-full mr-3 ${crawlData.schemaPercentage > 30 ? 'bg-green-500' : crawlData.schemaPercentage > 0 ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
+                      <div>
+                        <p className="text-sm text-white mb-1">Structured Data Implementation</p>
+                        <p className="text-xs text-gray-400">
+                          {crawlData.schemaPercentage > 70 
+                            ? 'Excellent structured data coverage across your site.' 
+                            : crawlData.schemaPercentage > 30
+                              ? 'Good start with schema.org markup. Consider adding more types and coverage.'
+                              : crawlData.schemaPercentage > 0
+                                ? 'Limited schema.org implementation. Expand to more pages and content types.'
+                                : 'No schema.org markup detected. Add structured data for better AI understanding.'}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Media Accessibility */}
+                    <div className="bg-[#1a1a1a] rounded-md p-3 border border-[#222222] flex items-start">
+                      <div className={`h-8 w-1 rounded-full mr-3 ${crawlData.mediaAccessibilityScore > 70 ? 'bg-green-500' : crawlData.mediaAccessibilityScore > 40 ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
+                      <div>
+                        <p className="text-sm text-white mb-1">Media Accessibility</p>
+                        <p className="text-xs text-gray-400">
+                          {crawlData.mediaAccessibilityScore > 70 
+                            ? 'Good media accessibility practices detected.' 
+                            : crawlData.mediaAccessibilityScore > 40
+                              ? 'Media accessibility needs improvement. Add better alt text and captions.'
+                              : 'Poor media accessibility. Media content may be invisible to AI systems.'}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Document Optimization */}
+                    {crawlData.documentPercentage > 0 && (
+                      <div className="bg-[#1a1a1a] rounded-md p-3 border border-[#222222] flex items-start">
+                        <div className={`h-8 w-1 rounded-full mr-3 bg-blue-500`}></div>
+                        <div>
+                          <p className="text-sm text-white mb-1">Document Optimization</p>
+                          <p className="text-xs text-gray-400">
+                            {`${crawlData.documentPercentage}% of your content is in document format. Ensure documents have extractable text and good structure for AI systems.`}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                  <Button className="w-full border border-[#333333] bg-gradient-to-r from-[#222222] to-[#2a2a2a] text-white hover:from-[#282828] hover:to-[#333333] h-auto py-3">
+                    <div className="flex flex-col items-center">
+                      <span className="mb-1">Fix Technical Issues</span>
+                      <span className="text-xs text-gray-400">Improve site performance and structure</span>
+                    </div>
+                  </Button>
+                  
+                  <Button className="w-full border border-[#333333] bg-gradient-to-r from-[#222222] to-[#2a2a2a] text-white hover:from-[#282828] hover:to-[#333333] h-auto py-3">
+                    <div className="flex flex-col items-center">
+                      <span className="mb-1">Optimize for AI Engines</span>
+                      <span className="text-xs text-gray-400">Improve visibility in AI responses</span>
+                    </div>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
+    </main>
+  )
+} 

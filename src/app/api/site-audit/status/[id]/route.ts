@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSiteAuditStatus } from '@/services/crawler';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export async function GET(
   req: NextRequest,
@@ -16,24 +18,39 @@ export async function GET(
       );
     }
     
-    // Skip auth check for debugging - directly get status
-    try {
-      // Get the status directly - for troubleshooting
-      const status = await getSiteAuditStatus(crawlId);
-      return NextResponse.json(status);
-    } catch (statusError) {
-      console.error('Error getting site audit status:', statusError);
+    // Check authentication
+    const cookieStore = cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_KEY || '',
+      {
+        cookies: {
+          get(name) {
+            return cookieStore.get(name)?.value;
+          },
+        },
+      }
+    );
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.user) {
       return NextResponse.json(
-        { error: statusError.message || 'Failed to get site audit status' },
-        { status: 500 }
+        { error: 'Unauthorized' },
+        { status: 401 }
       );
     }
     
+    // Get the crawl status
+    const status = await getSiteAuditStatus(crawlId);
+    
+    // Return the status
+    return NextResponse.json(status);
   } catch (error) {
-    console.error('Error getting site audit status:', error);
+    console.error('Error checking crawl status:', error);
     
     return NextResponse.json(
-      { error: error.message || 'Failed to get site audit status' },
+      { error: 'Failed to check crawl status' },
       { status: 500 }
     );
   }
