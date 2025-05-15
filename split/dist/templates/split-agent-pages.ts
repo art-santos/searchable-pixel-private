@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextApiRequest, NextApiResponse } from 'next';
 import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
@@ -7,38 +7,34 @@ import crypto from 'crypto';
  * Webhook handler for Split AI content delivery
  * This endpoint receives content from Split and saves it to your designated content directory
  */
-export async function POST(req: NextRequest) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Only allow POST requests
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+  
   try {
     // 1. Verify the request signature
-    const signature = req.headers.get('x-split-signature');
+    const signature = req.headers['x-split-signature'] as string;
     if (!signature) {
-      return new NextResponse(JSON.stringify({ error: 'Missing signature' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return res.status(401).json({ error: 'Missing signature' });
     }
-
-    // 2. Get request body as text for signature verification
-    const rawBody = await req.text();
+    
+    // 2. Get request body
+    const body = req.body;
+    const rawBody = JSON.stringify(body);
     
     // 3. Verify HMAC signature
     const isValid = verifySignature(rawBody, signature);
     if (!isValid) {
-      return new NextResponse(JSON.stringify({ error: 'Invalid signature' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return res.status(401).json({ error: 'Invalid signature' });
     }
     
     // 4. Parse the body content
-    const body = JSON.parse(rawBody);
     const { content, metadata } = body;
     
     if (!content || !metadata || !metadata.slug) {
-      return new NextResponse(JSON.stringify({ error: 'Missing required fields' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return res.status(400).json({ error: 'Missing required fields' });
     }
     
     // 5. Save the MDX content to the content directory
@@ -55,77 +51,11 @@ export async function POST(req: NextRequest) {
     await updateSitemap(metadata);
     await updateLlmsTxt(metadata);
     
-    return new NextResponse(JSON.stringify({ success: true, slug: metadata.slug }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return res.status(200).json({ success: true, slug: metadata.slug });
     
   } catch (error) {
     console.error('Split agent error:', error);
-    return new NextResponse(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-}
-
-/**
- * GET endpoint for connection verification (ping)
- * This endpoint doesn't require signature verification and returns basic information
- * about the Split agent installation
- */
-export async function GET(req: NextRequest) {
-  try {
-    // Check if this is a ping request
-    const isPingCheck = req.nextUrl.searchParams.get('ping') === 'true';
-    
-    if (isPingCheck) {
-      // Get agent ID from environment
-      const agentId = process.env.SPLIT_AGENT_ID;
-      const siteId = process.env.SPLIT_SITE_ID;
-      const contentDir = process.env.SPLIT_CONTENT_DIR || 'content/split';
-      
-      // Check if content directory exists
-      let contentDirExists = false;
-      try {
-        await fs.access(path.join(process.cwd(), contentDir));
-        contentDirExists = true;
-      } catch (e) {
-        // Directory doesn't exist, which is fine for this check
-      }
-      
-      return new NextResponse(JSON.stringify({
-        success: true,
-        status: 'connected',
-        agent_id: agentId,
-        site_id: siteId,
-        version: '1.0', // Future-proofing for version checks
-        content_dir: contentDir,
-        content_dir_exists: contentDirExists,
-        timestamp: new Date().toISOString()
-      }), {
-        status: 200,
-        headers: { 
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-store, max-age=0'
-        },
-      });
-    }
-    
-    // If not a ping request, just return a simple success response
-    return new NextResponse(JSON.stringify({ 
-      success: true,
-      message: 'Split agent is running'
-    }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (error) {
-    console.error('Split agent error:', error);
-    return new NextResponse(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }
 

@@ -8,55 +8,99 @@ import crypto from 'crypto';
  * This endpoint receives content from Split and saves it to your designated content directory
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Only allow POST requests
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  // Handle GET requests for ping/verification
+  if (req.method === 'GET') {
+    try {
+      // Check if this is a ping request
+      const isPingCheck = req.query.ping === 'true';
+      
+      if (isPingCheck) {
+        // Get agent ID from environment
+        const agentId = process.env.SPLIT_AGENT_ID;
+        const siteId = process.env.SPLIT_SITE_ID;
+        const contentDir = process.env.SPLIT_CONTENT_DIR || 'content/split';
+        
+        // Check if content directory exists
+        let contentDirExists = false;
+        try {
+          await fs.access(path.join(process.cwd(), contentDir));
+          contentDirExists = true;
+        } catch (e) {
+          // Directory doesn't exist, which is fine for this check
+        }
+        
+        return res.status(200).json({
+          success: true,
+          status: 'connected',
+          agent_id: agentId,
+          site_id: siteId,
+          version: '1.0', // Future-proofing for version checks
+          content_dir: contentDir,
+          content_dir_exists: contentDirExists,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      // If not a ping request, just return a simple success response
+      return res.status(200).json({ 
+        success: true,
+        message: 'Split agent is running'
+      });
+    } catch (error) {
+      console.error('Split agent error:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
   }
   
-  try {
-    // 1. Verify the request signature
-    const signature = req.headers['x-split-signature'] as string;
-    if (!signature) {
-      return res.status(401).json({ error: 'Missing signature' });
+  // Handle POST requests for content delivery
+  if (req.method === 'POST') {
+    try {
+      // 1. Verify the request signature
+      const signature = req.headers['x-split-signature'] as string;
+      if (!signature) {
+        return res.status(401).json({ error: 'Missing signature' });
+      }
+
+      // 2. Get request body as text for signature verification
+      const rawBody = JSON.stringify(req.body);
+      
+      // 3. Verify HMAC signature
+      const isValid = verifySignature(rawBody, signature);
+      if (!isValid) {
+        return res.status(401).json({ error: 'Invalid signature' });
+      }
+      
+      // 4. Parse the body content
+      const { content, metadata } = req.body;
+      
+      if (!content || !metadata || !metadata.slug) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+      
+      // 5. Save the MDX content to the content directory
+      const contentDir = process.env.SPLIT_CONTENT_DIR || 'content/split';
+      const filePath = path.join(process.cwd(), contentDir, `${metadata.slug}.mdx`);
+      
+      // Ensure the directory exists
+      await fs.mkdir(path.dirname(filePath), { recursive: true });
+      
+      // Write the file
+      await fs.writeFile(filePath, content);
+      
+      // 6. Optionally update sitemap.xml and llms.txt
+      await updateSitemap(metadata);
+      await updateLlmsTxt(metadata);
+      
+      return res.status(200).json({ success: true, slug: metadata.slug });
+      
+    } catch (error) {
+      console.error('Split agent error:', error);
+      return res.status(500).json({ error: 'Internal server error' });
     }
-    
-    // 2. Get request body
-    const body = req.body;
-    const rawBody = JSON.stringify(body);
-    
-    // 3. Verify HMAC signature
-    const isValid = verifySignature(rawBody, signature);
-    if (!isValid) {
-      return res.status(401).json({ error: 'Invalid signature' });
-    }
-    
-    // 4. Parse the body content
-    const { content, metadata } = body;
-    
-    if (!content || !metadata || !metadata.slug) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-    
-    // 5. Save the MDX content to the content directory
-    const contentDir = process.env.SPLIT_CONTENT_DIR || 'content/split';
-    const filePath = path.join(process.cwd(), contentDir, `${metadata.slug}.mdx`);
-    
-    // Ensure the directory exists
-    await fs.mkdir(path.dirname(filePath), { recursive: true });
-    
-    // Write the file
-    await fs.writeFile(filePath, content);
-    
-    // 6. Optionally update sitemap.xml and llms.txt
-    await updateSitemap(metadata);
-    await updateLlmsTxt(metadata);
-    
-    return res.status(200).json({ success: true, slug: metadata.slug });
-    
-  } catch (error) {
-    console.error('Split agent error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
   }
+  
+  // Method not allowed
+  return res.status(405).json({ error: 'Method not allowed' });
 }
 
 /**

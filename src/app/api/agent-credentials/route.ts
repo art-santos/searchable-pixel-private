@@ -98,6 +98,150 @@ export async function POST(req: NextRequest) {
 }
 
 /**
+ * API endpoint to delete agent credentials
+ * DELETE /api/agent-credentials?id=<credential_id>
+ */
+export async function DELETE(req: NextRequest) {
+  try {
+    // Create Supabase client
+    const supabase = createClient();
+    
+    // Get the user session to ensure they're authenticated
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized: You must be logged in to delete credentials' },
+        { status: 401 }
+      );
+    }
+    
+    // Get the credential ID from the URL
+    const url = new URL(req.url);
+    const id = url.searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Bad request: credential ID is required' },
+        { status: 400 }
+      );
+    }
+    
+    // Temporarily using direct table operations until the RPC function is available
+    // Delete the credential directly from the table
+    const { error } = await supabase
+      .from('agent_credentials')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', session.user.id);
+    
+    if (error) {
+      console.error('Error deleting agent credentials:', error);
+      
+      // More detailed error message
+      let errorMessage = 'Failed to delete credentials';
+      if (error.code === '42501') {
+        errorMessage = 'Permission denied: You cannot delete these credentials';
+      } else if (error.code === 'PGRST116') {
+        errorMessage = 'Credentials not found or already deleted';
+      }
+      
+      return NextResponse.json(
+        { error: errorMessage, details: error },
+        { status: 500 }
+      );
+    }
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Credentials deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting agent credentials:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * API endpoint to regenerate agent secret
+ * PUT /api/agent-credentials?id=<credential_id>
+ */
+export async function PUT(req: NextRequest) {
+  try {
+    // Create Supabase client
+    const supabase = createClient();
+    
+    // Get the user session to ensure they're authenticated
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized: You must be logged in to regenerate credentials' },
+        { status: 401 }
+      );
+    }
+    
+    // Get the credential ID from the URL
+    const url = new URL(req.url);
+    const id = url.searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Bad request: credential ID is required' },
+        { status: 400 }
+      );
+    }
+    
+    // First, get the credential to ensure it exists and belongs to the user
+    const { data: credential, error: fetchError } = await supabase
+      .from('agent_credentials')
+      .select('agent_id, domain')
+      .eq('id', id)
+      .eq('user_id', session.user.id)
+      .single();
+    
+    if (fetchError) {
+      console.error('Error fetching credential:', fetchError);
+      return NextResponse.json(
+        { error: 'Credential not found or access denied' },
+        { status: 404 }
+      );
+    }
+    
+    // Generate new secret
+    const newSecret = crypto.randomBytes(32).toString('hex');
+    
+    // Update the credential with the new secret
+    const { error: updateError } = await supabase.rpc('update_agent_secret', {
+      credential_id_param: id,
+      agent_secret_param: newSecret
+    });
+    
+    if (updateError) {
+      console.error('Error updating agent secret:', updateError);
+      return NextResponse.json(
+        { error: 'Failed to update credential secret' },
+        { status: 500 }
+      );
+    }
+    
+    return NextResponse.json({
+      success: true,
+      agent_id: credential.agent_id,
+      domain: credential.domain,
+      agent_secret: newSecret
+    });
+  } catch (error) {
+    console.error('Error regenerating agent secret:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * Hash the agent secret for storage
  * We don't need to store the raw secret, only a hash to verify it later
  */
