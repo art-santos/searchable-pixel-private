@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { startSiteAudit } from '@/services/crawler';
 
 export async function POST(req: NextRequest) {
+  const cookieStore = await cookies();
   try {
     // Get the request body
     const body = await req.json();
@@ -17,105 +18,95 @@ export async function POST(req: NextRequest) {
     }
     
     // Check for environment variables
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-      console.error('Missing NEXT_PUBLIC_SUPABASE_URL');
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+      console.error('Missing Supabase URL or Service Key');
       return NextResponse.json(
-        { error: 'Server configuration error: Missing Supabase URL' },
+        { error: 'Server configuration error' },
         { status: 500 }
       );
     }
     
-    if (!process.env.SUPABASE_SERVICE_KEY) {
-      console.error('Missing SUPABASE_SERVICE_KEY');
-      return NextResponse.json(
-        { error: 'Server configuration error: Missing Supabase service key' },
-        { status: 500 }
-      );
-    }
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_KEY!,
+      {
+        cookies: {
+          get: async (name: string) => {
+            return cookieStore.get(name)?.value;
+          },
+          set: async (name: string, value: string, options: any) => {
+            await cookieStore.set(name, value, options);
+          },
+          remove: async (name: string, options: any) => {
+            await cookieStore.remove(name, options);
+          },
+        },
+      }
+    );
     
     // Get the user ID from the session
-    try {
-      const cookieStore = cookies();
-      const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.SUPABASE_SERVICE_KEY,
-        {
-          cookies: {
-            async get(name) {
-              const cookie = await cookieStore.get(name);
-              return cookie?.value;
-            },
-          },
-        }
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError) {
+      console.error('Supabase session error:', sessionError);
+      return NextResponse.json(
+        { error: 'Authentication error: ' + sessionError.message },
+        { status: 401 }
       );
+    }
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized: No valid session' },
+        { status: 401 }
+      );
+    }
+    
+    // Extract the audit options from the request body
+    const {
+      maxPages = 100,
+      includeDocuments = true,
+      checkMediaAccessibility = true,
+      performInteractiveActions = false
+    } = body;
+    
+    // Start the site audit with enhanced options
+    try {
+      const { crawlId } = await startSiteAudit({
+        siteUrl: body.siteUrl,
+        userId: session.user.id,
+        maxPages,
+        includeDocuments,
+        checkMediaAccessibility,
+        performInteractiveActions
+      });
       
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('Supabase session error:', sessionError);
-        return NextResponse.json(
-          { error: 'Authentication error: ' + sessionError.message },
-          { status: 401 }
-        );
-      }
-      
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { error: 'Unauthorized: No valid session' },
-          { status: 401 }
-        );
-      }
-      
-      // Extract the audit options from the request body
-      const {
-        maxPages = 100,
-        includeDocuments = true,
-        checkMediaAccessibility = true,
-        performInteractiveActions = false
-      } = body;
-      
-      // Start the site audit with enhanced options
-      try {
-        const { crawlId } = await startSiteAudit({
-          siteUrl: body.siteUrl,
-          userId: session.user.id,
+      // Return the crawl ID
+      return NextResponse.json({ 
+        crawlId,
+        message: 'Site audit started successfully',
+        options: {
           maxPages,
           includeDocuments,
           checkMediaAccessibility,
           performInteractiveActions
-        });
-        
-        // Return the crawl ID
-        return NextResponse.json({ 
-          crawlId,
-          message: 'Site audit started successfully',
-          options: {
-            maxPages,
-            includeDocuments,
-            checkMediaAccessibility,
-            performInteractiveActions
-          }
-        });
-      } catch (crawlError) {
-        console.error('Error in startSiteAudit:', crawlError);
-        return NextResponse.json(
-          { error: 'Crawl error: ' + crawlError.message },
-          { status: 500 }
-        );
-      }
-    } catch (authError) {
-      console.error('Auth setup error:', authError);
+        }
+      });
+    } catch (crawlError: any) {
+      console.error('Error in startSiteAudit:', crawlError);
       return NextResponse.json(
-        { error: 'Authentication setup error: ' + authError.message },
+        { error: 'Crawl error: ' + (crawlError?.message || crawlError) },
         { status: 500 }
       );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error starting site audit:', error);
-    
-    return NextResponse.json(
-      { error: error.message || 'Failed to start site audit' },
-      { status: 500 }
-    );
+    const message = error?.message || 'Failed to start site audit';
+    // Check if the error is from Supabase client instantiation specifically
+    if (error.message && error.message.includes('createSupabaseClient')) {
+        //This is not an actual Supabase error, but useful for debugging if client creation itself fails.
+        console.error('Supabase client creation might have failed in POST route.')
+    }
+    return NextResponse.json({ error: message, details: error.stack }, { status: 500 });
   }
 } 

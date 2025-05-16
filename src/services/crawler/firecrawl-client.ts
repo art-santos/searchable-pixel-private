@@ -155,42 +155,119 @@ export async function getCrawlResults(crawlId: string): Promise<PageData[]> {
   try {
     const result = await app.checkCrawlStatus(crawlId);
 
-    console.log(`[firecrawl-client.ts] app.checkCrawlStatus response in getCrawlResults for job ${crawlId}:`, JSON.stringify(result, null, 2));
+    // Summary logging (already improved)
+    let pageCount = 0;
+    let crawlStatusInData = 'N/A';
+    let firecrawlWarningInData = null;
+    let isDataDirectlyAnArray = false;
+
+    if (result.success && result.data) {
+      if (Array.isArray(result.data)) { // Check if result.data IS the array of pages
+        pageCount = result.data.length;
+        isDataDirectlyAnArray = true;
+        crawlStatusInData = 'completed'; // If data is an array, assume completed for this path
+      } else if (typeof result.data === 'object' && result.data !== null) {
+        const statusResponseData = result.data as any;
+        if ('data' in statusResponseData && Array.isArray(statusResponseData.data)) {
+          pageCount = statusResponseData.data.length;
+        }
+        if ('status' in statusResponseData) {
+          crawlStatusInData = statusResponseData.status;
+        }
+        if ('warning' in statusResponseData) {
+          firecrawlWarningInData = statusResponseData.warning;
+        }
+      }
+    }
+
+    console.log(
+      `[firecrawl-client.ts] app.checkCrawlStatus response summary for job ${crawlId}:`,
+      {
+        success: result.success,
+        status: 'status' in result ? result.status : 'N/A',
+        crawlStatusInData: crawlStatusInData,
+        pageArrayLength: pageCount,
+        isDataDirectlyAnArray: isDataDirectlyAnArray,
+        error: 'error' in result && result.error ? result.error : null,
+        warning: 'warning' in result && result.warning ? result.warning : null,
+      }
+    );
+
+    if ('warning' in result && result.warning) {
+      console.warn(`[firecrawl-client.ts] Firecrawl top-level warning for job ${crawlId}: ${result.warning}`);
+      // Handle throttling as per suggestion
+      if (typeof result.warning === 'string' && result.warning.includes('throttled')) {
+        console.warn(`[firecrawl-client.ts] Firecrawl job ${crawlId} was throttled. Consider this a temporary error or prompt for plan upgrade.`);
+        // Depending on desired behavior, you might want to throw a specific error here
+        // or return a special status that the calling function can use to pause/retry.
+        // For now, returning empty array as it was before for error cases, but logging is key.
+        return []; 
+      }
+    }
+    if (firecrawlWarningInData) {
+      console.warn(`[firecrawl-client.ts] Firecrawl warning in result.data for job ${crawlId}: ${firecrawlWarningInData}`);
+    }
 
     if (!result.success) {
       console.error('[firecrawl-client.ts] getCrawlResults (via checkCrawlStatus) failed:', 'error' in result ? result.error : 'Unknown error');
+      // Additional check for throttling if success is false but a warning is present
+      if ('warning' in result && typeof result.warning === 'string' && result.warning.includes('throttled')) {
+         console.warn(`[firecrawl-client.ts] Firecrawl job ${crawlId} failed but also reported throttling. Warning: ${result.warning}`);
+      }
       return [];
     }
     
-    // Assuming result itself is the status object when success is true, and it might contain a 'data' array of pages
-    // The Firecrawl SDK's checkCrawlStatus for a *completed* job returns a structure like:
-    // { success: true, data: [ {page data}, {page data}, ... ], status: "completed", total: X, completed: X, ... }
-    // OR it might be { success: true, status: "completed", data: { data: [...] } } - the log will clarify
-    // Based on previous logs: result.data is the status object, and result.data.data is the array of pages.
+    // Handle the case where result.data is directly the array of pages
+    if (isDataDirectlyAnArray && Array.isArray(result.data)) {
+      console.log(`[firecrawl-client.ts] Processing ${result.data.length} pages directly from result.data for job ${crawlId}`);
+      const pageArrayFromFirecrawl = result.data as any[];
+      const formattedData: PageData[] = pageArrayFromFirecrawl.map((page: any) => {
+        const url = page.metadata?.sourceURL || page.url || '';
+        const isDocument = /\.(pdf|docx?|xlsx?|pptx?|txt)$/i.test(url);
+        const contentType = isDocument ? url.split('.').pop()?.toLowerCase() : (page.metadata?.contentType || 'html');
+        return {
+          url,
+          title: page.metadata?.title || page.title || '',
+          markdown: page.markdown || '',
+          html: page.html || '',
+          metadata: {
+            title: page.metadata?.title,
+            description: page.metadata?.description,
+            language: page.metadata?.language,
+            sourceURL: page.metadata?.sourceURL,
+            statusCode: page.metadata?.statusCode,
+            ogTitle: page.metadata?.ogTitle,
+            ogDescription: page.metadata?.ogDescription,
+            ogUrl: page.metadata?.ogUrl,
+            ogImage: page.metadata?.ogImage,
+            ogLocaleAlternate: page.metadata?.ogLocaleAlternate,
+            ogSiteName: page.metadata?.ogSiteName,
+            structuredData: page.metadata?.structuredData,
+            contentType,
+            isDocument
+          },
+          extractedStructuredData: page.json || page.structured_data || null 
+        };
+      });
+      return formattedData;
+    }
 
-    const firecrawlStatusObject = result.data; // This is the object like { status: 'completed', data: [...] }
+    // Original logic path: result.data is an object, and result.data.data contains the pages
+    const firecrawlStatusObject = result.data as any; // Cast to any, as its structure varies based on success
 
-    if (typeof firecrawlStatusObject === 'object' && firecrawlStatusObject !== null &&
-        'status' in firecrawlStatusObject && (firecrawlStatusObject as any).status === 'completed') {
-      
-      // Check if the actual page data is in firecrawlStatusObject.data
-      const pageArrayFromFirecrawl = (firecrawlStatusObject as any).data;
-
+    if (firecrawlStatusObject && typeof firecrawlStatusObject === 'object' && firecrawlStatusObject.status === 'completed') {
+      const pageArrayFromFirecrawl = firecrawlStatusObject.data;
       if (Array.isArray(pageArrayFromFirecrawl)) {
         if (pageArrayFromFirecrawl.length === 0) {
           console.warn(`[firecrawl-client.ts] Firecrawl job ${crawlId} completed but returned 0 pages in its data array (firecrawlStatusObject.data).`);
         }
         const formattedData: PageData[] = pageArrayFromFirecrawl.map((page: any) => {
-          // Detect document types
-          const url = page.metadata?.sourceURL || page.url || ''; // page.url as fallback
+          const url = page.metadata?.sourceURL || page.url || '';
           const isDocument = /\.(pdf|docx?|xlsx?|pptx?|txt)$/i.test(url);
-          const contentType = isDocument 
-            ? url.split('.').pop()?.toLowerCase() 
-            : (page.metadata?.contentType || 'html');
-          
+          const contentType = isDocument ? url.split('.').pop()?.toLowerCase() : (page.metadata?.contentType || 'html');
           return {
             url,
-            title: page.metadata?.title || page.title || '', // page.title as fallback
+            title: page.metadata?.title || page.title || '',
             markdown: page.markdown || '',
             html: page.html || '',
             metadata: {
@@ -205,27 +282,23 @@ export async function getCrawlResults(crawlId: string): Promise<PageData[]> {
               ogImage: page.metadata?.ogImage,
               ogLocaleAlternate: page.metadata?.ogLocaleAlternate,
               ogSiteName: page.metadata?.ogSiteName,
-              structuredData: page.metadata?.structuredData, // from crawl metadata
+              structuredData: page.metadata?.structuredData,
               contentType,
               isDocument
             },
-            // Ensure 'json' from Firecrawl (which might be LLM extracted during crawl) is mapped
-            // This was 'page.json' before, assuming it comes with each page item
             extractedStructuredData: page.json || page.structured_data || null 
           };
         });
-        
         return formattedData;
       } else {
         console.error('[firecrawl-client.ts] Firecrawl getCrawlResults: status is completed, but firecrawlStatusObject.data is not an array. Data:', firecrawlStatusObject);
         return [];
       }
-    } else if (typeof firecrawlStatusObject === 'object' && firecrawlStatusObject !== null && 'status' in firecrawlStatusObject) {
-      console.warn(`[firecrawl-client.ts] Firecrawl job ${crawlId} status is not 'completed'. Status: ${(firecrawlStatusObject as any).status}. Full status object:`, firecrawlStatusObject);
-      return []; // Not completed yet, or another status
-    }
-    else {
-      console.error('[firecrawl-client.ts] Firecrawl getCrawlResults returned unexpected data structure. Full result:', result);
+    } else if (firecrawlStatusObject && typeof firecrawlStatusObject === 'object' && 'status' in firecrawlStatusObject) {
+      console.warn(`[firecrawl-client.ts] Firecrawl job ${crawlId} status is not 'completed' (was ${firecrawlStatusObject.status}). Full status object:`, firecrawlStatusObject);
+      return [];
+    } else {
+      console.error('[firecrawl-client.ts] Firecrawl getCrawlResults returned unexpected data structure (result.data was not an object or not structured as expected). Full result:', result);
       return [];
     }
   } catch (error: any) { 
@@ -426,5 +499,121 @@ export async function checkRobotsTxt(domain: string): Promise<any> {
   } catch (error) {
     console.error('Error checking robots.txt:', error);
     return { exists: false, status: 404 };
+  }
+}
+
+/**
+ * Map a website to get all its URLs using Firecrawl
+ */
+export async function mapSite(siteUrl: string): Promise<string[] | null> {
+  if (!process.env.FIRECRAWL_API_KEY) {
+    console.error('[firecrawl-client.ts] FIRECRAWL_API_KEY is not set. Cannot map site.');
+    throw new Error('FIRECRAWL_API_KEY is not set. Cannot map site.');
+  }
+  console.log(`[firecrawl-client.ts] Attempting to map site: ${siteUrl}`);
+  try {
+    const mapResponse = await app.mapUrl(siteUrl);
+
+    if (mapResponse.success) {
+      // Assuming mapResponse directly has a 'links' property on success, based on cURL example.
+      const links = (mapResponse as any).links;
+      if (links && Array.isArray(links)) {
+        console.log(`[firecrawl-client.ts] Successfully mapped site ${siteUrl}, found ${links.length} URLs.`);
+        return links;
+      } else {
+        // Fallback: check if .data contains the links (some SDKs might do this)
+        const dataLinks = (mapResponse as any).data;
+        if (dataLinks && Array.isArray(dataLinks)) {
+          console.log(`[firecrawl-client.ts] Successfully mapped site ${siteUrl} (using .data for links), found ${dataLinks.length} URLs.`);
+          return dataLinks;
+        }
+        console.warn(`[firecrawl-client.ts] mapUrl for ${siteUrl} succeeded but returned no link array in .links or .data:`, mapResponse);
+        return []; 
+      }
+    } else {
+      const errorMessage = (mapResponse as any).error || 'Unknown error during site mapping';
+      console.error(`[firecrawl-client.ts] Failed to map site ${siteUrl}:`, errorMessage);
+      return null; 
+    }
+  } catch (error) {
+    console.error(`[firecrawl-client.ts] Exception during mapSite for ${siteUrl}:`, error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Firecrawl client mapSite error: ${errorMessage}`);
+  }
+}
+
+/**
+ * Scrape a single URL using Firecrawl
+ */
+export async function scrapeSingleUrl(urlToScrape: string): Promise<PageData | null> {
+  if (!process.env.FIRECRAWL_API_KEY) {
+    console.error('[firecrawl-client.ts] FIRECRAWL_API_KEY is not set. Cannot scrape URL.');
+    return null;
+  }
+  console.log(`[firecrawl-client.ts] Attempting to scrape single URL: ${urlToScrape}`);
+  try {
+    const scrapeResult = await app.scrapeUrl(urlToScrape, {
+      formats: ['markdown', 'html'],
+    });
+
+    // Assuming successful scrapeResult has markdown, html, metadata directly on the object
+    if (scrapeResult.success) {
+      const metadata = (scrapeResult as any).metadata || {};
+      const sourceURL = metadata.sourceURL || urlToScrape;
+      // Fallback to scrapeResult.data.title if direct title is not present (for SDK variations)
+      const title = metadata.title || (scrapeResult as any).title || ((scrapeResult as any).data as any)?.title || '';
+      const markdown = (scrapeResult as any).markdown || ((scrapeResult as any).data as any)?.markdown || '';
+      const html = (scrapeResult as any).html || ((scrapeResult as any).data as any)?.html || '';
+      const extractedStructuredData = (scrapeResult as any).extracted_content || 
+                                    (scrapeResult as any).llm_extraction || 
+                                    ((scrapeResult as any).data as any)?.extracted_content || 
+                                    ((scrapeResult as any).data as any)?.llm_extraction || 
+                                    (scrapeResult as any).json || 
+                                    ((scrapeResult as any).data as any)?.json || null;
+
+      const isDocument = /\.(pdf|docx?|xlsx?|pptx?|txt)$/i.test(sourceURL);
+      const contentType = isDocument 
+        ? sourceURL.split('.').pop()?.toLowerCase() 
+        : (metadata?.contentType || 'html');
+
+      // Ensure we have at least some content before considering it a success for our PageData
+      if (!markdown && !html && !isDocument) {
+        console.warn(`[firecrawl-client.ts] Scraped URL ${urlToScrape} successfully but no markdown/html content found and not a document. Result:`, scrapeResult);
+        // Depending on strictness, could return null here.
+        // For now, proceeding if metadata (like title) might still be useful.
+      }
+
+      console.log(`[firecrawl-client.ts] Successfully scraped URL: ${urlToScrape}`);
+      return {
+        url: sourceURL,
+        title: title,
+        markdown: markdown,
+        html: html,
+        metadata: {
+          title: metadata.title, // metadata.title is preferred
+          description: metadata.description,
+          language: metadata.language,
+          sourceURL: sourceURL,
+          statusCode: metadata.statusCode || ((scrapeResult as any).data as any)?.metadata?.statusCode, // Check within data as well
+          ogTitle: metadata.ogTitle,
+          ogDescription: metadata.ogDescription,
+          ogUrl: metadata.ogUrl,
+          ogImage: metadata.ogImage,
+          ogLocaleAlternate: metadata.ogLocaleAlternate,
+          ogSiteName: metadata.ogSiteName,
+          structuredData: metadata.structuredData,
+          contentType: contentType,
+          isDocument: isDocument
+        },
+        extractedStructuredData: extractedStructuredData
+      };
+    } else {
+      const errorDetails = (scrapeResult as any).error || 'Unknown error during scrapeUrl';
+      console.error(`[firecrawl-client.ts] Failed to scrape URL ${urlToScrape}:`, errorDetails, scrapeResult);
+      return null;
+    }
+  } catch (error) {
+    console.error(`[firecrawl-client.ts] Exception during scrapeSingleUrl for ${urlToScrape}:`, error);
+    return null;
   }
 } 

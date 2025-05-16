@@ -9,7 +9,9 @@ import {
   scrapeWithActions,
   PageData,
   extractStructuredData,
-  CrawlAction
+  CrawlAction,
+  mapSite,
+  scrapeSingleUrl
 } from './firecrawl-client';
 import { analyzePageForAEO, AEOAnalysisResult } from './aeo-analyzer';
 
@@ -122,17 +124,57 @@ export async function startSiteAudit(options: {
           
         console.log('Crawl check:', checkCrawl, checkCrawlError);
         
-        // Start the Firecrawl crawl
+        // NEW APPROACH: Map the site to get all URLs first
+        console.log(`[startSiteAudit] Mapping site: ${normalizedUrl}`);
+        const mappedUrls = await mapSite(normalizedUrl);
+
+        if (!mappedUrls || mappedUrls.length === 0) {
+          console.error(`[startSiteAudit] Failed to map site or no URLs found for ${normalizedUrl}.`);
+          await supabase.from('crawls').update({ status: 'failed', completed_at: new Date().toISOString() }).eq('id', crawlData.id);
+          throw new Error('Failed to map site or no URLs found.');
+        }
+        
+        console.log(`[startSiteAudit] Found ${mappedUrls.length} URLs for site ${normalizedUrl}. Updating crawl record and starting processing.`);
+
+        // Update crawl record with total_pages and set status to 'processing'
+        const { error: updateCrawlError } = await supabase
+          .from('crawls')
+          .update({ 
+            total_pages: mappedUrls.length,
+            status: 'processing' // Indicate that we are now processing these mapped URLs
+            // apify_run_id will no longer be set here
+          })
+          .eq('id', crawlData.id);
+
+        if (updateCrawlError) {
+          console.error('[startSiteAudit] Failed to update crawl record with total_pages and status:', updateCrawlError);
+          // Don't necessarily fail the whole operation, but log it. Processing might still work.
+        }
+        
+        // Process these URLs in the background
+        // Note: processAuditResults will need to be adapted to take urlsToScrape instead of firecrawlId
+        processAuditResults(crawlData.id, mappedUrls).catch(err => {
+          console.error(`[startSiteAudit] Error during background processAuditResults for crawl ${crawlData.id}:`, err);
+          // Optionally mark crawl as failed here if background processing fails critically
+          supabase.from('crawls').update({ status: 'failed', completed_at: new Date().toISOString(), aeo_score: -2 }).eq('id', crawlData.id)
+            .then(({error: failUpdateError}) => {
+              if (failUpdateError) console.error(`[startSiteAudit] Failed to mark crawl as failed after processAuditResults error:`, failUpdateError);
+            });
+        });
+
+        return {
+          crawlId: crawlData.id,
+          siteId: siteData.id
+        };
+
+        /* OLD Firecrawl asyncCrawlUrl logic - to be removed
         try {
           console.log('Starting Firecrawl for URL:', normalizedUrl);
-          const firecrawlId = await startCrawl({
+          const firecrawlId = await startCrawl({ // startCrawl is from firecrawl-client
             siteUrl: normalizedUrl,
-            maxPages: maxPages,
-            maxDepth: 5,
-            includeInnerLinks: true,
-            includeDocuments: includeDocuments,
-            includeRobotsTxt: true,
-            includeSitemap: true
+            maxPages: maxPages, // This maxPages might be redundant if we scrape all mapped URLs
+            // Other options like maxDepth, includeInnerLinks are implicitly handled by mapSite + individual scrapes
+            includeDocuments: includeDocuments, // This option might need to be passed to scrapeSingleUrl if relevant
           });
           
           console.log('Firecrawl started:', firecrawlId);
@@ -141,7 +183,7 @@ export async function startSiteAudit(options: {
           const { error: updateError } = await supabase
             .from('crawls')
             .update({
-              apify_run_id: firecrawlId // Keeping the field name for backward compatibility
+              apify_run_id: firecrawlId 
             })
             .eq('id', crawlData.id);
             
@@ -159,6 +201,7 @@ export async function startSiteAudit(options: {
           console.error('Failed to start Firecrawl:', crawlError);
           throw new Error(`Failed to start Firecrawl crawl: ${crawlError?.message || crawlError}`);
         }
+        */
       } catch (crawlCreationError: any) {
         console.error('Failed during crawl creation:', crawlCreationError);
         throw crawlCreationError;
@@ -180,119 +223,107 @@ export async function getSiteAuditStatus(crawlId: string): Promise<{
   status: string;
   progress: number;
 }> {
-  console.log(`Checking status for crawl ID: ${crawlId}`);
+  console.log(`[getSiteAuditStatus] Checking status for crawl ID: ${crawlId}`);
   
-  // Get the crawl record
-  const { data: crawlData, error } = await supabase
+  const { data: crawlData, error: crawlError } = await supabase
     .from('crawls')
-    .select('status, apify_run_id, started_at')
+    .select('status, total_pages, started_at') // Ensure total_pages is selected
     .eq('id', crawlId)
     .single();
   
-  if (error) {
-    console.error(`Failed to get crawl record: ${error.message}`);
-    throw new Error(`Failed to get crawl record: ${error.message}`);
+  if (crawlError || !crawlData) {
+    console.error(`[getSiteAuditStatus] Failed to get crawl record for ${crawlId}:`, crawlError);
+    throw new Error(`Failed to get crawl record for ${crawlId}: ${crawlError?.message}`);
   }
   
-  console.log(`Crawl data from DB: ${JSON.stringify(crawlData)}`);
+  console.log(`[getSiteAuditStatus] Crawl data from DB:`, crawlData);
   
-  // If crawl is completed, return 100% progress
   if (crawlData.status === 'completed') {
     return { status: 'completed', progress: 100 };
   }
-  
-  // If crawl is failed, return failed status but with 80% progress
-  // so the UI doesn't get stuck at a low percentage
   if (crawlData.status === 'failed') {
-    return { status: 'failed', progress: 80 };
+    return { status: 'failed', progress: 100 }; // Show 100% for failed to indicate it has finished trying
+  }
+
+  // If status is 'started' or 'mapping', it means mapping is in progress or queued.
+  // (We might need a distinct 'mapping' status if mapSite is very long)
+  // For now, if it's 'started', let's show small progress.
+  if (crawlData.status === 'started') {
+      // You could add time-based progress here for the mapping phase if desired
+      // For example, estimate mapping takes X seconds and show progress towards that.
+      // For now, just a small fixed progress for 'started'.
+      let mappingProgress = 5; // Initial progress when mapping starts
+      if (crawlData.started_at) {
+        const startTime = new Date(crawlData.started_at).getTime();
+        const currentTime = new Date().getTime();
+        const elapsedSeconds = (currentTime - startTime) / 1000;
+        if (elapsedSeconds > 10) mappingProgress = 10; // Slightly more if it's been a bit
+        if (elapsedSeconds > 20) mappingProgress = 15;
+      }
+      return { status: 'mapping', progress: mappingProgress }; 
+  }
+
+  // If status is 'processing', calculate progress based on saved pages vs total_pages
+  if (crawlData.status === 'processing') {
+    if (crawlData.total_pages && crawlData.total_pages > 0) {
+      const { count: savedPagesCount, error: countError } = await supabase
+        .from('pages')
+        .select('id', { count: 'exact', head: true })
+        .eq('crawl_id', crawlId);
+
+      if (countError) {
+        console.error(`[getSiteAuditStatus] Error counting saved pages for crawl ${crawlId}:`, countError);
+        // Fallback to a generic processing progress if count fails
+        return { status: 'processing', progress: 50 }; 
+      }
+      
+      const progress = Math.round(((savedPagesCount || 0) / crawlData.total_pages) * 100);
+      console.log(`[getSiteAuditStatus] Processing progress for ${crawlId}: ${savedPagesCount}/${crawlData.total_pages} = ${progress}%`);
+      // Ensure progress doesn't exceed 99% until fully completed by processAuditResults
+      return { status: 'processing', progress: Math.min(progress, 99) }; 
+    } else {
+      // total_pages might be 0 if mapping found no URLs but didn't fail.
+      // or if mapping hasn't updated total_pages yet (less likely if status is processing)
+      console.warn(`[getSiteAuditStatus] Crawl ${crawlId} is 'processing' but total_pages is ${crawlData.total_pages}.`);
+      return { status: 'processing', progress: 20 }; // Default if total_pages is not set
+    }
   }
   
+  // Fallback for any other statuses or unexpected scenarios
+  console.warn(`[getSiteAuditStatus] Unexpected crawl status '${crawlData.status}' for crawlId ${crawlId}.`);
+  return { status: crawlData.status, progress: 0 };
+
+  /* OLD LOGIC to be removed
   // Calculate time-based progress if Firecrawl is still initializing
-  // This gives users feedback even before Firecrawl reports progress
-  let timeBasedProgress = 0;
-  if (crawlData.started_at) {
-    const startTime = new Date(crawlData.started_at).getTime();
-    const currentTime = new Date().getTime();
-    const elapsedSeconds = (currentTime - startTime) / 1000;
-    
-    // Assume initialization takes about 30 seconds
-    if (elapsedSeconds < 30) {
-      timeBasedProgress = Math.min(30, Math.round((elapsedSeconds / 30) * 100 * 0.3));
-      console.log(`Time-based progress: ${timeBasedProgress}%`);
-    }
-    
-    // If it's been running for more than 2 minutes, give at least 50% progress
-    // to avoid the UI appearing stuck
-    if (elapsedSeconds > 120) {
-      timeBasedProgress = Math.max(timeBasedProgress, 50);
-      console.log(`Long-running crawl, setting minimum progress to 50%`);
-      
-      // If it's been running for more than 5 minutes, mark it as processing with 
-      // higher progress to let the user know we're still working on it
-      if (elapsedSeconds > 300) {
-        console.log(`Very long-running crawl (${Math.round(elapsedSeconds/60)} minutes), marking as processing`);
-        return {
-          status: 'processing',
-          progress: 75
-        };
-      }
-    }
-  }
+  // ... (timeBasedProgress calculation was here) ...
   
   // Otherwise, check the status from Firecrawl
   try {
     console.log(`Checking Firecrawl status for run ID: ${crawlData.apify_run_id}`);
-    const firecrawlStatus = await getCrawlStatus(crawlData.apify_run_id);
+    const firecrawlStatus = await getCrawlStatus(crawlData.apify_run_id); // getCrawlStatus from firecrawl-client
     console.log(`Firecrawl status: ${JSON.stringify(firecrawlStatus)}`);
     
-    // Use the higher of time-based or Firecrawl-reported progress
     const progress = Math.max(timeBasedProgress, firecrawlStatus.progress);
     
-    // If the Firecrawl crawl is completed, process and store the results
     if (firecrawlStatus.status === 'completed' && crawlData.status !== 'completed') {
       console.log('Firecrawl crawl succeeded, processing results...');
-      // Mark as processing - this will be updated to completed after processing
-      await supabase
-        .from('crawls')
-        .update({ status: 'processing' })
-        .eq('id', crawlId);
-      
-      // Process the results in the background
+      await supabase.from('crawls').update({ status: 'processing' }).eq('id', crawlId);
       processAuditResults(crawlId, crawlData.apify_run_id).catch(console.error);
-      
-      return {
-        status: 'processing',
-        progress: 85 // Show high progress while processing results
-      };
+      return { status: 'processing', progress: 85 };
     }
     
-    // If Firecrawl reports an error status, mark crawl as processing and continue
     if (['failed', 'error'].includes(firecrawlStatus.status)) {
       console.log(`Firecrawl reported status ${firecrawlStatus.status}, marking as processing`);
-      
-      // Process partial results anyway
       processAuditResults(crawlId, crawlData.apify_run_id).catch(console.error);
-      
-      return {
-        status: 'processing',
-        progress: 70 // Show high progress so user knows we're still trying
-      };
+      return { status: 'processing', progress: 70 };
     }
     
-    return {
-      status: crawlData.status,
-      progress
-    };
+    return { status: crawlData.status, progress };
   } catch (error: any) {
     console.error(`Error checking Firecrawl status: ${error?.message || error}`);
-    
-    // Still return some progress based on time to show activity
-    // and don't crash the API
-    return {
-      status: crawlData.status,
-      progress: Math.max(timeBasedProgress, 5) // At least show 5% progress
-    };
+    return { status: crawlData.status, progress: Math.max(timeBasedProgress, 5) };
   }
+  */
 }
 
 // Add a new function to save page data incrementally
@@ -311,7 +342,7 @@ async function savePageData(crawlId: string, page: PageData, llmsTxtData: any, r
     const isDocument = page.metadata?.isDocument || false;
     const contentType = page.metadata?.contentType || 'html';
     
-    const pageRecordToInsert = {
+    const pageRecordToUpsert = {
       crawl_id: crawlId,
       url: page.url,
       status_code: page.metadata?.statusCode || 200,
@@ -327,50 +358,67 @@ async function savePageData(crawlId: string, page: PageData, llmsTxtData: any, r
       schema_types: analysis.schemaTypes.length > 0 ? analysis.schemaTypes : null,
       media_accessibility_score: analysis.scores.mediaAccess
     };
-    console.log(`[savePageData] Attempting to insert page record for ${page.url}:`, JSON.stringify(pageRecordToInsert, null, 2));
+    console.log(`[savePageData] Attempting to upsert page record for ${page.url}:`, JSON.stringify(pageRecordToUpsert, null, 2));
     
-    const { data: pageData, error: pageError } = await supabase
+    const { data: pageUpsertResult, error: pageError } = await supabase
       .from('pages')
-      .insert(pageRecordToInsert)
-      .select('id')
+      .upsert(pageRecordToUpsert, {
+        onConflict: 'crawl_id,url', // Specify conflict columns
+        // ignoreDuplicates: false // Default is false, explicitly setting to ensure it updates
+      })
+      .select('id') // Select the ID, whether inserted or updated
       .single();
     
     if (pageError) {
-      console.error(`[savePageData] CRITICAL: Failed to store page result for ${page.url}:`, JSON.stringify(pageError, null, 2));
-      // Optionally, you might want to throw here or handle it so processAuditResults knows a page failed
+      console.error(`[savePageData] CRITICAL: Failed to upsert page result for ${page.url}:`, JSON.stringify(pageError, null, 2));
       return; 
     }
-    console.log(`[savePageData] Successfully inserted page record for ${page.url}, ID: ${pageData?.id}`);
+    // pageUpsertResult will contain the id of the inserted or updated row.
+    const pageId = pageUpsertResult?.id;
+    if (!pageId) {
+        console.error(`[savePageData] CRITICAL: Upsert for page ${page.url} did not return an ID.`);
+        return;
+    }
+    console.log(`[savePageData] Successfully upserted page record for ${page.url}, ID: ${pageId}`);
     
+    // For issues and recommendations, it's generally safer to delete existing ones for this pageId and re-insert.
+    // This avoids accumulating old issues/recommendations if the page is re-analyzed.
+    
+    // Delete existing issues for this page
+    const { error: deleteIssuesError } = await supabase.from('issues').delete().eq('page_id', pageId);
+    if (deleteIssuesError) {
+      console.warn(`[savePageData] Failed to delete existing issues for page ${pageId}:`, JSON.stringify(deleteIssuesError, null, 2));
+    }
+
     if (analysis.issues && analysis.issues.length > 0) {
-      console.log(`[savePageData] Storing ${analysis.issues.length} issues for page ${pageData.id}`);
-      for (const issue of analysis.issues) {
-        const issueRecord = {
-          page_id: pageData.id,
-          type: issue.type,
-          severity: issue.type === 'critical' ? 'high' : issue.type === 'warning' ? 'medium' : 'low',
-          message: issue.message,
-          context: issue.context ? { content: issue.context } : null,
-          fix_suggestion: issue.fixSuggestion,
-          resource_url: issue.url
-        };
-        // console.log(`[savePageData] Inserting issue:`, JSON.stringify(issueRecord, null, 2));
-        const { error: issueInsertError } = await supabase.from('issues').insert(issueRecord);
-        if (issueInsertError) {
-          console.warn(`[savePageData] Failed to insert issue for page ${pageData.id}:`, JSON.stringify(issueInsertError, null, 2));
-        }
+      console.log(`[savePageData] Storing ${analysis.issues.length} issues for page ${pageId}`);
+      const issueRecords = analysis.issues.map(issue => ({
+        page_id: pageId,
+        type: issue.type,
+        severity: issue.type === 'critical' ? 'high' : issue.type === 'warning' ? 'medium' : 'low',
+        message: issue.message,
+        context: issue.context ? { content: issue.context } : null,
+        fix_suggestion: issue.fixSuggestion,
+        resource_url: issue.url
+      }));
+      const { error: issueInsertError } = await supabase.from('issues').insert(issueRecords);
+      if (issueInsertError) {
+        console.warn(`[savePageData] Failed to insert issues for page ${pageId}:`, JSON.stringify(issueInsertError, null, 2));
       }
+    }
+
+    // Delete existing recommendations for this page
+    const { error: deleteRecsError } = await supabase.from('recommendations').delete().eq('page_id', pageId);
+    if (deleteRecsError) {
+      console.warn(`[savePageData] Failed to delete existing recommendations for page ${pageId}:`, JSON.stringify(deleteRecsError, null, 2));
     }
     
     if (analysis.recommendations && analysis.recommendations.length > 0) {
-      console.log(`[savePageData] Storing ${analysis.recommendations.length} recommendations for page ${pageData.id}`);
-      for (const recommendation of analysis.recommendations) {
-        const recRecord = { page_id: pageData.id, text: recommendation };
-        // console.log(`[savePageData] Inserting recommendation:`, JSON.stringify(recRecord, null, 2));
-        const { error: recInsertError } = await supabase.from('recommendations').insert(recRecord);
-        if (recInsertError) {
-          console.warn(`[savePageData] Failed to insert recommendation for page ${pageData.id}:`, JSON.stringify(recInsertError, null, 2));
-        }
+      console.log(`[savePageData] Storing ${analysis.recommendations.length} recommendations for page ${pageId}`);
+      const recRecords = analysis.recommendations.map(recommendation => ({ page_id: pageId, text: recommendation }));
+      const { error: recInsertError } = await supabase.from('recommendations').insert(recRecords);
+      if (recInsertError) {
+        console.warn(`[savePageData] Failed to insert recommendations for page ${pageId}:`, JSON.stringify(recInsertError, null, 2));
       }
     }
     
@@ -442,219 +490,101 @@ async function updateCrawlStats(crawlId: string): Promise<void> {
 /**
  * Process and store the audit results
  */
-async function processAuditResults(crawlId: string, firecrawlId: string): Promise<void> {
-  console.log(`[processAuditResults] Entered for crawlId: ${crawlId}, firecrawlId: ${firecrawlId}`);
+async function processAuditResults(crawlId: string, urlsToScrape: string[]): Promise<void> {
+  console.log(`[processAuditResults] Entered for crawlId: ${crawlId}, ${urlsToScrape.length} URLs to process.`);
   try {
-    console.log(`Starting to process audit results for crawl ${crawlId}, Firecrawl run ${firecrawlId}`);
-    
-    // Get the crawl record
+    // Get the crawl record for site_id and other options
     const { data: crawlData, error: crawlError } = await supabase
       .from('crawls')
-      .select('site_id, include_documents, perform_interactive_actions')
+      .select('site_id, include_documents, perform_interactive_actions') // Keep existing selections
       .eq('id', crawlId)
       .single();
     
-    if (crawlError) {
-      console.error(`Failed to get crawl record: ${crawlError.message}`);
-      throw new Error(`Failed to get crawl record: ${crawlError.message}`);
+    if (crawlError || !crawlData) {
+      console.error(`[processAuditResults] Failed to get crawl record for ${crawlId}:`, crawlError);
+      throw new Error(`Failed to get crawl record for ${crawlId}: ${crawlError?.message}`);
     }
     
-    // Get the site record
     const { data: siteData, error: siteError } = await supabase
       .from('sites')
       .select('domain')
       .eq('id', crawlData.site_id)
       .single();
     
-    if (siteError) {
-      console.error(`Failed to get site record: ${siteError.message}`);
-      throw new Error(`Failed to get site record: ${siteError.message}`);
+    if (siteError || !siteData) {
+      console.error(`[processAuditResults] Failed to get site record for site_id ${crawlData.site_id}:`, siteError);
+      throw new Error(`Failed to get site record for site_id ${crawlData.site_id}: ${siteError?.message}`);
     }
-    
-    // Check for llms.txt (don't fail if this fails)
+
+    const domain = siteData.domain;
     let llmsTxtData = null;
     try {
-      llmsTxtData = await checkForLlmsTxt(`https://${siteData.domain}`);
-      console.log(`llms.txt check result: ${JSON.stringify(llmsTxtData)}`);
+      llmsTxtData = await checkForLlmsTxt(`https://${domain}`);
+      console.log(`[processAuditResults] llms.txt check for ${domain}:`, llmsTxtData ? `Exists, ${llmsTxtData.urls?.length} URLs` : 'Not found or error');
     } catch (llmsError) {
-      console.error('Error checking for llms.txt:', llmsError);
-      // Continue without llms.txt data
+      console.error(`[processAuditResults] Error checking for llms.txt on ${domain}:`, llmsError);
     }
-    
-    // Check for robots.txt (don't fail if this fails)
+
     let robotsTxtData = null;
     try {
-      robotsTxtData = await checkRobotsTxt(`https://${siteData.domain}`);
-      console.log(`robots.txt check result: ${JSON.stringify({
-        exists: robotsTxtData.exists,
-        blocksAI: robotsTxtData.blocksAI,
-        hasSitemap: robotsTxtData.hasSitemap
-      })}`);
+      robotsTxtData = await checkRobotsTxt(`https://${domain}`);
+      console.log(`[processAuditResults] robots.txt check for ${domain}:`, robotsTxtData ? `Exists, hasSitemap: ${robotsTxtData.hasSitemap}` : 'Not found or error');
     } catch (robotsError) {
-      console.error('Error checking for robots.txt:', robotsError);
-      // Continue without robots.txt data
+      console.error(`[processAuditResults] Error checking for robots.txt on ${domain}:`, robotsError);
     }
-    
-    // Get the crawl results from Firecrawl
-    console.log(`[processAuditResults] Retrieving crawl results from Firecrawl for run ${firecrawlId}`);
-    let pageResults = [];
-    try {
-      pageResults = await getCrawlResults(firecrawlId);
-      console.log(`[processAuditResults] Received ${pageResults.length} pages from Firecrawl.`);
-      if (pageResults.length === 0) {
-          console.warn(`[processAuditResults] Firecrawl returned 0 pages for job ${firecrawlId}.`);
-      } else {
-          console.log(`[processAuditResults] First page sample: ${JSON.stringify(pageResults[0]?.url)}`);
-      }
-    } catch (resultsError) {
-      console.error('[processAuditResults] CRITICAL: Error getting crawl results from Firecrawl:', resultsError);
-      // ... (keep existing placeholder logic or decide to fail harder) ...
-      // Forcing a failure if results can't be fetched
-      await supabase.from('crawls').update({ status: 'failed', completed_at: new Date().toISOString(), aeo_score: -1 }).eq('id', crawlId);
+
+    if (!urlsToScrape || urlsToScrape.length === 0) {
+      console.warn(`[processAuditResults] No URLs provided to scrape for crawlId ${crawlId}. Marking as completed.`);
+      await supabase.from('crawls').update({ status: 'completed', completed_at: new Date().toISOString(), total_pages: 0 }).eq('id', crawlId);
       return;
     }
-    
-    console.log(`[processAuditResults] Processing ${pageResults.length} pages from crawl results for crawlId ${crawlId}.`);
-    
-    // If no pages were found, still complete the crawl but with a warning
-    if (pageResults.length === 0) {
-      console.warn(`No pages found in crawl results. Marking as completed with minimal data.`);
-      
-      await supabase
-        .from('crawls')
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-          total_pages: 0,
-          aeo_score: 0
-        })
-        .eq('id', crawlId);
-        
-      return;
-    }
-    
-    // If interactive actions are enabled, perform additional checks on the homepage
-    if (crawlData.perform_interactive_actions) {
+
+    console.log(`[processAuditResults] Starting to scrape ${urlsToScrape.length} URLs for crawlId ${crawlId}.`);
+    let pagesProcessedSuccessfully = 0;
+
+    for (let i = 0; i < urlsToScrape.length; i++) {
+      const url = urlsToScrape[i];
+      console.log(`[processAuditResults] Processing URL ${i + 1}/${urlsToScrape.length}: ${url}`);
       try {
-        const homepage = pageResults.find(p => 
-          new URL(p.url).pathname === '/' || 
-          new URL(p.url).pathname === ''
-        );
-        
-        if (homepage) {
-          console.log(`Performing interactive checks on homepage: ${homepage.url}`);
-          
-          // Actions to check for cookie consent, popups, etc.
-          const actions: CrawlAction[] = [
-            { type: 'wait', milliseconds: 3000 },
-            { type: 'screenshot' }, // Take initial screenshot
-            // Look for common cookie banners and accept them
-            { type: 'click', selector: 'button[id*="cookie"], button[class*="cookie"], button[id*="consent"], button[class*="consent"], .cookie-accept, #cookie-accept, .cookie-button, #cookie-button' },
-            { type: 'wait', milliseconds: 1000 },
-            // Look for popups and close them
-            { type: 'click', selector: 'button[class*="close"], button[aria-label*="close"], .modal-close, .popup-close, button[class*="dismiss"]' },
-            { type: 'wait', milliseconds: 1000 },
-            // Scroll down to see how the page behaves
-            { type: 'scroll' },
-            { type: 'wait', milliseconds: 2000 },
-            // Take another screenshot post-interaction
-            { type: 'screenshot' },
-            // Final page scrape
-            { type: 'scrape' }
-          ];
-          
-          // Perform interactive actions and get updated content
-          const interactiveResult = await scrapeWithActions(homepage.url, actions);
-          console.log(`Interactive actions completed on ${homepage.url}`);
-          
-          // Check if screenshots were captured
-          const screenshotsArray = (interactiveResult.metadata as any)?.actions?.screenshots;
-          if (Array.isArray(screenshotsArray) && screenshotsArray.length > 0) {
-            // Save screenshots to database
-            for (const screenshotUrl of screenshotsArray) {
-              await supabase.from('screenshots').insert({
-                crawl_id: crawlId,
-                url: homepage.url,
-                screenshot_url: screenshotUrl,
-                timestamp: new Date().toISOString()
-              });
-            }
-            console.log(`Saved ${screenshotsArray.length} screenshots`);
-          }
+        const pageData = await scrapeSingleUrl(url);
+        if (pageData) {
+          // TODO: Pass include_documents, checkMediaAccessibility to scrapeSingleUrl if they are per-page options
+          // For now, these are crawl-level options, AEO analyzer uses them via llmsTxtData, robotsTxtData
+          await savePageData(crawlId, pageData, llmsTxtData, robotsTxtData);
+          pagesProcessedSuccessfully++;
+          console.log(`[processAuditResults] Successfully processed and saved data for URL: ${url}`);
+        } else {
+          console.warn(`[processAuditResults] Failed to get page data from scrapeSingleUrl for: ${url}`);
         }
-      } catch (interactiveError) {
-        console.error('Error performing interactive actions:', interactiveError);
-        // Continue with normal processing
+      } catch (pageScrapeError) {
+        console.error(`[processAuditResults] Error scraping or saving page ${url}:`, pageScrapeError);
+        // Optionally, log this specific page failure to a different table or update page status if exists
       }
+      // Update progress in DB - this will be reflected by getSiteAuditStatus
+      // No direct update to crawl record's progress field here, as getSiteAuditStatus calculates it
     }
     
-    // Process each page and save results incrementally
-    for (let i = 0; i < pageResults.length; i++) {
-      const page = pageResults[i];
-      console.log(`[processAuditResults] Processing page ${i + 1}/${pageResults.length}: ${page.url}`);
-      await savePageData(crawlId, page, llmsTxtData, robotsTxtData);
-      console.log(`[processAuditResults] Finished savePageData for page ${i + 1}/${pageResults.length}: ${page.url}`);
-    }
+    console.log(`[processAuditResults] Finished processing ${urlsToScrape.length} URLs for crawlId ${crawlId}. ${pagesProcessedSuccessfully} successful.`);
     
-    // Extract page metadata using AI for additional insights
-    try {
-      const homePage = pageResults.find(p => 
-        new URL(p.url).pathname === '/' || 
-        new URL(p.url).pathname === ''
-      );
-      
-      if (homePage) {
-        // Extract website purpose and key features
-        const websiteInsights = await extractWithPrompt(
-          homePage.url,
-          "Extract the website's main purpose, target audience, key features, and primary services offered."
-        );
-        
-        if (websiteInsights) {
-          await supabase
-            .from('crawls')
-            .update({
-              website_purpose: websiteInsights.main_purpose || websiteInsights.purpose,
-              target_audience: websiteInsights.target_audience,
-              key_features: websiteInsights.key_features || websiteInsights.features,
-              primary_services: websiteInsights.primary_services || websiteInsights.services
-            })
-            .eq('id', crawlId);
-            
-          console.log(`Saved website insights data from AI extraction`);
-        }
-      }
-    } catch (aiError) {
-      console.error('Error extracting website insights:', aiError);
-      // Continue with normal processing
-    }
-    
-    console.log(`[processAuditResults] All pages processed for crawlId ${crawlId}. Updating crawl status to completed.`);
+    // Final update to mark crawl as completed and update final stats.
+    // updateCrawlStats is called by savePageData, so stats should be up-to-date.
     await supabase
       .from('crawls')
-      .update({
-        status: 'completed',
+      .update({ 
+        status: 'completed', 
         completed_at: new Date().toISOString()
-        // aeo_score will be updated by updateCrawlStats
+        // total_pages was set at the start from mappedUrls.length
+        // aeo_score and other percentages are updated by updateCrawlStats via savePageData
       })
       .eq('id', crawlId);
-    
-    console.log(`[processAuditResults] Successfully completed processing all pages for crawl ${crawlId}`);
-    
+    console.log(`[processAuditResults] Crawl ${crawlId} marked as completed.`);
+
   } catch (error: any) {
     console.error(`[processAuditResults] CRITICAL UNHANDLED ERROR for crawlId ${crawlId}:`, error);
     try {
-      await supabase
-        .from('crawls')
-        .update({
-          status: 'failed',
-          completed_at: new Date().toISOString(),
-          aeo_score: -1 // Indicate error
-        })
-        .eq('id', crawlId);
-      console.log(`[processAuditResults] Marked crawl ${crawlId} as failed due to unhandled error.`);
+      await supabase.from('crawls').update({ status: 'failed', completed_at: new Date().toISOString(), aeo_score: -1 }).eq('id', crawlId);
     } catch (dbError) {
-      console.error(`[processAuditResults] CRITICAL: Failed to mark crawl ${crawlId} as failed after another error:`, dbError);
+      console.error(`[processAuditResults] CRITICAL: Failed to mark crawl ${crawlId} as failed after error:`, dbError);
     }
   }
 }

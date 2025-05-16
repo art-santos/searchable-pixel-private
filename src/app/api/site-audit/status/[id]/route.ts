@@ -7,8 +7,9 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const cookieStore = await cookies();
   try {
-    // Get the crawl ID from the URL
+    console.log(`[API Route Debug - ${req.method} ${req.nextUrl.pathname}] Raw params object:`, JSON.stringify(params, null, 2));
     const crawlId = params.id;
     
     if (!crawlId) {
@@ -18,22 +19,27 @@ export async function GET(
       );
     }
     
-    // Check authentication
-    const cookieStore = cookies();
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+      console.error('Missing Supabase URL or Service Key for GET status route');
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_KEY || '',
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_KEY!,
       {
         cookies: {
-          get: async (name) => {
-            const cookie = await cookieStore.get(name);
-            return cookie?.value;
+          get: async (name: string) => {
+            return cookieStore.get(name)?.value;
           },
-          set: async (name, value, options) => {
-            await cookieStore.set(name, value, options);
+          set: (name: string, value: string, options: any) => {
+            console.warn(`[Supabase Cookie] Attempted to set cookie in GET route (/api/site-audit/status): ${name}`);
           },
-          remove: async (name, options) => {
-            await cookieStore.remove(name, options);
+          remove: (name: string, options: any) => {
+            console.warn(`[Supabase Cookie] Attempted to remove cookie in GET route (/api/site-audit/status): ${name}`);
           },
         },
       }
@@ -53,11 +59,11 @@ export async function GET(
     
     // Return the status
     return NextResponse.json(status);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error checking crawl status:', error);
     
     return NextResponse.json(
-      { error: 'Failed to check crawl status' },
+      { error: 'Failed to check crawl status', details: error?.message || String(error) },
       { status: 500 }
     );
   }
