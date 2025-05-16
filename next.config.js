@@ -1,9 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Re-enable type-checking by removing the temporary workaround.
   typescript: {
-    // This is a temporary workaround for the params type issue
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
+  // Enable React Strict Mode to highlight potential problems.
+  reactStrictMode: true,
   images: {
     remotePatterns: [
       {

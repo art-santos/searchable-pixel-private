@@ -15,7 +15,7 @@ async function testSupabase() {
     console.error('❌ Missing environment variables:');
     console.error(`NEXT_PUBLIC_SUPABASE_URL: ${supabaseUrl ? '✅' : '❌'}`);
     console.error(`NEXT_PUBLIC_SUPABASE_ANON_KEY: ${supabaseAnonKey ? '✅' : '❌'}`);
-    return;
+    process.exit(1);
   }
   
   // Create client
@@ -27,7 +27,7 @@ async function testSupabase() {
     
     if (error) {
       console.error('❌ Connection test failed:', error);
-      return;
+      process.exit(1);
     }
     
     console.log('✅ Connection successful!');
@@ -39,6 +39,7 @@ async function testSupabase() {
     
     if (authResponse.error) {
       console.error('❌ Auth test failed:', authResponse.error);
+      process.exit(1);
     } else {
       console.log('✅ Auth is working!');
     }
@@ -52,6 +53,7 @@ async function testSupabase() {
     
     if (profilesError) {
       console.error('❌ Profiles table test failed:', profilesError);
+      process.exit(1);
     } else {
       console.log('✅ Profiles table is accessible!');
       console.log('Sample profile:', profiles.length ? JSON.stringify(profiles[0], null, 2) : 'No profiles found');
@@ -59,6 +61,7 @@ async function testSupabase() {
     
   } catch (err) {
     console.error('❌ Unexpected error:', err);
+    process.exit(1);
   }
 }
 

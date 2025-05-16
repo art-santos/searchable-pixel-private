@@ -55,8 +55,8 @@ async function getConfig(): Promise<CLIOptions> {
       name: 'domain',
       message: 'Production domain:',
       validate: (input: string) => {
-        return /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+$/.test(input) 
-          ? true 
+        return /^[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+$/.test(input)
+          ? true
           : 'Enter valid domain (e.g. example.com)';
       },
     },
@@ -92,28 +92,28 @@ export async function runCLI(): Promise<void> {
     try {
       await createContentFolder(options);
     } catch (error) {
-      console.error('Warning: Could not create content folder');
+      console.error('Warning: Could not create content folder:', error);
     }
     
     // Update sitemap
     try {
       await updateSitemap(options);
     } catch (error) {
-      console.error('Warning: Could not update sitemap');
+      console.error('Warning: Could not update sitemap:', error);
     }
     
     // Update llms.txt
     try {
       await updateLlmsTxt(options);
     } catch (error) {
-      console.error('Warning: Could not update llms.txt');
+      console.error('Warning: Could not update llms.txt:', error);
     }
     
     // Register site
     try {
       await registerSite(options);
     } catch (error) {
-      console.error('Warning: Could not register site');
+      console.error('Warning: Could not register site:', error);
     }
     
     console.log('Setup complete!');
