@@ -32,22 +32,22 @@ export interface PageData {
     ogImage?: string;
     ogLocaleAlternate?: string[];
     ogSiteName?: string;
-    structuredData?: any[];
-    contentType?: string; // For identifying PDFs, images, etc.
+    structuredData?: any[]; // This is from Firecrawl's metadata
+    contentType?: string; 
     isDocument?: boolean;
   };
-  // New field for extracted structured data
-  structuredData?: any;
+  extractedStructuredData?: any; // Renamed to avoid conflict, for data from extractStructuredData
 }
 
-// Action types for interactive crawling
-export interface CrawlAction {
-  type: 'click' | 'wait' | 'scroll' | 'write' | 'press' | 'screenshot' | 'scrape';
-  selector?: string;
-  milliseconds?: number;
-  text?: string;
-  key?: string;
-}
+// Action types for interactive crawling - making this a discriminated union
+export type CrawlAction =
+  | { type: 'click'; selector: string; all?: boolean }
+  | { type: 'wait'; milliseconds?: number; selector?: string } // selector can be optional for a general wait
+  | { type: 'scroll'; x?: number; y?: number; selector?: string } // scroll window or element
+  | { type: 'write'; selector: string; text: string }
+  | { type: 'press'; key: string } // e.g. 'Enter', 'Escape'
+  | { type: 'screenshot'; fullPage?: boolean; filename?: string } // filename might be a useful addition if SDK supports custom name
+  | { type: 'scrape'; selector?: string }; // scrape a specific part or the whole page again
 
 /**
  * Start a website crawl using Firecrawl
@@ -60,19 +60,22 @@ export async function startCrawl(options: CrawlOptions): Promise<string> {
   const {
     siteUrl,
     maxPages = 100,
-    // All other options (maxDepth, includeDocuments, etc.) are removed from this call
-    // to use Firecrawl's defaults and ensure basic job submission works.
+    // All other advanced options (maxDepth, includeDocuments, etc.) are intentionally
+    // OMITTED from this call for now. We must use the most basic SDK signature
+    // to avoid the 'unrecognized_keys' error from the Firecrawl API.
+    // If these features are needed, we must find how the Node SDK expects them (e.g., nested options)
+    // or if it supports them at all for asyncCrawlUrl.
   } = options;
 
-  // Parameters strictly based on minimal Node.js SDK examples for asyncCrawlUrl
   const paramsForFirecrawl: any = {
-    limit: maxPages, 
-    scrapeOptions: {  
+    limit: maxPages, // This is a documented parameter
+    scrapeOptions: {  // This is a documented parameter
       formats: ['markdown', 'html'],
+      // We cannot reliably pass include_docs here either without knowing if scrapeOptions supports it
     },
   };
 
-  console.log('Firecrawl app.asyncCrawlUrl PARAMS (strictly minimal SDK):', JSON.stringify(paramsForFirecrawl, null, 2));
+  console.log('Firecrawl app.asyncCrawlUrl PARAMS (MINIMAL FOR DEBUGGING):', JSON.stringify(paramsForFirecrawl, null, 2));
   
   try {
     const crawlJob = await app.asyncCrawlUrl(siteUrl, paramsForFirecrawl);
@@ -155,30 +158,39 @@ export async function getCrawlResults(crawlId: string): Promise<PageData[]> {
     console.log(`[firecrawl-client.ts] app.checkCrawlStatus response in getCrawlResults for job ${crawlId}:`, JSON.stringify(result, null, 2));
 
     if (!result.success) {
-      console.error('[firecrawl-client.ts] getCrawlResults (via checkCrawlStatus) failed:', result.error);
+      console.error('[firecrawl-client.ts] getCrawlResults (via checkCrawlStatus) failed:', 'error' in result ? result.error : 'Unknown error');
       return [];
     }
     
-    const firecrawlData = result.data;
-    if (typeof firecrawlData === 'object' && firecrawlData !== null && 
-        'status' in firecrawlData && (firecrawlData as any).status === 'completed') {
+    // Assuming result itself is the status object when success is true, and it might contain a 'data' array of pages
+    // The Firecrawl SDK's checkCrawlStatus for a *completed* job returns a structure like:
+    // { success: true, data: [ {page data}, {page data}, ... ], status: "completed", total: X, completed: X, ... }
+    // OR it might be { success: true, status: "completed", data: { data: [...] } } - the log will clarify
+    // Based on previous logs: result.data is the status object, and result.data.data is the array of pages.
+
+    const firecrawlStatusObject = result.data; // This is the object like { status: 'completed', data: [...] }
+
+    if (typeof firecrawlStatusObject === 'object' && firecrawlStatusObject !== null &&
+        'status' in firecrawlStatusObject && (firecrawlStatusObject as any).status === 'completed') {
       
-      if (Array.isArray((firecrawlData as any).data)) {
-        const pageArrayFromFirecrawl = (firecrawlData as any).data;
+      // Check if the actual page data is in firecrawlStatusObject.data
+      const pageArrayFromFirecrawl = (firecrawlStatusObject as any).data;
+
+      if (Array.isArray(pageArrayFromFirecrawl)) {
         if (pageArrayFromFirecrawl.length === 0) {
-          console.warn(`[firecrawl-client.ts] Firecrawl job ${crawlId} completed but returned 0 pages in its data array.`);
+          console.warn(`[firecrawl-client.ts] Firecrawl job ${crawlId} completed but returned 0 pages in its data array (firecrawlStatusObject.data).`);
         }
         const formattedData: PageData[] = pageArrayFromFirecrawl.map((page: any) => {
           // Detect document types
-          const url = page.metadata?.sourceURL || '';
+          const url = page.metadata?.sourceURL || page.url || ''; // page.url as fallback
           const isDocument = /\.(pdf|docx?|xlsx?|pptx?|txt)$/i.test(url);
           const contentType = isDocument 
             ? url.split('.').pop()?.toLowerCase() 
-            : 'html';
+            : (page.metadata?.contentType || 'html');
           
           return {
             url,
-            title: page.metadata?.title || '',
+            title: page.metadata?.title || page.title || '', // page.title as fallback
             markdown: page.markdown || '',
             html: page.html || '',
             metadata: {
@@ -193,26 +205,33 @@ export async function getCrawlResults(crawlId: string): Promise<PageData[]> {
               ogImage: page.metadata?.ogImage,
               ogLocaleAlternate: page.metadata?.ogLocaleAlternate,
               ogSiteName: page.metadata?.ogSiteName,
-              structuredData: page.metadata?.structuredData,
+              structuredData: page.metadata?.structuredData, // from crawl metadata
               contentType,
               isDocument
             },
-            structuredData: page.json // Include any structured data extracted
+            // Ensure 'json' from Firecrawl (which might be LLM extracted during crawl) is mapped
+            // This was 'page.json' before, assuming it comes with each page item
+            extractedStructuredData: page.json || page.structured_data || null 
           };
         });
         
         return formattedData;
       } else {
-        console.error('[firecrawl-client.ts] Firecrawl getCrawlResults returned unexpected data structure or status not completed. Data:', firecrawlData);
+        console.error('[firecrawl-client.ts] Firecrawl getCrawlResults: status is completed, but firecrawlStatusObject.data is not an array. Data:', firecrawlStatusObject);
         return [];
       }
-    } else {
-      console.error('[firecrawl-client.ts] Firecrawl getCrawlResults returned unexpected data structure or status not completed. Data:', firecrawlData);
+    } else if (typeof firecrawlStatusObject === 'object' && firecrawlStatusObject !== null && 'status' in firecrawlStatusObject) {
+      console.warn(`[firecrawl-client.ts] Firecrawl job ${crawlId} status is not 'completed'. Status: ${(firecrawlStatusObject as any).status}. Full status object:`, firecrawlStatusObject);
+      return []; // Not completed yet, or another status
+    }
+    else {
+      console.error('[firecrawl-client.ts] Firecrawl getCrawlResults returned unexpected data structure. Full result:', result);
       return [];
     }
-  } catch (error: any) { // Added type for error
+  } catch (error: any) { 
     console.error(`[firecrawl-client.ts] Error in getCrawlResults for job ${crawlId}:`, error);
-    throw new Error(`Failed to get crawl results from Firecrawl: ${error?.message || error}`); // Re-throw or handle as appropriate
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to get crawl results from Firecrawl: ${message}`);
   }
 }
 
@@ -221,27 +240,26 @@ export async function getCrawlResults(crawlId: string): Promise<PageData[]> {
  */
 export async function extractStructuredData(url: string, schema: any): Promise<any> {
   try {
-    // Use the client instance to scrape
     const scrapeResult = await app.scrapeUrl(url, {
-      formats: ['json'],
-      // Corrected based on documentation: jsonOptions with schema for LLM extraction
+      formats: ['json'], // Requesting JSON output
       jsonOptions: { 
           schema: schema, 
-          mode: 'llm-extraction' // Retaining mode as it's commonly used, though docs only show schema
+          // mode: 'llm-extraction' // Removed: 'mode' is not a recognized key
       }
     });
 
     if (!scrapeResult.success) {
-        console.error('Firecrawl extractStructuredData failed:', scrapeResult.error);
+        console.error('Firecrawl extractStructuredData failed:', 'error' in scrapeResult ? scrapeResult.error : 'Unknown error');
         return {};
     }
     
-    // The extracted data might be in `scrapeResult.data.json` or `scrapeResult.data.llm_extraction`
-    // Checking both as per different documentation examples
-    return scrapeResult.data?.json || scrapeResult.data?.llm_extraction || {};
+    // Assuming the LLM extracted data is in scrapeResult.json or scrapeResult.llm_extraction
+    // The SDK type for ScrapeResponse<T, never> suggests formats like .markdown, .html, .json are top-level
+    return scrapeResult.json || (scrapeResult as any).llm_extraction || {};
   } catch (error) {
     console.error('Error extracting structured data:', error);
-    return {};
+    const message = error instanceof Error ? error.message : String(error);
+    return { error: `Extraction failed: ${message}` };
   }
 }
 
@@ -250,24 +268,23 @@ export async function extractStructuredData(url: string, schema: any): Promise<a
  */
 export async function extractWithPrompt(url: string, prompt: string): Promise<any> {
   try {
-    // Use the client instance to scrape
     const scrapeResult = await app.scrapeUrl(url, {
-      formats: ['json'],
-      // Corrected based on documentation: jsonOptions with prompt
+      formats: ['json'], // Requesting JSON output
       jsonOptions: { 
         prompt
       }
     });
 
     if (!scrapeResult.success) {
-        console.error('Firecrawl extractWithPrompt failed:', scrapeResult.error);
+        console.error('Firecrawl extractWithPrompt failed:', 'error' in scrapeResult ? scrapeResult.error : 'Unknown error');
         return {};
     }
     
-    return scrapeResult.data?.json || {}; // Access data object
+    return scrapeResult.json || {}; // Access json property directly
   } catch (error) {
     console.error('Error extracting with prompt:', error);
-    return {};
+    const message = error instanceof Error ? error.message : String(error);
+    return { error: `Extraction with prompt failed: ${message}` };
   }
 }
 
@@ -277,28 +294,38 @@ export async function extractWithPrompt(url: string, prompt: string): Promise<an
 export async function scrapeWithActions(url: string, actions: CrawlAction[]): Promise<PageData> {
   try {
     // Use the client instance to scrape with actions
+    // The 'actions' type needs to align with FirecrawlApp's expected Action[] type.
+    // Our redefined CrawlAction should be closer.
     const scrapeResult = await app.scrapeUrl(url, {
-      formats: ['markdown', 'html'],
-      actions
+      formats: ['markdown', 'html', 'json'], // also get json if available
+      actions: actions as any, // Using 'as any' for now if CrawlAction is not perfectly matching SDK's Action[]
+                               // TODO: Ensure CrawlAction perfectly matches Firecrawl SDK's exported Action type or structure
     });
 
     if (!scrapeResult.success) {
-        console.error('Firecrawl scrapeWithActions failed:', scrapeResult.error);
-        throw new Error(`Failed to scrape with actions: ${scrapeResult.error}`);
+        const errorDetails = 'error' in scrapeResult ? scrapeResult.error : 'Unknown error';
+        console.error('Firecrawl scrapeWithActions failed:', errorDetails);
+        throw new Error(`Failed to scrape with actions: ${JSON.stringify(errorDetails)}`);
     }
-    const resultData = scrapeResult.data; // Access data object
     
+    // Access properties like .markdown, .html, .metadata directly from scrapeResult
+    const metadata = (scrapeResult as any).metadata || {}; // Cast if metadata is not on base ScrapeResponse
+    const structuredData = scrapeResult.json || null;
+
     return {
-      url: resultData.metadata?.sourceURL || url,
-      title: resultData.metadata?.title || '',
-      markdown: resultData.markdown || '',
-      html: resultData.html || '',
-      metadata: resultData.metadata || {},
-      structuredData: resultData.json || null
+      url: metadata.sourceURL || url,
+      title: metadata.title || '',
+      markdown: scrapeResult.markdown || '',
+      html: scrapeResult.html || '',
+      metadata: metadata,
+      extractedStructuredData: structuredData
     };
   } catch (error) {
     console.error('Error scraping with actions:', error);
-    throw new Error(`Failed to scrape with actions: ${error.message}`);
+    if (error instanceof Error) {
+      throw new Error(`Failed to scrape with actions: ${error.message}`);
+    }
+    throw new Error(`Failed to scrape with actions: ${String(error)}`);
   }
 }
 
@@ -307,22 +334,18 @@ export async function scrapeWithActions(url: string, actions: CrawlAction[]): Pr
  */
 export async function checkForLlmsTxt(domain: string): Promise<any> {
   try {
-    // Try to scrape the llms.txt file
-    const llmsTxtUrl = `${domain}/llms.txt`;
-    // Use the client instance to scrape
+    const llmsTxtUrl = `${domain.startsWith('http') ? '' : 'https://'}${domain}/llms.txt`;
     const scrapeResult = await app.scrapeUrl(llmsTxtUrl, {
-      formats: ['markdown']
+      formats: ['markdown'] // Requesting markdown content
     });
 
-    if (!scrapeResult.success) {
-        console.error('Firecrawl checkForLlmsTxt failed:', scrapeResult.error);
-        return { exists: false, status: 404 }; // Mimic previous error structure
+    if (!scrapeResult.success || !scrapeResult.markdown) { // Check for markdown existence
+        console.warn(`[firecrawl-client.ts] checkForLlmsTxt: Failed to scrape ${llmsTxtUrl} or no markdown data. Error: ${'error' in scrapeResult ? scrapeResult.error : 'No markdown content'}`);
+        return { exists: false, status: scrapeResult.success ? 404 : 500, content: '', urls: [] }; //
     }
-    const resultData = scrapeResult.data; // Access data object
     
-    // Process the llms.txt content
-    const content = resultData.markdown || '';
-    const lines = content.split('\n').filter(line => line && !line.startsWith('#'));
+    const content = scrapeResult.markdown || '';
+    const lines = content.split('\\n').filter((line: string) => line && !line.startsWith('#'));
     
     return {
       exists: true,
@@ -341,21 +364,17 @@ export async function checkForLlmsTxt(domain: string): Promise<any> {
  */
 export async function checkRobotsTxt(domain: string): Promise<any> {
   try {
-    // Try to scrape the robots.txt file
-    const robotsTxtUrl = `${domain}/robots.txt`;
-    // Use the client instance to scrape
+    const robotsTxtUrl = `${domain.startsWith('http') ? '' : 'https://'}${domain}/robots.txt`;
     const scrapeResult = await app.scrapeUrl(robotsTxtUrl, {
-      formats: ['markdown']
+      formats: ['markdown'] // Requesting markdown content
     });
 
-    if (!scrapeResult.success) {
-        console.error('Firecrawl checkRobotsTxt failed:', scrapeResult.error);
-        return { exists: false, status: 404 }; // Mimic previous error structure
+    if (!scrapeResult.success || !scrapeResult.markdown) { // Check for markdown existence
+        console.warn(`[firecrawl-client.ts] checkRobotsTxt: Failed to scrape ${robotsTxtUrl} or no markdown data. Error: ${'error' in scrapeResult ? scrapeResult.error : 'No markdown content'}`);
+        return { exists: false, status: scrapeResult.success ? 404 : 500, content: '', userAgents: [], disallows: [], allows: [], sitemaps: [], hasSitemap: false, blocksAI: false };
     }
-    const resultData = scrapeResult.data; // Access data object
     
-    // Process the robots.txt content
-    const content = resultData.markdown || '';
+    const content = scrapeResult.markdown || '';
     
     // Simple parser for robots.txt
     const userAgents = [];
