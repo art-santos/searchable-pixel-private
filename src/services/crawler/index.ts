@@ -87,16 +87,6 @@ export async function startSiteAudit(options: {
       try {
         console.log('Creating crawl record for site:', siteData.id);
         
-        // Debug: Check the database schema before insertion
-        console.log('Checking crawls table schema before insertion...');
-        const { error: schemaError } = await supabase.rpc('get_column_names', { 
-          table_name: 'crawls' 
-        });
-        
-        if (schemaError) {
-          console.error('Error fetching schema:', schemaError);
-        }
-        
         const crawlRecord = {
           site_id: siteData.id,
           status: 'started',
@@ -165,21 +155,21 @@ export async function startSiteAudit(options: {
             crawlId: crawlData.id,
             siteId: siteData.id
           };
-        } catch (crawlError) {
+        } catch (crawlError: any) {
           console.error('Failed to start Firecrawl:', crawlError);
-          throw new Error(`Failed to start Firecrawl crawl: ${crawlError.message}`);
+          throw new Error(`Failed to start Firecrawl crawl: ${crawlError?.message || crawlError}`);
         }
-      } catch (crawlCreationError) {
+      } catch (crawlCreationError: any) {
         console.error('Failed during crawl creation:', crawlCreationError);
         throw crawlCreationError;
       }
-    } catch (siteCreationError) {
+    } catch (siteCreationError: any) {
       console.error('Failed during site creation:', siteCreationError);
       throw siteCreationError;
     }
-  } catch (urlError) {
+  } catch (urlError: any) {
     console.error('Invalid URL or normalization error:', urlError);
-    throw new Error(`Invalid URL format: ${urlError.message}`);
+    throw new Error(`Invalid URL format: ${urlError?.message || urlError}`);
   }
 }
 
@@ -293,8 +283,8 @@ export async function getSiteAuditStatus(crawlId: string): Promise<{
       status: crawlData.status,
       progress
     };
-  } catch (error) {
-    console.error(`Error checking Firecrawl status: ${error.message}`);
+  } catch (error: any) {
+    console.error(`Error checking Firecrawl status: ${error?.message || error}`);
     
     // Still return some progress based on time to show activity
     // and don't crash the API
@@ -307,75 +297,89 @@ export async function getSiteAuditStatus(crawlId: string): Promise<{
 
 // Add a new function to save page data incrementally
 async function savePageData(crawlId: string, page: PageData, llmsTxtData: any, robotsTxtData: any): Promise<void> {
+  console.log(`[savePageData] Entered for page: ${page.url}, crawlId: ${crawlId}`);
   try {
-    // Skip failed requests
-    if ((!page.markdown && !page.html) || page.metadata?.statusCode >= 400) {
-      console.log(`Skipping page ${page.url}: No content or bad status code ${page.metadata?.statusCode}`);
+    if ((!page.markdown && !page.html) || (page.metadata?.statusCode && page.metadata.statusCode >= 400)) {
+      console.log(`[savePageData] Skipping page ${page.url}: No content or bad status code ${page.metadata?.statusCode}`);
       return;
     }
     
-    // Analyze the page
+    console.log(`[savePageData] Analyzing page with AEO for: ${page.url}`);
     const analysis = analyzePageForAEO(page, llmsTxtData, robotsTxtData);
+    console.log(`[savePageData] AEO Analysis for ${page.url}:`, JSON.stringify(analysis, null, 2));
     
-    // Determine page type
     const isDocument = page.metadata?.isDocument || false;
     const contentType = page.metadata?.contentType || 'html';
     
-    // Store the page result
+    const pageRecordToInsert = {
+      crawl_id: crawlId,
+      url: page.url,
+      status_code: page.metadata?.statusCode || 200,
+      title: page.title,
+      has_llms_reference: analysis.hasLlmsTxt,
+      has_schema: analysis.hasSchema,
+      is_markdown: analysis.isMarkdownRendered,
+      content_length: (page.markdown?.length || 0) + (page.html?.length || 0),
+      ai_visibility_score: analysis.scores.overall,
+      is_document: isDocument,
+      document_type: contentType,
+      media_count: analysis.mediaCount,
+      schema_types: analysis.schemaTypes.length > 0 ? analysis.schemaTypes : null,
+      media_accessibility_score: analysis.scores.mediaAccess
+    };
+    console.log(`[savePageData] Attempting to insert page record for ${page.url}:`, JSON.stringify(pageRecordToInsert, null, 2));
+    
     const { data: pageData, error: pageError } = await supabase
       .from('pages')
-      .insert({
-        crawl_id: crawlId,
-        url: page.url,
-        status_code: page.metadata?.statusCode || 200,
-        title: page.title,
-        has_llms_reference: analysis.hasLlmsTxt,
-        has_schema: analysis.hasSchema,
-        is_markdown: analysis.isMarkdownRendered,
-        content_length: page.markdown.length + (page.html?.length || 0),
-        ai_visibility_score: analysis.scores.overall,
-        is_document: isDocument,
-        document_type: contentType,
-        media_count: analysis.mediaCount,
-        schema_types: analysis.schemaTypes.length > 0 ? analysis.schemaTypes : null,
-        media_accessibility_score: analysis.scores.mediaAccess
-      })
+      .insert(pageRecordToInsert)
       .select('id')
       .single();
     
     if (pageError) {
-      console.error(`Failed to store page result: ${pageError.message}`);
-      return;
+      console.error(`[savePageData] CRITICAL: Failed to store page result for ${page.url}:`, JSON.stringify(pageError, null, 2));
+      // Optionally, you might want to throw here or handle it so processAuditResults knows a page failed
+      return; 
     }
+    console.log(`[savePageData] Successfully inserted page record for ${page.url}, ID: ${pageData?.id}`);
     
-    // Store issues
-    for (const issue of analysis.issues) {
-      await supabase.from('issues').insert({
-        page_id: pageData.id,
-        type: issue.type,
-        severity: issue.type === 'critical' ? 'high' : issue.type === 'warning' ? 'medium' : 'low',
-        message: issue.message,
-        context: issue.context ? { content: issue.context } : null,
-        fix_suggestion: issue.fixSuggestion,
-        resource_url: issue.url
-      });
-    }
-    
-    // Store recommendations if they exist
-    if (analysis.recommendations && analysis.recommendations.length > 0) {
-      for (const recommendation of analysis.recommendations) {
-        await supabase.from('recommendations').insert({
+    if (analysis.issues && analysis.issues.length > 0) {
+      console.log(`[savePageData] Storing ${analysis.issues.length} issues for page ${pageData.id}`);
+      for (const issue of analysis.issues) {
+        const issueRecord = {
           page_id: pageData.id,
-          text: recommendation
-        });
+          type: issue.type,
+          severity: issue.type === 'critical' ? 'high' : issue.type === 'warning' ? 'medium' : 'low',
+          message: issue.message,
+          context: issue.context ? { content: issue.context } : null,
+          fix_suggestion: issue.fixSuggestion,
+          resource_url: issue.url
+        };
+        // console.log(`[savePageData] Inserting issue:`, JSON.stringify(issueRecord, null, 2));
+        const { error: issueInsertError } = await supabase.from('issues').insert(issueRecord);
+        if (issueInsertError) {
+          console.warn(`[savePageData] Failed to insert issue for page ${pageData.id}:`, JSON.stringify(issueInsertError, null, 2));
+        }
       }
     }
     
-    // Update the crawl with latest progress
-    await updateCrawlStats(crawlId);
+    if (analysis.recommendations && analysis.recommendations.length > 0) {
+      console.log(`[savePageData] Storing ${analysis.recommendations.length} recommendations for page ${pageData.id}`);
+      for (const recommendation of analysis.recommendations) {
+        const recRecord = { page_id: pageData.id, text: recommendation };
+        // console.log(`[savePageData] Inserting recommendation:`, JSON.stringify(recRecord, null, 2));
+        const { error: recInsertError } = await supabase.from('recommendations').insert(recRecord);
+        if (recInsertError) {
+          console.warn(`[savePageData] Failed to insert recommendation for page ${pageData.id}:`, JSON.stringify(recInsertError, null, 2));
+        }
+      }
+    }
     
-  } catch (error) {
-    console.error(`Error saving page data for ${page.url}:`, error);
+    console.log(`[savePageData] Calling updateCrawlStats for crawlId: ${crawlId}`);
+    await updateCrawlStats(crawlId);
+    console.log(`[savePageData] Finished for page: ${page.url}`);
+    
+  } catch (error: any) {
+    console.error(`[savePageData] CRITICAL UNHANDLED ERROR for ${page.url}:`, error);
   }
 }
 
@@ -439,6 +443,7 @@ async function updateCrawlStats(crawlId: string): Promise<void> {
  * Process and store the audit results
  */
 async function processAuditResults(crawlId: string, firecrawlId: string): Promise<void> {
+  console.log(`[processAuditResults] Entered for crawlId: ${crawlId}, firecrawlId: ${firecrawlId}`);
   try {
     console.log(`Starting to process audit results for crawl ${crawlId}, Firecrawl run ${firecrawlId}`);
     
@@ -491,28 +496,25 @@ async function processAuditResults(crawlId: string, firecrawlId: string): Promis
     }
     
     // Get the crawl results from Firecrawl
-    console.log(`Retrieving crawl results from Firecrawl for run ${firecrawlId}`);
+    console.log(`[processAuditResults] Retrieving crawl results from Firecrawl for run ${firecrawlId}`);
     let pageResults = [];
     try {
       pageResults = await getCrawlResults(firecrawlId);
-      console.log(`Received ${pageResults.length} pages from crawl results`);
+      console.log(`[processAuditResults] Received ${pageResults.length} pages from Firecrawl.`);
+      if (pageResults.length === 0) {
+          console.warn(`[processAuditResults] Firecrawl returned 0 pages for job ${firecrawlId}.`);
+      } else {
+          console.log(`[processAuditResults] First page sample: ${JSON.stringify(pageResults[0]?.url)}`);
+      }
     } catch (resultsError) {
-      console.error('Error getting crawl results:', resultsError);
-      // Create a placeholder result with the domain for minimal results
-      pageResults = [{
-        url: `https://${siteData.domain}`,
-        title: siteData.domain,
-        markdown: `# ${siteData.domain}\n\nSite crawled with limited results.`,
-        html: `<html><body><h1>${siteData.domain}</h1><p>Site crawled with limited results.</p></body></html>`,
-        metadata: {
-          title: siteData.domain,
-          sourceURL: `https://${siteData.domain}`,
-          statusCode: 200,
-        }
-      }];
+      console.error('[processAuditResults] CRITICAL: Error getting crawl results from Firecrawl:', resultsError);
+      // ... (keep existing placeholder logic or decide to fail harder) ...
+      // Forcing a failure if results can't be fetched
+      await supabase.from('crawls').update({ status: 'failed', completed_at: new Date().toISOString(), aeo_score: -1 }).eq('id', crawlId);
+      return;
     }
     
-    console.log(`Processing ${pageResults.length} pages from crawl results`);
+    console.log(`[processAuditResults] Processing ${pageResults.length} pages from crawl results for crawlId ${crawlId}.`);
     
     // If no pages were found, still complete the crawl but with a warning
     if (pageResults.length === 0) {
@@ -566,9 +568,10 @@ async function processAuditResults(crawlId: string, firecrawlId: string): Promis
           console.log(`Interactive actions completed on ${homepage.url}`);
           
           // Check if screenshots were captured
-          if (interactiveResult.metadata?.actions?.screenshots?.length > 0) {
+          const screenshotsArray = (interactiveResult.metadata as any)?.actions?.screenshots;
+          if (Array.isArray(screenshotsArray) && screenshotsArray.length > 0) {
             // Save screenshots to database
-            for (const screenshotUrl of interactiveResult.metadata.actions.screenshots) {
+            for (const screenshotUrl of screenshotsArray) {
               await supabase.from('screenshots').insert({
                 crawl_id: crawlId,
                 url: homepage.url,
@@ -576,7 +579,7 @@ async function processAuditResults(crawlId: string, firecrawlId: string): Promis
                 timestamp: new Date().toISOString()
               });
             }
-            console.log(`Saved ${interactiveResult.metadata.actions.screenshots.length} screenshots`);
+            console.log(`Saved ${screenshotsArray.length} screenshots`);
           }
         }
       } catch (interactiveError) {
@@ -586,8 +589,11 @@ async function processAuditResults(crawlId: string, firecrawlId: string): Promis
     }
     
     // Process each page and save results incrementally
-    for (const page of pageResults) {
+    for (let i = 0; i < pageResults.length; i++) {
+      const page = pageResults[i];
+      console.log(`[processAuditResults] Processing page ${i + 1}/${pageResults.length}: ${page.url}`);
       await savePageData(crawlId, page, llmsTxtData, robotsTxtData);
+      console.log(`[processAuditResults] Finished savePageData for page ${i + 1}/${pageResults.length}: ${page.url}`);
     }
     
     // Extract page metadata using AI for additional insights
@@ -623,28 +629,33 @@ async function processAuditResults(crawlId: string, firecrawlId: string): Promis
       // Continue with normal processing
     }
     
-    // Update the crawl record to completed
+    console.log(`[processAuditResults] All pages processed for crawlId ${crawlId}. Updating crawl status to completed.`);
     await supabase
       .from('crawls')
       .update({
         status: 'completed',
         completed_at: new Date().toISOString()
+        // aeo_score will be updated by updateCrawlStats
       })
       .eq('id', crawlId);
     
-    console.log(`Completed processing all pages for crawl ${crawlId}`);
+    console.log(`[processAuditResults] Successfully completed processing all pages for crawl ${crawlId}`);
     
-  } catch (error) {
-    console.error('Error processing audit results:', error);
-    
-    // Mark the crawl as failed
-    await supabase
-      .from('crawls')
-      .update({
-        status: 'failed',
-        completed_at: new Date().toISOString()
-      })
-      .eq('id', crawlId);
+  } catch (error: any) {
+    console.error(`[processAuditResults] CRITICAL UNHANDLED ERROR for crawlId ${crawlId}:`, error);
+    try {
+      await supabase
+        .from('crawls')
+        .update({
+          status: 'failed',
+          completed_at: new Date().toISOString(),
+          aeo_score: -1 // Indicate error
+        })
+        .eq('id', crawlId);
+      console.log(`[processAuditResults] Marked crawl ${crawlId} as failed due to unhandled error.`);
+    } catch (dbError) {
+      console.error(`[processAuditResults] CRITICAL: Failed to mark crawl ${crawlId} as failed after another error:`, dbError);
+    }
   }
 }
 
@@ -673,7 +684,7 @@ export async function getPartialCrawlResults(crawlId: string): Promise<any> {
   }
   
   // Get the issues for these pages
-  let issues = [];
+  let issues: any[] = []; // Explicitly typed as any[]
   if (pages.length > 0) {
     const pageIds = pages.map(page => page.id);
     const { data: issuesData, error: issuesError } = await supabase
@@ -681,7 +692,7 @@ export async function getPartialCrawlResults(crawlId: string): Promise<any> {
       .select('page_id, type, severity, message, context, fix_suggestion, resource_url')
       .in('page_id', pageIds);
     
-    if (!issuesError) {
+    if (!issuesError && issuesData) {
       issues = issuesData;
     }
   }
@@ -694,12 +705,13 @@ export async function getPartialCrawlResults(crawlId: string): Promise<any> {
   };
   
   // Group issues by page
-  const pageIssues = {};
+  const pageIssues: { [key: string | number]: any[] } = {}; // Explicit index signature
   for (const issue of issues) {
-    if (!pageIssues[issue.page_id]) {
-      pageIssues[issue.page_id] = [];
+    const pageId = issue.page_id as string | number; 
+    if (!pageIssues[pageId]) {
+      pageIssues[pageId] = [];
     }
-    pageIssues[issue.page_id].push({
+    pageIssues[pageId].push({
       type: issue.type,
       message: issue.message,
       context: issue.context,
@@ -714,13 +726,15 @@ export async function getPartialCrawlResults(crawlId: string): Promise<any> {
     .select('page_id, text')
     .in('page_id', pages.map(page => page.id));
     
-  const pageRecommendations = {};
-  if (!recommendationsError && recommendationsData) {
+  // Group recommendations by page
+  const pageRecommendations: { [key: string | number]: any[] } = {}; // Explicit index signature
+  if (recommendationsData) {
     for (const rec of recommendationsData) {
-      if (!pageRecommendations[rec.page_id]) {
-        pageRecommendations[rec.page_id] = [];
+      const pageId = rec.page_id as string | number; 
+      if (!pageRecommendations[pageId]) {
+        pageRecommendations[pageId] = [];
       }
-      pageRecommendations[rec.page_id].push(rec.text);
+      pageRecommendations[pageId].push(rec.text);
     }
   }
   
@@ -731,10 +745,10 @@ export async function getPartialCrawlResults(crawlId: string): Promise<any> {
     .eq('crawl_id', crawlId);
     
   // Map pages with their issues and recommendations
-  const pagesWithIssues = pages.map(page => ({
+  const pagesWithIssues = pages.map((page: { id: string | number; [key: string]: any }) => ({
     ...page,
-    issues: pageIssues[page.id] || [],
-    recommendations: pageRecommendations[page.id] || []
+    issues: pageIssues[page.id] || [], 
+    recommendations: pageRecommendations[page.id] || [] 
   }));
   
   // Calculate metrics based on current data
@@ -747,7 +761,7 @@ export async function getPartialCrawlResults(crawlId: string): Promise<any> {
     : 0;
   
   // Get document type counts
-  const documentTypes = {};
+  const documentTypes: { [key: string]: number } = {}; // Explicit index signature
   for (const page of pages) {
     if (page.is_document && page.document_type) {
       documentTypes[page.document_type] = (documentTypes[page.document_type] || 0) + 1;
@@ -839,12 +853,13 @@ export async function getSiteAuditResults(crawlId: string): Promise<any> {
   };
   
   // Group issues by page
-  const pageIssues = {};
+  const pageIssues: { [key: string | number]: any[] } = {}; // Explicit index signature
   for (const issue of issues) {
-    if (!pageIssues[issue.page_id]) {
-      pageIssues[issue.page_id] = [];
+    const pageId = issue.page_id as string | number; 
+    if (!pageIssues[pageId]) {
+      pageIssues[pageId] = [];
     }
-    pageIssues[issue.page_id].push({
+    pageIssues[pageId].push({
       type: issue.type,
       message: issue.message,
       context: issue.context,
@@ -854,21 +869,22 @@ export async function getSiteAuditResults(crawlId: string): Promise<any> {
   }
   
   // Group recommendations by page
-  const pageRecommendations = {};
+  const pageRecommendations: { [key: string | number]: any[] } = {}; // Explicit index signature
   if (recommendationsData) {
     for (const rec of recommendationsData) {
-      if (!pageRecommendations[rec.page_id]) {
-        pageRecommendations[rec.page_id] = [];
+      const pageId = rec.page_id as string | number; 
+      if (!pageRecommendations[pageId]) {
+        pageRecommendations[pageId] = [];
       }
-      pageRecommendations[rec.page_id].push(rec.text);
+      pageRecommendations[pageId].push(rec.text);
     }
   }
   
   // Map pages with their issues and recommendations
-  const pagesWithIssues = pages.map(page => ({
+  const pagesWithIssues = pages.map((page: { id: string | number; [key: string]: any }) => ({
     ...page,
-    issues: pageIssues[page.id] || [],
-    recommendations: pageRecommendations[page.id] || []
+    issues: pageIssues[page.id] || [], 
+    recommendations: pageRecommendations[page.id] || [] 
   }));
   
   // Collect schema types used across the site
@@ -880,7 +896,7 @@ export async function getSiteAuditResults(crawlId: string): Promise<any> {
   });
   
   // Get document type counts
-  const documentTypes = {};
+  const documentTypes: { [key: string]: number } = {}; // Explicit index signature
   pages.forEach(page => {
     if (page.is_document && page.document_type) {
       documentTypes[page.document_type] = (documentTypes[page.document_type] || 0) + 1;
@@ -972,7 +988,7 @@ function normalizeUrl(url: string): string {
   // Validate URL
   try {
     new URL(url);
-  } catch (e) {
+  } catch (e: any) { // Typed catch block error
     throw new Error(`Invalid URL format: ${e.message}`);
   }
   

@@ -25,8 +25,15 @@ export async function GET(
       process.env.SUPABASE_SERVICE_KEY || '',
       {
         cookies: {
-          get(name) {
-            return cookieStore.get(name)?.value;
+          get: async (name) => {
+            const cookie = await cookieStore.get(name);
+            return cookie?.value;
+          },
+          set: async (name, value, options) => {
+            await cookieStore.set(name, value, options);
+          },
+          remove: async (name, options) => {
+            await cookieStore.remove(name, options);
           },
         },
       }

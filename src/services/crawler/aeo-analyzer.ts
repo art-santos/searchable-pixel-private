@@ -41,8 +41,8 @@ export function analyzePageForAEO(page: PageData, llmsTxtData?: any, robotsTxtDa
   let documentType = page.metadata?.contentType || null;
   let isMarkdownRendered = false;
   let contentStructure = null;
-  let headingIssues = [];
-  let semantics = { score: 0, issues: [] };
+  let headingIssues: AEOIssue[] = [];
+  let semantics: { score: number, issues: AEOIssue[] } = { score: 0, issues: [] };
   let mediaCount = 0;
   let schemaTypes = [];
   let mediaAccessibilityScore = 0;
@@ -132,23 +132,23 @@ export function analyzePageForAEO(page: PageData, llmsTxtData?: any, robotsTxtDa
   
   const issues: AEOIssue[] = [
     ...(!hasLlmsTxt ? [{
-      type: 'critical', 
+      type: 'critical' as 'critical',
       message: 'No llms.txt file found',
       fixSuggestion: 'Create an llms.txt file in your root directory to specify AI crawler permissions'
     }] : []),
     ...(hasRobotsTxtBlocksAI ? [{
-      type: 'critical',
+      type: 'critical' as 'critical',
       message: 'robots.txt blocks AI crawlers',
       url: `${new URL(page.url).origin}/robots.txt`,
       fixSuggestion: 'Update your robots.txt to allow AI crawlers like ChatGPT, Claude, etc.'
     }] : []),
     ...(!hasSchema && !isDocument ? [{
-      type: 'warning', 
+      type: 'warning' as 'warning',
       message: 'No structured data/schema found',
       fixSuggestion: 'Add structured data using schema.org JSON-LD format'
     }] : []),
     ...(isDocument && documentQualityScore && documentQualityScore < 50 ? [{
-      type: 'warning',
+      type: 'warning' as 'warning',
       message: `Low-quality document format for AI consumption`,
       fixSuggestion: 'Convert document to a more accessible format or provide HTML/text alternatives'
     }] : []),
@@ -158,7 +158,7 @@ export function analyzePageForAEO(page: PageData, llmsTxtData?: any, robotsTxtDa
   
   if (mediaCount > 0 && mediaAccessibilityScore < 50) {
     issues.push({
-      type: 'warning',
+      type: 'warning' as 'warning',
       message: 'Media elements lack proper accessibility for AI understanding',
       fixSuggestion: 'Add descriptive alt text to images and provide transcripts for audio/video'
     });
@@ -184,13 +184,13 @@ export function analyzePageForAEO(page: PageData, llmsTxtData?: any, robotsTxtDa
       contentStructure: contentStructureScore,
       semantics: semanticsScore,
       mediaAccess: mediaAccessibilityScore,
-      documentQuality: documentQualityScore
+      documentQuality: documentQualityScore || undefined
     },
     hasLlmsTxt,
     hasSchema,
     isMarkdownRendered,
     isDocument,
-    documentType,
+    documentType: documentType || undefined,
     schemaTypes,
     mediaCount,
     issues,
@@ -199,7 +199,7 @@ export function analyzePageForAEO(page: PageData, llmsTxtData?: any, robotsTxtDa
 }
 
 function calculateDocumentQualityScore(page: PageData): number {
-  if (!page.metadata?.isDocument) return null;
+  if (!page.metadata?.isDocument) return 0;
   
   const contentType = page.metadata?.contentType || '';
   let score = 50;
@@ -258,8 +258,8 @@ function analyzeMediaAccessibility(root: any): number {
   const audios = root.querySelectorAll('audio');
   
   if (images.length > 0) {
-    const imagesWithoutAlt = images.filter(img => !img.getAttribute('alt') || img.getAttribute('alt').trim() === '');
-    const imagesWithPoorAlt = images.filter(img => {
+    const imagesWithoutAlt = images.filter((img: any) => !img.getAttribute('alt') || img.getAttribute('alt').trim() === '');
+    const imagesWithPoorAlt = images.filter((img: any) => {
       const alt = img.getAttribute('alt');
       return alt && (alt === img.getAttribute('src') || alt.length < 5);
     });
@@ -271,18 +271,18 @@ function analyzeMediaAccessibility(root: any): number {
   }
   
   if (videos.length > 0) {
-    const videosWithTracks = videos.filter(video => video.querySelectorAll('track').length > 0);
+    const videosWithTracks = videos.filter((video: any) => video.querySelectorAll('track').length > 0);
     if (videos.length > 0 && videosWithTracks.length < videos.length) {
       score -= 20;
     }
   }
   
   if (audios.length > 0) {
-    const hasNearbyTranscript = audios.some(audio => {
+    const hasNearbyTranscript = audios.some((audio: any) => {
       const parent = audio.parentNode;
       if (!parent) return false;
       const siblingDivs = parent.querySelectorAll('div');
-      return siblingDivs.some(div => 
+      return siblingDivs.some((div: any) => 
         div.textContent.toLowerCase().includes('transcript') || 
         div.innerHTML.length > 200
       );
@@ -385,7 +385,7 @@ function analyzeSemantics(root: any, title: string): { score: number, issues: AE
   const hasFAQ = 
     root.querySelectorAll('dt, dd').length > 0 || 
     root.innerHTML.includes('FAQ') ||
-    root.querySelectorAll('h2, h3, h4').some(el => 
+    root.querySelectorAll('h2, h3, h4').some((el: any) => 
       el.text.toLowerCase().includes('faq') || 
       el.text.toLowerCase().includes('questions')
     );

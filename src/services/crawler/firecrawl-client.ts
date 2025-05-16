@@ -57,66 +57,44 @@ export async function startCrawl(options: CrawlOptions): Promise<string> {
     throw new Error('FIRECRAWL_API_KEY is not set. Cannot start crawl.');
   }
 
-  const { 
-    siteUrl, 
-    maxPages = 100, 
-    maxDepth = 5, 
-    includeInnerLinks = true,
-    includeRobotsTxt = true,
-    includeSitemap = true,
-    includeDocuments = true
-  } = options;
-  
-  console.log('Starting Firecrawl crawl with options:', JSON.stringify({
+  const {
     siteUrl,
-    maxPages,
-    maxDepth,
-    includeInnerLinks,
-    includeRobotsTxt,
-    includeSitemap,
-    includeDocuments
-  }));
+    maxPages = 100,
+    // All other options (maxDepth, includeDocuments, etc.) are removed from this call
+    // to use Firecrawl's defaults and ensure basic job submission works.
+  } = options;
+
+  // Parameters strictly based on minimal Node.js SDK examples for asyncCrawlUrl
+  const paramsForFirecrawl: any = {
+    limit: maxPages, 
+    scrapeOptions: {  
+      formats: ['markdown', 'html'],
+    },
+  };
+
+  console.log('Firecrawl app.asyncCrawlUrl PARAMS (strictly minimal SDK):', JSON.stringify(paramsForFirecrawl, null, 2));
   
   try {
-    // Corrected parameters for app.crawlUrl
-    const paramsForFirecrawl: any = {
-      limit: maxPages,
-      scrapeOptions: {
-        formats: ['markdown', 'html'],
-      },
-      // Reverting to a flatter structure based on the latest error
-      // but keeping the camelCase for now as per typical SDK conventions.
-      // The API error will tell us if snake_case is strictly needed for these.
-      depth: maxDepth,
-      includeDocs: includeDocuments,
-      followRobotsTxt: includeRobotsTxt,
-      processSitemap: includeSitemap
-    };
+    const crawlJob = await app.asyncCrawlUrl(siteUrl, paramsForFirecrawl);
 
-    // Log the exact parameters being sent
-    console.log('Firecrawl app.crawlUrl PARAMS:', JSON.stringify(paramsForFirecrawl, null, 2));
-
-    const crawlJob = await app.crawlUrl(siteUrl, paramsForFirecrawl);
-
-    if (!crawlJob.success) {
-      let errorDetails = '';
-      if (crawlJob.error && typeof crawlJob.error === 'object') {
-        errorDetails = JSON.stringify(crawlJob.error);
-      } else if (crawlJob.error) {
-        errorDetails = crawlJob.error;
+    if (crawlJob.success && 'id' in crawlJob && crawlJob.id) {
+      console.log('Firecrawl asyncCrawlUrl job submitted successfully with ID:', crawlJob.id);
+      return crawlJob.id;
+    } else {
+      let errorDetails = 'Unknown error submitting Firecrawl job.';
+      if (!crawlJob.success && 'error' in crawlJob) {
+        errorDetails = typeof crawlJob.error === 'object' ? JSON.stringify(crawlJob.error) : String(crawlJob.error);
+      } else if (crawlJob.success && (!('id' in crawlJob) || !crawlJob.id)) {
+        errorDetails = "Firecrawl job submission reported success but no job ID was returned.";
       }
-      console.error('Firecrawl crawl submission failed:', errorDetails);
-      throw new Error(`Failed to submit Firecrawl crawl job: ${errorDetails}`);
+      console.error('Firecrawl asyncCrawlUrl submission failed:', errorDetails);
+      throw new Error(`Failed to submit Firecrawl async crawl job: ${errorDetails}`);
     }
 
-    console.log('Firecrawl crawl job submitted successfully with ID:', crawlJob.id);
-    return crawlJob.id;
-
   } catch (error) {
-    console.error('Error starting Firecrawl crawl:', error);
-    // It's good practice to check if error.message exists
+    console.error('Error in firecrawl-client startCrawl during asyncCrawlUrl:', error);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to start Firecrawl crawl: ${errorMessage}`);
+    throw new Error(`Firecrawl client error: ${errorMessage}`);
   }
 }
 
@@ -130,30 +108,33 @@ export async function getCrawlStatus(crawlId: string): Promise<{
   completed?: number;
 }> {
   try {
-    // Use the client instance to check status
     const statusResult = await app.checkCrawlStatus(crawlId);
 
     if (!statusResult.success) {
       console.error('Firecrawl checkCrawlStatus failed:', statusResult.error);
-      // Even if checking status fails, return an error status but don't crash
-      return {
-        status: 'error',
-        progress: 0,
-      };
+      return { status: 'error', progress: 0 };
     }
     
-    const firecrawlStatus = statusResult.data; // Access data object
+    // Assuming statusResult.data contains the status object when success is true
+    const firecrawlStatusData = statusResult.data;
 
-    // Calculate progress as a percentage
-    const progress = firecrawlStatus.total > 0 
-      ? Math.min(100, Math.round((firecrawlStatus.completed / firecrawlStatus.total) * 100)) 
+    if (typeof firecrawlStatusData !== 'object' || firecrawlStatusData === null || !('status' in firecrawlStatusData)) {
+        console.error('Firecrawl checkCrawlStatus returned unexpected data structure:', firecrawlStatusData);
+        return { status: 'error', progress: 0, total: 0, completed: 0 };
+    }
+
+    const total = typeof (firecrawlStatusData as any).total === 'number' ? (firecrawlStatusData as any).total : 0;
+    const completed = typeof (firecrawlStatusData as any).completed === 'number' ? (firecrawlStatusData as any).completed : 0;
+
+    const progress = total > 0 
+      ? Math.min(100, Math.round((completed / total) * 100)) 
       : 0;
     
     return {
-      status: firecrawlStatus.status,
+      status: String((firecrawlStatusData as any).status), // Ensure status is a string
       progress,
-      total: firecrawlStatus.total,
-      completed: firecrawlStatus.completed
+      total,
+      completed
     };
   } catch (error) {
     console.error('Error checking crawl status:', error);
@@ -169,57 +150,69 @@ export async function getCrawlStatus(crawlId: string): Promise<{
  */
 export async function getCrawlResults(crawlId: string): Promise<PageData[]> {
   try {
-    // Use the client instance to get results. checkCrawlStatus returns data if completed.
     const result = await app.checkCrawlStatus(crawlId);
 
+    console.log(`[firecrawl-client.ts] app.checkCrawlStatus response in getCrawlResults for job ${crawlId}:`, JSON.stringify(result, null, 2));
+
     if (!result.success) {
-      console.error('Firecrawl getCrawlResults (via checkCrawlStatus) failed:', result.error);
+      console.error('[firecrawl-client.ts] getCrawlResults (via checkCrawlStatus) failed:', result.error);
       return [];
     }
     
-    if (result.data.status !== 'completed') {
-      console.log(`Crawl not completed yet. Status: ${result.data.status}`);
-      return [];
-    }
-    
-    // Format the data into our PageData interface
-    const formattedData: PageData[] = result.data.data.map((page: any) => { // result.data.data is where page array is
-      // Detect document types
-      const url = page.metadata?.sourceURL || '';
-      const isDocument = /\.(pdf|docx?|xlsx?|pptx?|txt)$/i.test(url);
-      const contentType = isDocument 
-        ? url.split('.').pop()?.toLowerCase() 
-        : 'html';
+    const firecrawlData = result.data;
+    if (typeof firecrawlData === 'object' && firecrawlData !== null && 
+        'status' in firecrawlData && (firecrawlData as any).status === 'completed') {
       
-      return {
-        url,
-        title: page.metadata?.title || '',
-        markdown: page.markdown || '',
-        html: page.html || '',
-        metadata: {
-          title: page.metadata?.title,
-          description: page.metadata?.description,
-          language: page.metadata?.language,
-          sourceURL: page.metadata?.sourceURL,
-          statusCode: page.metadata?.statusCode,
-          ogTitle: page.metadata?.ogTitle,
-          ogDescription: page.metadata?.ogDescription,
-          ogUrl: page.metadata?.ogUrl,
-          ogImage: page.metadata?.ogImage,
-          ogLocaleAlternate: page.metadata?.ogLocaleAlternate,
-          ogSiteName: page.metadata?.ogSiteName,
-          structuredData: page.metadata?.structuredData,
-          contentType,
-          isDocument
-        },
-        structuredData: page.json // Include any structured data extracted
-      };
-    });
-    
-    return formattedData;
-  } catch (error) {
-    console.error('Error getting crawl results:', error);
-    return [];
+      if (Array.isArray((firecrawlData as any).data)) {
+        const pageArrayFromFirecrawl = (firecrawlData as any).data;
+        if (pageArrayFromFirecrawl.length === 0) {
+          console.warn(`[firecrawl-client.ts] Firecrawl job ${crawlId} completed but returned 0 pages in its data array.`);
+        }
+        const formattedData: PageData[] = pageArrayFromFirecrawl.map((page: any) => {
+          // Detect document types
+          const url = page.metadata?.sourceURL || '';
+          const isDocument = /\.(pdf|docx?|xlsx?|pptx?|txt)$/i.test(url);
+          const contentType = isDocument 
+            ? url.split('.').pop()?.toLowerCase() 
+            : 'html';
+          
+          return {
+            url,
+            title: page.metadata?.title || '',
+            markdown: page.markdown || '',
+            html: page.html || '',
+            metadata: {
+              title: page.metadata?.title,
+              description: page.metadata?.description,
+              language: page.metadata?.language,
+              sourceURL: page.metadata?.sourceURL,
+              statusCode: page.metadata?.statusCode,
+              ogTitle: page.metadata?.ogTitle,
+              ogDescription: page.metadata?.ogDescription,
+              ogUrl: page.metadata?.ogUrl,
+              ogImage: page.metadata?.ogImage,
+              ogLocaleAlternate: page.metadata?.ogLocaleAlternate,
+              ogSiteName: page.metadata?.ogSiteName,
+              structuredData: page.metadata?.structuredData,
+              contentType,
+              isDocument
+            },
+            structuredData: page.json // Include any structured data extracted
+          };
+        });
+        
+        return formattedData;
+      } else {
+        console.error('[firecrawl-client.ts] Firecrawl getCrawlResults returned unexpected data structure or status not completed. Data:', firecrawlData);
+        return [];
+      }
+    } else {
+      console.error('[firecrawl-client.ts] Firecrawl getCrawlResults returned unexpected data structure or status not completed. Data:', firecrawlData);
+      return [];
+    }
+  } catch (error: any) { // Added type for error
+    console.error(`[firecrawl-client.ts] Error in getCrawlResults for job ${crawlId}:`, error);
+    throw new Error(`Failed to get crawl results from Firecrawl: ${error?.message || error}`); // Re-throw or handle as appropriate
   }
 }
 
