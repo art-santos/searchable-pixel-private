@@ -9,9 +9,9 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
+        async get(name: string) {
           try {
-            const cookieStore = cookies()
+            const cookieStore = await cookies()
             const cookie = cookieStore.get(name)
             return cookie?.value
           } catch (error) {
@@ -19,17 +19,17 @@ export function createClient() {
             return undefined
           }
         },
-        set(name: string, value: string, options: CookieOptions) {
+        async set(name: string, value: string, options: CookieOptions) {
           try {
-            const cookieStore = cookies()
+            const cookieStore = await cookies()
             cookieStore.set({ name, value, ...options })
           } catch (error) {
             console.warn(`Server Component attempt to set cookie: ${name}`, error)
           }
         },
-        remove(name: string, options: CookieOptions) {
+        async remove(name: string, options: CookieOptions) {
           try {
-            const cookieStore = cookies()
+            const cookieStore = await cookies()
             cookieStore.set({ name, value: '', ...options })
           } catch (error) {
             console.warn(`Server Component attempt to remove cookie: ${name}`, error)

@@ -14,15 +14,15 @@ export async function GET(req: NextRequest) {
     {
       cookies: {
         get: async (name: string) => {
-          const cookieStore = nextCookies();
+          const cookieStore = await nextCookies();
           return cookieStore.get(name)?.value;
         },
-        set: (name: string, value: string, options: any) => {
-          const cookieStore = nextCookies();
+        set: async (name: string, value: string, options: any) => {
+          const cookieStore = await nextCookies();
           cookieStore.set(name, value, options);
         },
-        remove: (name: string, options: any) => {
-          const cookieStore = nextCookies();
+        remove: async (name: string, options: any) => {
+          const cookieStore = await nextCookies();
           cookieStore.set(name, '', options);
         },
       },
