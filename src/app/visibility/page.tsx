@@ -105,6 +105,8 @@ export default function VisibilityPage() {
     if (!user?.id) return
     
     const supabase = createClient()
+    if (!supabase) return
+    
     const { data, error } = await supabase
       .from('visibility_results')
       .select('*')
@@ -127,6 +129,8 @@ export default function VisibilityPage() {
     if (!user?.id) return
     
     const supabase = createClient()
+    if (!supabase) return
+    
     const { error } = await supabase
       .from('visibility_results')
       .insert({
