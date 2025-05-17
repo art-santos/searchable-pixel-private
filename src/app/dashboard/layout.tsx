@@ -1,6 +1,6 @@
 'use client'
 
-import { SplitSidebar } from '@/components/split-sidebar'
+import { SplitSidebar } from '@/components/layout/split-sidebar'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { useEffect } from 'react'

@@ -15,7 +15,7 @@ import {
   Code
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import SiteConnectionStatus from '@/components/site-connection-status';
+import SiteConnectionStatus from '@/components/common/site-connection-status';
 
 type PlatformType = 'nextjs' | 'framer' | 'webflow' | 'other';
 type ConnectorStep = 'platform' | 'domain' | 'install' | 'verify' | 'complete';

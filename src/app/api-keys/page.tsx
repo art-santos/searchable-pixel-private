@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import AgentCredentialsManager from '@/components/dashboard/AgentCredentialsManager'
-import WebsiteConnector from '@/components/website-connector'
+import WebsiteConnector from '@/components/common/website-connector'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
