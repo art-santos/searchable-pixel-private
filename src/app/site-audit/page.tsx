@@ -587,8 +587,20 @@ export default function SiteAudit() {
           description: "Your site audit is complete.",
         });
 
-        // Fetch AEO scorecard summary
-        fetchScorecardSummary();
+        // Fetch AEO and SEO scorecard summaries
+        const fetchScores = async () => {
+          try {
+            const response = await fetch(`/api/site-audit/scores/${crawlId}`);
+            if (!response.ok) {
+              throw new Error('Failed to fetch scores');
+            }
+            const scores = await response.json();
+            setScorecardSummary(scores);
+          } catch (err) {
+            console.error('Error fetching scores:', err);
+          }
+        };
+        fetchScores();
       } else {
         // Keep waiting if status is still processing
         console.log("Results not complete yet, trying again in 3s");
