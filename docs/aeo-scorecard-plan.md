@@ -27,6 +27,7 @@ site audits and expose new routes under `/api/aeo-scorecard`.
    - Keep `docs/aeo-scorecard.md` as the contract for API behaviour.
    - This plan is stored in `docs/aeo-scorecard-plan.md`.
 
+
 ## UI Integration
 
 To surface the scorecard in the application, the site audit page will be updated
@@ -39,6 +40,3 @@ to trigger jobs through the new endpoints and display progress.
    audit results API and render them with the current components.
 4. Provide a history dropdown that reads from `GET /api/aeo-scorecard/history`
    so users can revisit previous scorecards.
-
-This plan ensures the new feature is isolated in its own service files and
-exposed via clean API routes.

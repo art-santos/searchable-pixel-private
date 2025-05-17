@@ -49,6 +49,7 @@ import {
   Settings,
   ScreenShare,
   ArrowRight,
+
   ChevronDown,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -182,6 +183,7 @@ const ScoreWheel = ({
 };
 
 export default function SiteAudit() {
+
   const [siteUrl, setSiteUrl] = useState("");
   const [isCrawling, setIsCrawling] = useState(false);
   const [crawlProgress, setCrawlProgress] = useState(0);
@@ -306,6 +308,7 @@ export default function SiteAudit() {
       try {
         console.log("Polling status for crawl ID:", crawlId);
 
+
         const response = await fetch(`/api/aeo-scorecard/${crawlId}/status`);
         console.log("Status response status:", response.status);
 
@@ -322,6 +325,7 @@ export default function SiteAudit() {
           if (pct > crawlProgress) {
             setCrawlProgress(pct);
           }
+
         }
 
         // Fetch partial results if crawl is in progress
@@ -442,6 +446,7 @@ export default function SiteAudit() {
     }
   };
 
+
   // Function to start a crawl
   const startCrawl = async () => {
     if (!siteUrl) return;
@@ -462,10 +467,14 @@ export default function SiteAudit() {
       setCrawlComplete(false);
       setCrawlData(null);
       setCrawlId(null);
+      setScorecardSummary(null);
       setCrawlStartTime(Date.now());
       setShowTimeoutWarning(false);
 
+
       console.log("Sending request to /api/aeo-scorecard with options:", {
+
+
         siteUrl,
         maxPages,
         includeDocuments,
@@ -473,16 +482,20 @@ export default function SiteAudit() {
         performInteractiveActions,
       });
 
+
       const response = await fetch("/api/aeo-scorecard", {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           url: siteUrl,
+
           options: {
             maxPages,
           },
+
         }),
       });
 
@@ -497,8 +510,10 @@ export default function SiteAudit() {
       }
 
       const data = await response.json();
+
       console.log("Crawl started successfully with ID:", data.id);
       setCrawlId(data.id);
+
 
       toast({
         title: "Crawl started",
@@ -570,6 +585,9 @@ export default function SiteAudit() {
           title: "Crawl completed",
           description: "Your site audit is complete.",
         });
+
+        // Fetch AEO scorecard summary
+        fetchScorecardSummary();
       } else {
         // Keep waiting if status is still processing
         console.log("Results not complete yet, trying again in 3s");
@@ -588,6 +606,7 @@ export default function SiteAudit() {
       });
     }
   };
+
 
   // Helper function to get issue badge color
   const getIssueBadgeClass = (type: string) => {
@@ -1464,7 +1483,9 @@ export default function SiteAudit() {
             {/* Right: Visibility Score Wheel */}
             <div className="flex-shrink-0 md:ml-auto md:mt-2">
               <ScoreWheel
+
                 score={crawlData.metricScores.aiVisibility}
+
                 size={140}
                 strokeWidth={12}
               />
@@ -1480,6 +1501,7 @@ export default function SiteAudit() {
             </div>
             <div className="text-sm">
               <span className="text-red-400">Critical Issues: </span>
+
               <span className="font-semibold text-white">
                 {crawlData.issues.critical}
               </span>
@@ -1491,6 +1513,7 @@ export default function SiteAudit() {
               </span>
             </div>
           </div>
+
           {/* --- SECTION: AI Summary (No longer a Card) --- */}
           <div className="mt-8">
             <h2 className="text-lg font-semibold text-white mb-3">
