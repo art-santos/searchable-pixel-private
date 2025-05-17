@@ -299,6 +299,7 @@ split/templates/blog-renderer-app-tailwind.tsx (./split/templates/blog-renderer-
     * Animations guide: animations.md
     * Shadcn UI docs: docs/shadcn.md
     * Site audit spec: docs/site-audit.md
+    * AEO scorecard API: docs/aeo-scorecard.md
 
 ---------------------------------------------------------------------------------------------------------------------
 
