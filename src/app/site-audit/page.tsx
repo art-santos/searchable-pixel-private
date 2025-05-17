@@ -40,6 +40,7 @@ import {
 } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from 'framer-motion'
+import type { ScorecardJobResponse } from '@/services/scorecard/job'
 
 // Interface for historical crawl data
 interface HistoricalCrawl {
@@ -158,6 +159,7 @@ export default function SiteAudit() {
   const [crawlComplete, setCrawlComplete] = useState(false)
   const [crawlData, setCrawlData] = useState<CrawlData | null>(null)
   const [crawlId, setCrawlId] = useState<string | null>(null)
+  const [scorecardSummary, setScorecardSummary] = useState<ScorecardJobResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
   
@@ -259,7 +261,7 @@ export default function SiteAudit() {
       try {
         console.log("Polling status for crawl ID:", crawlId);
         
-        const response = await fetch(`/api/site-audit/status/${crawlId}`);
+        const response = await fetch(`/api/aeo-scorecard/${crawlId}/status`);
         console.log("Status response status:", response.status);
         
         if (!response.ok) {
@@ -269,11 +271,13 @@ export default function SiteAudit() {
         
         const data = await response.json();
         console.log("Crawl status data:", data);
-        
-        // Only update if the returned progress is higher than current
-        if (data.progress > crawlProgress) {
-          console.log(`Updating progress: ${crawlProgress} -> ${data.progress}`);
-          setCrawlProgress(data.progress || 0);
+
+        const progress = data.totalPages
+          ? (data.processedPages / data.totalPages) * 100
+          : crawlProgress;
+        if (progress > crawlProgress) {
+          console.log(`Updating progress: ${crawlProgress} -> ${progress}`);
+          setCrawlProgress(progress);
         }
         
         // Fetch partial results if crawl is in progress
@@ -382,6 +386,21 @@ export default function SiteAudit() {
       }
     }
   };
+
+  // Fetch AEO scorecard summary for this crawl
+  const fetchScorecardSummary = async () => {
+    if (!crawlId) return;
+    try {
+      const res = await fetch(`/api/aeo-scorecard/${crawlId}`);
+      if (!res.ok) throw new Error('Failed to fetch scorecard');
+      const data = await res.json();
+      if (data.status === 'completed') {
+        setScorecardSummary(data);
+      }
+    } catch (err) {
+      console.error('Error fetching scorecard summary:', err);
+    }
+  };
   
   // Function to start a crawl
   const startCrawl = async () => {
@@ -403,28 +422,25 @@ export default function SiteAudit() {
       setCrawlComplete(false);
       setCrawlData(null);
       setCrawlId(null);
+      setScorecardSummary(null);
       setCrawlStartTime(Date.now());
       setShowTimeoutWarning(false);
       
-      console.log('Sending request to /api/site-audit/start with options:', {
+      console.log('Sending request to /api/aeo-scorecard with options:', {
         siteUrl,
         maxPages,
         includeDocuments,
         checkMediaAccessibility,
         performInteractiveActions
       });
-      
-      const response = await fetch('/api/site-audit/start', {
+      const response = await fetch('/api/aeo-scorecard', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          siteUrl,
-          maxPages,
-          includeDocuments,
-          checkMediaAccessibility,
-          performInteractiveActions
+          url: siteUrl,
+          options: { maxPages }
         }),
       });
       
@@ -439,8 +455,8 @@ export default function SiteAudit() {
       }
       
       const data = await response.json();
-      console.log('Crawl started successfully with ID:', data.crawlId);
-      setCrawlId(data.crawlId);
+      console.log('Scorecard job started with ID:', data.id);
+      setCrawlId(data.id);
       
       toast({
         title: "Crawl started",
@@ -506,6 +522,9 @@ export default function SiteAudit() {
           title: "Crawl completed",
           description: "Your site audit is complete.",
         });
+
+        // Fetch AEO scorecard summary
+        fetchScorecardSummary();
       } else {
         // Keep waiting if status is still processing
         console.log("Results not complete yet, trying again in 3s");
@@ -523,6 +542,7 @@ export default function SiteAudit() {
       });
     }
   };
+
   
   // Helper function to get issue badge color
   const getIssueBadgeClass = (type: string) => {
@@ -1207,7 +1227,11 @@ export default function SiteAudit() {
 
             {/* Right: Visibility Score Wheel */}
             <div className="flex-shrink-0 md:ml-auto md:mt-2">
-              <ScoreWheel score={crawlData.metricScores.aiVisibility} size={140} strokeWidth={12} />
+              <ScoreWheel
+                score={scorecardSummary?.aeoScore ?? crawlData.metricScores.aiVisibility}
+                size={140}
+                strokeWidth={12}
+              />
             </div>
           </div>
 
@@ -1221,11 +1245,28 @@ export default function SiteAudit() {
               <span className="text-red-400">Critical Issues: </span>
               <span className="font-semibold text-white">{crawlData.issues.critical}</span>
               </div>
-            <div className="text-sm">
-              <span className="text-yellow-400">Warnings: </span>
-              <span className="font-semibold text-white">{crawlData.issues.warning}</span>
+          <div className="text-sm">
+            <span className="text-yellow-400">Warnings: </span>
+            <span className="font-semibold text-white">{crawlData.issues.warning}</span>
+          </div>
+          </div>
+
+          {scorecardSummary && (
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-[#161616] p-4 rounded-md border border-[#222222]">
+                <p className="text-xs text-gray-400">Content Quality</p>
+                <p className="text-lg font-semibold text-white">{scorecardSummary.metrics?.contentQuality ?? 0}%</p>
+              </div>
+              <div className="bg-[#161616] p-4 rounded-md border border-[#222222]">
+                <p className="text-xs text-gray-400">Technical</p>
+                <p className="text-lg font-semibold text-white">{scorecardSummary.metrics?.technical ?? 0}%</p>
+              </div>
+              <div className="bg-[#161616] p-4 rounded-md border border-[#222222]">
+                <p className="text-xs text-gray-400">Media Accessibility</p>
+                <p className="text-lg font-semibold text-white">{scorecardSummary.metrics?.mediaAccessibility ?? 0}%</p>
+              </div>
             </div>
-            </div>
+          )}
 
           {/* --- SECTION: AI Summary (No longer a Card) --- */}
           <div className="mt-8">
