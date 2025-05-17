@@ -48,6 +48,8 @@ export async function GET(
       .from('pages')
       .select(`
         *,
+        aeo_score,
+        seo_score,
         issues (*)
       `)
       .eq('crawl_id', crawlId);
@@ -60,7 +62,7 @@ export async function GET(
     // Step 3: Fetch AI summary markdown from the crawls table
     const { data: crawlSpecificData, error: crawlSpecificError } = await supabase
         .from('crawls')
-        .select('ai_summary_markdown, started_at, completed_at, site_id') // site_id for siteUrl if needed
+        .select('aeo_score, seo_score, ai_summary_markdown, started_at, completed_at, site_id') // site_id for siteUrl if needed
         .eq('id', crawlId)
         .single(); 
 
@@ -86,6 +88,8 @@ export async function GET(
       status: summaryData.status || 'completed',
       totalPages: summaryData.total_pages || 0,
       crawledPages: summaryData.pages_count || pagesData?.length || 0,
+      aeoScore: crawlSpecificData?.aeo_score ?? summaryData.aeo_score ?? 0,
+      seoScore: crawlSpecificData?.seo_score ?? summaryData.seo_score ?? 0,
       issues: {
         critical: summaryData.critical_issues_count || 0,
         warning: summaryData.warning_issues_count || 0,
@@ -93,6 +97,7 @@ export async function GET(
       },
       metricScores: {
         aiVisibility: summaryData.aeo_score || 0,
+        seo: summaryData.seo_score ?? crawlSpecificData?.seo_score ?? 0,
         contentQuality: summaryData.content_quality_score || 0, // Assuming view has these, or calculate
         technical: summaryData.technical_seo_score || 0,       // Assuming view has these, or calculate
         performance: summaryData.performance_score || 0,     // Assuming view has these, or calculate

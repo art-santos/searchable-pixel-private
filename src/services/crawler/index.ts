@@ -605,7 +605,7 @@ export async function getPartialCrawlResults(crawlId: string): Promise<any> {
   // Get the pages processed so far
   const { data: pages, error: pagesError } = await supabase
     .from('pages')
-    .select('id, url, status_code, title, has_llms_reference, has_schema, is_markdown, content_length, ai_visibility_score, is_document, document_type, media_count, media_accessibility_score')
+    .select('id, url, status_code, title, has_llms_reference, has_schema, is_markdown, content_length, ai_visibility_score, aeo_score, seo_score, is_document, document_type, media_count, media_accessibility_score')
     .eq('crawl_id', crawlId)
     .limit(50);  // Limit to most recent 50 pages
   
@@ -704,6 +704,7 @@ export async function getPartialCrawlResults(crawlId: string): Promise<any> {
     totalPages: crawlData.total_pages || 0,
     crawledPages: pages.length,
     aeoScore: crawlData.aeo_score || 0,
+    seoScore: crawlData.seo_score || 0,
     documentPercentage: crawlData.document_percentage || 0,
     schemaPercentage: crawlData.schema_percentage || 0,
     llmsCoverage: crawlData.llms_coverage || 0,
@@ -714,6 +715,7 @@ export async function getPartialCrawlResults(crawlId: string): Promise<any> {
     screenshots: screenshots || [],
     metricScores: {
       aiVisibility: crawlData.aeo_score || 0,
+      seo: crawlData.seo_score || 0,
       contentQuality,
       technical,
       mediaAccessibility: crawlData.media_accessibility_score || 0,
@@ -730,7 +732,7 @@ export async function getSiteAuditResults(crawlId: string): Promise<any> {
   // Get the crawl record
   const { data: crawlData, error: crawlError } = await supabase
     .from('crawls')
-    .select('status, total_pages, aeo_score, site_id, document_percentage, schema_percentage, llms_coverage, media_accessibility_score, website_purpose, target_audience, key_features, primary_services')
+    .select('status, total_pages, aeo_score, seo_score, site_id, document_percentage, schema_percentage, llms_coverage, media_accessibility_score, website_purpose, target_audience, key_features, primary_services')
     .eq('id', crawlId)
     .single();
   
@@ -746,7 +748,7 @@ export async function getSiteAuditResults(crawlId: string): Promise<any> {
   // Get the pages
   const { data: pages, error: pagesError } = await supabase
     .from('pages')
-    .select('id, url, status_code, title, has_llms_reference, has_schema, is_markdown, content_length, ai_visibility_score, is_document, document_type, media_count, media_accessibility_score, schema_types')
+    .select('id, url, status_code, title, has_llms_reference, has_schema, is_markdown, content_length, ai_visibility_score, aeo_score, seo_score, is_document, document_type, media_count, media_accessibility_score, schema_types')
     .eq('crawl_id', crawlId);
   
   if (pagesError) {
@@ -858,6 +860,7 @@ export async function getSiteAuditResults(crawlId: string): Promise<any> {
     totalPages: crawlData.total_pages,
     crawledPages: pages.length,
     aeoScore: crawlData.aeo_score,
+    seoScore: crawlData.seo_score,
     documentPercentage: crawlData.document_percentage || 0,
     schemaPercentage: crawlData.schema_percentage || 0,
     llmsCoverage: crawlData.llms_coverage || 0,
@@ -874,6 +877,7 @@ export async function getSiteAuditResults(crawlId: string): Promise<any> {
     recommendations: globalRecommendations,
     metricScores: {
       aiVisibility: crawlData.aeo_score,
+      seo: crawlData.seo_score,
       contentQuality: calculateMetricFromPages(pages, 'is_markdown'),
       technical: calculateMetricFromPages(pages, 'status_code', code => code >= 200 && code < 300),
       mediaAccessibility: crawlData.media_accessibility_score || 0,

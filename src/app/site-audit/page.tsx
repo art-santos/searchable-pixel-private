@@ -68,6 +68,8 @@ interface PageDataInCrawl {
   status_code: number;
   title?: string;
   ai_visibility_score?: number;
+  aeo_score?: number;
+  seo_score?: number;
   meta_description?: string; // Added based on previous discussions
   is_document?: boolean;
   issues?: IssueItem[];
@@ -83,9 +85,12 @@ interface CrawlData {
   started_at: string; // Or Date
   totalPages: number;
   crawledPages?: number; // from live results
+  aeoScore?: number;
+  seoScore?: number;
   issues: { critical: number; warning: number; info: number };
   metricScores: {
     aiVisibility: number;
+    seo?: number;
     contentQuality?: number;
     technical?: number;
     performance?: number;
