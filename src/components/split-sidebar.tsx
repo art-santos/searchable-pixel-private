@@ -82,16 +82,31 @@ export function SplitSidebar() {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <Link href="/performance-reports" passHref legacyBehavior>
-                  <SidebarMenuButton 
+                  <SidebarMenuButton
                     className={cn(
                       "flex items-center gap-3 rounded-md px-3 py-2 transition-colors",
-                      pathname === "/performance-reports" 
-                        ? "bg-[#222222] text-white" 
+                      pathname === "/performance-reports"
+                        ? "bg-[#222222] text-white"
                         : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
                     )}
                   >
                     <BarChartIcon className="h-5 w-5" />
                     <span>Visibility</span>
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <Link href="/visibility" passHref legacyBehavior>
+                  <SidebarMenuButton
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 transition-colors",
+                      pathname === "/visibility"
+                        ? "bg-[#222222] text-white"
+                        : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
+                    )}
+                  >
+                    <GlobeIcon className="h-5 w-5" />
+                    <span>LLM Visibility</span>
                   </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
