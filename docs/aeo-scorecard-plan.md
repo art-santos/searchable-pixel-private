@@ -1,12 +1,14 @@
 # Plan to Complete AEO Scorecard API
 
 ## Overview
+
 The goal is to deliver the REST API described in `docs/aeo-scorecard.md`.
 The repository already contains crawler and scoring logic but lacks dedicated
 endpoints to manage scorecard jobs. We will reuse the crawler service to run
 site audits and expose new routes under `/api/aeo-scorecard`.
 
 ## Tasks
+
 1. **Create job service**
    - New module `src/services/scorecard/job.ts` handles creating a scorecard
      job, checking status and fetching results.
@@ -25,5 +27,16 @@ site audits and expose new routes under `/api/aeo-scorecard`.
    - Keep `docs/aeo-scorecard.md` as the contract for API behaviour.
    - This plan is stored in `docs/aeo-scorecard-plan.md`.
 
-This plan ensures the new feature is isolated in its own service files and
-exposed via clean API routes.
+
+## UI Integration
+
+To surface the scorecard in the application, the site audit page will be updated
+to trigger jobs through the new endpoints and display progress.
+
+1. Call `POST /api/aeo-scorecard` when the user starts an audit.
+2. Poll `GET /api/aeo-scorecard/[id]/status` and compute progress using the
+   returned page counts.
+3. When the job completes, load the full audit results from the existing site
+   audit results API and render them with the current components.
+4. Provide a history dropdown that reads from `GET /api/aeo-scorecard/history`
+   so users can revisit previous scorecards.

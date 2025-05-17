@@ -7,9 +7,11 @@ The AEO (AI Engine Optimization) scorecard summarizes metrics from a site audit 
 The feature exposes a small REST API:
 
 ### `POST /api/aeo-scorecard`
+
 Create a new scorecard job.
 
 **Body JSON**
+
 ```json
 {
   "url": "https://example.com",
@@ -19,6 +21,7 @@ Create a new scorecard job.
 ```
 
 **Response**
+
 ```json
 {
   "id": "<scorecard-id>",
@@ -27,9 +30,11 @@ Create a new scorecard job.
 ```
 
 ### `GET /api/aeo-scorecard/[id]`
+
 Fetch the final scorecard for the given id.
 
 **Response JSON**
+
 ```json
 {
   "id": "<scorecard-id>",
@@ -49,9 +54,11 @@ Fetch the final scorecard for the given id.
 ```
 
 ### `GET /api/aeo-scorecard/[id]/status`
+
 Check the progress of a running job.
 
 **Response**
+
 ```json
 {
   "id": "<scorecard-id>",
@@ -59,4 +66,22 @@ Check the progress of a running job.
   "processedPages": 20,
   "totalPages": 50
 }
+```
+
+### `GET /api/aeo-scorecard/history`
+
+List the most recent scorecard jobs for the current user.
+
+**Response**
+
+```json
+[
+  {
+    "crawl_id": "<scorecard-id>",
+    "site_url": "example.com",
+    "created_at": "2024-05-15T12:00:00Z",
+    "status": "completed",
+    "aeo_score": 82
+  }
+]
 ```
