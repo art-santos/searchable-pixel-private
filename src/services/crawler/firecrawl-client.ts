@@ -20,6 +20,12 @@ export interface PageData {
   title: string;
   markdown: string;
   html: string;
+  /** Number of words extracted from the markdown content */
+  wordCount?: number;
+  /** Size of the HTML in bytes */
+  htmlSize?: number;
+  /** Ratio of text length to HTML length */
+  textToCodeRatio?: number;
   metadata: {
     title?: string;
     description?: string;
@@ -37,6 +43,17 @@ export interface PageData {
     isDocument?: boolean;
   };
   extractedStructuredData?: any; // Renamed to avoid conflict, for data from extractStructuredData
+}
+
+// Helper to calculate basic metrics about the scraped page
+function computePageMetrics(markdown: string, html: string) {
+  const textLength = markdown ? markdown.length : 0;
+  const htmlSize = html ? Buffer.byteLength(html, 'utf8') : 0;
+  const wordCount = markdown
+    ? markdown.trim().split(/\s+/).filter(Boolean).length
+    : 0;
+  const textToCodeRatio = htmlSize > 0 ? textLength / htmlSize : 0;
+  return { wordCount, htmlSize, textToCodeRatio };
 }
 
 // Action types for interactive crawling - making this a discriminated union
@@ -225,11 +242,17 @@ export async function getCrawlResults(crawlId: string): Promise<PageData[]> {
         const url = page.metadata?.sourceURL || page.url || '';
         const isDocument = /\.(pdf|docx?|xlsx?|pptx?|txt)$/i.test(url);
         const contentType = isDocument ? url.split('.').pop()?.toLowerCase() : (page.metadata?.contentType || 'html');
+        const markdown = page.markdown || '';
+        const html = page.html || '';
+        const metrics = computePageMetrics(markdown, html);
         return {
           url,
           title: page.metadata?.title || page.title || '',
-          markdown: page.markdown || '',
-          html: page.html || '',
+          markdown,
+          html,
+          wordCount: metrics.wordCount,
+          htmlSize: metrics.htmlSize,
+          textToCodeRatio: metrics.textToCodeRatio,
           metadata: {
             title: page.metadata?.title,
             description: page.metadata?.description,
@@ -246,7 +269,7 @@ export async function getCrawlResults(crawlId: string): Promise<PageData[]> {
             contentType,
             isDocument
           },
-          extractedStructuredData: page.json || page.structured_data || null 
+          extractedStructuredData: page.json || page.structured_data || null
         };
       });
       return formattedData;
@@ -265,11 +288,17 @@ export async function getCrawlResults(crawlId: string): Promise<PageData[]> {
           const url = page.metadata?.sourceURL || page.url || '';
           const isDocument = /\.(pdf|docx?|xlsx?|pptx?|txt)$/i.test(url);
           const contentType = isDocument ? url.split('.').pop()?.toLowerCase() : (page.metadata?.contentType || 'html');
+          const markdown = page.markdown || '';
+          const html = page.html || '';
+          const metrics = computePageMetrics(markdown, html);
           return {
             url,
             title: page.metadata?.title || page.title || '',
-            markdown: page.markdown || '',
-            html: page.html || '',
+            markdown,
+            html,
+            wordCount: metrics.wordCount,
+            htmlSize: metrics.htmlSize,
+            textToCodeRatio: metrics.textToCodeRatio,
             metadata: {
               title: page.metadata?.title,
               description: page.metadata?.description,
@@ -286,7 +315,7 @@ export async function getCrawlResults(crawlId: string): Promise<PageData[]> {
               contentType,
               isDocument
             },
-            extractedStructuredData: page.json || page.structured_data || null 
+            extractedStructuredData: page.json || page.structured_data || null
           };
         });
         return formattedData;
@@ -384,12 +413,18 @@ export async function scrapeWithActions(url: string, actions: CrawlAction[]): Pr
     // Access properties like .markdown, .html, .metadata directly from scrapeResult
     const metadata = (scrapeResult as any).metadata || {}; // Cast if metadata is not on base ScrapeResponse
     const structuredData = scrapeResult.json || null;
+    const markdown = scrapeResult.markdown || '';
+    const html = scrapeResult.html || '';
+    const metrics = computePageMetrics(markdown, html);
 
     return {
       url: metadata.sourceURL || url,
       title: metadata.title || '',
-      markdown: scrapeResult.markdown || '',
-      html: scrapeResult.html || '',
+      markdown,
+      html,
+      wordCount: metrics.wordCount,
+      htmlSize: metrics.htmlSize,
+      textToCodeRatio: metrics.textToCodeRatio,
       metadata: metadata,
       extractedStructuredData: structuredData
     };
@@ -584,11 +619,15 @@ export async function scrapeSingleUrl(urlToScrape: string): Promise<PageData | n
       }
 
       console.log(`[firecrawl-client.ts] Successfully scraped URL: ${urlToScrape}`);
+      const metrics = computePageMetrics(markdown, html);
       return {
         url: sourceURL,
         title: title,
         markdown: markdown,
         html: html,
+        wordCount: metrics.wordCount,
+        htmlSize: metrics.htmlSize,
+        textToCodeRatio: metrics.textToCodeRatio,
         metadata: {
           title: metadata.title, // metadata.title is preferred
           description: metadata.description,
