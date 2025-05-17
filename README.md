@@ -99,7 +99,7 @@ The components.json file shows your shadcn setup (aliases, Tailwind integration,
       "iconLibrary": "lucide"
     }
 
-components.json (/home/sam/create/Split/components.json)
+components.json (./components.json)
 
 ### 2.3 Styles & Config
 
@@ -288,7 +288,7 @@ The package ships template files for content and pages:
     ├ split-agent-app.ts
     └ split-agent-pages.ts
 
-split/templates/blog-renderer-app-tailwind.tsx (/home/sam/create/Split/split/templates/blog-renderer-app-tailwind.tsx)
+split/templates/blog-renderer-app-tailwind.tsx (./split/templates/blog-renderer-app-tailwind.tsx)
 
 (Other templates live alongside; see the folder for details.)
 
