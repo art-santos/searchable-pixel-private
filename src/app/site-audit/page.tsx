@@ -190,6 +190,7 @@ export default function SiteAudit() {
   const [crawlComplete, setCrawlComplete] = useState(false);
   const [crawlData, setCrawlData] = useState<CrawlData | null>(null);
   const [crawlId, setCrawlId] = useState<string | null>(null);
+  const [scorecardSummary, setScorecardSummary] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
