@@ -65,4 +65,7 @@ async function testSupabase() {
   }
 }
 
-testSupabase(); 
+testSupabase()
+  .then(() => {
+    process.exit(0);
+  });
