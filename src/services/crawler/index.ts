@@ -13,8 +13,7 @@ import {
   mapSite,
   scrapeSingleUrl
 } from './firecrawl-client';
-import { analyzePageForAEO, AEOAnalysisResult } from './aeo-analyzer';
-
+import { scorePageWithLLM, LLMScoreResult } from "../aeo/scorecard";
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || '';
@@ -335,9 +334,20 @@ async function savePageData(crawlId: string, page: PageData, llmsTxtData: any, r
       return;
     }
     
-    console.log(`[savePageData] Analyzing page with AEO for: ${page.url}`);
-    const analysis = analyzePageForAEO(page, llmsTxtData, robotsTxtData);
-    console.log(`[savePageData] AEO Analysis for ${page.url}:`, JSON.stringify(analysis, null, 2));
+    console.log(`[savePageData] Scoring page with LLM for: ${page.url}`);
+    const llmResult: LLMScoreResult = await scorePageWithLLM(page);
+    console.log(`[savePageData] LLM score result for ${page.url}:`, JSON.stringify(llmResult, null, 2));
+
+    // Basic heuristics previously derived from analyzePageForAEO
+    const hasLlmsTxt = !!llmsTxtData?.exists;
+    const hasSchema = (page.metadata?.structuredData && page.metadata.structuredData.length > 0) || false;
+    const isMarkdownRendered = !!page.markdown;
+    const schemaTypes = hasSchema ? page.metadata!.structuredData!.map((s: any) => s['@type']).filter(Boolean) : [];
+    const mediaCount = (page.html.match(/<img\b[^>]*>/gi) || []).length +
+      (page.html.match(/<video\b[^>]*>/gi) || []).length +
+      (page.html.match(/<audio\b[^>]*>/gi) || []).length;
+    const imagesWithAlt = (page.html.match(/<img\b[^>]*alt=[^>]*>/gi) || []).length;
+    const mediaAccessibilityScore = mediaCount === 0 ? 100 : Math.round((imagesWithAlt / mediaCount) * 100);
     
     const isDocument = page.metadata?.isDocument || false;
     const contentType = page.metadata?.contentType || 'html';
@@ -347,16 +357,18 @@ async function savePageData(crawlId: string, page: PageData, llmsTxtData: any, r
       url: page.url,
       status_code: page.metadata?.statusCode || 200,
       title: page.title,
-      has_llms_reference: analysis.hasLlmsTxt,
-      has_schema: analysis.hasSchema,
-      is_markdown: analysis.isMarkdownRendered,
+      has_llms_reference: hasLlmsTxt,
+      has_schema: hasSchema,
+      is_markdown: isMarkdownRendered,
       content_length: (page.markdown?.length || 0) + (page.html?.length || 0),
-      ai_visibility_score: analysis.scores.overall,
+      ai_visibility_score: llmResult.aeoScore,
+      seo_score: llmResult.seoScore,
+      total_score: llmResult.total,
       is_document: isDocument,
       document_type: contentType,
-      media_count: analysis.mediaCount,
-      schema_types: analysis.schemaTypes.length > 0 ? analysis.schemaTypes : null,
-      media_accessibility_score: analysis.scores.mediaAccess
+      media_count: mediaCount,
+      schema_types: schemaTypes.length > 0 ? schemaTypes : null,
+      media_accessibility_score: mediaAccessibilityScore
     };
     console.log(`[savePageData] Attempting to upsert page record for ${page.url}:`, JSON.stringify(pageRecordToUpsert, null, 2));
     
@@ -390,37 +402,11 @@ async function savePageData(crawlId: string, page: PageData, llmsTxtData: any, r
       console.warn(`[savePageData] Failed to delete existing issues for page ${pageId}:`, JSON.stringify(deleteIssuesError, null, 2));
     }
 
-    if (analysis.issues && analysis.issues.length > 0) {
-      console.log(`[savePageData] Storing ${analysis.issues.length} issues for page ${pageId}`);
-      const issueRecords = analysis.issues.map(issue => ({
-        page_id: pageId,
-        type: issue.type,
-        severity: issue.type === 'critical' ? 'high' : issue.type === 'warning' ? 'medium' : 'low',
-        message: issue.message,
-        context: issue.context ? { content: issue.context } : null,
-        fix_suggestion: issue.fixSuggestion,
-        resource_url: issue.url
-      }));
-      const { error: issueInsertError } = await supabase.from('issues').insert(issueRecords);
-      if (issueInsertError) {
-        console.warn(`[savePageData] Failed to insert issues for page ${pageId}:`, JSON.stringify(issueInsertError, null, 2));
-      }
-    }
-
-    // Delete existing recommendations for this page
-    const { error: deleteRecsError } = await supabase.from('recommendations').delete().eq('page_id', pageId);
-    if (deleteRecsError) {
-      console.warn(`[savePageData] Failed to delete existing recommendations for page ${pageId}:`, JSON.stringify(deleteRecsError, null, 2));
-    }
-    
-    if (analysis.recommendations && analysis.recommendations.length > 0) {
-      console.log(`[savePageData] Storing ${analysis.recommendations.length} recommendations for page ${pageId}`);
-      const recRecords = analysis.recommendations.map(recommendation => ({ page_id: pageId, text: recommendation }));
-      const { error: recInsertError } = await supabase.from('recommendations').insert(recRecords);
-      if (recInsertError) {
-        console.warn(`[savePageData] Failed to insert recommendations for page ${pageId}:`, JSON.stringify(recInsertError, null, 2));
-      }
-    }
+    // Save LLM issues and suggestions in the pages table
+    await supabase.from('pages').update({
+      llm_issues: llmResult.issues,
+      llm_suggestions: llmResult.suggestions
+    }).eq('id', pageId);
     
     console.log(`[savePageData] Calling updateCrawlStats for crawlId: ${crawlId}`);
     await updateCrawlStats(crawlId);
