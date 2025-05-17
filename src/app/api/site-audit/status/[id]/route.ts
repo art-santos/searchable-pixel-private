@@ -7,10 +7,13 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const cookieStore = await cookies();
   try {
-    console.log(`[API Route Debug - ${req.method} ${req.nextUrl.pathname}] Raw params object:`, JSON.stringify(params, null, 2));
+    // Ensure params are accessed after an await, if necessary by Next.js runtime
+    const cookieStore = await cookies(); 
+    
+    // Access params after the first await
     const crawlId = params.id;
+    console.log(`[API Route Debug - ${req.method} ${req.nextUrl.pathname}] Crawl ID:`, crawlId);
     
     if (!crawlId) {
       return NextResponse.json(

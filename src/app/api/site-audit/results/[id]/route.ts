@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSiteAuditResults } from '@/services/crawler';
+// Removed: import { getSiteAuditResults } from '@/services/crawler'; // We are querying directly
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
@@ -8,76 +8,112 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   const cookieStore = await cookies();
-  try {
-    console.log(`[API Route Debug - ${req.method} ${req.nextUrl.pathname}] Raw params object:`, JSON.stringify(params, null, 2));
-    const crawlId = params.id;
-    
-    if (!crawlId) {
-      return NextResponse.json(
-        { error: 'Crawl ID is required' },
-        { status: 400 }
-      );
-    }
-    
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
-      console.error('Missing Supabase URL or Service Key for GET results route');
-      return NextResponse.json(
-        { error: 'Server configuration error' },
-        { status: 500 }
-      );
-    }
-    
-    // Check authentication
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_KEY!,
-      {
-        cookies: {
-          get: async (name: string) => {
-            return cookieStore.get(name)?.value;
-          },
-          set: (name: string, value: string, options: any) => {
-            console.warn(`[Supabase Cookie] Attempted to set cookie in GET route (/api/site-audit/results): ${name}`);
-          },
-          remove: (name: string, options: any) => {
-            console.warn(`[Supabase Cookie] Attempted to remove cookie in GET route (/api/site-audit/results): ${name}`);
-          },
-        },
-      }
-    );
-    
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-    
-    // Get the crawl results
-    const results = await getSiteAuditResults(crawlId);
+  const crawlId = params.id; // Access after cookies() if strict mode requires, but often fine here for GET.
 
-    // Log the structure of the first page and its issues/recommendations, if pages exist
-    if (results && results.pages && results.pages.length > 0) {
-      console.log('[API Route /results] Sample of first page data being sent to UI:', 
-        JSON.stringify({
-          url: results.pages[0].url,
-          title: results.pages[0].title,
-          issuesCount: results.pages[0].issues?.length,
-          firstIssue: results.pages[0].issues?.[0],
-          recommendationsCount: results.pages[0].recommendations?.length,
-          firstRecommendation: results.pages[0].recommendations?.[0]
-        }, null, 2)
-      );
-    } else if (results) {
-      console.log('[API Route /results] No pages found in results or results.pages is empty. Full results object:', JSON.stringify(results, null, 2));
+  if (!crawlId) {
+    return NextResponse.json({ error: 'Crawl ID is required' }, { status: 400 });
+  }
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+  }
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_KEY!,
+    { cookies: { get: async (name: string) => cookieStore.get(name)?.value } }
+  );
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    // Step 1: Fetch summary data from the site_audit_summary view
+    const { data: summaryData, error: summaryError } = await supabase
+      .from('site_audit_summary')
+      .select('*') // Select all columns from the view for this crawl
+      .eq('crawl_id', crawlId)
+      .maybeSingle();
+
+    if (summaryError) {
+      console.error('Error fetching from site_audit_summary view:', summaryError);
+      return NextResponse.json({ error: 'Failed to fetch crawl summary data', details: summaryError.message }, { status: 500 });
+    }
+
+    if (!summaryData) {
+      return NextResponse.json({ error: 'Crawl summary not found' }, { status: 404 });
+    }
+
+    // Step 2: Fetch all pages for this crawl_id, including their individual issues
+    const { data: pagesData, error: pagesError } = await supabase
+      .from('pages')
+      .select(`
+        *,
+        issues (*)
+      `)
+      .eq('crawl_id', crawlId);
+
+    if (pagesError) {
+      console.error('Error fetching pages with issues:', pagesError);
+      return NextResponse.json({ error: 'Failed to fetch page details', details: pagesError.message }, { status: 500 });
+    }
+
+    // Step 3: Fetch AI summary markdown from the crawls table
+    const { data: crawlSpecificData, error: crawlSpecificError } = await supabase
+        .from('crawls')
+        .select('ai_summary_markdown, started_at, completed_at, site_id') // site_id for siteUrl if needed
+        .eq('id', crawlId)
+        .single(); 
+
+    if (crawlSpecificError) {
+        console.error('Error fetching crawl-specific data (AI summary, dates):', crawlSpecificError);
+        // Not necessarily fatal, could proceed without AI summary
     }
     
-    // Return the results
-    return NextResponse.json(results);
-  } catch (error: any) {
-    console.error('Error getting crawl results:', error);
-    return NextResponse.json({ error: 'Failed to get crawl results', details: error?.message || String(error) }, { status: 500 });
+    // Step 4: Get siteUrl (domain) using site_id from crawlSpecificData or summaryData
+    let siteUrl = summaryData.domain; // From summary view
+    if (!siteUrl && crawlSpecificData?.site_id) {
+        const { data: siteInfo, error: siteError } = await supabase
+            .from('sites')
+            .select('domain')
+            .eq('id', crawlSpecificData.site_id)
+            .single();
+        if (siteInfo) siteUrl = siteInfo.domain;
+    }
+
+    // Construct the final response object matching Client-side CrawlData interface
+    const processedData = {
+      siteUrl: siteUrl || 'N/A', // Ensure it's always absolute in the client if not already
+      status: summaryData.status || 'completed',
+      totalPages: summaryData.total_pages || 0,
+      crawledPages: summaryData.pages_count || pagesData?.length || 0,
+      issues: {
+        critical: summaryData.critical_issues_count || 0,
+        warning: summaryData.warning_issues_count || 0,
+        info: summaryData.info_issues_count || 0,
+      },
+      metricScores: {
+        aiVisibility: summaryData.aeo_score || 0,
+        contentQuality: summaryData.content_quality_score || 0, // Assuming view has these, or calculate
+        technical: summaryData.technical_seo_score || 0,       // Assuming view has these, or calculate
+        performance: summaryData.performance_score || 0,     // Assuming view has these, or calculate
+        mediaAccessibility: summaryData.media_accessibility_score || 0, // from crawls table / view
+      },
+      pages: pagesData || [],
+      ai_summary_markdown: crawlSpecificData?.ai_summary_markdown || null,
+      started_at: crawlSpecificData?.started_at || summaryData.started_at,
+      completed_at: crawlSpecificData?.completed_at || summaryData.completed_at,
+      // Include any other fields from summaryData or crawlSpecificData that CrawlData interface expects
+      document_percentage: summaryData.document_percentage,
+      schema_percentage: summaryData.schema_percentage,
+      llms_coverage: summaryData.llms_coverage,
+      // screenshots would need a separate fetch if not included in pages or summary
+    };
+
+    console.log('[API Route /results] Processed data being sent to UI:', JSON.stringify(processedData, null, 2));
+    return NextResponse.json(processedData);
+
+  } catch (err: any) {
+    console.error('Unexpected error in GET /api/site-audit/results/[id]:', err);
+    return NextResponse.json({ error: 'An unexpected server error occurred', details: err.message }, { status: 500 });
   }
 } 

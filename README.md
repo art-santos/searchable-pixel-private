@@ -4,31 +4,31 @@
 
 Your root README gives a bird's-eye view of Split as a Next.js/Tailwind web app:
 
-    # Split
+# Split
 
     A modern, responsive web application built with Next.js and Tailwind CSS. Split features a clean, intuitive
 interface for [your application purpose].
 
-    ## Features
+## Features
 
-    - 🎨 Modern UI with smooth transitions and animations
-    - 📱 Fully responsive design (mobile-first approach)
-    - 🎯 Interactive navigation with dropdown menus
-    - 💫 Custom components with hover effects
-    - 🔍 SEO optimized
-    - 🚀 Performance optimized
+- 🎨 Modern UI with smooth transitions and animations
+- 📱 Fully responsive design (mobile-first approach)
+- 🎯 Interactive navigation with dropdown menus
+- 💫 Custom components with hover effects
+- 🔍 SEO optimized
+- 🚀 Performance optimized
 
-    ## Tech Stack
+## Tech Stack
 
-    - Next.js
-    - React
-    - Tailwind CSS
-    - TypeScript
-    - Lucide Icons
+- Next.js
+- React
+- Tailwind CSS
+- TypeScript
+- Lucide Icons
 
 ### 1.2 Project Structure (per README)
 
-    ## Project Structure
+## Project Structure
 
 
 src/
