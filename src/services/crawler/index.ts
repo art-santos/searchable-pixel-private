@@ -437,7 +437,7 @@ async function updateCrawlStats(crawlId: string): Promise<void> {
     // Get all pages for this crawl
     const { data: pages, error: pagesError } = await supabase
       .from('pages')
-      .select('ai_visibility_score, is_document, has_schema, has_llms_reference, media_accessibility_score')
+      .select('aeo_score, seo_score, ai_visibility_score, is_document, has_schema, has_llms_reference, media_accessibility_score')
       .eq('crawl_id', crawlId);
     
     if (pagesError) {
@@ -445,10 +445,19 @@ async function updateCrawlStats(crawlId: string): Promise<void> {
       return;
     }
     
-    // Calculate average AEO score
+    // Calculate average scores
     const totalPages = pages.length;
-    const totalScore = pages.reduce((sum, page) => sum + (page.ai_visibility_score || 0), 0);
-    const aeoScore = totalPages > 0 ? Math.round(totalScore / totalPages) : 0;
+    const totalAeoScore = pages.reduce(
+      (sum, page) => sum + (page.aeo_score ?? page.ai_visibility_score ?? 0),
+      0
+    );
+    const aeoScore = totalPages > 0 ? Math.round(totalAeoScore / totalPages) : 0;
+
+    const totalSeoScore = pages.reduce(
+      (sum, page) => sum + (page.seo_score ?? 0),
+      0
+    );
+    const seoScore = totalPages > 0 ? Math.round(totalSeoScore / totalPages) : 0;
     
     // Calculate document percentage
     const documentCount = pages.filter(page => page.is_document).length;
@@ -475,6 +484,7 @@ async function updateCrawlStats(crawlId: string): Promise<void> {
       .update({
         total_pages: totalPages,
         aeo_score: aeoScore,
+        seo_score: seoScore,
         document_percentage: documentPercentage,
         schema_percentage: schemaPercentage,
         llms_coverage: llmsCoverage,
