@@ -1,7 +1,19 @@
-import OpenAI from 'openai'
+const PERPLEXITY_URL = 'https://api.perplexity.ai/chat/completions'
+
+interface PerplexityCitation {
+  url: string
+  title: string
+  snippet: string
+}
+
+interface PerplexityResponse {
+  text?: string
+  citations?: PerplexityCitation[]
+  choices?: { message?: { content?: string } }[]
+}
 
 export interface Mention {
-  source: 'GPT-4o'
+  source: 'Perplexity'
   query: string
   mention_type: 'direct' | 'indirect'
   snippet: string
@@ -27,7 +39,28 @@ export interface VisibilityOptions {
   maxQueries?: number
 }
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+async function callPerplexity(query: string): Promise<PerplexityResponse> {
+  const res = await fetch(PERPLEXITY_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'sonar-small-online',
+      messages: [
+        { role: 'system', content: 'You are a helpful research assistant.' },
+        { role: 'user', content: query }
+      ]
+    })
+  })
+
+  if (!res.ok) {
+    throw new Error(`Perplexity API error: ${res.status}`)
+  }
+
+  return (await res.json()) as PerplexityResponse
+}
 
 const DEFAULT_ACTION_PLAN = [
   'Publish more comparison articles that position your brand alongside top competitors.',
@@ -49,8 +82,8 @@ export async function checkVisibility(options: VisibilityOptions): Promise<Visib
     throw new Error('domain and category are required')
   }
 
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error('OpenAI API key not configured')
+  if (!process.env.PERPLEXITY_API_KEY) {
+    throw new Error('Perplexity API key not configured')
   }
 
   const prompts = [
@@ -67,24 +100,26 @@ export async function checkVisibility(options: VisibilityOptions): Promise<Visib
 
   for (const query of queries) {
     try {
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [{ role: 'user', content: query }],
-        temperature: 0.2
-      })
-      const snippet = completion.choices[0]?.message?.content || ''
+      const data = await callPerplexity(query)
+      const snippet =
+        data.citations?.[0]?.snippet ||
+        data.text ||
+        data.choices?.[0]?.message?.content ||
+        ''
       const textLower = snippet.toLowerCase()
       const directTerms = [domain, ...custom_brand_terms]
-      const directMention = directTerms.some(term => textLower.includes(term.toLowerCase()))
+      const directMention = directTerms.some(term =>
+        textLower.includes(term.toLowerCase())
+      )
       mentions.push({
-        source: 'GPT-4o',
+        source: 'Perplexity',
         query,
         mention_type: directMention ? 'direct' : 'indirect',
         snippet
       })
     } catch (err: any) {
       mentions.push({
-        source: 'GPT-4o',
+        source: 'Perplexity',
         query,
         mention_type: 'indirect',
         snippet: `Error: ${err.message || String(err)}`
