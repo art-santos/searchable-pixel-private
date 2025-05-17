@@ -407,6 +407,19 @@ async function savePageData(crawlId: string, page: PageData, llmsTxtData: any, r
       llm_issues: llmResult.issues,
       llm_suggestions: llmResult.suggestions
     }).eq('id', pageId);
+
+    if (llmResult.issues && llmResult.issues.length > 0) {
+      const formattedIssues = llmResult.issues.map((issue) => ({
+        page_id: pageId,
+        type: issue.severity === 'high' ? 'critical' : issue.severity === 'medium' ? 'warning' : 'info',
+        severity: issue.severity,
+        message: issue.message
+      }));
+      const { error: insertIssuesError } = await supabase.from('issues').insert(formattedIssues);
+      if (insertIssuesError) {
+        console.warn(`[savePageData] Failed to insert issues for page ${pageId}:`, JSON.stringify(insertIssuesError, null, 2));
+      }
+    }
     
     console.log(`[savePageData] Calling updateCrawlStats for crawlId: ${crawlId}`);
     await updateCrawlStats(crawlId);
@@ -423,7 +436,7 @@ async function updateCrawlStats(crawlId: string): Promise<void> {
     // Get all pages for this crawl
     const { data: pages, error: pagesError } = await supabase
       .from('pages')
-      .select('aeo_score, seo_score, ai_visibility_score, is_document, has_schema, has_llms_reference, media_accessibility_score')
+      .select('aeo_score, seo_score, ai_visibility_score, is_document, has_schema, has_llms_reference, media_accessibility_score, is_markdown, status_code')
       .eq('crawl_id', crawlId);
     
     if (pagesError) {
@@ -444,6 +457,14 @@ async function updateCrawlStats(crawlId: string): Promise<void> {
       0
     );
     const seoScore = totalPages > 0 ? Math.round(totalSeoScore / totalPages) : 0;
+
+    // Additional metrics for weighting
+    const contentQuality = totalPages > 0
+      ? Math.round(pages.filter(p => p.is_markdown).length / totalPages * 100)
+      : 0;
+    const technicalHealth = totalPages > 0
+      ? Math.round(pages.filter(p => p.status_code >= 200 && p.status_code < 300).length / totalPages * 100)
+      : 0;
     
     // Calculate document percentage
     const documentCount = pages.filter(page => page.is_document).length;
@@ -469,7 +490,7 @@ async function updateCrawlStats(crawlId: string): Promise<void> {
       .from('crawls')
       .update({
         total_pages: totalPages,
-        aeo_score: aeoScore,
+        aeo_score: Math.round((aeoScore * 0.5) + (contentQuality * 0.2) + (technicalHealth * 0.2) + ((avgMediaScore || 0) * 0.1)),
         seo_score: seoScore,
         document_percentage: documentPercentage,
         schema_percentage: schemaPercentage,
