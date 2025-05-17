@@ -61,7 +61,7 @@ interface HistoricalCrawl {
   site_url: string;
   created_at: string;
   status: string;
-  ai_visibility_score: number;
+  aeo_score: number;
   critical_issues: number;
   warning_issues: number;
 }
@@ -1232,7 +1232,7 @@ export default function SiteAudit() {
                                     {hist.site_url || "N/A"}
                                   </p>
                                   <p className="text-[11px] text-gray-300 flex-shrink-0 ml-2">
-                                    {hist.ai_visibility_score}
+                                    {hist.aeo_score}
                                     <span className="text-gray-500">/100</span>
                                   </p>
                                 </div>

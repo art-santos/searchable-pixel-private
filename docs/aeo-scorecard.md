@@ -85,3 +85,35 @@ List the most recent scorecard jobs for the current user.
   }
 ]
 ```
+
+## Scoring Rubric
+
+The language model scores each page on a 0-100 scale using these aspects:
+
+- **Content quality** – clarity of copy, headings and meta description.
+- **Technical health** – valid status codes and canonical markup.
+- **Media accessibility** – descriptive alt text or transcripts.
+- **Schema usage** – presence of relevant structured data.
+
+Issues should be returned in this format so they can be saved with a severity:
+
+```json
+{ "severity": "high|medium|low", "message": "Description of the issue" }
+```
+
+Severity levels map to:
+
+- **high** – problems that prevent indexing or understanding.
+- **medium** – issues that reduce optimization effectiveness.
+- **low** – minor recommendations.
+
+### Weighted Site Score
+
+The final AEO score combines multiple metrics:
+
+- 50% average page AI visibility score returned by the LLM
+- 20% content quality (share of pages with readable text)
+- 20% technical health (share of pages with successful status codes)
+- 10% media accessibility (average image or video alt coverage)
+
+This weighting highlights which area lowered the score even if there are no critical issues.
