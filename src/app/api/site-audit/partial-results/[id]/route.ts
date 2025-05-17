@@ -57,8 +57,12 @@ export async function GET(
       );
     }
     
-    // Get the partial crawl results
+    // Get the partial crawl results including AEO and SEO scores
     const results = await getPartialCrawlResults(crawlId);
+    console.log('Partial results scores', {
+      aeo: results.aeoScore,
+      seo: results.seoScore,
+    });
     
     // Return the results
     return NextResponse.json(results);
