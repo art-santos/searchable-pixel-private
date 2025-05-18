@@ -126,7 +126,7 @@ export default function Dashboard() {
   const displayProjects = [...tempProjects, ...projects]
 
   return (
-    <main className="flex flex-1 flex-col gap-8 p-8 overflow-auto bg-[#0c0c0c] bg-[radial-gradient(#222222_0.7px,transparent_0.7px)] bg-[size:24px_24px] relative">
+    <main className="flex flex-1 flex-col gap-8 px-6 py-6 overflow-auto bg-[#0c0c0c] bg-[radial-gradient(#222222_0.7px,transparent_0.7px)] bg-[size:24px_24px] relative">
       {/* Welcome Popup */}
       <AnimatePresence>
         {showWelcomePopup && (
