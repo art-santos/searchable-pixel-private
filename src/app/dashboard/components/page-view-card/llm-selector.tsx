@@ -10,12 +10,12 @@ import {
 
 export function LLMSelector() {
   return (
-    <div className="flex items-start">
+    <div className="flex items-start relative">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button 
             variant="outline" 
-            className="w-fit border border-[#333333] bg-transparent hover:bg-[#1a1a1a] px-4 rounded-none"
+            className="w-fit min-w-[140px] border border-[#333333] bg-transparent hover:bg-[#1a1a1a] px-4 rounded-none"
           >
             <div className="flex items-center gap-2">
               <Image 
@@ -33,6 +33,7 @@ export function LLMSelector() {
           className="bg-[#1a1a1a] border border-[#333333] text-white rounded-none mt-1"
           align="start"
           alignOffset={-1}
+          sideOffset={4}
         >
           <DropdownMenuItem className="hover:bg-[#222222] cursor-not-allowed opacity-50 rounded-none">
             <div className="flex items-center gap-2">

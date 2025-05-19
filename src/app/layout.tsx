@@ -4,6 +4,7 @@ import "./globals.css";
 // import Announcements from "@/components/announcements"; // Removed import again
 import { AuthProvider } from "@/contexts/AuthContext"; // Import the AuthProvider
 import { cn } from "@/lib/utils";
+import { TooltipProvider } from "@/components/ui/tooltip";
 // Removed inter import
 // Remove Footer import - it's handled in the (main) layout
 
@@ -91,11 +92,13 @@ export default function RootLayout({
         */}
         {/* Wrap the main content with AuthProvider */}
         <AuthProvider>
-          {/* Removed LPTopbar - it's now handled in the (main) layout */}
-          <main className="flex-grow">
-          {children}
-          </main>
-          {/* Removed Footer - it's now handled in the (main) layout */}
+          <TooltipProvider>
+            {/* Removed LPTopbar - it's now handled in the (main) layout */}
+            <main className="flex-grow">
+              {children}
+            </main>
+            {/* Removed Footer - it's now handled in the (main) layout */}
+          </TooltipProvider>
         </AuthProvider>
       </body>
     </html>

@@ -3,6 +3,8 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageViewCard } from './components/page-view-card'
+import { AEOScorecard } from './components/aeo-scorecard/aeo-scorecard'
+import { TopicVisibilityCard } from './components/topic-visibility-card'
 
 export default function Dashboard() {
   const { user, supabase, loading } = useAuth()
@@ -16,35 +18,27 @@ export default function Dashboard() {
   }
 
   return (
-    <main className="flex flex-1 flex-col gap-6 p-6 h-[calc(100vh-64px)] bg-[#0c0c0c]">
-      <div className="grid grid-cols-2 gap-6 flex-1 -mt-2">
+    <main className="flex flex-1 flex-col gap-6 p-4 h-[calc(100vh-64px)] bg-[#0c0c0c]">
+      <div className="grid xl:grid-cols-2 grid-cols-1 gap-6 flex-[1.2]">
         <PageViewCard />
 
         {/* AEO Scorecard */}
         <Card className="h-full">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-medium text-white">AEO Scorecard</CardTitle>
-          </CardHeader>
-          <CardContent className="p-6 overflow-auto">
-            {/* Content will go here */}
+          <CardContent className="p-6">
+            <AEOScorecard />
           </CardContent>
         </Card>
       </div>
 
       {/* Bottom Row - 65/35 split */}
-      <div className="grid grid-cols-12 gap-6 flex-1">
+      <div className="grid xl:grid-cols-12 grid-cols-1 gap-6 flex-1">
         {/* Topic Visibility - 65% */}
-        <Card className="col-span-8 h-full">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-medium text-white">Topic Visibility</CardTitle>
-          </CardHeader>
-          <CardContent className="p-6 overflow-auto">
-            {/* Content will go here */}
-          </CardContent>
-        </Card>
+        <div className="xl:col-span-8 h-full min-h-[520px]">
+          <TopicVisibilityCard />
+        </div>
 
         {/* Competitive Benchmarking - 35% */}
-        <Card className="col-span-4 h-full">
+        <Card className="xl:col-span-4 h-full min-h-[520px]">
           <CardHeader className="pb-4">
             <CardTitle className="text-lg font-medium text-white">Competitive Benchmarking</CardTitle>
           </CardHeader>
