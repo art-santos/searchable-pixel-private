@@ -30,7 +30,7 @@ export function DomainSelector() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent 
-          className="bg-[#1a1a1a] border border-[#333333] text-white rounded-none mt-1"
+          className="bg-[#1a1a1a] border border-[#333333] text-white rounded-none"
           align="start"
           alignOffset={-1}
         >

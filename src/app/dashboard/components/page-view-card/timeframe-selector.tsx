@@ -11,12 +11,13 @@ import { TimeframeType } from "."
 interface TimeframeSelectorProps {
   timeframe: TimeframeType
   onTimeframeChange: (timeframe: TimeframeType) => void
+  title?: string
 }
 
-export function TimeframeSelector({ timeframe, onTimeframeChange }: TimeframeSelectorProps) {
+export function TimeframeSelector({ timeframe, onTimeframeChange, title = "Page Views" }: TimeframeSelectorProps) {
   return (
     <div className="space-y-1">
-      <h3 className="text-base font-medium text-[#A7A7A7]">Page Views</h3>
+      <h3 className="text-base font-medium text-[#A7A7A7]">{title}</h3>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button 

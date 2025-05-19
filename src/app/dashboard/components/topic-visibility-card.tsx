@@ -94,8 +94,8 @@ export function TopicVisibilityCard() {
       className="h-full bg-transparent border-none shadow-none"
     >
       <CardHeader className="pb-2">
-        <div className="flex flex-col gap-4">
-          <TimeframeSelector timeframe={timeframe} onTimeframeChange={setTimeframe} />
+        <div className="flex flex-col gap-2">
+          <TimeframeSelector title="Topic Visibility" timeframe={timeframe} onTimeframeChange={setTimeframe} />
         </div>
         {/* Stats/Labels Bar */}
         <motion.div

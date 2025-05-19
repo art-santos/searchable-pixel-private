@@ -21,9 +21,9 @@ export function PageViewCard() {
   return (
     <Card className="h-full flex flex-col">
       <CardHeader className="pb-4 flex-none">
-        <div className="flex flex-col space-y-3">
-          <LLMSelector />
+        <div className="flex flex-col gap-2">
           <TimeframeSelector 
+            title="Page Views"
             timeframe={timeframe} 
             onTimeframeChange={handleTimeframeChange}
           />
