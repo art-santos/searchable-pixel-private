@@ -71,12 +71,26 @@ export function SplitSidebar() {
           </Link>
 
           <Link href="/visibility" className="w-full flex justify-center">
-            <SidebarMenuButton 
+            <SidebarMenuButton
               tooltip="Visibility"
               className={cn(
                 "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
-                pathname === "/visibility" 
-                  ? "bg-[#222222] text-white border border-[#333333] selected-button" 
+                pathname === "/visibility"
+                  ? "bg-[#222222] text-white border border-[#333333] selected-button"
+                  : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
+              )}
+            >
+              <GlobeIcon className="h-6 w-6 icon-rotate" />
+            </SidebarMenuButton>
+          </Link>
+
+          <Link href="/visibility-test" className="w-full flex justify-center">
+            <SidebarMenuButton
+              tooltip="Visibility Test"
+              className={cn(
+                "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
+                pathname === "/visibility-test"
+                  ? "bg-[#222222] text-white border border-[#333333] selected-button"
                   : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
               )}
             >
