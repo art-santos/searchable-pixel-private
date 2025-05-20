@@ -1,10 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TimeframeSelector } from "@/components/custom/timeframe-selector";
+import { TimeframeSelector, TimeframeOption } from "@/components/custom/timeframe-selector";
 import { MetricItem } from "@/components/custom/metric-item";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import Image from "next/image";
 import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion, Variants } from "framer-motion";
 
 const topics = [
   {
@@ -67,26 +67,34 @@ const barData = [
 ];
 
 export function TopicVisibilityCard() {
-  const [timeframe, setTimeframe] = useState("Last 30 Days");
+  const [timeframe, setTimeframe] = useState<TimeframeOption>("This Month");
   const total = barData.reduce((sum, b) => sum + b.value, 0);
   const shouldReduceMotion = useReducedMotion();
 
   // Animation variants
-  const cardVariants = shouldReduceMotion ? {} : {
-    hidden: { opacity: 0, y: 40 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
-  };
-  const barVariants = shouldReduceMotion ? {} : {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { delay: 0.15, duration: 0.3, ease: 'easeOut' } },
-  };
-  const rowVariants = shouldReduceMotion ? {} : {
-    hidden: { opacity: 0, y: 20 },
-    visible: (i: number) => ({
-      opacity: 1, y: 0,
-      transition: { delay: 0.25 + i * 0.07, duration: 0.25, ease: 'easeOut' }
-    }),
-  };
+  const cardVariants: Variants = shouldReduceMotion 
+    ? { hidden: {}, visible: {} } 
+    : {
+        hidden: { opacity: 0, y: 40 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
+      };
+      
+  const barVariants: Variants = shouldReduceMotion 
+    ? { hidden: {}, visible: {} } 
+    : {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0, transition: { delay: 0.15, duration: 0.3, ease: 'easeOut' } },
+      };
+      
+  const rowVariants: Variants = shouldReduceMotion 
+    ? { hidden: {}, visible: {} } 
+    : {
+        hidden: { opacity: 0, y: 20 },
+        visible: (i: number) => ({
+          opacity: 1, y: 0,
+          transition: { delay: 0.25 + i * 0.07, duration: 0.25, ease: 'easeOut' }
+        }),
+      };
 
   return (
     <motion.div

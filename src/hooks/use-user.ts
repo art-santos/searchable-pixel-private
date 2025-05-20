@@ -29,6 +29,10 @@ export function useUser() {
       try {
         setLoading(true)
         
+        if (!supabase) {
+          throw new Error('Supabase client is not initialized');
+        }
+        
         // Get the current user
         const { data: { user }, error: userError } = await supabase.auth.getUser()
         
@@ -75,11 +79,11 @@ export function useUser() {
     getUser()
     
     // Set up auth state change listener
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const authListener = supabase ? supabase.auth.onAuthStateChange(async (event, session) => {
       if (mounted) {
         setUser(session?.user || null)
         
-        if (session?.user) {
+        if (session?.user && supabase) {
           // Get the user's profile when auth state changes
           const { data: profileData } = await supabase
             .from('profiles')
@@ -96,17 +100,18 @@ export function useUser() {
           setProfile(null)
         }
       }
-    })
+    }) : { data: { subscription: { unsubscribe: () => {} } } };
     
     return () => {
       mounted = false
-      authListener.subscription.unsubscribe()
+      authListener.data.subscription.unsubscribe()
     }
   }, [supabase])
   
   // Update user profile
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) throw new Error('User not authenticated')
+    if (!supabase) throw new Error('Supabase client is not initialized')
     
     try {
       const { error } = await supabase
