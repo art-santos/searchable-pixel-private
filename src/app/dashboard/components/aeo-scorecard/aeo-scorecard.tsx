@@ -1,4 +1,4 @@
-import { DomainSelector } from "./domain-selector"
+import { DomainSelector } from "@/components/custom/domain-selector"
 import { Sparkles } from "lucide-react"
 import { motion, useAnimation, useReducedMotion } from "framer-motion"
 import { useEffect, useRef, useState } from "react"

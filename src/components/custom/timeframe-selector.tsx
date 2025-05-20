@@ -6,11 +6,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { TimeframeType } from "."
+export type TimeframeOption =
+  | "Today"
+  | "This Week"
+  | "This Month"
+  | "Custom Range"
 
 interface TimeframeSelectorProps {
-  timeframe: TimeframeType
-  onTimeframeChange: (timeframe: TimeframeType) => void
+  timeframe: TimeframeOption
+  onTimeframeChange: (timeframe: TimeframeOption) => void
   title?: string
 }
 
