@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TimeframeSelector } from "./page-view-card/timeframe-selector";
+import { TimeframeSelector } from "@/components/custom/timeframe-selector";
+import { MetricItem } from "@/components/custom/metric-item";
 import { TimeframeType } from "./page-view-card";
 import { useState } from "react";
 import Image from "next/image";
@@ -118,19 +119,19 @@ export function CompetitorBenchmarkingCard() {
               variants={rowVariants}
               initial="hidden"
               animate="visible"
-              className="flex items-center gap-3"
             >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-12 h-12 bg-[#181818] border border-[#222] overflow-hidden">
-                  <Image src={`/${idx + 1}.png`} alt={`Rank ${idx + 1}`} width={48} height={48} className="w-full h-full object-cover" />
-                </div>
-                <span className="text-[#666] text-lg font-mono tracking-tight w-8">#{idx + 1}</span>
-                <span className="text-white text-base font-geist-semi truncate max-w-[180px]">{comp.url}</span>
-              </div>
-              <div className="flex-1" />
-              <div className="flex flex-col items-end">
+              <MetricItem
+                className="gap-3"
+                rank={idx + 1}
+                label={comp.url}
+                leftContent={
+                  <div className="w-12 h-12 bg-[#181818] border border-[#222] overflow-hidden">
+                    <Image src={`/${idx + 1}.png`} alt={`Rank ${idx + 1}`} width={48} height={48} className="w-full h-full object-cover" />
+                  </div>
+                }
+              >
                 <span className="text-white text-lg font-geist-semi">{comp.score.toFixed(1)}%</span>
-              </div>
+              </MetricItem>
             </motion.div>
           ))}
         </div>

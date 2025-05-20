@@ -1,5 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TimeframeSelector } from "./page-view-card/timeframe-selector";
+import { TimeframeSelector } from "@/components/custom/timeframe-selector";
+import { MetricItem } from "@/components/custom/metric-item";
+import { ProgressBar } from "@/components/ui/progress-bar";
 import Image from "next/image";
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
@@ -116,23 +118,9 @@ export function TopicVisibilityCard() {
           variants={barVariants}
           initial="hidden"
           animate="visible"
-          className="w-full h-4 bg-[#232323] mt-0 flex mb-8"
+          className="mb-8"
         >
-          {barData.map((b, i) => (
-            <div
-              key={b.label}
-              style={{ width: `${(b.value / total) * 100}%`, background: b.color, borderRadius: 0 }}
-              className="h-full group relative cursor-pointer"
-            >
-              {/* Tooltip on hover/focus */}
-              <div className="absolute left-1/2 -translate-x-1/2 -top-8 z-[9999] hidden group-hover:flex group-focus:flex flex-col items-center">
-                <div className="px-2 py-1 rounded bg-[#222] text-xs text-white font-geist shadow">
-                  {b.label}: {Math.round((b.value / total) * 100)}%
-                </div>
-                <div className="w-2 h-2 bg-[#222] rotate-45 -mt-1" />
-              </div>
-            </div>
-          ))}
+          <ProgressBar segments={barData} />
         </motion.div>
       </CardHeader>
       <CardContent className="pt-2 pb-0">
@@ -144,21 +132,14 @@ export function TopicVisibilityCard() {
               variants={rowVariants}
               initial="hidden"
               animate="visible"
-              className="flex items-center justify-between border border-[#222] bg-[#111111] px-6 py-2 w-full mb-1"
             >
-              <div className="flex items-center gap-3 min-w-0">
-                <span className="text-[#666] text-lg font-mono tracking-tight w-8">#{topic.rank}</span>
-                <span className="text-white text-base truncate max-w-[220px]">{topic.label}</span>
-                <div className="flex items-center gap-1 ml-2">
-                  {/* Citation icons removed as requested */}
-                </div>
-              </div>
-              <div className="flex items-center gap-6">
-                <span className={`text-sm font-mono tracking-tight ${topic.positive ? 'text-green-500' : 'text-red-500'}`}>{topic.positive ? '↑' : '↓'}{topic.change}%</span>
-                <a href={topic.link} className="text-sm text-[#aaa] hover:text-white transition-colors font-geist tracking-tight flex items-center gap-1">
-                  View Citations <span className="text-lg">→</span>
-                </a>
-              </div>
+              <MetricItem
+                className="mb-1"
+                rank={topic.rank}
+                label={topic.label}
+                change={{ value: topic.change, positive: topic.positive }}
+                link={topic.link}
+              />
             </motion.div>
           ))}
         </div>

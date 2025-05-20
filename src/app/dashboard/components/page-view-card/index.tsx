@@ -1,10 +1,13 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { LLMSelector } from "./llm-selector"
-import { TimeframeSelector } from "./timeframe-selector"
+import { LLMSelector } from "@/components/custom/llm-selector"
+import {
+  TimeframeSelector,
+  TimeframeOption,
+} from "@/components/custom/timeframe-selector"
 import { ViewsChart } from "./views-chart"
 import { useState } from "react"
 
-export type TimeframeType = 'Today' | 'This Week' | 'This Month' | 'Custom Range'
+export type TimeframeType = TimeframeOption
 
 export function PageViewCard() {
   const [timeframe, setTimeframe] = useState<TimeframeType>('Today')
