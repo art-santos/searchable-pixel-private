@@ -310,19 +310,6 @@ export default function SettingsPage() {
                   <div className={`h-5 w-5 rounded-full mx-0.5 ${structuredData ? 'bg-white' : 'bg-gray-500'}`}></div>
                 </div>
               </div>
-              
-              <div className="rounded-md bg-[#222222] p-4 mt-6">
-                <div className="flex items-start gap-3">
-                  <Info className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-white mb-1">AEO Agent Status</h4>
-                    <p className="text-sm text-gray-400">Your agent is active and monitoring your content. Last active: 10 minutes ago.</p>
-                    <p className="text-sm text-gray-400 mt-2">
-                      <span className="text-white">Usage this month:</span> 8/50 articles (16%)
-                    </p>
-                  </div>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -346,22 +333,6 @@ export default function SettingsPage() {
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                 />
-                <div className="relative inline-flex items-center rounded-md bg-[#222222] p-1 text-sm font-medium">
-                  {['Viewer', 'Editor', 'Admin'].map((role) => (
-                    <button
-                      key={role}
-                      type="button"
-                      className={`relative rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${
-                        newRole === role 
-                          ? 'bg-[#333333] text-white' 
-                          : 'text-gray-400 hover:text-white'
-                      }`}
-                      onClick={() => setNewRole(role)}
-                    >
-                      {role}
-                    </button>
-                  ))}
-                </div>
                 <Button 
                   className="bg-[#333333] hover:bg-[#444444] text-white flex-shrink-0"
                   onClick={handleInvite}
@@ -388,13 +359,7 @@ export default function SettingsPage() {
                       <div className="col-span-3">
                         <Badge 
                           variant="outline" 
-                          className={
-                            member.role === 'Admin' 
-                              ? "bg-purple-900/30 text-purple-400 border-purple-800/50" 
-                              : member.role === 'Editor'
-                              ? "bg-blue-900/30 text-blue-400 border-blue-800/50"
-                              : "bg-gray-800 text-gray-300 border-gray-700"
-                          }
+                          className="bg-[#222222] text-gray-300 border-[#333333]"
                         >
                           {member.role}
                         </Badge>
@@ -411,10 +376,10 @@ export default function SettingsPage() {
                         )}
                       </div>
                       <div className="col-span-2 flex gap-2">
-                        <Button variant="outline" size="sm" className="border-[#333333] text-white hover:bg-[#222222]">
+                        <Button size="sm" className="bg-[#333333] hover:bg-[#444444] text-white">
                           Edit
                         </Button>
-                        <Button variant="outline" size="sm" className="border-[#333333] text-white hover:bg-[#222222]">
+                        <Button size="sm" className="bg-[#333333] hover:bg-[#444444] text-white">
                           Remove
                         </Button>
                       </div>
@@ -423,15 +388,12 @@ export default function SettingsPage() {
                 </div>
               </div>
               
-              <div className="rounded-md bg-[#222222] p-4 flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-yellow-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-white mb-1">Role Permissions</h4>
-                  <div className="space-y-2 text-sm text-gray-400">
-                    <p><span className="text-white">Admin:</span> Full access to all features including billing and team management</p>
-                    <p><span className="text-white">Editor:</span> Can create and edit content, but cannot manage team or billing</p>
-                    <p><span className="text-white">Viewer:</span> Can view content and reports, but cannot make changes</p>
-                  </div>
+              <div className="mt-2 pl-1 text-xs text-gray-500">
+                <div className="mb-1 font-semibold text-gray-400">Role Permissions</div>
+                <div className="space-y-1">
+                  <p><span className="text-white">Admin:</span> Full access to all features including billing and team management</p>
+                  <p><span className="text-white">Editor:</span> Can create and edit content, but cannot manage team or billing</p>
+                  <p><span className="text-white">Viewer:</span> Can view content and reports, but cannot make changes</p>
                 </div>
               </div>
             </CardContent>
