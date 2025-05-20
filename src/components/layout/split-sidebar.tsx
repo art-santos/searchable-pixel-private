@@ -32,6 +32,22 @@ export function SplitSidebar() {
 
   return (
     <TooltipProvider delayDuration={100}>
+      <style jsx global>{`
+        .icon-rotate {
+          transition: transform 0.5s ease-out;
+          transform-style: preserve-3d;
+          perspective: 1000px;
+        }
+        .menu-button:hover .icon-rotate {
+          transform: rotateY(180deg);
+        }
+        .selected-button:hover {
+          background-color: #222222 !important;
+        }
+        .selected-button svg {
+          color: white;
+        }
+      `}</style>
       <Sidebar className="w-16 border-r border-[#222222] bg-[#0c0c0c] !bg-[#0c0c0c] dark:!bg-[#0c0c0c]">
         {/* Logo Square */}
         <SidebarHeader className="box-border h-16 w-16 min-h-[64px] min-w-[64px] border-r border-b border-[#222222] bg-[#0c0c0c] flex items-center justify-center">
@@ -44,13 +60,13 @@ export function SplitSidebar() {
             <SidebarMenuButton 
               tooltip="Dashboard"
               className={cn(
-                "w-10 h-10 flex items-center justify-center transition-colors rounded-none",
+                "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
                 pathname === "/dashboard" 
-                  ? "bg-[#222222] text-white border border-[#333333]" 
+                  ? "bg-[#222222] text-white border border-[#333333] selected-button" 
                   : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
               )}
             >
-              <LayoutDashboardIcon className="h-6 w-6" />
+              <LayoutDashboardIcon className="h-6 w-6 icon-rotate" />
             </SidebarMenuButton>
           </Link>
 
@@ -58,13 +74,13 @@ export function SplitSidebar() {
             <SidebarMenuButton 
               tooltip="Visibility"
               className={cn(
-                "w-10 h-10 flex items-center justify-center transition-colors rounded-none",
+                "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
                 pathname === "/visibility" 
-                  ? "bg-[#222222] text-white border border-[#333333]" 
+                  ? "bg-[#222222] text-white border border-[#333333] selected-button" 
                   : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
               )}
             >
-              <GlobeIcon className="h-6 w-6" />
+              <GlobeIcon className="h-6 w-6 icon-rotate" />
             </SidebarMenuButton>
           </Link>
 
@@ -72,13 +88,13 @@ export function SplitSidebar() {
             <SidebarMenuButton 
               tooltip="Site Audit"
               className={cn(
-                "w-10 h-10 flex items-center justify-center transition-colors rounded-none",
+                "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
                 pathname === "/site-audit" 
-                  ? "bg-[#222222] text-white border border-[#333333]" 
+                  ? "bg-[#222222] text-white border border-[#333333] selected-button" 
                   : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
               )}
             >
-              <SearchIcon className="h-6 w-6" />
+              <SearchIcon className="h-6 w-6 icon-rotate" />
             </SidebarMenuButton>
           </Link>
 
@@ -86,13 +102,13 @@ export function SplitSidebar() {
             <SidebarMenuButton 
               tooltip="Content"
               className={cn(
-                "w-10 h-10 flex items-center justify-center transition-colors rounded-none",
+                "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
                 pathname === "/content" 
-                  ? "bg-[#222222] text-white border border-[#333333]" 
+                  ? "bg-[#222222] text-white border border-[#333333] selected-button" 
                   : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
               )}
             >
-              <FileTextIcon className="h-6 w-6" />
+              <FileTextIcon className="h-6 w-6 icon-rotate" />
             </SidebarMenuButton>
           </Link>
         </SidebarContent>
@@ -103,27 +119,13 @@ export function SplitSidebar() {
             <SidebarMenuButton 
               tooltip="Settings"
               className={cn(
-                "w-10 h-10 flex items-center justify-center transition-colors rounded-none",
+                "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
                 pathname === "/settings" 
-                  ? "bg-[#222222] text-white border border-[#333333]" 
+                  ? "bg-[#222222] text-white border border-[#333333] selected-button" 
                   : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
               )}
             >
-              <SettingsIcon className="h-6 w-6" />
-            </SidebarMenuButton>
-          </Link>
-
-          <Link href="/api-keys" className="w-full flex justify-center">
-            <SidebarMenuButton 
-              tooltip="API Keys"
-              className={cn(
-                "w-10 h-10 flex items-center justify-center transition-colors rounded-none",
-                pathname === "/api-keys" 
-                  ? "bg-[#222222] text-white border border-[#333333]" 
-                  : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
-              )}
-            >
-              <KeyIcon className="h-6 w-6" />
+              <SettingsIcon className="h-6 w-6 icon-rotate" />
             </SidebarMenuButton>
           </Link>
 
@@ -131,13 +133,13 @@ export function SplitSidebar() {
             <SidebarMenuButton 
               tooltip="Documentation"
               className={cn(
-                "w-10 h-10 flex items-center justify-center transition-colors rounded-none",
+                "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
                 pathname === "/docs" 
-                  ? "bg-[#222222] text-white border border-[#333333]" 
+                  ? "bg-[#222222] text-white border border-[#333333] selected-button" 
                   : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
               )}
             >
-              <HelpCircleIcon className="h-6 w-6" />
+              <HelpCircleIcon className="h-6 w-6 icon-rotate" />
             </SidebarMenuButton>
           </Link>
         </div>

@@ -8,14 +8,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes = [
     '/',
     '/dashboard',
-    '/api-keys',
-    '/content-strategy',
-    '/keywords',
-    '/site-audit',
-    '/performance-reports',
-    '/site-connector',
     '/settings',
-    '/login',
+    '/docs',
   ].map((route) => ({
     url: `${BASE_URL}${route}`,
     lastModified: new Date(),

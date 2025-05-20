@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { 
   Settings,
   Globe, 
-  Refresh, 
+  RefreshCw, 
   UserPlus, 
   CheckCircle2, 
   XCircle,
@@ -20,12 +20,14 @@ import {
   Lock,
   Save,
   AlertTriangle,
-  Info
+  Info,
+  Key
 } from 'lucide-react'
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Label } from "@/components/ui/label"
+import AgentCredentialsManager from '@/components/dashboard/AgentCredentialsManager'
 
 export default function SettingsPage() {
   const [siteUrl, setSiteUrl] = useState('https://yoursitename.com')
@@ -76,7 +78,7 @@ export default function SettingsPage() {
   }
   
   return (
-    <main className="flex flex-1 flex-col gap-8 p-8 bg-[#0c0c0c] overflow-auto">
+    <main className="flex flex-1 flex-col gap-8 p-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-white">Settings</h1>
@@ -84,7 +86,7 @@ export default function SettingsPage() {
         </div>
         
         <Button 
-          className="flex items-center gap-2 self-start md:self-auto bg-white hover:bg-gray-100 text-[#0c0c0c]"
+          className="flex items-center gap-2 self-start md:self-auto bg-[#333333] hover:bg-[#444444] text-white"
         >
           <Save className="h-4 w-4" />
           Save Changes
@@ -93,20 +95,23 @@ export default function SettingsPage() {
       
       <Tabs defaultValue="site" className="w-full">
         <TabsList className="bg-[#222222] border border-[#333333] mb-6">
-          <TabsTrigger value="site" className="data-[state=active]:bg-[#333333]">
+          <TabsTrigger value="site" className="data-[state=active]:bg-[#333333] text-white">
             Site Connection
           </TabsTrigger>
-          <TabsTrigger value="agent" className="data-[state=active]:bg-[#333333]">
+          <TabsTrigger value="agent" className="data-[state=active]:bg-[#333333] text-white">
             AEO Agent Controls
           </TabsTrigger>
-          <TabsTrigger value="team" className="data-[state=active]:bg-[#333333]">
+          <TabsTrigger value="team" className="data-[state=active]:bg-[#333333] text-white">
             Team Access
+          </TabsTrigger>
+          <TabsTrigger value="api" className="data-[state=active]:bg-[#333333] text-white">
+            API Keys
           </TabsTrigger>
         </TabsList>
         
         {/* Site Connection Tab */}
         <TabsContent value="site">
-          <Card className="bg-[#161616] border-[#333333] text-white">
+          <Card className="border-[#333333]">
             <CardHeader>
               <CardTitle className="text-xl font-medium text-white">
                 Site Connection
@@ -122,8 +127,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <Button 
-                  variant="outline"
-                  className="border-[#333333] text-white hover:bg-[#222222]"
+                  className="bg-[#333333] hover:bg-[#444444] text-white"
                   onClick={() => setSiteUrl(prompt('Enter site URL', siteUrl) || siteUrl)}
                 >
                   Edit
@@ -139,14 +143,14 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="relative inline-flex items-center rounded-md bg-[#222222] p-1 text-sm font-medium">
+                  <div className="relative inline-flex items-center rounded-md bg-[#1a1a1a] p-1 text-sm font-medium">
                     {['Webflow', 'Next.js', 'Framer'].map((cms) => (
                       <button
                         key={cms}
                         type="button"
                         className={`relative rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${
                           cmsType === cms 
-                            ? 'bg-white text-black' 
+                            ? 'bg-[#333333] text-white' 
                             : 'text-gray-400 hover:text-white'
                         }`}
                         onClick={() => setCmsType(cms)}
@@ -187,12 +191,11 @@ export default function SettingsPage() {
                     )}
                   </Badge>
                   <Button 
-                    variant="outline"
-                    className="border-[#333333] text-white hover:bg-[#222222] flex items-center gap-1.5"
+                    className="bg-[#333333] hover:bg-[#444444] text-white flex items-center gap-1.5"
                     onClick={handleReconnect}
                     disabled={!isConnected}
                   >
-                    <Refresh className="h-4 w-4" />
+                    <RefreshCw className="h-4 w-4" />
                     {isConnected ? 'Refresh' : 'Connecting...'}
                   </Button>
                 </div>
@@ -201,48 +204,45 @@ export default function SettingsPage() {
               <div className="pt-4 border-t border-[#222222]">
                 <h3 className="text-sm font-medium text-white mb-4">Integration Methods</h3>
                 <div className="space-y-4">
-                  <div className="rounded-md border border-[#333333] p-4 hover:bg-[#1a1a1a] cursor-pointer">
+                  <div className="rounded-md border border-[#333333] p-4 hover:bg-[#222222] cursor-pointer">
                     <div className="flex items-start justify-between">
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <Badge className="bg-white text-[#0c0c0c]">Recommended</Badge>
+                          <Badge className="bg-[#333333] text-white border-[#444444]">Recommended</Badge>
                         </div>
                         <h4 className="font-medium text-white mb-1">API Integration</h4>
                         <p className="text-sm text-gray-400">Connect your CMS via API for full automation capabilities</p>
                       </div>
                       <Button 
-                        variant="outline"
-                        className="border-[#333333] text-white hover:bg-[#222222]"
+                        className="bg-[#333333] hover:bg-[#444444] text-white"
                       >
                         Configure
                       </Button>
                     </div>
                   </div>
                   
-                  <div className="rounded-md border border-[#333333] p-4 hover:bg-[#1a1a1a] cursor-pointer">
+                  <div className="rounded-md border border-[#333333] p-4 hover:bg-[#222222] cursor-pointer">
                     <div className="flex items-start justify-between">
                       <div>
                         <h4 className="font-medium text-white mb-1">JavaScript Snippet</h4>
                         <p className="text-sm text-gray-400">Add our script to your site's header for basic tracking</p>
                       </div>
                       <Button 
-                        variant="outline"
-                        className="border-[#333333] text-white hover:bg-[#222222]"
+                        className="bg-[#333333] hover:bg-[#444444] text-white"
                       >
                         Copy Code
                       </Button>
                     </div>
                   </div>
                   
-                  <div className="rounded-md border border-[#333333] p-4 hover:bg-[#1a1a1a] cursor-pointer">
+                  <div className="rounded-md border border-[#333333] p-4 hover:bg-[#222222] cursor-pointer">
                     <div className="flex items-start justify-between">
                       <div>
                         <h4 className="font-medium text-white mb-1">Manual Configuration</h4>
                         <p className="text-sm text-gray-400">Manually upload llms.txt and implement structured data</p>
                       </div>
                       <Button 
-                        variant="outline"
-                        className="border-[#333333] text-white hover:bg-[#222222]"
+                        className="bg-[#333333] hover:bg-[#444444] text-white"
                       >
                         View Guide
                       </Button>
@@ -256,7 +256,7 @@ export default function SettingsPage() {
         
         {/* AEO Agent Controls Tab */}
         <TabsContent value="agent">
-          <Card className="bg-[#161616] border-[#333333] text-white">
+          <Card className="border-[#333333]">
             <CardHeader>
               <CardTitle className="text-xl font-medium text-white">
                 AEO Agent Controls
@@ -272,10 +272,10 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div 
-                  className={`h-6 w-11 rounded-full transition-colors cursor-pointer flex items-center ${autoPublish ? 'bg-white justify-end' : 'bg-[#333333] justify-start'}`}
+                  className={`h-6 w-11 rounded-full transition-colors cursor-pointer flex items-center ${autoPublish ? 'bg-[#333333] justify-end' : 'bg-[#222222] justify-start'}`}
                   onClick={() => handleToggle('autoPublish', !autoPublish)}
                 >
-                  <div className={`h-5 w-5 rounded-full mx-0.5 ${autoPublish ? 'bg-[#0c0c0c]' : 'bg-gray-500'}`}></div>
+                  <div className={`h-5 w-5 rounded-full mx-0.5 ${autoPublish ? 'bg-white' : 'bg-gray-500'}`}></div>
                 </div>
               </div>
               
@@ -288,10 +288,10 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div 
-                  className={`h-6 w-11 rounded-full transition-colors cursor-pointer flex items-center ${autoSitemap ? 'bg-white justify-end' : 'bg-[#333333] justify-start'}`}
+                  className={`h-6 w-11 rounded-full transition-colors cursor-pointer flex items-center ${autoSitemap ? 'bg-[#333333] justify-end' : 'bg-[#222222] justify-start'}`}
                   onClick={() => handleToggle('autoSitemap', !autoSitemap)}
                 >
-                  <div className={`h-5 w-5 rounded-full mx-0.5 ${autoSitemap ? 'bg-[#0c0c0c]' : 'bg-gray-500'}`}></div>
+                  <div className={`h-5 w-5 rounded-full mx-0.5 ${autoSitemap ? 'bg-white' : 'bg-gray-500'}`}></div>
                 </div>
               </div>
               
@@ -304,10 +304,10 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div 
-                  className={`h-6 w-11 rounded-full transition-colors cursor-pointer flex items-center ${structuredData ? 'bg-white justify-end' : 'bg-[#333333] justify-start'}`}
+                  className={`h-6 w-11 rounded-full transition-colors cursor-pointer flex items-center ${structuredData ? 'bg-[#333333] justify-end' : 'bg-[#222222] justify-start'}`}
                   onClick={() => handleToggle('structuredData', !structuredData)}
                 >
-                  <div className={`h-5 w-5 rounded-full mx-0.5 ${structuredData ? 'bg-[#0c0c0c]' : 'bg-gray-500'}`}></div>
+                  <div className={`h-5 w-5 rounded-full mx-0.5 ${structuredData ? 'bg-white' : 'bg-gray-500'}`}></div>
                 </div>
               </div>
               
@@ -329,7 +329,7 @@ export default function SettingsPage() {
         
         {/* Team Access Tab */}
         <TabsContent value="team">
-          <Card className="bg-[#161616] border-[#333333] text-white">
+          <Card className="border-[#333333]">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-xl font-medium text-white">
                 Team Access
@@ -353,7 +353,7 @@ export default function SettingsPage() {
                       type="button"
                       className={`relative rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${
                         newRole === role 
-                          ? 'bg-white text-black' 
+                          ? 'bg-[#333333] text-white' 
                           : 'text-gray-400 hover:text-white'
                       }`}
                       onClick={() => setNewRole(role)}
@@ -434,6 +434,26 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* API Keys Tab */}
+        <TabsContent value="api">
+          <Card className="border-[#333333]">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Key className="h-5 w-5 text-gray-400" />
+                <CardTitle className="text-xl font-medium text-white">
+                  API Keys
+                </CardTitle>
+              </div>
+              <p className="text-sm text-gray-400 mt-2">
+                Generate and manage API keys for programmatic access to your AEO Agent
+              </p>
+            </CardHeader>
+            <CardContent>
+              <AgentCredentialsManager />
             </CardContent>
           </Card>
         </TabsContent>
