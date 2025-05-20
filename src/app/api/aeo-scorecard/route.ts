@@ -1,22 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { createScorecardJob } from '@/services/scorecard/job'
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json()
-    const { url, userId, options } = body
-    if (!url || !userId) {
-      return NextResponse.json({ message: 'url and userId required' }, { status: 400 })
-    }
-    const job = await createScorecardJob(url, userId, options)
-    return NextResponse.json(job)
-  } catch (err: any) {
-    console.error('createScorecardJob error', err)
-    return NextResponse.json({ message: err.message || 'error' }, { status: 500 })
+export async function POST(request: NextRequest) {
+  const body = await request.json()
+  const { url, userId, options } = body
+  if (!url || !userId) {
+    return NextResponse.json({ error: 'Missing url or userId' }, { status: 400 })
   }
-}
-
-export async function GET() {
-  // Placeholder: no persistence yet
-  return NextResponse.json([])
+  try {
+    const job = await createScorecardJob(url, userId, options)
+    return NextResponse.json({ id: job.id, status: job.status })
+  } catch (err) {
+    console.error('Failed to create scorecard job', err)
+    return NextResponse.json({ error: 'Failed to create job' }, { status: 500 })
+  }
 }

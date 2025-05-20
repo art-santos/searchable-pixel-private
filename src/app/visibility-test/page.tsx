@@ -22,8 +22,12 @@ export default function VisibilityTestPage() {
 
   useEffect(() => {
     fetch('/api/visibility-test')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed to load')
+        return r.json()
+      })
       .then(setData)
+      .catch((err) => console.error(err))
   }, [])
 
   if (loading || !data) {

@@ -1,14 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { getScorecardStatus } from '@/services/scorecard/job'
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const id = params.id
-    if (!id) return NextResponse.json({ message: 'id required' }, { status: 400 })
-    const status = await getScorecardStatus(id)
-    return NextResponse.json(status)
-  } catch (err: any) {
-    console.error('getScorecardStatus error', err)
-    return NextResponse.json({ message: err.message || 'error' }, { status: 500 })
+    const data = await getScorecardStatus(params.id)
+    if (!data) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    }
+    return NextResponse.json({ id: data.id, status: data.status })
+  } catch (err) {
+    console.error('Failed to fetch scorecard status', err)
+    return NextResponse.json({ error: 'Failed to fetch status' }, { status: 500 })
   }
 }
