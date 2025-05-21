@@ -3,9 +3,26 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { LPTopBar } from '../components/layout/lp-topbar'
+import { LPTopBar } from '../../components/layout/lp-topbar'
 import Image from 'next/image'
+import { Schema } from '@/components/Schema'
 
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "What is Split?",
+      acceptedAnswer: { "@type": "Answer", text: "Split is an autonomous AEO engine that optimises content for AI visibility." }
+    },
+    {
+      "@type": "Question",
+      name: "How does Split help with LLM visibility?",
+      acceptedAnswer: { "@type": "Answer", text: "Split audits your site and publishes optimised content that AI crawlers can index and cite." }
+    }
+  ]
+};
 const LOGOS = [
   { name: 'ChatGPT', logo: '/chatgpt.svg' },
   { name: 'Perplexity', logo: '/perplexity.svg' },
@@ -183,6 +200,7 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+    <Schema json={faqSchema} />
     </div>
   )
 } 

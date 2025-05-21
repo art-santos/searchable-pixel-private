@@ -59,7 +59,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           } else if (event === 'SIGNED_OUT') {
           // If signed out, redirect to landing page
           console.log('SIGNED_OUT, redirecting to landing page');
-          router.push('/landing-page');
+          router.push('/');
           }
       }, 0);
     });

@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { isAiCrawler } from "@/lib/ai"
 import { createClient } from '@/lib/supabase/middleware' // We'll create this helper next
 
 export async function middleware(request: NextRequest) {
@@ -10,6 +11,10 @@ export async function middleware(request: NextRequest) {
     // Refresh session if expired - required for Server Components
     // https://supabase.com/docs/guides/auth/auth-helpers/nextjs#managing-session-with-middleware
     await supabase.auth.getSession()
+    const ua = request.headers.get("user-agent") ?? "";
+    if (isAiCrawler(ua)) {
+      console.log("[AI-CRAWLER]", ua, request.nextUrl.pathname);
+    }
 
     // Optional: Redirect logic based on auth state and path
     const { data: { session } } = await supabase.auth.getSession();
