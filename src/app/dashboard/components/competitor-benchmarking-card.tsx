@@ -111,7 +111,7 @@ export function CompetitorBenchmarkingCard() {
         </div>
       </CardHeader>
       <CardContent className="pt-2 pb-0">
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
           {competitors.map((comp, idx) => (
             <motion.div
               key={comp.url}
@@ -120,18 +120,16 @@ export function CompetitorBenchmarkingCard() {
               initial="hidden"
               animate="visible"
             >
-              <MetricItem
-                className="gap-3"
-                rank={idx + 1}
-                label={comp.url}
-                leftContent={
-                  <div className="w-12 h-12 bg-[#181818] border border-[#222] overflow-hidden">
-                    <Image src={`/${idx + 1}.png`} alt={`Rank ${idx + 1}`} width={48} height={48} className="w-full h-full object-cover" />
+              <div className="flex items-center justify-between py-2.5 px-4 border-b border-[#222222] last:border-b-0">
+                <div className="flex items-center gap-4">
+                  <span className="text-[#666] font-mono">{idx + 1}</span>
+                  <div className="w-9 h-9 bg-[#181818] border border-[#222] overflow-hidden">
+                    <Image src={`/${idx + 1}.png`} alt={`Rank ${idx + 1}`} width={36} height={36} className="w-full h-full object-cover" />
                   </div>
-                }
-              >
-                <span className="text-white text-lg font-geist-semi">{comp.score.toFixed(1)}%</span>
-              </MetricItem>
+                  <span className="text-white font-medium">{comp.url}</span>
+                </div>
+                <span className="text-white font-mono">{comp.score.toFixed(1)}%</span>
+              </div>
             </motion.div>
           ))}
         </div>

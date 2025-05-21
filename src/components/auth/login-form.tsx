@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { motion, AnimatePresence } from "framer-motion"
 import { CheckCircle2, XCircle, AlertCircle, CheckCircle, Mail } from "lucide-react"
@@ -36,7 +36,26 @@ export function LoginForm({
     { label: "At least one special character", met: false, regex: /[\W_]/ },
   ])
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
+
+  // Check for mode param and cached email on component mount
+  useEffect(() => {
+    const mode = searchParams.get('mode')
+    if (mode === 'signup') {
+      setIsSignUp(true)
+    }
+    
+    // Check for cached email
+    if (typeof window !== 'undefined') {
+      const cachedEmail = localStorage.getItem('cachedEmail')
+      if (cachedEmail) {
+        setEmail(cachedEmail)
+        // Clear the cached email after using it
+        localStorage.removeItem('cachedEmail')
+      }
+    }
+  }, [searchParams])
 
   // Reset confirm password field when switching modes
   useEffect(() => {

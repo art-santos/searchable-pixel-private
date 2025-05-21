@@ -2,7 +2,8 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import { useAuth } from '@/contexts/AuthContext'
 import {
   LayoutDashboardIcon,
   SearchIcon,
@@ -11,6 +12,7 @@ import {
   KeyIcon,
   HelpCircleIcon,
   FileTextIcon,
+  LogOutIcon,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -26,9 +28,26 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export function SplitSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const { setUser, supabase } = useAuth()
+
+  const handleLogout = async () => {
+    // Sign out from Supabase (this will clear auth cookies)
+    await supabase.auth.signOut()
+    // Clear the user state
+    setUser(null)
+    // Redirect to landing page
+    router.push('/')
+  }
 
   return (
     <TooltipProvider delayDuration={100}>
@@ -146,10 +165,23 @@ export function SplitSidebar() {
         
         {/* Profile Square */}
         <SidebarFooter className="h-16 w-16 border-t border-r border-[#222222] bg-[#0c0c0c] flex items-center justify-center">
-          <Avatar className="h-10 w-10 border border-[#333333]">
-            <AvatarImage src="/placeholder-user.jpg" alt="User" />
-            <AvatarFallback className="bg-[#222222] text-gray-400">SH</AvatarFallback>
-          </Avatar>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Avatar className="h-10 w-10 border border-[#333333] cursor-pointer hover:border-[#444444] transition-colors">
+                <AvatarImage src="/placeholder-user.jpg" alt="User" />
+                <AvatarFallback className="bg-[#222222] text-gray-400">SH</AvatarFallback>
+              </Avatar>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-[#161616] border-[#333333]">
+              <DropdownMenuItem 
+                className="text-gray-200 hover:bg-[#222222] cursor-pointer flex items-center gap-2"
+                onClick={handleLogout}
+              >
+                <LogOutIcon className="h-4 w-4" />
+                <span>Logout</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </SidebarFooter>
       </Sidebar>
     </TooltipProvider>
