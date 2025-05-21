@@ -49,26 +49,26 @@ export async function GET(req: NextRequest) {
     try {
       const { error: dbError } = await supabase.from('sites').select('count').limit(1);
       dbConnectionStatus = dbError ? `Error: ${dbError.message}` : 'Connected';
-    } catch (dbErr) {
-      dbConnectionStatus = `Exception: ${dbErr.message}`;
+    } catch (dbErr: unknown) {
+      dbConnectionStatus = `Exception: ${dbErr instanceof Error ? dbErr.message : String(dbErr)}`;
     }
     
     return NextResponse.json({ 
       status: 'ok',
       message: 'Auth test completed',
       isAuthenticated,
-      user: isAuthenticated ? {
+      user: isAuthenticated && sessionData.session ? {
         id: sessionData.session.user.id,
         email: sessionData.session.user.email
       } : null,
       dbConnectionStatus,
       time: new Date().toISOString()
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error in auth test API:', error);
     return NextResponse.json({
       status: 'error',
-      message: error.message || 'Unknown error'
+      message: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
 } 

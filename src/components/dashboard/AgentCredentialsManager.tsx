@@ -33,6 +33,10 @@ export default function AgentCredentialsManager() {
 
   const fetchApiKeys = async () => {
     try {
+      if (!supabase) {
+        throw new Error('Supabase client is not initialized');
+      }
+      
       const { data, error } = await supabase
         .from('api_keys')
         .select('*')
@@ -59,6 +63,15 @@ export default function AgentCredentialsManager() {
       toast({
         title: 'Error',
         description: 'You must be logged in to generate API keys',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (!supabase) {
+      toast({
+        title: 'Error',
+        description: 'Database connection is not available',
         variant: 'destructive',
       })
       return
@@ -109,6 +122,15 @@ export default function AgentCredentialsManager() {
 
   const deleteApiKey = async (id: string) => {
     if (!user) return
+    
+    if (!supabase) {
+      toast({
+        title: 'Error',
+        description: 'Database connection is not available',
+        variant: 'destructive',
+      })
+      return
+    }
 
     try {
       const { error } = await supabase

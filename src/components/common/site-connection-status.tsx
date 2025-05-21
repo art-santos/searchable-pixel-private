@@ -30,7 +30,7 @@ export default function SiteConnectionStatus({
 }: SiteConnectionStatusProps) {
   const [status, setStatus] = useState<ConnectionStatus>(initialStatus);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [lastVerified, setLastVerified] = useState<string | null>(lastPinged);
+  const [lastVerified, setLastVerified] = useState<string | null>(lastPinged || null);
   
   const getStatusBadge = (status: ConnectionStatus) => {
     switch (status) {

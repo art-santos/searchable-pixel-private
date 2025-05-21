@@ -24,11 +24,11 @@ export async function POST(req: NextRequest) {
       receivedData: body,
       time: new Date().toISOString()
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error in test API:', error);
     return NextResponse.json({
       status: 'error',
-      message: error.message || 'Unknown error'
+      message: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 });
   }
 } 
