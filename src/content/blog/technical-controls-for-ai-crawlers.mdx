@@ -1,0 +1,422 @@
+---
+title: "Control How AI Sees Your Site: Technical Guide for GPTBot, Claude, and Perplexity"
+description: "Want to control what AI can see on your site? This technical guide shows exactly how to direct AI crawlers using robots.txt, meta tags, and HTTP headers to maximize visibility or protect private content."
+date: "2025-05-16"
+author:
+  name: "Sam Hogan"
+  title: "CEO of Split, Design/GTM Engineer at Origami (YC F24)"
+  avatar: "/avatars/sam-hogan.png"
+tags: ["AEO", "Robots.txt", "Meta Tags", "Technical SEO", "AI Search Optimization", "How AI bots find content", "GPTBot"]
+featured: false
+coverImage: "/blog/article-cover-5.png"
+---
+
+## The Technical Gatekeepers: How to Control What AI Crawlers See
+
+"My site isn't showing up in AI tools" often has a simple explanation: you haven't properly configured the technical controls that guide AI crawlers. Just as traditional SEO requires technical foundations, Answer Engine Optimization (AEO) demands careful implementation of specific signals that tell AI bots like GPTBot, ClaudeBot, and PerplexityBot how to interact with your site.
+
+While AI crawlers respect most standard web crawling controls, they have critical differences from traditional search engine bots. This guide walks you through the exact technical implementations needed to either welcome AI crawlers to your valuable content or keep them away from sensitive areas.
+
+## Robots.txt: Your First Line of Defense (or Welcome Mat)
+
+The robots.txt file is your primary communication channel with AI crawlers. It's where you explicitly tell bots like GPTBot what they can and cannot access—a critical first step in how AI bots find content on your site.
+
+Here's a comprehensive example that addresses all major AI crawlers:
+
+```txt
+# Control AI crawler access
+User-agent: GPTBot          # OpenAI's crawler for ChatGPT
+Allow: /blog/               # Allow access to blog content
+Allow: /resources/          # Allow access to resources
+Disallow: /admin/           # Block access to admin areas
+Disallow: /internal-docs/   # Block access to internal documentation
+
+User-agent: ClaudeBot       # Anthropic's crawler for Claude
+Allow: /blog/
+Allow: /resources/
+Disallow: /members-only/    # Block access to members-only content
+
+User-agent: PerplexityBot   # Perplexity AI's crawler
+Allow: /
+Disallow: /beta/            # Block access to beta features
+
+# Opt out of Google AI training
+User-agent: Google-Extended
+Disallow: /                 # Block content use for Google's AI training
+
+# Standard crawlers
+User-agent: *
+Allow: /
+
+# Provide sitemap for comprehensive content discovery
+Sitemap: https://example.com/sitemap.xml
+```
+
+### Critical robots.txt Implementation Details
+
+1. **Platform-Specific Controls** (Essential for ChatGPT SEO)
+   - Each AI engine has its own crawler with a unique User-agent string
+   - Use different rules for different AI systems based on your goals
+   - Be intentional about which sections are open vs. restricted
+
+2. **Important Behavioral Notes**
+   - Unlike traditional crawlers, AI crawlers typically ignore `Crawl-delay` directives
+   - Some AI crawlers check robots.txt on *every* request, increasing its importance
+   - Many check robots.txt in real-time, so changes take effect immediately
+
+3. **Common Pitfalls to Avoid**
+   - Accidentally blocking ALL crawlers (`User-agent: *` with too many Disallow rules)
+   - Placing robots.txt in the wrong directory (must be at domain root)
+   - Blocking important content that you actually want cited in AI answers
+
+**Pro Tip**: The `robots.txt` file is critical for any AI visibility platform strategy. Balanced access control lets you get your site in ChatGPT while protecting sensitive content.
+
+## Schema.org: Explain Your Content to AI in Its Native Language
+
+Structured data using JSON-LD helps AI systems truly understand your content. It's like providing a detailed map instead of vague directions—essential for how to get your blog into AI search results.
+
+Here's a comprehensive implementation example:
+
+```html
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Technical Guide to Controlling AI Crawlers",
+  "description": "Learn how to implement robots.txt and other technical controls for AI crawlers like GPTBot",
+  "author": {
+    "@type": "Person",
+    "name": "Sam Hogan",
+    "jobTitle": "CEO of Split",
+    "url": "https://split.ai/team/sam"
+  },
+  "datePublished": "2024-07-15",
+  "dateModified": "2024-07-28",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Split",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://split.ai/logo.png"
+    }
+  },
+  "inLanguage": "en-US",
+  "isAccessibleForFree": true,
+  "keywords": "AI crawlers, robots.txt, ChatGPT SEO, GPTBot, technical controls",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://split.ai/resources/technical-controls-for-ai-crawlers"
+  }
+}
+</script>
+```
+
+### Schema Implementation Best Practices
+
+1. **Choose the Most Specific Schema Types**
+   - Use `TechArticle` instead of generic `Article` for technical content
+   - For product pages, use `Product` with detailed properties
+   - For Q&A content, implement `FAQPage` schema
+
+2. **Common Schema Types That Boost AI Understanding**
+   - `Article`/`BlogPosting`: For general content (include datePublished and dateModified)
+   - `FAQPage`: For Q&A sections (critical for direct answer citation)
+   - `HowTo`: For step-by-step tutorials (helps AI understand procedural content)
+   - `Product`: For e-commerce (include pricing, availability, and reviews)
+   - `Person`: For author profiles (establish expertise and authority)
+
+3. **Validation Is Non-Negotiable**
+   - Test with Google's Rich Results Test (https://search.google.com/test/rich-results)
+   - Validate syntax with Schema.org Validator
+   - Check implementation with browser dev tools
+
+**Implementation Tip**: Schema markup isn't just for search engines—it's increasingly important for how ChatGPT, Claude, and other AI systems understand your content's context, authority, and relationships.
+
+## Canonical Tags and Language Control: Essential for Global Content
+
+If your content exists in multiple versions (different languages, mobile/desktop variants, or duplicated across domains), proper canonical and hreflang implementation is crucial for ensuring AI crawlers understand the primary version:
+
+```html
+<!-- Definitive canonical URL -->
+<link rel="canonical" href="https://example.com/technical-guide" />
+
+<!-- Language variants -->
+<link rel="alternate" hreflang="en-us" href="https://example.com/technical-guide" />
+<link rel="alternate" hreflang="es" href="https://example.com/es/guia-tecnica" />
+<link rel="alternate" hreflang="fr" href="https://example.com/fr/guide-technique" />
+<link rel="alternate" hreflang="x-default" href="https://example.com/technical-guide" />
+```
+
+### Implementation in Next.js
+
+Here's how to implement language variants in a Next.js application:
+
+```tsx
+// pages/[lang]/guide.tsx
+import Head from 'next/head'
+
+const LANGUAGES = ['en-us', 'es', 'fr']
+const BASE_URL = 'https://example.com'
+
+export default function TechnicalGuide({ lang }) {
+  // URL mapping for different language versions
+  const getUrlForLang = (language) => {
+    if (language === 'en-us') return `${BASE_URL}/technical-guide`
+    return `${BASE_URL}/${language}/${language === 'es' ? 'guia-tecnica' : 'guide-technique'}`
+  }
+  
+  return (
+    <>
+      <Head>
+        {/* Canonical URL - essential for AI crawler understanding */}
+        <link 
+          rel="canonical" 
+          href={getUrlForLang('en-us')} 
+        />
+        
+        {/* Language variants */}
+        {LANGUAGES.map(language => (
+          <link
+            key={language}
+            rel="alternate"
+            hreflang={language}
+            href={getUrlForLang(language)}
+          />
+        ))}
+        
+        {/* Default fallback */}
+        <link
+          rel="alternate"
+          hreflang="x-default"
+          href={getUrlForLang('en-us')}
+        />
+      </Head>
+      
+      {/* Page content */}
+    </>
+  )
+}
+```
+
+**Why This Matters**: AI crawlers need to understand which version of your content is definitive. Without proper canonical tags, you risk diluting your content's authority or having AI engines cite the wrong version.
+
+## Performance Optimization: AI Crawlers Are Impatient
+
+AI crawlers have stricter performance requirements than many traditional crawlers. If your site loads too slowly, crawlers may abandon the request before capturing your content, essentially making your site invisible to AI tools.
+
+### 1. Server Response Time: The Critical First Impression
+
+Keep Time to First Byte (TTFB) under 2 seconds with proper caching and server configuration:
+
+```tsx
+// next.config.js example for optimizing TTFB
+module.exports = {
+  // Enable React Server Components for faster initial HTML
+  experimental: {
+    serverActions: true,
+  },
+  // Add caching headers
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            // Balance freshness with performance
+            value: 'public, max-age=3600, stale-while-revalidate=60'
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### 2. Edge Deployment: Minimize Geographic Latency
+
+Edge functions can dramatically improve response times for AI crawlers by serving content from locations physically closer to the crawler's infrastructure:
+
+```tsx
+// app/api/crawler-data/route.ts - Edge API route example
+export const runtime = 'edge'
+
+export async function GET(request: Request) {
+  // Process at the edge for fastest response
+  const url = new URL(request.url)
+  const isAiCrawler = checkForAiCrawler(request.headers.get('user-agent') || '')
+  
+  // Potentially customize response for AI crawlers
+  const data = isAiCrawler 
+    ? await getEnhancedDataForAi() 
+    : await getStandardData()
+  
+  return new Response(JSON.stringify(data), {
+    headers: { 
+      'Content-Type': 'application/json',
+      'Cache-Control': 'public, max-age=60, stale-while-revalidate=600'
+    }
+  })
+}
+```
+
+### 3. Strategic Caching: Balance Freshness with Speed
+
+Implement efficient caching to ensure AI crawlers receive fast responses while still getting up-to-date content:
+
+```tsx
+// lib/data-fetching.ts
+import { cache } from 'react'
+
+// React cache ensures data is fetched only once per request
+export const getArticleData = cache(async (slug: string) => {
+  // Use custom caching headers for crawler-friendly behavior
+  const response = await fetch(`https://api.example.com/articles/${slug}`, {
+    headers: {
+      'Cache-Control': 'max-age=300'  // 5 minute cache
+    },
+    next: { revalidate: 3600 }  // Revalidate every hour
+  })
+  
+  return response.json()
+})
+```
+
+**Performance Impact on AEO**: Tools for improving AI search presence often start with performance. Faster sites tend to be more thoroughly crawled, leading to better representation in AI knowledge bases.
+
+## AI Crawler Monitoring: Know Who's Visiting and What They're Seeing
+
+Understanding how AI crawlers interact with your site gives you invaluable data on how to audit AI visibility for your brand.
+
+### 1. Comprehensive Crawler Activity Logging
+
+Track which AI crawlers are accessing your site, what content they're viewing, and how they're behaving:
+
+```tsx
+// middleware.ts - AI crawler detection and logging
+import { NextRequest, NextResponse } from 'next/server'
+
+// Define known AI crawler user-agents
+const AI_CRAWLERS = {
+  GPTBOT: 'GPTBot',              // OpenAI (ChatGPT)
+  CLAUDEBOT: 'ClaudeBot',        // Anthropic (Claude)
+  PERPLEXITYBOT: 'PerplexityBot', // Perplexity AI
+  GOOGLE_EXTENDED: 'Google-Extended', // Google AI
+  BINGBOT: 'BingBot/edgeGPT'    // Microsoft Bing/Copilot
+}
+
+export function middleware(req: NextRequest) {
+  const userAgent = req.headers.get('user-agent') || ''
+  const url = req.nextUrl.pathname
+  
+  // Check if this is an AI crawler
+  const matchedCrawler = Object.entries(AI_CRAWLERS).find(
+    ([_, value]) => userAgent.includes(value)
+  )
+  
+  if (matchedCrawler) {
+    const [crawlerName, _] = matchedCrawler
+    
+    // Log the AI crawler visit (to your analytics system)
+    console.log('[AEO-TRACKER]', {
+      crawler: crawlerName,
+      userAgent,
+      path: url,
+      timestamp: new Date().toISOString(),
+      referer: req.headers.get('referer') || 'none'
+    })
+    
+    // You could also track this in a database or send to an analytics service
+    // trackAiCrawlerVisit(crawlerName, url)
+  }
+  
+  return NextResponse.next()
+}
+
+// Configure middleware to run on all pages
+export const config = {
+  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+}
+```
+
+### 2. Performance and Error Tracking
+
+Monitor how AI crawlers experience your site by tracking performance metrics and errors:
+
+```tsx
+// utils/ai-performance-monitoring.ts
+const isAiCrawler = (userAgent: string) => {
+  return /GPTBot|ClaudeBot|PerplexityBot|Google-Extended/i.test(userAgent)
+}
+
+export function trackCrawlerPerformance(metric: string, value: number) {
+  // Only track for real users or if we're specifically monitoring crawler performance
+  const shouldTrack = !isAiCrawler(navigator.userAgent) || window.__monitorCrawlers
+  
+  if (shouldTrack) {
+    analytics.track('performance_metric', {
+      metric,
+      value,
+      isAiCrawler: isAiCrawler(navigator.userAgent),
+      userAgent: navigator.userAgent,
+      page: window.location.pathname,
+      timestamp: Date.now()
+    })
+  }
+}
+
+// Track errors that might affect crawler understanding
+export function trackCrawlerError(errorType: string, details: any) {
+  if (isAiCrawler(navigator.userAgent)) {
+    analytics.track('crawler_error', {
+      errorType,
+      details,
+      userAgent: navigator.userAgent,
+      page: window.location.pathname,
+      timestamp: Date.now()
+    })
+  }
+}
+```
+
+## The Technical AEO Checklist: Are You Fully Optimized?
+
+Use this checklist to ensure your technical foundations for AI crawlers are solid:
+
+1. **Robots.txt Management**
+   - ✅ Placed correctly at domain root (`/robots.txt`)
+   - ✅ Updated with every major deployment
+   - ✅ Granular rules for each AI crawler type
+   - ✅ XML sitemap referenced and valid
+
+2. **Structured Data Implementation**
+   - ✅ JSON-LD used for all critical content
+   - ✅ Specific schema types chosen (not generic)
+   - ✅ All required properties included
+   - ✅ Validated using multiple tools
+
+3. **URL Structure and Management**
+   - ✅ Clean canonical URLs implemented
+   - ✅ Language variants properly marked
+   - ✅ Redirect chains eliminated or minimized
+   - ✅ URL parameters handled correctly
+
+4. **Performance Optimization**
+   - ✅ Time to First Byte under 2 seconds
+   - ✅ Efficient caching strategy implemented
+   - ✅ Key resources prioritized
+   - ✅ Edge deployment for global content
+
+5. **Monitoring and Feedback**
+   - ✅ AI crawler tracking implemented
+   - ✅ Performance metrics captured
+   - ✅ Error tracking in place
+   - ✅ Regular analysis of crawler behavior
+
+## Conclusion: Technical Excellence Is Your AEO Foundation
+
+AI engines can only cite what they can find, understand, and efficiently process. The technical controls outlined in this guide aren't optional extras—they're the foundation that determines whether your content even has a chance at being found and cited by AI tools.
+
+A comprehensive approach to these technical aspects helps address the common complaint that "ChatGPT never recommends my company." By implementing proper robots.txt configuration, structured data, canonical tags, and performance optimizations, you create the technical foundation that makes your content accessible and comprehensible to AI crawlers.
+
+Remember: AI crawler behavior is constantly evolving. Keep your technical implementations clean, standards-compliant, and regularly updated. Monitor crawler activity to understand how AI is interacting with your site, and adjust your approach based on real data. This technical diligence will pay dividends in AI visibility and citations. 

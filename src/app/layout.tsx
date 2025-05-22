@@ -80,7 +80,7 @@ export default function RootLayout({
       </head>
       <body
         className={cn(
-          "min-h-screen bg-background font-sans antialiased flex flex-col"
+          "min-h-screen bg-[#0c0c0c] font-sans antialiased flex flex-col"
         )}
       >
         {/* <Announcements /> Removed component */}

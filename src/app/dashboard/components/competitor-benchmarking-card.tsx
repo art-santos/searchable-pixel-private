@@ -124,7 +124,7 @@ export function CompetitorBenchmarkingCard() {
                 <div className="flex items-center gap-4">
                   <span className="text-[#666] font-mono">{idx + 1}</span>
                   <div className="w-9 h-9 bg-[#181818] border border-[#222] overflow-hidden">
-                    <Image src={`/${idx + 1}.png`} alt={`Rank ${idx + 1}`} width={36} height={36} className="w-full h-full object-cover" />
+                    <Image src={`/images/${idx + 1}.png`} alt={`Rank ${idx + 1}`} width={36} height={36} className="w-full h-full object-cover" />
                   </div>
                   <span className="text-white font-medium">{comp.url}</span>
                 </div>

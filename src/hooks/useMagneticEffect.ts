@@ -24,7 +24,7 @@ export function useMagneticEffect({
     if (!ref.current) return;
     
     const element = ref.current;
-    let rafId: number | null = null;
+    const rafId: number | null = null;
     let bounds: DOMRect;
     
     const handleMouseMove = (e: MouseEvent) => {
@@ -66,7 +66,7 @@ export function useMagneticEffect({
       element.removeEventListener('mouseleave', handleMouseLeave);
       if (rafId !== null) cancelAnimationFrame(rafId);
     };
-  }, [strength, ease, triggerDistance]);
+  }, [strength, ease, triggerDistance, x, y]);
 
   return { ref, x: springX, y: springY };
 } 

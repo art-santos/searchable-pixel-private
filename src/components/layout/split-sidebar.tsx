@@ -14,6 +14,7 @@ import {
   FileTextIcon,
   LogOutIcon,
 } from "lucide-react"
+import Image from 'next/image'
 
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -42,7 +43,7 @@ export function SplitSidebar() {
 
   const handleLogout = async () => {
     // Sign out from Supabase (this will clear auth cookies)
-    await supabase.auth.signOut()
+    await supabase?.auth.signOut()
     // Clear the user state
     setUser(null)
     // Redirect to landing page
@@ -70,7 +71,13 @@ export function SplitSidebar() {
       <Sidebar className="w-16 border-r border-[#222222] bg-[#0c0c0c] !bg-[#0c0c0c] dark:!bg-[#0c0c0c]">
         {/* Logo Square */}
         <SidebarHeader className="box-border h-16 w-16 min-h-[64px] min-w-[64px] border-r border-b border-[#222222] bg-[#0c0c0c] flex items-center justify-center">
-          <img src="/split-icon-white.svg" width={32} height={32} alt="Split Logo" />
+          <Image
+            src="/logo.svg"
+            alt="Split Logo"
+            width={32}
+            height={32}
+            className="h-8 w-8"
+          />
         </SidebarHeader>
         
         {/* Main Menu Items */}
@@ -90,11 +97,11 @@ export function SplitSidebar() {
           </Link>
 
           <Link href="/visibility" className="w-full flex justify-center">
-            <SidebarMenuButton
+            <SidebarMenuButton 
               tooltip="Visibility"
               className={cn(
                 "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
-                pathname === "/visibility"
+                pathname === "/visibility" 
                   ? "bg-[#222222] text-white border border-[#333333] selected-button"
                   : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
               )}
@@ -182,9 +189,9 @@ export function SplitSidebar() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Avatar className="h-10 w-10 border border-[#333333] cursor-pointer hover:border-[#444444] transition-colors">
-                <AvatarImage src="/placeholder-user.jpg" alt="User" />
-                <AvatarFallback className="bg-[#222222] text-gray-400">SH</AvatarFallback>
-              </Avatar>
+            <AvatarImage src="/placeholder-user.jpg" alt="User" />
+            <AvatarFallback className="bg-[#222222] text-gray-400">SH</AvatarFallback>
+          </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 bg-[#161616] border-[#333333]">
               <DropdownMenuItem 

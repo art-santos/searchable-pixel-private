@@ -52,7 +52,7 @@ export function AEOScorecard() {
       y: 0,
       transition: { duration: 0.3, ease: "easeOut" },
     });
-    let start = 0;
+    const start = 0;
     const end = (72.2 * 552.92) / 100;
     const duration = 1000;
     const startTime = performance.now();

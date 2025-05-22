@@ -22,7 +22,7 @@ export default function DashboardLayout({
     <AuthenticatedLayout>
       <SidebarProvider className="dark">
         <SplitSidebar />
-        <SidebarInset className="bg-[#0c0c0c]">
+        <SidebarInset>
           {children}
         </SidebarInset>
       </SidebarProvider>

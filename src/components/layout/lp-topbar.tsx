@@ -57,7 +57,7 @@ export function LPTopBar() {
         <div className="flex-1">
           <Link href="/" className="logo-container flex items-center">
             <Image 
-              src="/split-icon.svg" 
+              src="/images/split-icon.svg" 
               alt="Split" 
               width={28} 
               height={28} 
@@ -85,6 +85,12 @@ export function LPTopBar() {
             className="nav-link text-sm text-gray-300 hover:text-white transition-colors"
           >
             Pricing
+          </Link>
+          <Link 
+            href="/resources" 
+            className="nav-link text-sm text-gray-300 hover:text-white transition-colors"
+          >
+            Resources
           </Link>
         </nav>
 

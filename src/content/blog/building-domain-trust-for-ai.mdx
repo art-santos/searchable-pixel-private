@@ -1,0 +1,519 @@
+---
+title: "Building Domain Trust and Authority to Get Cited by AI"
+description: "Learn practical strategies to build domain authority that makes AI engines like ChatGPT and Claude more likely to cite your content as an authoritative source."
+date: "2025-05-21"
+author:
+  name: "Sam Hogan"
+  title: "CEO of Split, Design/GTM Engineer at Origami (YC F24)"
+  avatar: "/avatars/sam-hogan.png"
+tags: ["AEO", "Domain Authority", "AI Citations", "E-E-A-T"]
+featured: true
+coverImage: "/blog/article-cover-4.png"
+---
+
+# Why AI Engines Aren't Citing Your Content (And How to Fix It)
+
+Many site owners are asking: "Why isn't my content getting cited by ChatGPT or other AI engines?" The answer often lies in domain trust and authority. Unlike traditional SEO where backlinks drive ranking, AI search engines evaluate your site's expertise, experience, authoritativeness, and trustworthiness (E-E-A-T) to determine citation-worthiness.
+
+In this guide, you'll learn actionable strategies to boost your domain's trust signals specifically for AI engines like ChatGPT, Claude, and Perplexity.
+
+## Understanding E-E-A-T for AI Citations
+
+Google's E-E-A-T guidelines have evolved beyond traditional SEO signals into crucial factors that determine whether AI engines will cite your content. Let's break down what AI systems are actually looking for:
+
+## The Four Trust Pillars That Make AI Engines Cite You
+
+### 1. Experience: Show, Don't Just Tell
+
+AI engines prioritize content that demonstrates genuine, first-hand experience:
+
+- **Case studies with measurable results**: "We increased conversion rates by 37% using this technique"
+- **Practical implementation details**: "Here's the exact code we used to solve this problem"
+- **Testing data**: "We tested 5 different approaches; here's what performed best"
+- **Direct observations**: "During our 6-month implementation, we discovered three critical factors..."
+
+**Pro tip**: Include specific metrics, timelines, and documented processes to signal real experience with your subject matter.
+
+### 2. Expertise: Establish Credibility Signals
+
+AI systems evaluate expertise through multiple signals:
+
+- **Author credentials**: Professional qualifications, degrees, certifications
+- **Work history**: Relevant industry experience (years, companies, roles)
+- **Publication record**: Books, papers, articles, patents
+- **Specialized knowledge**: Technical depth demonstrated through content
+
+**Implementation example**:
+
+```tsx
+// components/AuthorCredentials.tsx
+export function AuthorCredentials({ author }) {
+  return (
+    <div className="credentials-bar p-3 bg-gray-50 rounded-lg">
+      <div className="flex items-center gap-3">
+        <img 
+          src={author.avatar} 
+          alt={author.name}
+          className="w-12 h-12 rounded-full" 
+        />
+        <div>
+          <h4 className="font-medium">{author.name}</h4>
+          <p className="text-sm text-gray-600">{author.title}</p>
+          {author.credentials && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {author.credentials.map(cred => (
+                <span key={cred} className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
+                  {cred}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+### 3. Authoritativeness: Build Recognition Signals
+
+AI engines look for external validation of your authority:
+
+- **Citations from trusted sources**: Academic papers, industry reports
+- **Professional recognition**: Awards, speaking engagements
+- **Institutional affiliations**: Universities, research organizations
+- **Industry leadership**: Board positions, advisory roles
+
+**What works**: Create content worthy of citation by providing original research, comprehensive guides, or unique insights not available elsewhere.
+
+### 4. Trustworthiness: The Foundation of AI Citations
+
+Trustworthiness is the foundation that supports all other E-E-A-T elements:
+
+- **Factual accuracy**: Verifiable information with proper citations
+- **Transparency**: Clear methodologies, disclosure of limitations
+- **Content freshness**: Regular updates with current information
+- **Editorial standards**: Proper attribution, correction policies
+
+**Pro tip**: Implement schema markup to explicitly signal your content's trustworthiness:
+
+```html
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Complete Guide to Vector Embeddings",
+  "author": {
+    "@type": "Person",
+    "name": "Dr. Sarah Chen",
+    "honorificPrefix": "Dr.",
+    "jobTitle": "AI Research Director",
+    "worksFor": {
+      "@type": "Organization",
+      "name": "TechLabs AI"
+    },
+    "knowsAbout": ["Machine Learning", "Vector Embeddings", "NLP"]
+  },
+  "datePublished": "2024-06-15",
+  "dateModified": "2024-07-10",
+  "publisher": {
+    "@type": "Organization",
+    "name": "YourTrustedDomain.com",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://yourtrustedomain.com/logo.png"
+    }
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://yourtrustedomain.com/guide/vector-embeddings"
+  }
+}
+</script>
+```
+
+## Implementation Strategy: Making Your Content AI-Citation-Worthy
+
+### 1. Enhanced Author Profiles
+
+Implement comprehensive author schemas that AI crawlers can easily parse:
+
+```tsx
+// components/EnhancedAuthorBio.tsx
+export function EnhancedAuthorBio({ author }) {
+  return (
+    <div className="author-bio">
+      <div className="author-header">
+        <img src={author.avatar} alt={author.name} />
+        <div>
+          <h3>{author.name}</h3>
+          <p>{author.title}</p>
+        </div>
+      </div>
+      
+      <div className="expertise-section">
+        <h4>Expertise & Background</h4>
+        <ul>
+          {author.expertise.map(item => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </div>
+      
+      {author.publications && (
+        <div className="publications">
+          <h4>Selected Publications</h4>
+          <ul>
+            {author.publications.map(pub => (
+              <li key={pub.title}>
+                <a href={pub.url}>{pub.title}</a>
+                <span>{pub.publisher}, {pub.year}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      
+      <div className="connect">
+        {author.socialProfiles.map(profile => (
+          <a key={profile.platform} href={profile.url}>
+            {profile.platform}
+          </a>
+        ))}
+      </div>
+    </div>
+  )
+}
+```
+
+### 2. Evidence-Based Content Structure
+
+Structure your content to explicitly demonstrate expertise:
+
+```tsx
+// components/ResearchSummary.tsx
+export function ResearchSummary({ research }) {
+  return (
+    <div className="research-summary border-l-4 border-blue-500 pl-4 my-6">
+      <h3 className="font-semibold text-lg">{research.title}</h3>
+      
+      <div className="methodology my-3">
+        <h4 className="text-sm uppercase tracking-wider text-gray-500">Methodology</h4>
+        <p>{research.methodology}</p>
+      </div>
+      
+      <div className="key-findings my-3">
+        <h4 className="text-sm uppercase tracking-wider text-gray-500">Key Findings</h4>
+        <ul className="list-disc pl-5">
+          {research.findings.map((finding, idx) => (
+            <li key={idx}>{finding}</li>
+          ))}
+        </ul>
+      </div>
+      
+      <div className="citation mt-3 text-sm text-gray-600">
+        <p>
+          Source: {research.source}
+          {research.doi && <span> (DOI: {research.doi})</span>}
+        </p>
+      </div>
+    </div>
+  )
+}
+```
+
+### 3. Building Citation Networks
+
+Create a web of citations that signals your content's authority:
+
+#### Internal Link "Hammocks"
+
+Implement strong internal linking structures that reinforce topical expertise:
+
+```tsx
+// components/RelatedContentLinks.tsx
+export function RelatedContentLinks({ topic, articles }) {
+  return (
+    <div className="related-content my-8 p-4 bg-gray-50 rounded-lg">
+      <h3 className="text-lg font-medium mb-3">
+        Explore Our {topic} Knowledge Base:
+      </h3>
+      <ul className="grid gap-2">
+        {articles.map(article => (
+          <li key={article.slug} className="flex items-center">
+            <svg className="w-4 h-4 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+            <a href={`/blog/${article.slug}`} className="hover:underline text-blue-600">
+              {article.title}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+```
+
+#### External Authority Citations
+
+Link to high-quality, authoritative sources:
+
+```tsx
+// components/AuthorityCitation.tsx
+export function AuthorityCitation({ citation }) {
+  return (
+    <div className="authority-citation my-4 p-3 border border-gray-200 rounded">
+      <div className="flex justify-between items-start">
+        <div>
+          <a 
+            href={citation.url} 
+            className="text-blue-600 hover:underline font-medium"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {citation.title}
+          </a>
+          <p className="text-sm text-gray-600 mt-1">
+            {citation.publisher} · {citation.date}
+          </p>
+        </div>
+        <span className="bg-gray-100 text-gray-700 px-2 py-1 text-xs rounded-full">
+          {citation.type}
+        </span>
+      </div>
+      {citation.quote && (
+        <blockquote className="mt-3 pl-3 border-l-2 border-gray-300 italic text-gray-700">
+          "{citation.quote}"
+        </blockquote>
+      )}
+    </div>
+  )
+}
+```
+
+## Practical Tactics to Boost Your AI Citation Rate
+
+### 1. Implement Expert Contributions
+
+Feature insights from recognized experts in your field:
+
+```tsx
+// components/ExpertPanel.tsx
+export function ExpertPanel({ experts }) {
+  return (
+    <section className="expert-panel my-8">
+      <h3 className="text-xl font-semibold mb-4">Expert Perspectives</h3>
+      
+      <div className="grid gap-6 md:grid-cols-2">
+        {experts.map(expert => (
+          <div key={expert.name} className="expert-card p-4 border rounded-lg">
+            <div className="flex items-center gap-3 mb-3">
+              <img 
+                src={expert.avatar} 
+                alt={expert.name} 
+                className="w-12 h-12 rounded-full"
+              />
+              <div>
+                <h4 className="font-medium">{expert.name}</h4>
+                <p className="text-sm text-gray-600">{expert.credentials}</p>
+              </div>
+            </div>
+            
+            <blockquote className="italic text-gray-700">
+              "{expert.quote}"
+            </blockquote>
+            
+            {expert.links && (
+              <div className="mt-3 text-sm">
+                <a 
+                  href={expert.links.profile} 
+                  className="text-blue-600 hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  More from {expert.name.split(' ')[0]}
+                </a>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+```
+
+### 2. Data Visualization with Methodology
+
+Present data clearly with transparent methodology:
+
+```tsx
+// components/DataInsight.tsx
+export function DataInsight({ data }) {
+  return (
+    <figure className="data-insight my-8">
+      <div className="chart-container p-4 bg-white border rounded-lg">
+        {/* Chart implementation would go here */}
+        <div className="h-64 bg-gray-100 flex items-center justify-center">
+          [Data visualization chart]
+        </div>
+      </div>
+      
+      <figcaption className="mt-3">
+        <div className="text-sm text-gray-700">
+          <strong>Source:</strong> {data.source} ({data.date})
+        </div>
+        
+        <details className="methodology-details mt-2">
+          <summary className="text-sm text-blue-600 cursor-pointer">
+            View Methodology
+          </summary>
+          <div className="mt-2 p-3 bg-gray-50 rounded text-sm">
+            <h4 className="font-medium">Data Collection</h4>
+            <p>{data.methodology.collection}</p>
+            
+            <h4 className="font-medium mt-2">Analysis</h4>
+            <p>{data.methodology.analysis}</p>
+            
+            {data.methodology.limitations && (
+              <>
+                <h4 className="font-medium mt-2">Limitations</h4>
+                <p>{data.methodology.limitations}</p>
+              </>
+            )}
+          </div>
+        </details>
+      </figcaption>
+    </figure>
+  )
+}
+```
+
+### 3. Technical Trust Implementation
+
+Ensure your site meets technical trust factors:
+
+```tsx
+// pages/_document.tsx (Next.js example)
+import Document, { Html, Head, Main, NextScript } from 'next/document'
+
+class MyDocument extends Document {
+  render() {
+    return (
+      <Html lang="en">
+        <Head>
+          {/* Security headers */}
+          <meta httpEquiv="Content-Security-Policy" content="default-src 'self'" />
+          <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
+          <meta httpEquiv="X-Frame-Options" content="SAMEORIGIN" />
+          
+          {/* Trust signals */}
+          <link rel="canonical" href="https://yourdomain.com/current-page" />
+          
+          {/* Verification tags */}
+          <meta name="google-site-verification" content="your-verification-code" />
+          
+          {/* Org schema */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                "name": "Your Company Name",
+                "url": "https://yourdomain.com",
+                "logo": "https://yourdomain.com/logo.png",
+                "foundingDate": "2015-01-01",
+                "founders": [
+                  {
+                    "@type": "Person",
+                    "name": "Founder Name"
+                  }
+                ],
+                "contactPoint": {
+                  "@type": "ContactPoint",
+                  "contactType": "customer support",
+                  "email": "support@yourdomain.com"
+                }
+              })
+            }}
+          />
+        </Head>
+        <body>
+          <Main />
+          <NextScript />
+        </body>
+      </Html>
+    )
+  }
+}
+
+export default MyDocument
+```
+
+## Measuring AI Citation Success
+
+Track your content's performance in AI systems:
+
+```tsx
+// utils/ai-citation-tracker.ts
+export async function trackAICitations() {
+  // This would connect to your analytics or a specialized AEO tracking tool
+  const mentions = await fetchAIMentions()
+  
+  // Filter by AI engine type
+  const byEngine = mentions.reduce((acc, mention) => {
+    if (!acc[mention.engine]) acc[mention.engine] = []
+    acc[mention.engine].push(mention)
+    return acc
+  }, {})
+  
+  // Analyze citation patterns
+  const patterns = analyzeCitationPatterns(mentions)
+  
+  return {
+    totalCitations: mentions.length,
+    byEngine,
+    topCitedPages: getTopCitedPages(mentions),
+    citationTrends: patterns.trends,
+    competitorComparison: patterns.competitorComparison
+  }
+}
+```
+
+## Best Practices Checklist for AI Citation Success
+
+1. **Content Quality Fundamentals**
+   - ✅ Implement rigorous fact-checking
+   - ✅ Establish clear editorial guidelines
+   - ✅ Maintain a transparent update history
+   - ✅ Provide comprehensive topic coverage
+
+2. **Authority Building Actions**
+   - ✅ Form partnerships with academic institutions
+   - ✅ Collaborate on industry research
+   - ✅ Secure expert contributions
+   - ✅ Participate in community standards development
+
+3. **Citation Network Development**
+   - ✅ Track mentions across AI platforms
+   - ✅ Engage with sites that cite your content
+   - ✅ Keep cited content updated and accurate
+   - ✅ Build reciprocal citation relationships
+
+4. **Trust Signal Implementation**
+   - ✅ Deploy comprehensive structured data
+   - ✅ Maintain clear authorship attribution
+   - ✅ Document research methodologies
+   - ✅ Provide transparent funding disclosures
+
+## Conclusion: The Future of AI Citations
+
+Building domain trust for AI citations requires a strategic approach that combines traditional E-E-A-T principles with AI-specific trust signals. As AI systems become more sophisticated in evaluating source credibility, the bar for citation-worthy content continues to rise.
+
+The sites that consistently get cited by ChatGPT, Claude, and other AI engines share common traits: they demonstrate genuine expertise, maintain rigorous accuracy standards, and build strong citation networks that signal their authority to AI systems.
+
+By implementing the strategies in this guide, you'll position your site as a preferred citation source for AI engines, ultimately driving more traffic and establishing your brand as an authority in your field.
+
+**Want to improve your site's AI citation rate?** [Contact Split](https://www.split.dev/contact) for a personalized AEO audit that identifies specific opportunities to boost your domain trust signals. 

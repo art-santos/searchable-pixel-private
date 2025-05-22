@@ -1,0 +1,680 @@
+---
+title: "10 Quick Wins to Get Your Site Cited by ChatGPT & AI Engines"
+description: "Implement these 10 high-impact, easy-to-deploy optimizations to make your site more visible to ChatGPT, Claude, and other AI systems. Get AI search traffic in days, not months."
+date: "2025-05-11"
+author:
+  name: "Sam Hogan"
+  title: "CEO of Split, Design/GTM Engineer at Origami (YC F24)"
+  avatar: "/avatars/sam-hogan.png"
+tags: ["AEO", "Quick Wins", "AI Visibility", "ChatGPT SEO", "AI Traffic", "AI Citations"]
+featured: true
+coverImage: "/blog/article-cover-2.png"
+---
+
+# "Why Isn't My Website Showing Up in ChatGPT?" 10 Quick Fixes
+
+If you've been asking "why doesn't my website show up in ChatGPT?" or "how do I get my site cited by AI engines?", you're not alone. The good news is that some of the most impactful optimizations for AI visibility are also the quickest to implement.
+
+This guide focuses on high-impact changes you can make in hours, not weeks, to dramatically increase your site's visibility to AI systems like ChatGPT, Claude, and Perplexity.
+
+## Why Your Site Isn't Being Seen by AI (And How to Fix It Fast)
+
+AI engines like ChatGPT need specific signals to find, understand, and trust your content enough to cite it. Unlike traditional SEO which can take months to show results, these AEO (Answer Engine Optimization) quick wins can deliver noticeable improvements in AI visibility within days.
+
+Let's dive into the 10 highest-impact optimizations you can implement immediately:
+
+## 1. Server-Side Rendering: The Foundation of AI Visibility
+
+**Problem**: AI crawlers like GPTBot (ChatGPT) can't execute JavaScript to see content that renders client-side. If your site uses heavy client-side rendering, much of your content may be invisible to AI systems.
+
+**Quick Win Solution**: Implement server-side rendering (SSR) for your most important content pages. This ensures the full HTML is delivered to AI crawlers without requiring JavaScript execution.
+
+### For Next.js Users:
+
+```tsx
+// pages/blog/[slug].js (Next.js Pages Router)
+export async function getServerSideProps({ params }) {
+  // Fetch your content server-side
+  const post = await fetchBlogPost(params.slug);
+  
+  // Return it as props
+  return { 
+    props: { post } 
+  };
+}
+
+// Component receives server-rendered data
+export default function BlogPost({ post }) {
+  return (
+    <article>
+      <h1>{post.title}</h1>
+      <div dangerouslySetInnerHTML={{ __html: post.content }} />
+    </article>
+  );
+}
+```
+
+### For React Apps Using Express:
+
+```jsx
+// server.js
+app.get('/blog/:slug', async (req, res) => {
+  const post = await fetchBlogPost(req.params.slug);
+  
+  // Render the React component to HTML
+  const html = ReactDOMServer.renderToString(
+    <BlogPost post={post} />
+  );
+  
+  // Send the fully rendered HTML
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>${post.title}</title>
+      </head>
+      <body>
+        <div id="root">${html}</div>
+      </body>
+    </html>
+  `);
+});
+```
+
+**Why This Works**: AI crawlers receive complete, rendered HTML content immediately, without needing to execute JavaScript. This dramatically increases your content's visibility to AI engines.
+
+**Implementation Time**: 1-3 hours per critical template
+
+## 2. AI-Specific `robots.txt` Configuration: Guide the Crawlers
+
+**Problem**: Without specific instructions, AI crawlers may waste their limited crawl budget on unimportant pages or miss your valuable content entirely.
+
+**Quick Win Solution**: Create or update your `robots.txt` file with specific directives for AI crawlers:
+
+```txt
+# AI Crawler Directives
+# ChatGPT/OpenAI
+User-agent: GPTBot
+Allow: /blog/
+Allow: /resources/
+Allow: /about/
+Disallow: /api/
+Disallow: /admin/
+Disallow: /login/
+
+# Claude/Anthropic
+User-agent: ClaudeBot
+Allow: /blog/
+Allow: /resources/
+Allow: /about/
+Disallow: /api/
+Disallow: /admin/
+Disallow: /login/
+
+# Perplexity
+User-agent: PerplexityBot
+Allow: /blog/
+Allow: /resources/
+Allow: /about/
+Disallow: /api/
+Disallow: /admin/
+Disallow: /login/
+
+# Cohere
+User-agent: Cohere-Crawler
+Allow: /blog/
+Allow: /resources/
+Allow: /about/
+Disallow: /api/
+Disallow: /admin/
+Disallow: /login/
+
+# Provide your sitemap location
+Sitemap: https://yourdomain.com/sitemap.xml
+```
+
+**Implementation Tips**:
+1. Be specific about which directories contain your highest-value content
+2. Explicitly block internal tools, login pages, and API endpoints
+3. Always include your sitemap URL
+
+**Why This Works**: This explicitly tells AI crawlers where to focus their attention, increasing the likelihood they'll index your most valuable content.
+
+**Implementation Time**: 15-30 minutes
+
+## 3. FAQ Schema Markup: Direct Answers for AI
+
+**Problem**: AI engines need structured data to better understand Q&A content, but many sites serve this content without proper schema markup.
+
+**Quick Win Solution**: Implement FAQ schema markup for any question-answer content on your site:
+
+```html
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is Answer Engine Optimization (AEO)?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Answer Engine Optimization (AEO) is the practice of optimizing digital content to improve visibility and citation rates in AI systems like ChatGPT, Claude, and Perplexity. Unlike traditional SEO focused on search engine rankings, AEO focuses on making content more accessible, understandable, and trustworthy to AI engines."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How is AEO different from SEO?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "While SEO focuses on keyword optimization and backlinks to improve rankings in search engines like Google, AEO emphasizes semantic understanding, E-E-A-T signals, structured data, and content accessibility for AI systems. AEO prioritizes creating factual, well-structured content that AI engines can easily process and cite as authoritative sources."
+      }
+    }
+  ]
+}
+</script>
+```
+
+For React/Next.js applications, create a reusable component:
+
+```jsx
+// components/FAQSchema.jsx
+export function FAQSchema({ faqs }) {
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": faqs.map(faq => ({
+      "@type": "Question",
+      "name": faq.question,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": faq.answer
+      }
+    }))
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+    />
+  );
+}
+
+// Usage
+<FAQSchema 
+  faqs={[
+    {
+      question: "What is Answer Engine Optimization (AEO)?",
+      answer: "Answer Engine Optimization (AEO) is the practice of..."
+    },
+    // More FAQs...
+  ]} 
+/>
+```
+
+**Why This Works**: AI engines can directly parse and understand the Q&A format, making your content more likely to be cited when answering related questions.
+
+**Implementation Time**: 30-60 minutes
+
+## 4. Fix 404s and Redirect Chains: Clear the Path for AI Crawlers
+
+**Problem**: AI crawlers have limited crawl budgets. Dead links and complex redirect chains waste this budget and prevent crawlers from discovering your valuable content.
+
+**Quick Win Solution**: Identify and fix broken links and simplify redirect chains:
+
+```jsx
+// Next.js middleware.js example for efficient redirects
+import { NextResponse } from 'next/server';
+
+// Map of old URLs to new URLs
+const REDIRECTS = {
+  '/old-blog': '/blog',
+  '/resources/ebooks/aeo-guide': '/resources/answer-engine-optimization-guide',
+  '/about-us': '/about'
+  // Add more mappings as needed
+};
+
+export function middleware(request) {
+  const path = request.nextUrl.pathname;
+  
+  // Check if path is in our redirect map
+  if (REDIRECTS[path]) {
+    // Create a URL for the destination
+    const url = request.nextUrl.clone();
+    url.pathname = REDIRECTS[path];
+    
+    // Return a 301 (permanent) redirect
+    return NextResponse.redirect(url, 301);
+  }
+  
+  return NextResponse.next();
+}
+
+// Configure which paths this middleware runs on
+export const config = {
+  matcher: Object.keys(REDIRECTS).map(path => path)
+};
+```
+
+**Steps to Implement**:
+1. Run a site crawler like Screaming Frog to identify 404s
+2. Fix or redirect broken links
+3. Simplify multi-step redirects into direct ones
+4. Update your sitemap to remove dead URLs
+
+**Why This Works**: AI crawlers can more efficiently discover and index your content when they don't waste resources on broken links or complex redirect chains.
+
+**Implementation Time**: 1-2 hours
+
+## 5. Format Content for Direct Citations: Make It Easy for AI to Quote You
+
+**Problem**: AI engines prefer to cite content that provides clear, direct answers to common questions. Unfocused or poorly structured content is less likely to be cited.
+
+**Quick Win Solution**: Restructure key content to be "citation-friendly":
+
+```jsx
+// components/CitableAnswer.jsx
+export function CitableAnswer({ question, answer, source }) {
+  return (
+    <div className="citable-answer">
+      <h3>{question}</h3>
+      <div className="answer-container">
+        <p className="answer-text">
+          <strong>{answer}</strong>
+        </p>
+        {source && (
+          <p className="source-text">
+            Source: <a href={source.url}>{source.name}</a>, {source.date}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Usage
+<CitableAnswer
+  question="How do I make my content more visible to ChatGPT?"
+  answer="To improve your content's visibility to ChatGPT, implement server-side rendering, add AI-specific directives to your robots.txt file, use FAQ schema markup, and format content with clear, direct answers to common questions."
+  source={{
+    name: "Split AEO Research",
+    url: "https://www.split.dev/research/aeo-best-practices",
+    date: "2024"
+  }}
+/>
+```
+
+**Content Formatting Tips**:
+1. Use clear question-style headings (H2s, H3s)
+2. Provide direct, complete answers in the first paragraph
+3. Bold key phrases that directly answer the question
+4. Structure content with semantic HTML (`<section>`, `<article>`, etc.)
+
+**Why This Works**: AI engines can more easily extract clear, definitive answers from your content, increasing the likelihood of citation.
+
+**Implementation Time**: 1-3 hours for key pages
+
+## 6. Enhance Author Credibility: E-E-A-T Signals for AI
+
+**Problem**: AI engines increasingly prioritize content from credible, authoritative sources, but many sites fail to properly signal author expertise and credentials.
+
+**Quick Win Solution**: Implement structured author information with `Person` schema:
+
+```html
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Dr. Sarah Johnson",
+  "jobTitle": "Chief AI Ethicist",
+  "worksFor": {
+    "@type": "Organization",
+    "name": "TechCorp AI"
+  },
+  "alumniOf": {
+    "@type": "EducationalOrganization",
+    "name": "Stanford University"
+  },
+  "description": "Dr. Johnson has 15+ years of experience in AI ethics and policy development. She holds a Ph.D. in Computer Science with a specialization in machine learning ethics.",
+  "knowsAbout": ["AI Ethics", "Machine Learning", "Responsible AI", "Algorithmic Bias"],
+  "sameAs": [
+    "https://linkedin.com/in/drsarahjohnson",
+    "https://twitter.com/drsarahjohnson"
+  ]
+}
+</script>
+```
+
+Create a corresponding UI component:
+
+```jsx
+// components/AuthorBio.jsx
+export function AuthorBio({ author }) {
+  return (
+    <div className="author-bio">
+      <div className="author-info">
+        {author.avatar && (
+          <img 
+            src={author.avatar} 
+            alt={author.name} 
+            className="author-avatar"
+          />
+        )}
+        <div>
+          <h3 className="author-name">{author.name}</h3>
+          <p className="author-title">{author.jobTitle}</p>
+          
+          {author.credentials && (
+            <div className="author-credentials">
+              {author.credentials.map(credential => (
+                <span key={credential} className="credential-badge">
+                  {credential}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      
+      <p className="author-bio-text">{author.bio}</p>
+      
+      {/* Hidden schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Person",
+            "name": author.name,
+            "jobTitle": author.jobTitle,
+            "description": author.bio,
+            "knowsAbout": author.expertise || [],
+            "sameAs": author.socialProfiles || []
+          })
+        }}
+      />
+    </div>
+  );
+}
+```
+
+**Why This Works**: E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness) signals help AI engines evaluate your content's credibility, making it more likely to be cited.
+
+**Implementation Time**: 30-60 minutes per author
+
+## 7. Use Semantic HTML: Help AI Understand Your Content Structure
+
+**Problem**: Divs and spans don't convey meaning. When your content lacks semantic structure, AI crawlers struggle to understand its organization and importance.
+
+**Quick Win Solution**: Revise key templates to use semantic HTML elements:
+
+```jsx
+// Before
+<div className="page-wrapper">
+  <div className="header">
+    <div className="title">Article Title</div>
+    <div className="meta">Published on January 1, 2024</div>
+  </div>
+  <div className="content">
+    <div className="section">
+      <div className="heading">Introduction</div>
+      <div className="text">This is the first paragraph...</div>
+    </div>
+  </div>
+  <div className="footer">
+    <div className="author">By John Smith</div>
+  </div>
+</div>
+
+// After
+<article>
+  <header>
+    <h1>Article Title</h1>
+    <time dateTime="2024-01-01">Published on January 1, 2024</time>
+  </header>
+  <main>
+    <section>
+      <h2>Introduction</h2>
+      <p>This is the first paragraph...</p>
+    </section>
+  </main>
+  <footer>
+    <address>By John Smith</address>
+  </footer>
+</article>
+```
+
+**Key Semantic Elements to Use**:
+- `<article>` for self-contained content
+- `<section>` for thematic grouping
+- `<nav>` for navigation
+- `<header>` and `<footer>` for page or section landmarks
+- `<main>` for primary content
+- `<aside>` for tangentially related content
+- `<figure>` and `<figcaption>` for images with captions
+- `<time>` for dates and times
+- `<mark>` for highlighted text
+- `<details>` and `<summary>` for expandable content
+
+**Why This Works**: Semantic HTML provides clear structural cues to AI crawlers, helping them understand your content's organization and meaning.
+
+**Implementation Time**: 1-2 hours per template
+
+## 8. Add Strategic External Citations: Build Trust Through References
+
+**Problem**: Content without authoritative references appears less credible to AI systems, reducing citation likelihood.
+
+**Quick Win Solution**: Add citations to reputable external sources:
+
+```jsx
+// components/ExternalCitation.jsx
+export function ExternalCitation({ citation }) {
+  return (
+    <div className="external-citation">
+      <cite>
+        <a 
+          href={citation.url} 
+          target="_blank" 
+          rel="noopener noreferrer"
+        >
+          {citation.title}
+        </a>
+        {citation.author && ` by ${citation.author}`}
+        {citation.publisher && ` in ${citation.publisher}`}
+        {citation.date && ` (${citation.date})`}
+      </cite>
+    </div>
+  );
+}
+
+// Usage
+<p>
+  Recent studies have shown that AI engines prioritize content with clear 
+  structural semantics and authoritative references.
+  <ExternalCitation
+    citation={{
+      title: "Structural Semantics and AI Content Processing",
+      author: "Dr. Alan Turing",
+      publisher: "Journal of AI Research",
+      date: "2023",
+      url: "https://example.com/journal-article"
+    }}
+  />
+</p>
+```
+
+**Citation Best Practices**:
+1. Cite academic sources, industry research, and government publications
+2. Include proper attribution with author, publication, and date
+3. Link directly to the specific source page
+4. Use semantic citation elements (`<cite>`)
+
+**Why This Works**: External citations signal to AI engines that your content is well-researched and contextually connected to authoritative sources.
+
+**Implementation Time**: 30-60 minutes per key page
+
+## 9. Optimize Meta Tags: First Impressions Matter
+
+**Problem**: Incomplete or generic meta tags provide minimal context to AI crawlers about your page's content and purpose.
+
+**Quick Win Solution**: Implement comprehensive meta tags for all key pages:
+
+```jsx
+// components/ComprehensiveMeta.jsx
+export function ComprehensiveMeta({ page }) {
+  return (
+    <Head>
+      <title>{page.title}</title>
+      <meta name="description" content={page.description} />
+      
+      {/* Open Graph */}
+      <meta property="og:title" content={page.title} />
+      <meta property="og:description" content={page.description} />
+      <meta property="og:type" content={page.type || 'article'} />
+      <meta property="og:url" content={page.url} />
+      {page.image && <meta property="og:image" content={page.image} />}
+      
+      {/* Twitter Card */}
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content={page.title} />
+      <meta name="twitter:description" content={page.description} />
+      {page.image && <meta name="twitter:image" content={page.image} />}
+      
+      {/* Article-specific meta for content pages */}
+      {page.type === 'article' && (
+        <>
+          <meta property="article:published_time" content={page.publishDate} />
+          {page.modifiedDate && (
+            <meta property="article:modified_time" content={page.modifiedDate} />
+          )}
+          {page.tags && page.tags.map(tag => (
+            <meta property="article:tag" content={tag} key={tag} />
+          ))}
+        </>
+      )}
+      
+      {/* Canonical URL */}
+      <link rel="canonical" href={page.canonicalUrl || page.url} />
+    </Head>
+  );
+}
+```
+
+**Meta Tag Best Practices**:
+1. Write unique, descriptive titles and descriptions for each page
+2. Include relevant keywords naturally in meta descriptions
+3. Specify canonical URLs to prevent duplicate content issues
+4. Add OpenGraph and Twitter Card tags for better social sharing
+
+**Why This Works**: Comprehensive meta tags provide AI crawlers with clear context about your page's content, purpose, and relationships.
+
+**Implementation Time**: 30-60 minutes for template setup, then 5 minutes per page
+
+## 10. Set Up Basic AI Crawler Monitoring: Measure to Improve
+
+**Problem**: Without monitoring AI crawler activity, you can't tell if your optimizations are working or which content is being discovered.
+
+**Quick Win Solution**: Implement basic server-side tracking for AI crawler visits:
+
+```js
+// middleware.js (Next.js) or server middleware
+import { NextResponse } from 'next/server';
+
+// AI crawler detection function
+function isAICrawler(userAgent) {
+  return /GPTBot|ClaudeBot|PerplexityBot|ChatGPT-User|CCBot|Google-Extended/i.test(userAgent);
+}
+
+// AI crawler tracking middleware
+export function middleware(request) {
+  const userAgent = request.headers.get('user-agent') || '';
+  
+  if (isAICrawler(userAgent)) {
+    // Extract crawler name
+    let crawlerName = 'Unknown AI Crawler';
+    if (userAgent.includes('GPTBot')) crawlerName = 'ChatGPT';
+    else if (userAgent.includes('ClaudeBot')) crawlerName = 'Claude';
+    else if (userAgent.includes('PerplexityBot')) crawlerName = 'Perplexity';
+    
+    // Log the visit (to console in this example)
+    console.log(`[AI CRAWLER] ${crawlerName} visited ${request.url} at ${new Date().toISOString()}`);
+    
+    // In production, you'd log this to your analytics system
+    // analytics.track('ai_crawler_visit', {
+    //   crawler: crawlerName,
+    //   url: request.url,
+    //   timestamp: new Date().toISOString()
+    // });
+  }
+  
+  return NextResponse.next();
+}
+```
+
+For a more comprehensive solution, log the data to a database:
+
+```js
+// server/db/logAICrawlerVisit.js
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
+
+export async function logAICrawlerVisit(crawlerData) {
+  return await supabase
+    .from('ai_crawler_visits')
+    .insert([
+      {
+        crawler_name: crawlerData.crawler,
+        path: crawlerData.path,
+        user_agent: crawlerData.userAgent,
+        timestamp: new Date().toISOString()
+      }
+    ]);
+}
+```
+
+**Why This Works**: Monitoring provides insights into which AI crawlers are visiting your site and which content they're discovering, allowing you to measure the impact of your optimizations.
+
+**Implementation Time**: 1-2 hours
+
+## Your 24-Hour AEO Action Plan
+
+Here's how to implement these quick wins in just 24 hours:
+
+### Hour 1-2: Technical Foundation
+- Configure `robots.txt` for AI crawlers
+- Fix critical 404s and redirect chains
+- Set up basic AI crawler monitoring
+
+### Hour 3-6: Content Structure
+- Implement server-side rendering for key pages
+- Apply semantic HTML to your most important templates
+- Format high-value content for direct citation
+
+### Hour 7-10: Schema & Metadata
+- Add FAQ schema to question-answer content
+- Implement author schema and enhance author bios
+- Optimize meta tags for key pages
+
+### Hour 11-24: Refinement & Testing
+- Add strategic external citations to build credibility
+- Test your implementation with online schema validators
+- Review server logs to confirm AI crawler visits
+
+## Conclusion: Measure, Iterate, Improve
+
+These quick wins can dramatically improve your site's visibility to AI engines in a matter of days, not months. After implementation, continue to:
+
+1. **Monitor AI crawler activity** to see which content gets discovered
+2. **Track AI referral traffic** from platforms like ChatGPT, Claude, and Perplexity
+3. **Test your content's citation rate** by asking relevant questions in AI platforms
+4. **Iterate based on data**, focusing on the optimizations that drive the most AI visibility
+
+Remember that AEO is an evolving field. These quick wins provide an immediate boost, but the most successful sites develop a continuous optimization strategy that evolves alongside AI systems.
+
+**Need expert help?** [Contact Split](https://www.split.dev/contact) for a personalized AEO audit and implementation plan to maximize your AI visibility.

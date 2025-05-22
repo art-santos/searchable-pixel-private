@@ -24,10 +24,10 @@ const faqSchema = {
   ]
 };
 const LOGOS = [
-  { name: 'ChatGPT', logo: '/chatgpt.svg' },
-  { name: 'Perplexity', logo: '/perplexity.svg' },
-  { name: 'Gemini', logo: '/gemini.svg' },
-  { name: 'Claude', logo: '/claude.svg' }
+  { name: 'ChatGPT', logo: '/images/chatgpt.svg' },
+  { name: 'Perplexity', logo: '/images/perplexity.svg' },
+  { name: 'Gemini', logo: '/images/gemini.svg' },
+  { name: 'Claude', logo: '/images/claude.svg' }
 ]
 
 export default function LandingPage() {
@@ -93,13 +93,13 @@ export default function LandingPage() {
       <section 
         className="min-h-[70vh] md:min-h-[90vh] w-full relative flex items-start md:items-center justify-center pt-32 md:pt-48"
         style={{
-          backgroundImage: 'url(/split-bg.png)',
+          backgroundImage: 'url(/images/split-bg.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}
       >
         {/* Overlay with gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/50 to-[#0c0c0c]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0c0c0c]/50 via-[#0c0c0c]/80 to-[#0c0c0c]" />
         
         <div className="relative z-10 w-[92%] md:w-[80%] max-w-7xl mx-auto px-2 md:px-4">
           <div className="text-center">
@@ -179,7 +179,7 @@ export default function LandingPage() {
               {/* Mobile version - no frame */}
               <div className="relative -mx-[calc(92vw/12)] md:hidden">
                 <Image
-                  src="/mobile-dash.svg"
+                  src="/images/mobile-dash.svg"
                   alt="Split Dashboard"
                   width={1200}
                   height={900}
@@ -189,7 +189,7 @@ export default function LandingPage() {
               {/* Desktop version - with frame */}
               <div className="hidden md:block w-full rounded-2xl border-[8px] border-[#2f2f2f]/30 overflow-hidden shadow-2xl">
                 <Image
-                  src="/split-dash.svg"
+                  src="/images/split-dash.svg"
                   alt="Split Dashboard"
                   width={1200}
                   height={800}

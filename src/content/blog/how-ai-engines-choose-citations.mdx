@@ -1,0 +1,257 @@
+---
+title: "Why AI Engines Like ChatGPT Cite Some Sites But Ignore Yours"
+description: "Frustrated that AI isn't quoting your company? Discover exactly how ChatGPT, Claude, and Perplexity choose which websites to cite, and implement proven strategies to become their go-to reference."
+date: "2025-05-16"
+author:
+  name: "Sam Hogan"
+  title: "CEO of Split, Design/GTM Engineer at Origami (YC F24)"
+  avatar: "/avatars/sam-hogan.png"
+tags: ["AEO", "Citations", "Content Strategy", "AI Search", "ChatGPT SEO", "AI visibility platform", "Get mentioned in AI answers"]
+featured: false
+coverImage: "/blog/article-cover-6.png"
+---
+
+## The Hidden Rules of AI Citations (and Why Your Site Gets Ignored)
+
+"Why isn't ChatGPT quoting my company?" It's a question we hear constantly. You've created quality content, yet AI engines seem to overlook it completely. Here's the uncomfortable truth: AI citation isn't random—it follows specific, often hidden patterns that most content creators simply don't understand.
+
+When AI engines like ChatGPT, Claude, or Perplexity generate answers, they're not just grabbing the first relevant information they find. They're executing a sophisticated selection process that heavily favors certain content characteristics—and may be systematically excluding your site because it lacks these critical elements.
+
+## The AI Citation Process: A Behind-the-Scenes Look
+
+Getting your content cited follows a three-stage gauntlet:
+
+1. **Initial Retrieval**: Your content must first be found and pulled as a candidate through vector search or API calls
+2. **Reranking**: Even if retrieved, your content then competes in a brutal reranking process based on relevance, recency, and authority signals
+3. **Answer Composition**: Finally, the AI must decide your content is worth explicitly citing in its final answer
+
+Each AI engine has its own approach to this process—which is why a comprehensive Answer Engine Optimization (AEO) strategy is essential for improving AI visibility across platforms.
+
+## How Different AI Engines Find Source Material (And How to Get on Their Radar)
+
+Understanding each platform's unique approach is your first step to getting your site in ChatGPT and other AI engines:
+
+- **ChatGPT**: Primarily relies on Bing's API and its own vector index. Content must be SEO-optimized *and* semantically rich to be found.
+- **Claude**: Combines vector search with curated "trusted source" lists. Authority and reputation heavily influence citation.
+- **Perplexity**: Executes real-time web searches alongside cached vector retrieval. Freshness and relevance are paramount.
+- **Google SGE**: Leverages Google's existing search infrastructure with additional AI-specific signals.
+
+This diversity explains why content can appear in one AI engine but remain invisible to others. Your AI search optimization approach needs to account for these differences.
+
+## The Secret Ranking Factors: What Actually Gets Your Content Cited
+
+### 1. The Authority Equation: More Complex Than You Think
+
+BrightEdge research reveals critical patterns in how AI determines what's citation-worthy:
+
+- 60% of Perplexity citations overlap with Google's top 10 results (traditional SEO still matters)
+- Healthcare citations show 82% overlap with traditional search results (domain expertise is crucial)
+- Official documentation frequently outranks blogs with 10x more traffic (authenticity trumps popularity)
+
+**What This Means For You**: Tools to get found by AI must balance traditional SEO with AEO-specific signals of expertise and authenticity.
+
+### 2. Platform Biases: Each AI Has Its Favorites
+
+Different AI systems show distinct preferences in what they cite:
+
+- **Perplexity**: Has a notable preference for community content from Reddit and Stack Exchange when answering practical questions
+- **ChatGPT**: Consistently prioritizes official documentation and primary sources for technical topics
+- **Claude**: Gives significant weight to educational (.edu) and governmental (.gov) domains
+- **Google SGE**: Balances traditional search signals with AI-specific relevance metrics
+
+**What This Means For You**: If you're targeting a specific AI engine, you need to understand and cater to its unique preferences.
+
+### 3. The Content Qualities That Make AI Engines Want to Cite You
+
+Your content's structure and characteristics dramatically impact citation likelihood:
+
+- **Direct Answers**: Clear, concise responses to specific questions
+- **Fact Density**: Unique statistics, data points, and verifiable claims
+- **Terminology Consistency**: Using identical key terms throughout 
+- **Self-Contained Statements**: Complete thoughts under 300 characters that need no additional context
+
+This explains why even high-quality content can remain invisible to AI tools if it lacks these specific structural elements.
+
+## 7 Actionable Strategies to Make Your Content AI's Favorite Citation
+
+### 1. Master Answer-First Writing
+
+Traditional content often builds up to conclusions. For AI citations, invert this structure:
+
+**Citation-Magnet Example:**
+"Black mold in HVAC systems causes respiratory issues and requires immediate professional remediation. Left untreated, it can release mycotoxins that trigger allergic reactions and asthma attacks."
+
+**AI-Invisible Example:**
+"When considering whether black mold in your HVAC system poses health risks, there are multiple factors worth examining. Many homeowners wonder about the potential dangers..."
+
+**The Difference**: The first example provides an immediate, citation-ready answer. The second buries the answer under unnecessary context.
+
+### 2. Pack Your Content With Citable Facts
+
+AI engines love specific, verifiable statements they can confidently cite:
+
+```markdown
+GPTBot generates 569 million monthly requests to Vercel-hosted websites, 
+with 34% of all crawler activity wasted on 404 errors and redirect chains.
+```
+
+This statistic is specific, numerical, and attribution-ready—exactly what AI engines look for when selecting citations.
+
+### 3. Maintain Iron-Clad Terminology Consistency
+
+Inconsistent terminology confuses AI's understanding of your expertise:
+
+**Citation-Friendly Pattern:**
+- "AI crawlers process web content through semantic analysis..."
+- "These crawlers generate vector embeddings to capture meaning..."
+- "Crawler behavior varies significantly across AI platforms..."
+
+**Citation-Killing Pattern:**
+- "AI bots scan websites to understand content..."
+- "The algorithms then create mathematical representations..."
+- "Search engine approaches differ between providers..."
+
+The first pattern reinforces key terms, building semantic strength. The second dilutes your content's focus through terminology shifts.
+
+### 4. Target Your Content to Industry-Specific Citation Patterns
+
+Different industries show distinct citation preferences:
+
+| Industry | Top Citation Sources | What Gets Cited |
+|----------|---------------------|-----------------|
+| Healthcare | Medical journals, .gov sites | Clinical research, guidelines |
+| Technology | Official docs, Stack Overflow | Implementation examples, benchmarks |
+| Finance | Regulatory sources, established institutions | Regulations, market data |
+| Education | Academic papers, .edu domains | Research findings, methodologies |
+
+**Action Step**: Study AI answers in your industry and identify what types of sources consistently get cited.
+
+### 5. Leverage Structured Data to Signal Citation-Worthiness
+
+Help AI engines recognize your content's authority with strategic Schema.org markup:
+
+```html
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "How to Optimize Content for AI Citations",
+  "author": {
+    "@type": "Person",
+    "name": "Dr. Jane Smith",
+    "jobTitle": "AI Research Director",
+    "honorificSuffix": "Ph.D.",
+    "affiliation": {
+      "@type": "Organization",
+      "name": "AI Research Institute"
+    }
+  },
+  "citation": [
+    {
+      "@type": "CreativeWork",
+      "name": "AI Citation Patterns Study",
+      "url": "https://example.com/research/citation-patterns"
+    }
+  ],
+  "datePublished": "2024-05-12",
+  "dateModified": "2024-06-28"
+}
+</script>
+```
+
+This structured data clearly signals authorship, expertise, citations, and freshness—all factors that influence AI citation decisions.
+
+### 6. Create Content in High-Citation Formats
+
+Certain content types receive disproportionately high citation rates:
+
+- **Documentation**: 3-4x higher citation rate for technical questions
+- **Data-Rich Blog Posts**: Strong performance for trend analysis and statistics
+- **Expert Q&A**: Frequently cited for practical implementation questions
+- **Original Research**: Preferred for scientific or novel claims
+
+**Pro Tip**: If getting mentioned in AI answers is your priority, documentation-style content with clear, direct answers to common questions consistently outperforms other formats.
+
+### 7. Track AI Citations and Refine Your Approach
+
+Implement proper monitoring to understand what's working:
+
+```tsx
+// Simple AI citation tracking middleware for Next.js
+export function middleware(req) {
+  // Extract referrer information
+  const referrer = req.headers.get('referer') || '';
+  const aiSources = [
+    'chat.openai.com',
+    'claude.ai',
+    'perplexity.ai',
+    'bard.google.com'
+  ];
+  
+  // Check if traffic is coming from an AI platform
+  const isAiReferral = aiSources.some(source => referrer.includes(source));
+  
+  if (isAiReferral) {
+    // Log AI referral data to your analytics platform
+    console.log({
+      type: 'ai_citation_visit',
+      url: req.url,
+      referrer,
+      timestamp: new Date().toISOString()
+    });
+  }
+  
+  return NextResponse.next();
+}
+```
+
+This code helps you identify when users click through from AI platforms to your content, a strong signal your site is being cited.
+
+## The Ultimate Citation Optimization Checklist
+
+1. **Front-Load Critical Information**
+   - Place definitive answers in the first 100 words
+   - Use declarative, confident language
+   - Include specific numbers and verifiable facts
+
+2. **Build Robust Authority Signals**
+   - Link to high-quality primary sources
+   - Highlight author credentials and expertise
+   - Cite peer-reviewed research where relevant
+
+3. **Maintain Rigorous Content Freshness**
+   - Set a regular update schedule for factual content
+   - Replace outdated statistics with current data
+   - Add recent examples and case studies
+
+4. **Structure for Semantic Clarity**
+   - Use proper heading hierarchy (H1 → H2 → H3)
+   - Implement descriptive section titles
+   - Maintain consistent formatting for similar content types
+
+## Measuring Your AI Citation Success
+
+Track these metrics to gauge your progress in becoming AI's preferred citation:
+
+1. **Direct AI Referrals**
+   - Traffic from AI platforms (chat.openai.com, perplexity.ai, etc.)
+   - Time-on-site from AI referrals
+   - Conversion rates from AI visitors
+
+2. **Citation Monitoring**
+   - Direct mentions in AI responses (requires manual testing)
+   - Accuracy of quoted information
+   - Citation context and framing
+
+3. **Content Performance Indicators**
+   - Topic relevance scores
+   - Page authority metrics
+   - Content freshness signals
+
+## Conclusion: Becoming the Source AI Can't Ignore
+
+Getting your site mentioned by ChatGPT and other AI engines isn't magic or luck—it's a science. By understanding the specific factors that influence AI citation decisions and structuring your content accordingly, you can dramatically increase your chances of becoming a regularly cited source.
+
+The organizations succeeding at AEO aren't just creating good content—they're creating *citation-optimized* content that fits precisely what AI engines are programmed to value and reference.
+
+Master these principles, apply them consistently, and monitor your results. Soon enough, you'll find your content regularly appearing in AI-generated answers, driving both authority and traffic in this new era of AI-mediated information discovery. 

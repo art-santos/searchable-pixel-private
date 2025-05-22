@@ -35,7 +35,7 @@ This document outlines key principles to follow when implementing animations to 
 
 7.  **Cohesive & "Feels Right":**
     *   Ensure the animation's style (easing, duration, type) aligns with the overall application design and brand aesthetic.
-    *   Test and iterate until the animation "feels right" in context. Reviewing animations after a break can help spot imperfections.
+    *   Test and iterate until the animation "feels right" in context. Reviewing animations after a break can help spot imperfections. 
 
 ## CSS Transforms Deep Dive
 

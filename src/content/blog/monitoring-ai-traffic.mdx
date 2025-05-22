@@ -1,0 +1,466 @@
+---
+title: "How to Track If AI Engines Are Seeing Your Content: Complete Monitoring Guide"
+description: "Learn how to track and analyze AI crawler traffic from ChatGPT, Claude, and Perplexity, with actionable tactics to increase your content's visibility and citation potential."
+date: "2025-05-11"
+author:
+  name: "Sam Hogan"
+  title: "CEO of Split, Design/GTM Engineer at Origami (YC F24)"
+  avatar: "/avatars/sam-hogan.png"
+tags: ["AEO", "AI Monitoring", "AI Crawler Detection", "AI Traffic Analytics", "ChatGPT Tracking"]
+featured: false
+coverImage: "/blog/article-cover-3.png"
+---
+
+# Is ChatGPT Actually Seeing Your Content? The Complete Guide to AI Traffic Monitoring
+
+One of the most common questions we hear from companies is: "How do I know if AI systems like ChatGPT are actually crawling my site?" While many focus on optimizing content for AI, far fewer implement proper monitoring to validate their efforts.
+
+This guide will walk you through exactly how to track AI crawlers, measure their engagement with your content, and use that data to improve your visibility in AI systems like ChatGPT, Claude, and Perplexity.
+
+## Why Traditional Analytics Fail for AI Traffic
+
+If you're relying on Google Analytics or similar tools to track AI crawlers, you're missing most of your AI traffic. Here's why:
+
+- AI crawlers don't execute JavaScript (including analytics scripts)
+- They have unique user-agent strings that require special detection
+- Their crawl patterns differ significantly from traditional search engines
+- Their impact (citations) happens off-site and needs dedicated tracking
+
+Let's solve these challenges with practical implementation strategies.
+
+## Step 1: Identifying AI Crawlers in Your Traffic
+
+### Detecting AI User Agents
+
+AI companies identify their crawlers with specific user-agent strings. Here's how to detect them at the server level:
+
+```tsx
+// middleware.ts (Next.js example)
+import { NextResponse } from 'next/server'
+
+// AI crawler detection function
+export function isAICrawler(userAgent: string): {detected: boolean, crawler?: string} {
+  // Key AI crawler user agents to monitor
+  const crawlers = {
+    'GPTBot': /GPTBot/i,                  // OpenAI/ChatGPT
+    'ClaudeBot': /ClaudeBot/i,            // Anthropic/Claude
+    'PerplexityBot': /PerplexityBot/i,    // Perplexity
+    'ChatGPT-User': /ChatGPT-User/i,      // ChatGPT browser extension
+    'Google-Extended': /Google-Extended/i, // Google AI
+    'CCBot': /CCBot/i,                    // Common Crawl (used by many AI systems)
+    'Cohere-Crawler': /Cohere-Crawler/i   // Cohere
+  };
+  
+  for (const [name, pattern] of Object.entries(crawlers)) {
+    if (pattern.test(userAgent)) {
+      return { detected: true, crawler: name };
+    }
+  }
+  
+  return { detected: false };
+}
+
+export function middleware(req: Request) {
+  const userAgent = req.headers.get('user-agent') || '';
+  const aiCrawler = isAICrawler(userAgent);
+  
+  if (aiCrawler.detected) {
+    // Log crawler visit to your database or analytics system
+    console.log(`AI Crawler detected: ${aiCrawler.crawler} visiting ${req.url}`);
+    
+    // You could also add custom headers to the response for debugging
+    const response = NextResponse.next();
+    response.headers.set('X-AI-Crawler-Detected', aiCrawler.crawler || 'unknown');
+    
+    return response;
+  }
+  
+  return NextResponse.next();
+}
+```
+
+**Pro Tip**: Deploy this detection at the edge (using Edge Functions or Middleware) for accurate tracking without impacting performance.
+
+## Step 2: Implementing Server-Side Tracking for AI Crawlers
+
+Since AI crawlers don't execute JavaScript, you need server-side tracking:
+
+```tsx
+// lib/ai-analytics.ts
+import { createClient } from '@supabase/supabase-js'
+
+// Initialize your database client
+const supabase = createClient(
+  process.env.SUPABASE_URL || '',
+  process.env.SUPABASE_ANON_KEY || ''
+)
+
+export async function trackAICrawlerVisit({
+  crawler,
+  path,
+  userAgent,
+  statusCode,
+  responseTime
+}: {
+  crawler: string,
+  path: string,
+  userAgent: string,
+  statusCode: number,
+  responseTime: number
+}) {
+  // Store visit in database
+  return await supabase
+    .from('ai_crawler_visits')
+    .insert([
+      {
+        crawler,
+        path,
+        user_agent: userAgent,
+        status_code: statusCode,
+        response_time: responseTime,
+        timestamp: new Date().toISOString()
+      }
+    ])
+}
+
+// Usage in middleware:
+const start = performance.now();
+// Process request...
+const responseTime = performance.now() - start;
+
+await trackAICrawlerVisit({
+  crawler: aiCrawler.crawler || 'unknown',
+  path: new URL(req.url).pathname,
+  userAgent,
+  statusCode: 200, // You'd get this from the actual response
+  responseTime
+});
+```
+
+This approach captures crucial metrics:
+- Which AI systems are crawling your content
+- Which pages they're prioritizing (and ignoring)
+- How quickly your server responds to them
+- Any errors they encounter
+
+## Step 3: Tracking AI-Generated Traffic to Your Site
+
+When AI systems cite your content, users may click through to your site. Here's how to identify this traffic:
+
+```tsx
+// components/ReferralTracker.tsx
+import { useEffect } from 'react'
+
+export function ReferralTracker() {
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const referrer = document.referrer;
+    if (!referrer) return;
+    
+    // Known AI platform domains
+    const aiPlatforms = {
+      'chat.openai.com': 'ChatGPT',
+      'claude.ai': 'Claude',
+      'perplexity.ai': 'Perplexity',
+      'bard.google.com': 'Google Bard/Gemini',
+      'bing.com/chat': 'Bing Chat'
+    };
+    
+    // Check if referrer matches any AI platform
+    for (const [domain, platform] of Object.entries(aiPlatforms)) {
+      if (referrer.includes(domain)) {
+        // Track this as AI-referred traffic
+        analytics.track('ai_platform_referral', {
+          platform,
+          referrer,
+          landing_page: window.location.href,
+          timestamp: new Date().toISOString()
+        });
+        break;
+      }
+    }
+  }, []);
+  
+  return null; // This component doesn't render anything
+}
+
+// Add to your app layout:
+// <ReferralTracker />
+```
+
+This component helps you understand:
+- Which AI platforms are sending you traffic
+- Which of your pages are getting cited most often
+- How user behavior differs for AI-referred traffic
+
+## Step 4: Building a Comprehensive AI Analytics Dashboard
+
+Combine your tracking data into an actionable dashboard:
+
+```tsx
+// components/AITrafficDashboard.tsx
+import { useEffect, useState } from 'react'
+import { BarChart, LineChart, PieChart } from 'your-chart-library'
+
+export function AITrafficDashboard() {
+  const [data, setData] = useState({
+    crawlerVisits: [],
+    referrals: [],
+    coverage: {},
+    performance: {}
+  });
+  
+  useEffect(() => {
+    async function fetchData() {
+      // Fetch data from your API endpoints
+      const [crawlerVisits, referrals, coverage, performance] = await Promise.all([
+        fetch('/api/ai-analytics/crawler-visits').then(r => r.json()),
+        fetch('/api/ai-analytics/referrals').then(r => r.json()),
+        fetch('/api/ai-analytics/coverage').then(r => r.json()),
+        fetch('/api/ai-analytics/performance').then(r => r.json())
+      ]);
+      
+      setData({ crawlerVisits, referrals, coverage, performance });
+    }
+    
+    fetchData();
+    
+    // Set up refresh interval
+    const interval = setInterval(fetchData, 60 * 60 * 1000); // Hourly
+    return () => clearInterval(interval);
+  }, []);
+  
+  return (
+    <div className="ai-dashboard">
+      <div className="dashboard-grid">
+        <div className="dashboard-card">
+          <h2>AI Crawler Activity</h2>
+          <LineChart 
+            data={data.crawlerVisits}
+            xKey="date"
+            yKey="count"
+            groupBy="crawler"
+          />
+        </div>
+        
+        <div className="dashboard-card">
+          <h2>AI Referral Traffic</h2>
+          <BarChart 
+            data={data.referrals}
+            xKey="platform"
+            yKey="visits"
+          />
+        </div>
+        
+        <div className="dashboard-card">
+          <h2>Content Coverage</h2>
+          <PieChart 
+            data={[
+              { name: 'Crawled', value: data.coverage.crawled || 0 },
+              { name: 'Not Crawled', value: data.coverage.notCrawled || 0 }
+            ]}
+          />
+        </div>
+        
+        <div className="dashboard-card">
+          <h2>Response Time</h2>
+          <LineChart 
+            data={data.performance}
+            xKey="date"
+            yKey="responseTime"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+## Step 5: Setting Up Alerting for Critical AI Visibility Issues
+
+Create an alerting system for potential problems:
+
+```tsx
+// lib/ai-monitoring-alerts.ts
+type AlertThresholds = {
+  crawlVolume: {
+    minDaily: number;
+    minWeekly: number;
+  };
+  errors: {
+    maxErrorRate: number;
+  };
+  performance: {
+    maxResponseTime: number;
+  };
+};
+
+export const DEFAULT_THRESHOLDS: AlertThresholds = {
+  crawlVolume: {
+    minDaily: 5,    // Alert if fewer than 5 crawls per day
+    minWeekly: 20,  // Alert if fewer than 20 crawls per week
+  },
+  errors: {
+    maxErrorRate: 0.05, // Alert if error rate exceeds 5%
+  },
+  performance: {
+    maxResponseTime: 1000, // Alert if response time exceeds 1000ms
+  }
+};
+
+export async function checkAlertThresholds(
+  metrics: any,
+  thresholds: AlertThresholds = DEFAULT_THRESHOLDS
+) {
+  const alerts = [];
+  
+  // Check crawl volume
+  if (metrics.dailyCrawls < thresholds.crawlVolume.minDaily) {
+    alerts.push({
+      type: 'LOW_DAILY_CRAWL_VOLUME',
+      message: `Daily crawl volume (${metrics.dailyCrawls}) below threshold (${thresholds.crawlVolume.minDaily})`,
+      severity: 'warning'
+    });
+  }
+  
+  // Check error rate
+  if (metrics.errorRate > thresholds.errors.maxErrorRate) {
+    alerts.push({
+      type: 'HIGH_ERROR_RATE',
+      message: `Error rate (${metrics.errorRate.toFixed(2)}) exceeds threshold (${thresholds.errors.maxErrorRate})`,
+      severity: 'critical'
+    });
+  }
+  
+  // Send alerts via your preferred channel (email, Slack, etc.)
+  if (alerts.length > 0) {
+    await sendAlerts(alerts);
+  }
+  
+  return alerts;
+}
+
+async function sendAlerts(alerts: any[]) {
+  // Implement your alerting logic (email, Slack, etc.)
+  console.log('Sending alerts:', alerts);
+  
+  // Example: Send to Slack
+  await fetch(process.env.SLACK_WEBHOOK_URL || '', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ alerts })
+  });
+}
+```
+
+## Real-World Use Case: Diagnosing Low AI Citation Rates
+
+Here's how one company used AI traffic monitoring to diagnose and fix their citation issues:
+
+1. **Problem**: Their content wasn't being cited by ChatGPT despite optimizing for AEO
+2. **Investigation**: The monitoring showed GPTBot was hitting 404 errors on critical pages
+3. **Diagnosis**: Their CDN was incorrectly classifying GPTBot as a bot to block
+4. **Solution**: Updated CDN configuration to explicitly allow AI crawler user agents
+5. **Result**: 300% increase in AI crawler traffic and first citations in ChatGPT within 2 weeks
+
+## Measuring Success: Key Metrics to Track
+
+Focus on these key metrics to evaluate your AI visibility:
+
+### 1. Crawler Coverage Ratio
+
+This shows what percentage of your site's content is being seen by AI crawlers:
+
+```tsx
+// Formula: (Pages crawled by AI / Total indexable pages) * 100
+
+export function calculateCoverageRatio(crawledPages: string[], totalPages: string[]) {
+  const crawledSet = new Set(crawledPages);
+  let crawledCount = 0;
+  
+  for (const page of totalPages) {
+    if (crawledSet.has(page)) {
+      crawledCount++;
+    }
+  }
+  
+  return (crawledCount / totalPages.length) * 100;
+}
+```
+
+**Target**: Aim for at least 80% coverage by major AI crawlers.
+
+### 2. AI Referral Conversion Rate
+
+This measures how effectively AI citations drive valuable traffic:
+
+```tsx
+// Formula: (Conversions from AI referrals / Total AI referrals) * 100
+
+export function calculateAIReferralCR(aiReferrals: any[]) {
+  const totalReferrals = aiReferrals.length;
+  const conversions = aiReferrals.filter(r => r.converted).length;
+  
+  return totalReferrals > 0 ? (conversions / totalReferrals) * 100 : 0;
+}
+```
+
+**Target**: Benchmark against your standard search engine conversion rates.
+
+### 3. AI Response Quality Score
+
+This measures how relevant and accurate AI citations of your content are:
+
+```tsx
+// This requires manual evaluation or specialized tools
+export function calculateResponseQualityScore(samples: any[]) {
+  // Sample = {query: string, aiResponse: string, accuracyScore: number}
+  if (samples.length === 0) return 0;
+  
+  const totalScore = samples.reduce((sum, sample) => sum + sample.accuracyScore, 0);
+  return totalScore / samples.length;
+}
+```
+
+**Target**: Score of 8+ on a 10-point accuracy scale.
+
+## Implementation Checklist for AI Traffic Monitoring
+
+Use this checklist to implement comprehensive AI traffic monitoring:
+
+### Technical Implementation
+- [ ] Deploy AI crawler detection at the edge (middleware)
+- [ ] Set up server-side logging for all AI crawler visits
+- [ ] Implement client-side tracking for AI platform referrals
+- [ ] Create an analytics database to store AI traffic data
+- [ ] Build dashboard to visualize AI traffic patterns
+
+### Monitoring Setup
+- [ ] Configure alerting for critical AI visibility issues
+- [ ] Set up weekly reports for AI traffic trends
+- [ ] Create content coverage tracking to identify indexing gaps
+- [ ] Implement performance monitoring for AI crawler requests
+- [ ] Set up citation tracking across major AI platforms
+
+### Analysis Workflow
+- [ ] Establish KPIs for AI traffic and visibility
+- [ ] Create process for regular review of AI traffic data
+- [ ] Develop action plan templates for common visibility issues
+- [ ] Implement A/B testing framework for AEO improvements
+- [ ] Set up competitive benchmarking for AI visibility
+
+## Conclusion: From Monitoring to Optimization
+
+Implementing robust AI traffic monitoring is just the beginning. The real value comes from using this data to continuously improve your content's visibility and citation potential.
+
+By understanding exactly how AI systems interact with your content, you can:
+
+1. Identify technical issues that prevent AI systems from seeing your content
+2. Determine which content formats and structures perform best
+3. Measure the impact of your AEO optimization efforts
+4. Develop a feedback loop for continuous improvement
+
+Remember: If you can't measure it, you can't improve it. AI traffic monitoring gives you the data you need to ensure your content isn't just optimized for AI systems, but actually being seen and cited by them.
+
+**Looking for expert help?** [Contact Split](https://www.split.dev/contact) for a personalized AI visibility audit and monitoring setup. 

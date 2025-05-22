@@ -1,0 +1,136 @@
+---
+title: "How AI Crawlers Like GPTBot See Your Site: An AEO Deep Dive"
+description: "Ever wonder how AI bots like GPTBot find content? Uncover the mechanics of LLM crawlers, how they process your site, and what you MUST do to ensure they see your content for ChatGPT and AI answers."
+date: "2025-05-26"
+author:
+  name: "Sam Hogan"
+  title: "CEO of Split, Design/GTM Engineer at Origami (YC F24)"
+  avatar: "/avatars/sam-hogan.png"
+tags: ["AEO", "Crawlers", "LLMs", "Technical SEO", "GPTBot", "AI Search Optimization", "How AI bots find content"]
+featured: false
+coverImage: "/blog/article-cover-8.png"
+---
+
+## Decoding AI Crawlers: Your First Step to AEO Mastery
+
+If you're asking, "Why isn't ChatGPT quoting my company?" or "How do AI bots like GPTBot find content?", understanding how Large Language Model (LLM) crawlers operate is non-negotiable. These aren't your traditional search engine spiders. GPTBot, ClaudeBot, PerplexityBot, and their kin don't just index; they *ingest* and *understand* your content, forming the knowledge base for AI-generated answers. Get this wrong, and your site remains invisible to AI.
+
+This deep dive peels back the curtain on their process, revealing what they prioritize and what they ignore. Mastering this is key to any AI visibility platform strategy.
+
+## The LLM Crawler Playbook: A Step-by-Step Breakdown
+
+LLM crawlers are methodical. Here's how they typically dissect your website:
+
+1.  **`robots.txt` Check-In**: Their first stop. They scan `robots.txt` for explicit Allow/Disallow directives. Most AI crawlers are polite guests and will respect these rules. *Crucially, many ignore `Crawl-delay`*, so don't rely on it to manage their traffic heavily.
+
+2.  **HTML Snatch**: They grab your raw HTML. Linked assets might be noted, but here's the kicker: **JavaScript is generally NOT executed.** If your content relies on client-side rendering, it's like sending them a blank page.
+
+3.  **Content De-Noising**: AI needs the signal, not the noise. Crawlers attempt to strip away boilerplate—navigation, ads, cookie pop-ups—to isolate the main textual content.
+
+4.  **Text Carving (Chunking)**: Your prized article isn't swallowed whole. It's sliced into digestible chunks, often 1-3kB each. This aids efficient processing and is how AI starts to make sense of longer texts for specific queries.
+
+5.  **Semantic Fingerprinting (Vector Generation)**: This is where the magic happens. Each chunk is transformed into embeddings—dense numerical vectors. Think of it as a unique fingerprint that captures the *semantic meaning*, not just keywords. This is foundational for how AI tools show up in Perplexity or generate relevant answers in ChatGPT.
+
+## What Do LLM Crawlers *Actually* See and Index?
+
+Not all your site's content is treated equally. Here's a quick rundown:
+
+| Content Type        | Indexed by LLM Crawlers? | Key AEO Considerations                                       |
+|---------------------|--------------------------|--------------------------------------------------------------|
+| Main HTML Content   | ✅ Yes, absolutely!      | This is their primary food source. Must be server-rendered.    |
+| JSON-LD Schema      | ✅ Yes                   | Crucial for context; helps them understand entities & facts. |
+| External JavaScript | ❌ Generally No         | Code might be read but won't be executed to render content.  |
+| CSS                 | ✅ Partially             | Mainly class names, sometimes used to detect hidden/visible text. |
+| Images              | ⚠️ Varies / Partial     | Alt-text is key. Some (like ClaudeBot) may store pixel data for multimodal understanding. Don't rely on images for core textual info. |
+| Video/Audio         | ❌ No (content-wise)   | Only transcripts or captions are typically processed.          |
+
+## Server-Side Rendering (SSR): The Golden Rule for AEO
+
+If there's one takeaway about LLM crawlers, it's this: **if your critical content isn't in the initial HTML payload, it's likely invisible.** Client-side rendering is a major reason why "my site isn't showing up in AI tools." SSR is how you fix this.
+
+For Next.js, this means leveraging `getStaticProps`, `getServerSideProps`, or the default server-rendering capabilities of App Router Server Components:
+
+```tsx
+// Example: A Next.js page (App or Pages Router) ensuring content is server-rendered
+// For App Router (app/my-page/page.tsx):
+async function getData() {
+  // const data = await fetch('...'); return data.json();
+  return { title: "My Awesome Server-Rendered Page", content: "Crucial info AI needs to see." };
+}
+
+export default async function MyPage() {
+  const pageData = await getData();
+  return (
+    <article>
+      <h1>{pageData.title}</h1>
+      <p>{pageData.content}</p> { /* This content is visible! */ }
+    </article>
+  );
+}
+```
+
+## LLM Crawler Optimization: Pro Tips for Peak Visibility
+
+Want to make your site an AI favorite? Follow these best practices:
+
+1.  **Ban Client-Side-Only Critical Content**: 
+    *   Think twice before using `next/dynamic` without a server-rendered fallback for essential text.
+    *   Every vital piece of information *must* be in the initial HTML.
+    *   Use progressive enhancement for features, not for core content delivery.
+
+2.  **Sitemap: Your AI Navigation System**: 
+    *   Always have an up-to-date `sitemap.xml`.
+    *   Regenerate it on each deploy.
+    *   Include `lastmod` dates; freshness can matter.
+
+3.  **Smart Asset Strategy**:
+    *   **Images**: Compelling alt-text is non-negotiable. Describe the image's content and context.
+    *   **Video/Audio**: Provide full, accurate transcripts and captions. These are what AI will process.
+    *   **Structure**: Use semantic HTML (`<article>`, `<section>`, etc.) to give clear structural cues.
+
+4.  **Be a Crawler Watcher (Monitor!)**:
+   ```tsx
+    // Basic middleware.ts example for Next.js
+    import { NextRequest, NextResponse } from 'next/server';
+
+    export function middleware(req: NextRequest) {
+      const ua = req.headers.get('user-agent') ?? '';
+      // Expand this list with other known AI crawlers
+      if (/GPTBot|ClaudeBot|PerplexityBot|Google-Extended/i.test(ua)) {
+        // Log to your preferred analytics or an AI SEO tool
+        console.log(`[AEO INSIGHT] AI Crawler: ${ua}, Page: ${req.url}`);
+      }
+      return NextResponse.next();
+    }
+    ```
+    This helps you answer "how do I check if AI bots are seeing my site?".
+
+## Know Your Crawlers: Not All AI Bots Are Created Equal
+
+Different AI developers deploy crawlers with slightly different appetites and behaviors:
+
+*   **GPTBot (OpenAI)**: A high-volume visitor. Known to request many pages, but can also hit 404s if your internal linking or sitemap isn't pristine. Optimizing for GPTBot is key for ChatGPT SEO.
+*   **ClaudeBot (Anthropic)**: Shows interest in images for multimodal model training, alongside text.
+*   **PerplexityBot (Perplexity AI)**: Appears to have a preference for well-structured data, including tables and JSON-LD, for its answer-focused results.
+*   **ChatGPT-User (OpenAI)**: This isn't a bulk crawler but fetches content on-demand when a ChatGPT user clicks a link or the model browses. Fast load times and direct content are vital here.
+
+## Technical Must-Haves for AEO Success
+
+1.  **Redirects: Smooth Paths, Not Obstacle Courses**
+    *   Minimize redirect chains (A → B → C is bad).
+    *   Use permanent (301) redirects for content that has moved for good.
+    *   Ensure your sitemap lists final destination URLs, not redirected ones.
+
+2.  **Performance: AI Won't Wait Forever**
+    *   Target a Time To First Byte (TTFB) under 2 seconds, ideally faster.
+    *   Employ smart caching (CDNs, edge caching with Vercel, etc.).
+    *   This is a core tenet of tools for improving AI search presence.
+
+3.  **Content Clarity & Structure**:
+    *   Logical heading hierarchy (H1, H2, H3...) is essential.
+    *   Keep paragraphs focused. AI often looks for concise, citable statements.
+    *   Reinforce with structured data (Schema.org) wherever it adds value.
+
+## Conclusion: If They Can't See It, They Can't Cite It
+
+Understanding how LLM crawlers operate isn't just academic; it's fundamental to your AEO strategy and getting your content into AI answers. The golden rule remains: **server-render all critical content.** Combine this with clean HTML, smart asset handling, and an awareness of crawler behaviors, and you'll significantly boost your chances of your content being processed, understood, and ultimately used by AI systems like ChatGPT. Stop being invisible to AI and start making your content work for you in this new era of search. 

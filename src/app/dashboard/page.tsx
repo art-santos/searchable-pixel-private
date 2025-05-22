@@ -19,7 +19,7 @@ export default function Dashboard() {
   }
 
   return (
-    <main className="flex flex-1 flex-col gap-6 p-4 h-[calc(100vh-64px)] bg-[#0c0c0c]">
+    <main className="flex flex-1 flex-col gap-6 p-4 h-[calc(100vh-64px)]">
       <div className="grid xl:grid-cols-2 grid-cols-1 gap-3 flex-[1.2]">
         <div className="pl-4 pr-4 pt-4 h-full"><PageViewCard /></div>
 

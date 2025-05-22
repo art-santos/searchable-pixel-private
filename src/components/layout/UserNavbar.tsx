@@ -27,7 +27,7 @@ export function UserNavbar() {
       <div className="container flex h-14 items-center justify-between">
         <div className="flex items-center">
           <Link href="/" className="text-lg font-medium text-white flex items-center gap-2 mr-8">
-            <Image src="/split-icon-white.svg" width={20} height={20} alt="Split Logo" />
+            <Image src="/images/split-icon-white.svg" width={20} height={20} alt="Split Logo" />
             <span>Split</span>
           </Link>
           <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">

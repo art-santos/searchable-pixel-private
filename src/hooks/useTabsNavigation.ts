@@ -5,21 +5,16 @@ import { useState, useEffect, useCallback } from 'react';
  * @param availableTabIds - An array of the current NUMERIC IDs available for tabs.
  */
 export function useTabsNavigation(availableTabIds: number[]) {
-    const [activeTabId, setActiveTabId] = useState<number | null>(null);
+    const [activeTabId, setActiveTabId] = useState<string | null>(null);
 
-    // Effect to set the initial active tab when the list loads or changes
+    // Extract complex expression to a variable
+    const defaultTabId = availableTabIds[0];
+
     useEffect(() => {
-        // Convert array to string for dependency comparison
-        const idsKey = JSON.stringify(availableTabIds.sort()); // Sort for stability
-
-        if (availableTabIds.length > 0 && (activeTabId === null || !availableTabIds.includes(activeTabId))) {
-            // If no active tab, or current active tab is no longer valid, set to the first available
-            setActiveTabId(availableTabIds[0]);
-        } else if (availableTabIds.length === 0) {
-            // If the list becomes empty, set active tab to null
-            setActiveTabId(null);
+        if (!activeTabId && defaultTabId) {
+            setActiveTabId(defaultTabId.toString());
         }
-    }, [JSON.stringify(availableTabIds.sort()), activeTabId]); // Use sorted stringified array
+    }, [activeTabId, defaultTabId, availableTabIds]);
 
     /**
      * Calculates the ID of the next tab to activate after a tab is removed.
@@ -45,9 +40,16 @@ export function useTabsNavigation(availableTabIds: number[]) {
         }
     }, [JSON.stringify(availableTabIds.sort())]); // Update when sorted IDs change
 
+    const navigateToTab = useCallback((tabId: string) => {
+        if (availableTabIds.includes(parseInt(tabId))) {
+            setActiveTabId(tabId);
+        }
+    }, [availableTabIds]);
+
     return {
         activeTabId,
         setActiveTabId,
         getNextTabId,
+        navigateToTab,
     };
 } 
