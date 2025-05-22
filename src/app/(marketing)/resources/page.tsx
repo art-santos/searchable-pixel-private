@@ -1,6 +1,5 @@
 import { Metadata } from 'next'
 import { getAllTags, getBlogPosts, getFeaturedPosts } from '@/lib/blog'
-import { LPTopBar } from '@/components/layout/lp-topbar'
 import ResourcesClientContent from './resources-client-content'
 
 // This generates metadata for the page - good for SEO and AEO
@@ -32,8 +31,7 @@ export default async function ResourcesPage() {
   const popularTags = tags.slice(0, 8)
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#0c0c0c] -mt-20">
-      <LPTopBar />
+    <div className="-mt-20">
       <ResourcesClientContent
         posts={posts}
         featuredPosts={featuredPosts}
