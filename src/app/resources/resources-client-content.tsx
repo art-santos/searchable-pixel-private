@@ -38,14 +38,14 @@ export default function ResourcesClientContent({
   return (
     <>
       {/* Hero Section */}
-      <section className="relative mt-16 py-16 md:py-24">
+      <section className="relative mt-16 py-12 md:py-16">
         <div className="absolute inset-0 bg-gradient-to-b from-[#111] to-[#0c0c0c]" />
         <div className="relative z-10 mx-auto w-[92%] max-w-7xl md:w-[80%]">
           <div className="text-center">
             <h1 className="mb-4 text-4xl font-bold text-white md:text-5xl lg:text-6xl">
               Resources & Blog
             </h1>
-            <p className="mx-auto mb-8 max-w-2xl text-lg text-gray-300 md:text-xl">
+            <p className="mx-auto mb-6 max-w-2xl text-lg text-gray-300 md:text-xl">
               Expert insights, guides, and case studies on AI Engine Optimization and content strategy
             </p>
           </div>
@@ -54,9 +54,9 @@ export default function ResourcesClientContent({
 
       {/* Featured Posts */}
       {featuredPosts.length > 0 && (
-        <section className="py-12" aria-labelledby="featured-posts-heading">
+        <section className="pt-4 pb-12" aria-labelledby="featured-posts-heading">
           <div className="mx-auto w-[92%] max-w-7xl md:w-[80%]">
-            <h2 id="featured-posts-heading" className="mb-8 text-2xl font-bold text-white md:text-3xl">
+            <h2 id="featured-posts-heading" className="mb-6 text-2xl font-bold text-white md:text-3xl">
               Featured Resources
             </h2>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
