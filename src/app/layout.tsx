@@ -75,6 +75,10 @@ export default function RootLayout({
           href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap" 
           rel="stylesheet"
         />
+        <link 
+          href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;0,600;1,400;1,600&display=swap" 
+          rel="stylesheet"
+        />
         {/* Add manifest link here if not using viewport export */}
         {/* <link rel="manifest" href="/manifest.json" /> */}
       </head>

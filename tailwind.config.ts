@@ -116,6 +116,14 @@ export default {
   				'100%': {
   					transform: 'translate(calc(100cqw - 100%), 0)'
   				}
+  			},
+  			'shimmer-loop': {
+  				'0%': {
+  					transform: 'translateX(-100%)'
+  				},
+  				'100%': {
+  					transform: 'translateX(300%)'
+  				}
   			}
   		},
   		animation: {
@@ -123,10 +131,12 @@ export default {
   			'accordion-up': 'accordion-up 0.2s ease-out',
   			shine: 'shine 3s ease-out infinite',
   			'shimmer-slide': 'shimmer-slide var(--speed) ease-in-out infinite alternate',
+  			'shimmer-loop': 'shimmer-loop 2s ease-in-out infinite',
   			'spin-around': 'spin-around calc(var(--speed) * 2) infinite linear'
   		},
   		fontFamily: {
   			sans: ["Cal Sans", ...fontFamily.sans],
+  			serif: ["Instrument Serif", ...fontFamily.serif],
   		},
   		backgroundImage: {
   			'grid-pattern': 'url("/grid.svg")',

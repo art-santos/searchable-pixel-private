@@ -87,6 +87,49 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0c0c0c]">
+      <style jsx global>{`
+        @keyframes dashboardFallIn {
+          0% {
+            opacity: 0;
+            transform: perspective(1000px) rotateX(-15deg) translateY(-20px);
+          }
+          100% {
+            opacity: 1;
+            transform: perspective(1000px) rotateX(0deg) translateY(0);
+          }
+        }
+        
+        .dashboard-fall-in {
+          animation: dashboardFallIn 700ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          animation-delay: 0.8s;
+          opacity: 0;
+        }
+        
+        @keyframes logoScroll {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+        
+        .logo-carousel {
+          animation: logoScroll 40s linear infinite;
+          width: fit-content;
+        }
+        
+        @media (prefers-reduced-motion: reduce) {
+          .dashboard-fall-in {
+            animation: none;
+            opacity: 1;
+            transform: none;
+          }
+          .logo-carousel {
+            animation: none;
+          }
+        }
+      `}</style>
       <LPTopBar />
       
       {/* Hero Section with Gradient Transition */}
@@ -104,7 +147,7 @@ export default function LandingPage() {
         <div className="relative z-10 w-[92%] md:w-[80%] max-w-7xl mx-auto px-2 md:px-4">
           <div className="text-center">
             <h1 className="blur-in-up text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-3 md:mb-6 md:max-w-[90%] mx-auto">
-              The first autonomous AEO engineer.
+              The first<span className="font-serif font-light italic tracking-tight"> autonomous </span>AEO engineer. 
             </h1>
             <p className="blur-in-up-delay-1 text-sm md:text-lg lg:text-xl text-gray-200 md:max-w-[85%] mx-auto mb-6 md:mb-8 px-2 md:px-0">
               An AI Agent that monitors your visibility, audits your site, and publishes optimized content that gets you cited by ChatGPT, Perplexity, and Google.
@@ -159,7 +202,7 @@ export default function LandingPage() {
                 </button>
               </div>
             </div>
-            <div className="blur-in-up-delay-2 text-xs md:text-sm text-gray-400 mt-3 md:mt-4 mb-6 md:mb-24 flex items-center justify-center gap-2">
+            <div className="blur-in-up-delay-2 text-xs md:text-sm text-gray-400 mt-3 md:mt-4 mb-6 md:mb-24 flex items-center justify-center gap-1">
               Get mentioned by 
               <span className="text-white logo-flip-container">
                 <span key={currentLogo} className="logo-flip">
@@ -183,11 +226,11 @@ export default function LandingPage() {
                   alt="Split Dashboard"
                   width={1200}
                   height={900}
-                  className="w-full h-auto"
+                  className="w-full h-auto dashboard-fall-in"
                 />
               </div>
               {/* Desktop version - with frame */}
-              <div className="hidden md:block w-full rounded-2xl border-[8px] border-[#2f2f2f]/30 overflow-hidden shadow-2xl">
+              <div className="hidden md:block w-full rounded-2xl border-[8px] border-[#2f2f2f]/30 overflow-hidden shadow-2xl dashboard-fall-in">
                 <Image
                   src="/images/split-dash.svg"
                   alt="Split Dashboard"
@@ -196,6 +239,49 @@ export default function LandingPage() {
                   className="w-full h-auto"
                 />
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Logo Carousel */}
+      <section className="w-full pt-16 pb-12 bg-[#0c0c0c] relative group cursor-pointer">
+        {/* Hover overlay with blur and button - covers entire section */}
+        <div className="absolute inset-0 bg-[#0c0c0c]/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center z-20">
+          <button className="bg-[#1a1a1a] border-2 border-[#444444] text-white px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-[#222222] hover:border-[#555555] transition-all duration-200 text-sm font-medium">
+            View our customers
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </div>
+        
+        <div className="w-[92%] md:w-[80%] max-w-7xl mx-auto relative z-10">
+          {/* Header */}
+          <h2 className="text-center text-xs md:text-sm text-gray-600/80 mb-8 md:mb-12 font-medium tracking-tight uppercase">
+            Teams using Split to increase their LLM visibility
+          </h2>
+          
+          {/* Carousel container */}
+          <div className="relative overflow-hidden">
+            {/* Gradient overlays for blur effect */}
+            <div className="absolute left-0 top-0 w-24 md:w-32 h-full bg-gradient-to-r from-[#0c0c0c] to-transparent z-10" />
+            <div className="absolute right-0 top-0 w-24 md:w-32 h-full bg-gradient-to-l from-[#0c0c0c] to-transparent z-10" />
+            
+            {/* Scrolling container */}
+            <div className="logo-carousel flex gap-12 md:gap-16">
+              {[...Array(16)].map((_, index) => (
+                <div key={index} className="flex-shrink-0">
+                  <Image
+                    src="/images/origami-white.svg"
+                    alt="Partner Logo"
+                    width={120}
+                    height={30}
+                    className="h-6 md:h-8 w-auto opacity-70 transition-opacity duration-300"
+                  />
+                </div>
+              ))}
             </div>
           </div>
         </div>

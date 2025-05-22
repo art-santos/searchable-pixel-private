@@ -3,12 +3,13 @@
 import { useState, useMemo } from 'react'
 import { BlogCard } from '@/components/blog/blog-card'
 import { TagBadge } from '@/components/blog/tag-badge' // Assuming TagBadge can be used for buttons or similar
-import type { Post, Tag } from '@/lib/blog' // Assuming these types exist
+import type { BlogPost } from '@/types/blog'
+import CTASection from '@/components/sections/cta-section'
 
 interface ResourcesClientContentProps {
-  posts: Post[]
-  featuredPosts: Post[]
-  popularTags: Tag[]
+  posts: BlogPost[]
+  featuredPosts: BlogPost[]
+  popularTags: { name: string; count: number }[]
 }
 
 export default function ResourcesClientContent({
@@ -25,7 +26,7 @@ export default function ResourcesClientContent({
     }
     return posts
       .filter(post => !featuredPosts.find(fp => fp.slug === post.slug))
-      .filter(post => post.tags.some(tag => tag.toLowerCase() === selectedTag.toLowerCase()));
+      .filter(post => post.tags.some((tag: string) => tag.toLowerCase() === selectedTag.toLowerCase()));
   }, [posts, featuredPosts, selectedTag])
 
   const handleTagClick = (tag: string | null) => {
@@ -38,15 +39,15 @@ export default function ResourcesClientContent({
   return (
     <>
       {/* Hero Section */}
-      <section className="relative mt-16 py-12 md:py-16">
+      <section className="relative pt-56 md:pt-64">
         <div className="absolute inset-0 bg-gradient-to-b from-[#111] to-[#0c0c0c]" />
         <div className="relative z-10 mx-auto w-[92%] max-w-7xl md:w-[80%]">
           <div className="text-center">
             <h1 className="mb-4 text-4xl font-bold text-white md:text-5xl lg:text-6xl">
-              Resources & Blog
+              Get Ranked Where it Matters
             </h1>
             <p className="mx-auto mb-6 max-w-2xl text-lg text-gray-300 md:text-xl">
-              Expert insights, guides, and case studies on AI Engine Optimization and content strategy
+              Discover proven strategies to get your content cited by AI engines and dominate the new search landscape
             </p>
           </div>
         </div>
@@ -54,7 +55,7 @@ export default function ResourcesClientContent({
 
       {/* Featured Posts */}
       {featuredPosts.length > 0 && (
-        <section className="pt-4 pb-12" aria-labelledby="featured-posts-heading">
+        <section className="py-16" aria-labelledby="featured-posts-heading">
           <div className="mx-auto w-[92%] max-w-7xl md:w-[80%]">
             <h2 id="featured-posts-heading" className="mb-6 text-2xl font-bold text-white md:text-3xl">
               Featured Resources
@@ -69,7 +70,7 @@ export default function ResourcesClientContent({
       )}
 
       {/* Popular Topics Filter / Main Articles Section */}
-      <section className="py-12" aria-labelledby="popular-topics-heading">
+      <section className="py-16" aria-labelledby="popular-topics-heading">
         <div className="mx-auto w-[92%] max-w-7xl md:w-[80%]">
           <h2 id="popular-topics-heading" className="mb-8 text-center text-2xl font-bold text-white md:text-3xl">
             {selectedTag ? selectedTag.charAt(0).toUpperCase() + selectedTag.slice(1) : 'All Resources'}
@@ -115,23 +116,7 @@ export default function ResourcesClientContent({
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 bg-[#111]">
-        <div className="mx-auto w-[92%] max-w-3xl md:w-[80%] text-center">
-          <h2 className="mb-4 text-2xl font-bold text-white md:text-3xl">
-            Ready to boost your AI visibility?
-          </h2>
-          <p className="mb-8 text-gray-300">
-            Get started with Split today and see how our AEO tools can help your content get cited by AI engines.
-          </p>
-          <a
-            href="/signup"
-            className="inline-flex items-center justify-center bg-white px-6 py-3 font-medium text-[#0c0c0c] transition-all hover:bg-gray-100 border border-white"
-          >
-            Get Started
-          </a>
-        </div>
-      </section>
+      <CTASection />
     </>
   )
 } 

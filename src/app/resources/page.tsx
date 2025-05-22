@@ -32,7 +32,7 @@ export default async function ResourcesPage() {
   const popularTags = tags.slice(0, 8)
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#0c0c0c]">
+    <div className="flex min-h-screen flex-col bg-[#0c0c0c] -mt-20">
       <LPTopBar />
       <ResourcesClientContent
         posts={posts}
