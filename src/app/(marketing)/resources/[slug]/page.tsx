@@ -2,10 +2,11 @@ import { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getBlogPostBySlug, getBlogPosts } from '@/lib/blog'
+import { getBlogPostBySlug, getBlogPosts, getAllTags } from '@/lib/blog'
 import { TagBadge } from '@/components/blog/tag-badge'
 import { LPTopBar } from '@/components/layout/lp-topbar'
 import { BlogImage } from '@/components/blog/blog-image'
+import { ShareButton } from '@/components/blog/share-button'
 import { TableRenderer } from './table-renderer'
 
 // Generate static paths for all blog posts
@@ -54,6 +55,15 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
     day: 'numeric' 
   })
   
+  // Get all posts to find related topics
+  const allPosts = await getBlogPosts()
+  const allTags = getAllTags(allPosts)
+  
+  // Find related tags (tags from this post that appear in other posts)
+  const relatedTags = allTags
+    .filter(tag => post.tags.includes(tag.name) && tag.count > 1)
+    .slice(0, 6)
+  
   return (
     <div className="flex min-h-screen flex-col">
       <LPTopBar />
@@ -86,41 +96,13 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
               />
             )}
             
-            {/* Meta info - moved below image */}
-            <div className="mb-2 flex justify-between items-center">
-              {/* Author - left aligned */}
-              <div className="flex items-center gap-2">
-                {post.author.avatar ? (
-                  <div className="overflow-hidden rounded-full">
-                    <Image
-                      src={post.author.avatar}
-                      alt={post.author.name}
-                      width={32}
-                      height={32}
-                      className="rounded-full"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1f1f1f] text-sm font-medium text-white">
-                    {post.author.name.charAt(0)}
-                  </div>
-                )}
-                <div>
-                  <span className="text-sm text-gray-300">{post.author.name}</span>
-                  {post.author.title && (
-                    <p className="text-xs text-gray-500">{post.author.title}</p>
-                  )}
-                </div>
-              </div>
-              
-              {/* Date & Reading time - right aligned */}
-              <div className="text-right text-sm text-gray-400">
-                <time dateTime={new Date(post.date).toISOString()}>
-                  {formattedDate}
-                </time>
-                <span className="mx-1">•</span>
-                <span>{post.readingTime}</span>
-              </div>
+            {/* Meta info - simplified */}
+            <div className="mb-2 text-sm text-gray-400">
+              <time dateTime={new Date(post.date).toISOString()}>
+                {formattedDate}
+              </time>
+              <span className="mx-1">•</span>
+              <span>{post.readingTime}</span>
             </div>
           </div>
         </header>
@@ -166,6 +148,32 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
             <TableRenderer htmlContent={post.content} />
           </div>
         </article>
+        
+        {/* Related Topics & Share */}
+        <div className="mx-auto mb-8 w-[92%] max-w-3xl md:w-[80%]">
+          <div className="border-t border-[#2f2f2f] pt-8">
+            {/* Related Topics */}
+            {relatedTags.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-white mb-4">Related Topics</h3>
+                <div className="flex flex-wrap gap-2">
+                  {relatedTags.map(tag => (
+                    <TagBadge key={tag.name} tag={tag.name} />
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Share Button */}
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-white mb-4">Share this article</h3>
+              <ShareButton 
+                url={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://split.ai'}/resources/${post.slug}`}
+                title={post.title}
+              />
+            </div>
+          </div>
+        </div>
         
         {/* Back to resources */}
         <div className="mx-auto mb-16 w-[92%] max-w-3xl md:w-[80%]">

@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react'
 import { BlogCard } from '@/components/blog/blog-card'
 import { TagBadge } from '@/components/blog/tag-badge' // Assuming TagBadge can be used for buttons or similar
 import type { BlogPost } from '@/types/blog'
-import CTASection from '@/components/sections/cta-section'
 
 interface ResourcesClientContentProps {
   posts: BlogPost[]
@@ -115,8 +114,6 @@ export default function ResourcesClientContent({
            )}
         </div>
       </section>
-
-      <CTASection />
     </>
   )
 } 

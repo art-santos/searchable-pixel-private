@@ -81,12 +81,6 @@ export function LPTopBar() {
             Customers
           </Link>
           <Link 
-            href="/pricing" 
-            className="nav-link text-sm text-gray-300 hover:text-white transition-colors"
-          >
-            Pricing
-          </Link>
-          <Link 
             href="/resources" 
             className="nav-link text-sm text-gray-300 hover:text-white transition-colors"
           >

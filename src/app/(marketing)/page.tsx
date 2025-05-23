@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import Image from 'next/image'
 import { Schema } from '@/components/Schema'
 import CTASection from '@/components/sections/cta-section'
+import { StepOneAudit, StepTwoMonitor, StepThreeImplement } from '@/components/sections/step-cards'
 
 const faqSchema = {
   "@context": "https://schema.org",
@@ -248,7 +249,7 @@ export default function LandingPage() {
       
       {/* Hero Section with Gradient Transition */}
       <section 
-        className="min-h-[70vh] md:min-h-[90vh] w-full relative flex items-start md:items-center justify-center pt-32 md:pt-48"
+        className="min-h-[70vh] md:min-h-[90vh] w-full relative flex items-start md:items-center justify-center pt-40 md:pt-56 lg:pt-72"
         style={{
           backgroundImage: 'url(/images/split-bg.png)',
           backgroundSize: 'cover',
@@ -402,7 +403,7 @@ export default function LandingPage() {
       </section>
 
       {/* How It Works Header */}
-      <section className="w-full py-20 md:py-32 bg-[#0c0c0c] relative overflow-hidden">
+      <section className="w-full py-16 md:py-32 bg-[#0c0c0c] relative overflow-hidden">
         {/* Background Grid Pattern */}
         <div className="absolute inset-0 opacity-[0.015]" style={{
           backgroundImage: `linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)`,
@@ -411,42 +412,39 @@ export default function LandingPage() {
         
         <div className="w-[92%] md:w-[80%] max-w-7xl mx-auto text-center relative">
           {/* Step Indicators */}
-          <div className="flex justify-center items-center gap-4 mb-8 md:mb-12">
-            <div className="w-8 h-8 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white text-sm font-mono">1</div>
-            <div className="w-12 h-px bg-[#333333]"></div>
-            <div className="w-8 h-8 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white text-sm font-mono">2</div>
-            <div className="w-12 h-px bg-[#333333]"></div>
-            <div className="w-8 h-8 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white text-sm font-mono">3</div>
+          <div className="flex justify-center items-center gap-2 sm:gap-4 mb-6 md:mb-12">
+            <div className="w-6 sm:w-8 h-6 sm:h-8 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white text-xs sm:text-sm font-mono">1</div>
+            <div className="w-8 sm:w-12 h-px bg-[#333333]"></div>
+            <div className="w-6 sm:w-8 h-6 sm:h-8 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white text-xs sm:text-sm font-mono">2</div>
+            <div className="w-8 sm:w-12 h-px bg-[#333333]"></div>
+            <div className="w-6 sm:w-8 h-6 sm:h-8 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white text-xs sm:text-sm font-mono">3</div>
           </div>
 
           {/* Header Content */}
           <div className="feature-content">
-            <div className="mb-6 md:mb-8">
-              <div className="text-xs text-gray-500 uppercase tracking-[0.2em] mb-4">Process Overview</div>
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 md:mb-8 leading-tight">
+            <div className="mb-4 md:mb-8">
+              <div className="text-xs text-gray-500 uppercase tracking-[0.2em] mb-3 md:mb-4">Process Overview</div>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 md:mb-8 leading-tight">
                 How It<span className="font-serif font-light italic"> Works</span>
               </h2>
             </div>
             
             <div className="max-w-4xl mx-auto">
-              <p className="text-xl md:text-2xl text-gray-300 leading-relaxed font-light mb-6">
+              <p className="text-lg sm:text-xl md:text-2xl text-gray-300 leading-relaxed font-light mb-4 md:mb-6">
                 Three steps to dominate AI engine visibility and get your content cited by ChatGPT, Perplexity, and Google AI.
               </p>
-              <div className="text-sm text-gray-500 font-mono">
+              <div className="text-xs sm:text-sm text-gray-500 font-mono">
                 AUDIT → MONITOR → IMPLEMENT
               </div>
             </div>
           </div>
 
-          {/* Decorative Elements */}
-          <div className="absolute top-12 left-8 md:left-16 w-1 h-16 bg-[#333333] opacity-50"></div>
-          <div className="absolute top-12 right-8 md:right-16 w-1 h-16 bg-[#333333] opacity-50"></div>
-          <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-[#333333] opacity-50"></div>
+
         </div>
       </section>
 
       {/* Step 1: Audit Your Visibility */}
-      <section className="w-full py-20 md:py-28 bg-[#0c0c0c] relative">
+      <section className="w-full py-16 md:py-28 bg-[#0c0c0c] relative">
         {/* Subtle background pattern */}
         <div className="absolute inset-0 opacity-[0.02]" style={{
           backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
@@ -454,22 +452,22 @@ export default function LandingPage() {
         }}></div>
         
         <div className="w-[92%] md:w-[80%] max-w-7xl mx-auto relative">
-          <div className="grid md:grid-cols-2 gap-16 md:gap-20 items-center">
+          <div className="grid md:grid-cols-2 gap-8 md:gap-20 items-center">
             {/* Content */}
             <div className="feature-content">
-              <div className="flex items-center gap-6 mb-8">
-                <div className="step-number w-14 h-14 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white font-bold text-xl">
+              <div className="flex items-center gap-4 sm:gap-6 mb-6 md:mb-8">
+                <div className="step-number w-10 sm:w-14 h-10 sm:h-14 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white font-bold text-lg sm:text-xl">
                   1
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Step One</div>
-                  <h3 className="text-2xl md:text-3xl font-bold text-white leading-tight">
+                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight">
                     Audit Your Visibility
                   </h3>
                 </div>
               </div>
               
-              <p className="text-gray-300 mb-10 text-lg leading-relaxed font-light">
+              <p className="text-gray-300 mb-6 md:mb-10 text-base sm:text-lg leading-relaxed font-light">
                 We scan your site like an AI crawler would—flagging broken schema, missing citations, and content that LLMs ignore.
               </p>
 
@@ -499,169 +497,36 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Enhanced Dashboard Mockup */}
-            <div className="dashboard-mockup bg-[#1a1a1a] border border-[#2f2f2f] p-6 relative overflow-hidden">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#333333]">
-                <div>
-                  <h4 className="text-white font-semibold text-base">Site Audit Results</h4>
-                  <div className="text-xs text-gray-500 mt-1">Updated 2 minutes ago</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                  <span className="text-xs text-gray-400 font-mono">Live</span>
-                </div>
-              </div>
-              
-              {/* Metrics */}
-              <div className="space-y-4">
-                <div className="metric-item group p-4 bg-[#0c0c0c] border border-[#333333] transition-all duration-200 hover:border-[#444444]">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-300 text-sm font-medium">Schema Coverage</span>
-                    <span className="text-white font-mono text-lg">23%</span>
-                  </div>
-                  <div className="w-full h-1 bg-[#333333] overflow-hidden">
-                    <div className="metric-bar h-full w-[23%]"></div>
-                  </div>
-                </div>
-                
-                <div className="metric-item group p-4 bg-[#0c0c0c] border border-[#333333] transition-all duration-200 hover:border-[#444444]">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-300 text-sm font-medium">LLM Readability</span>
-                    <span className="text-white font-mono text-lg">67%</span>
-                  </div>
-                  <div className="w-full h-1 bg-[#333333] overflow-hidden">
-                    <div className="metric-bar h-full w-[67%]"></div>
-                  </div>
-                </div>
-                
-                <div className="metric-item group p-4 bg-[#0c0c0c] border border-[#333333] transition-all duration-200 hover:border-[#444444]">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-300 text-sm font-medium">Citation Potential</span>
-                    <span className="text-white font-mono text-lg">41%</span>
-                  </div>
-                  <div className="w-full h-1 bg-[#333333] overflow-hidden">
-                    <div className="metric-bar h-full w-[41%]"></div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Critical Issues */}
-              <div className="mt-6 pt-4 border-t border-[#333333]">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-3 h-3 border border-[#666666] flex items-center justify-center">
-                    <div className="w-1 h-1 bg-white"></div>
-                  </div>
-                  <span className="text-xs text-gray-400 uppercase tracking-wider">Critical Issues</span>
-                </div>
-                <div className="text-sm text-gray-300 leading-relaxed">
-                  Missing structured data, broken llms.txt configuration
-                </div>
-              </div>
-            </div>
+            {/* Step 1 Animated Card */}
+            <StepOneAudit />
           </div>
         </div>
       </section>
 
       {/* Step 2: Monitor Your Mentions */}
-      <section className="w-full py-20 md:py-28 bg-[#0c0c0c] relative border-t border-[#1a1a1a]">
+      <section className="w-full py-16 md:py-28 bg-[#0c0c0c] relative border-t border-[#1a1a1a]">
         <div className="w-[92%] md:w-[80%] max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-16 md:gap-20 items-center">
-            {/* Enhanced Dashboard Mockup */}
-            <div className="dashboard-mockup bg-[#1a1a1a] border border-[#2f2f2f] p-6 md:order-1 relative overflow-hidden">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#333333]">
-                <div>
-                  <h4 className="text-white font-semibold text-base">Mention Tracking</h4>
-                  <div className="text-xs text-gray-500 mt-1">Last 24 hours</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-white animate-pulse"></div>
-                  <span className="text-xs text-gray-400 font-mono">Scanning</span>
-                </div>
-              </div>
-              
-              {/* AI Platform Mentions */}
-              <div className="space-y-4">
-                <div className="metric-item group p-4 bg-[#0c0c0c] border border-[#333333] transition-all duration-200 hover:border-[#444444] relative">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 bg-[#2a2a2a] border border-[#444444] flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white"></div>
-                      </div>
-                      <span className="text-gray-300 text-sm font-medium">ChatGPT</span>
-                    </div>
-                    <span className="text-white font-mono text-lg">7</span>
-                  </div>
-                  <div className="text-xs text-gray-500 mb-2">Last mention: 2h ago</div>
-                  <div className="w-full h-1 bg-[#333333] overflow-hidden">
-                    <div className="metric-bar h-full w-[35%]"></div>
-                  </div>
-                </div>
-                
-                <div className="metric-item group p-4 bg-[#0c0c0c] border border-[#333333] transition-all duration-200 hover:border-[#444444]">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 bg-[#2a2a2a] border border-[#444444] flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white"></div>
-                      </div>
-                      <span className="text-gray-300 text-sm font-medium">Perplexity</span>
-                    </div>
-                    <span className="text-white font-mono text-lg">3</span>
-                  </div>
-                  <div className="text-xs text-gray-500 mb-2">Last mention: 5h ago</div>
-                  <div className="w-full h-1 bg-[#333333] overflow-hidden">
-                    <div className="metric-bar h-full w-[15%]"></div>
-                  </div>
-                </div>
-                
-                <div className="metric-item group p-4 bg-[#0c0c0c] border border-[#333333] transition-all duration-200 hover:border-[#444444]">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 bg-[#2a2a2a] border border-[#444444] flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white"></div>
-                      </div>
-                      <span className="text-gray-300 text-sm font-medium">Google AI</span>
-                    </div>
-                    <span className="text-white font-mono text-lg">12</span>
-                  </div>
-                  <div className="text-xs text-gray-500 mb-2">Last mention: 1h ago</div>
-                  <div className="w-full h-1 bg-[#333333] overflow-hidden">
-                    <div className="metric-bar h-full w-[60%]"></div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Trending Queries */}
-              <div className="mt-6 pt-4 border-t border-[#333333]">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-3 h-3 border border-[#666666] flex items-center justify-center">
-                    <div className="w-1 h-1 bg-white"></div>
-                  </div>
-                  <span className="text-xs text-gray-400 uppercase tracking-wider">Trending Queries</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-xs text-gray-300 bg-[#333333] px-2 py-1 border border-[#444444]">"AI automation tools"</span>
-                  <span className="text-xs text-gray-300 bg-[#333333] px-2 py-1 border border-[#444444]">"workflow optimization"</span>
-                </div>
-              </div>
+          <div className="grid md:grid-cols-2 gap-8 md:gap-20 items-center">
+            {/* Step 2 Animated Card */}
+            <div className="md:order-1">
+              <StepTwoMonitor />
             </div>
 
             {/* Content */}
             <div className="feature-content md:order-2">
-              <div className="flex items-center gap-6 mb-8">
-                <div className="step-number w-14 h-14 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white font-bold text-xl">
+              <div className="flex items-center gap-4 sm:gap-6 mb-6 md:mb-8">
+                <div className="step-number w-10 sm:w-14 h-10 sm:h-14 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white font-bold text-lg sm:text-xl">
                   2
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Step Two</div>
-                  <h3 className="text-2xl md:text-3xl font-bold text-white leading-tight">
+                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight">
                     Monitor Your Mentions
                   </h3>
                 </div>
               </div>
               
-              <p className="text-gray-300 mb-10 text-lg leading-relaxed font-light">
+              <p className="text-gray-300 mb-6 md:mb-10 text-base sm:text-lg leading-relaxed font-light">
                 Track your brand's footprint across AI engines. Know exactly where you're showing up (or not) in ChatGPT, Perplexity, and Google AI.
               </p>
 
@@ -695,24 +560,24 @@ export default function LandingPage() {
       </section>
 
       {/* Step 3: Implement What Matters */}
-      <section className="w-full py-20 md:py-28 bg-[#0c0c0c] relative border-t border-[#1a1a1a]">
+      <section className="w-full py-16 md:py-28 bg-[#0c0c0c] relative border-t border-[#1a1a1a]">
         <div className="w-[92%] md:w-[80%] max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-16 md:gap-20 items-center">
+          <div className="grid md:grid-cols-2 gap-8 md:gap-20 items-center">
             {/* Content */}
             <div className="feature-content">
-              <div className="flex items-center gap-6 mb-8">
-                <div className="step-number w-14 h-14 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white font-bold text-xl">
+              <div className="flex items-center gap-4 sm:gap-6 mb-6 md:mb-8">
+                <div className="step-number w-10 sm:w-14 h-10 sm:h-14 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white font-bold text-lg sm:text-xl">
                   3
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Step Three</div>
-                  <h3 className="text-2xl md:text-3xl font-bold text-white leading-tight">
+                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight">
                     Implement What Matters
                   </h3>
                 </div>
               </div>
               
-              <p className="text-gray-300 mb-10 text-lg leading-relaxed font-light">
+              <p className="text-gray-300 mb-6 md:mb-10 text-base sm:text-lg leading-relaxed font-light">
                 Get actionable fixes—not fluff. We push schema, content tweaks, and link-building suggestions to help LLMs actually quote you.
               </p>
 
@@ -742,103 +607,35 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Enhanced Dashboard Mockup */}
-            <div className="dashboard-mockup bg-[#1a1a1a] border border-[#2f2f2f] p-6 relative overflow-hidden">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#333333]">
-                <div>
-                  <h4 className="text-white font-semibold text-base">Implementation Queue</h4>
-                  <div className="text-xs text-gray-500 mt-1">Ready to deploy</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-[#333333] border border-[#444444] flex items-center justify-center text-xs text-white font-mono">3</div>
-                  <span className="text-xs text-gray-400">pending</span>
-                </div>
-              </div>
-              
-              {/* Implementation Items */}
-              <div className="space-y-4">
-                <div className="metric-item group p-4 bg-[#0c0c0c] border border-[#333333] transition-all duration-200 hover:border-[#444444]">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <span className="text-gray-300 text-sm font-medium">Add FAQ Schema</span>
-                      <div className="text-xs text-gray-500 mt-1">Structured data enhancement</div>
-                    </div>
-                    <button className="deploy-button text-xs text-white bg-[#2a2a2a] px-3 py-1.5 border border-[#444444]">
-                      Deploy
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">Impact:</span>
-                    <span className="text-xs text-white font-mono">+23% citation chance</span>
-                  </div>
-                </div>
-                
-                <div className="metric-item group p-4 bg-[#0c0c0c] border border-[#333333] transition-all duration-200 hover:border-[#444444]">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <span className="text-gray-300 text-sm font-medium">Update llms.txt</span>
-                      <div className="text-xs text-gray-500 mt-1">AI crawler configuration</div>
-                    </div>
-                    <button className="deploy-button text-xs text-white bg-[#2a2a2a] px-3 py-1.5 border border-[#444444]">
-                      Deploy
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">Impact:</span>
-                    <span className="text-xs text-white font-mono">+15% visibility</span>
-                  </div>
-                </div>
-                
-                <div className="metric-item group p-4 bg-[#0c0c0c] border border-[#333333] transition-all duration-200 hover:border-[#444444]">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <span className="text-gray-300 text-sm font-medium">Content Rewrite</span>
-                      <div className="text-xs text-gray-500 mt-1">LLM optimization pass</div>
-                    </div>
-                    <button className="deploy-button text-xs text-white bg-[#2a2a2a] px-3 py-1.5 border border-[#444444]">
-                      Deploy
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">Impact:</span>
-                    <span className="text-xs text-white font-mono">+41% readability</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Overall Impact */}
-              <div className="mt-6 pt-4 border-t border-[#333333]">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-3 h-3 border border-[#666666] flex items-center justify-center">
-                    <div className="w-1 h-1 bg-white"></div>
-                  </div>
-                  <span className="text-xs text-gray-400 uppercase tracking-wider">Estimated Impact</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-300">Overall visibility improvement</span>
-                  <span className="text-lg text-white font-mono">+79%</span>
-                </div>
-                <div className="w-full h-1 bg-[#333333] mt-2 overflow-hidden">
-                  <div className="metric-bar h-full w-[79%]"></div>
-                </div>
-              </div>
-            </div>
+            {/* Step 3 Animated Card */}
+            <StepThreeImplement />
           </div>
         </div>
       </section>
 
       {/* Origami Case Study */}
-      <section className="w-full py-20 md:py-28 bg-[#0c0c0c] relative border-t border-[#1a1a1a] overflow-hidden">
+      <section className="w-full py-16 md:py-28 bg-[#0c0c0c] relative border-t border-[#1a1a1a]">
+        {/* Subtle background pattern */}
+        <div className="absolute inset-0 opacity-[0.02]" style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
+          backgroundSize: '24px 24px'
+        }}></div>
+        
         <div className="w-[92%] md:w-[80%] max-w-7xl mx-auto relative z-10">
-          <div className="max-w-4xl">
+          
+          {/* Case Study Card - Darker */}
+          <div className="relative bg-[#0c0c0c] border border-[#1a1a1a] p-6 sm:p-8 md:p-12 overflow-hidden group hover:border-[#333333] transition-all duration-300 shadow-xl">
+            
             {/* Case Study Label */}
-            <div className="text-xs text-gray-500 uppercase tracking-[0.2em] mb-6">
-              Case Study
+            <div className="inline-flex items-center gap-2 bg-[#0c0c0c] border border-[#2a2a2a] px-3 py-1.5 mb-6 md:mb-8">
+              <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+              <span className="text-xs text-gray-400 uppercase tracking-[0.15em] font-medium">
+                Case Study
+              </span>
             </div>
 
             {/* Main Headline */}
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-8 leading-tight">
+            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-white mb-6 md:mb-8 leading-tight max-w-4xl">
               We took{' '}
               <span className="inline-flex items-center">
                 <Image
@@ -846,45 +643,50 @@ export default function LandingPage() {
                   alt="Origami"
                   width={120}
                   height={28}
-                  className="h-6 md:h-7 lg:h-8 w-auto mx-2 translate-y-1.5"
+                  className="h-5 sm:h-7 md:h-8 lg:h-9 w-auto mx-1 sm:mx-2 translate-y-1.5"
                 />
               </span>{' '}
-              from 0 views to #1 ranked in less than 20 days.
+              from 0 mentions to ranked #1 in less than 20 days.
             </h2>
 
             {/* Description */}
-            <p className="text-lg md:text-xl text-gray-300 leading-relaxed font-light mb-10 max-w-3xl">
-              Origami launched an agent that identified structural issues, filled key content gaps, and quickly earned visibility across ChatGPT, Perplexity, and Google AI, ranking for the exact queries their customers were asking.
+            <p className="text-base sm:text-lg md:text-xl text-gray-300 leading-relaxed font-light mb-6 md:mb-8 max-w-3xl">
+              Origami launched an autonomous agent that identified structural issues, filled key content gaps, and quickly earned visibility across{' '}
+              <span className="text-white">ChatGPT, Perplexity, and Google AI</span>, ranking for the exact queries their customers were asking.
             </p>
 
             {/* CTA Button */}
-            <button className="group inline-flex items-center gap-3 text-gray-300 hover:text-white transition-colors duration-200 text-base">
-              <span className="border-b border-[#333333] group-hover:border-[#555555] transition-colors duration-200 pb-1">
-                Read the case study
-              </span>
-              <svg 
-                className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-            </button>
-          </div>
-        </div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <button className="group inline-flex items-center gap-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333333] hover:border-[#444444] px-4 sm:px-6 py-2.5 sm:py-3 transition-all duration-200 text-white text-sm sm:text-base">
+                <span>Read the full case study</span>
+                <svg 
+                  className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </button>
+            </div>
 
-        {/* Decorative Lines - Clipped */}
-        <div className="absolute top-0 right-0 w-[60%] md:w-[50%] h-full overflow-hidden">
-          <div className="absolute -top-20 -right-32 md:-right-40 w-[150%] h-[120%]">
-            <Image
-              src="/images/origami-lines.svg"
-              alt=""
-              width={1989}
-              height={1550}
-              className="w-full h-full object-cover opacity-[0.08]"
-            />
+            {/* Decorative Lines - Fixed positioning */}
+            <div className="absolute top-0 right-0 w-[45%] md:w-[40%] h-full overflow-hidden opacity-50 group-hover:opacity-70 transition-opacity duration-300">
+              <div className="absolute -top-6 -right-8 md:-right-18 w-[100%] h-[110%]">
+                <Image
+                  src="/images/origami-lines.svg"
+                  alt=""
+                  width={1989}
+                  height={1550}
+                  className="w-full h-full object-cover opacity-40"
+                />
+              </div>
+            </div>
+
+            {/* Subtle gradient overlay for depth */}
+            <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-[#0a0a0a]/30 pointer-events-none"></div>
           </div>
+          
         </div>
       </section>
 
