@@ -56,7 +56,7 @@ export function ViewsChart({ timeframe, isVisible, setIsVisible }: ViewsChartPro
     <AnimatePresence mode="wait">
       {isVisible && (
         <motion.div 
-          className="h-full w-full"
+          className="h-full w-full relative"
           initial={{ opacity: 0, y: 10, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -10, scale: 0.98 }}
@@ -68,68 +68,68 @@ export function ViewsChart({ timeframe, isVisible, setIsVisible }: ViewsChartPro
             damping: 30
           }}
         >
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={data}
-              margin={{ top: 10, right: 15, left: -16, bottom: 10 }}
-            >
-              <defs>
-                <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#fff" stopOpacity={0.12} />
-                  <stop offset="100%" stopColor="#fff" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid
-                vertical={false}
-                horizontal={true}
-                strokeDasharray="4 4"
-                stroke="#333333"
-                opacity={0.4}
-              />
-              <XAxis
-                dataKey="date"
-                axisLine={{ stroke: '#333333' }}
-                tick={{ 
-                  fill: '#666666', 
-                  fontSize: 11,
-                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
-                }}
-                tickLine={false}
-              />
-              <YAxis
-                axisLine={{ stroke: '#333333' }}
-                tick={{ 
-                  fill: '#666666', 
-                  fontSize: 11,
-                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
-                }}
-                tickLine={false}
-                tickFormatter={(value) => `${value}`}
-              />
-              <Tooltip
-                content={<CustomTooltip />}
-                cursor={{
-                  stroke: '#555',
-                  strokeWidth: 1,
-                  strokeDasharray: '4 4'
-                }}
-              />
-              <Area
-                type="linear"
-                dataKey="views"
-                stroke="#fff"
-                strokeWidth={2}
-                fill="url(#viewsGradient)"
-                dot={{ fill: '#fff', strokeWidth: 2, r: 3 }}
-                activeDot={{ 
-                  r: 4, 
-                  fill: '#fff',
-                  stroke: '#333',
-                  strokeWidth: 2
-                }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          <motion.div 
+            className="absolute inset-0"
+            initial={{ clipPath: "polygon(0 0, 0 0, 0 100%, 0 100%)" }}
+            animate={{ clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)" }}
+            transition={{ 
+              duration: 1.5, 
+              ease: [0.16, 1, 0.3, 1],
+              delay: 0.4
+            }}
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={data}
+                margin={{ top: 10, right: 15, left: -16, bottom: 10 }}
+              >
+                <defs>
+                  <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#fff" stopOpacity={0.12} />
+                    <stop offset="100%" stopColor="#fff" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid
+                  vertical={false}
+                  horizontal={true}
+                  strokeDasharray="4 4"
+                  stroke="#333333"
+                  opacity={0.4}
+                />
+                <XAxis
+                  dataKey="date"
+                  axisLine={{ stroke: '#333333' }}
+                  tick={{ 
+                    fill: '#666666', 
+                    fontSize: 11,
+                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
+                  }}
+                  tickLine={false}
+                />
+                <YAxis
+                  axisLine={{ stroke: '#333333' }}
+                  tick={{ 
+                    fill: '#666666', 
+                    fontSize: 11,
+                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
+                  }}
+                  tickLine={false}
+                  tickFormatter={(value) => `${value}`}
+                />
+                <Tooltip
+                  content={<CustomTooltip />}
+                  cursor={false}
+                />
+                <Area
+                  type="linear"
+                  dataKey="views"
+                  stroke="#fff"
+                  strokeWidth={2}
+                  fill="url(#viewsGradient)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>

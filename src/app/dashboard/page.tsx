@@ -11,6 +11,35 @@ export default function Dashboard() {
   const { user, supabase, loading } = useAuth()
   const shouldReduceMotion = useReducedMotion()
 
+  const containerVariants = shouldReduceMotion ? {
+    hidden: { opacity: 1 },
+    visible: { opacity: 1 }
+  } : {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15,
+        delayChildren: 0.1
+      }
+    }
+  }
+
+  const cardVariants = shouldReduceMotion ? {
+    hidden: { opacity: 1, y: 0 },
+    visible: { opacity: 1, y: 0 }
+  } : {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.4,
+        ease: [0.16, 1, 0.3, 1]
+      }
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex h-[calc(100vh-64px)] items-center justify-center bg-[#0c0c0c]">
@@ -23,25 +52,34 @@ export default function Dashboard() {
     <div className="h-full bg-[#0c0c0c] overflow-hidden">
       <motion.main 
         className="h-full flex flex-col p-3"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
       >
         {/* Top Row - 35% of available height */}
-        <div className="h-[35%] mb-16">
+        <motion.div 
+          className="h-[35%] mb-16"
+          variants={cardVariants}
+        >
           <div className="h-[40vh]">
             <WelcomeCard />
           </div>
-        </div>
+        </motion.div>
 
         {/* Bottom Row - 50% of available height */}
         <div className="h-[50%] grid xl:grid-cols-2 grid-cols-1 gap-12">
-          <div className="h-[50vh]">
+          <motion.div 
+            className="h-[50vh]"
+            variants={cardVariants}
+          >
             <PageViewCard />
-          </div>
-          <div className="h-[50vh]">
+          </motion.div>
+          <motion.div 
+            className="h-[50vh]"
+            variants={cardVariants}
+          >
             <AttributionBySourceCard />
-          </div>
+          </motion.div>
         </div>
       </motion.main>
     </div>

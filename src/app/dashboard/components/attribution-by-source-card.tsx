@@ -68,6 +68,21 @@ export function AttributionBySourceCard() {
     })
   }
 
+  const progressVariants = shouldReduceMotion ? {
+    hidden: { width: "var(--target-width)" },
+    visible: { width: "var(--target-width)" }
+  } : {
+    hidden: { width: "0%" },
+    visible: { 
+      width: "var(--target-width)",
+      transition: {
+        duration: 1.2,
+        ease: [0.16, 1, 0.3, 1],
+        delay: 0.5
+      }
+    }
+  }
+
   return (
     <Card className="h-full flex flex-col">
       <CardContent className="p-6 h-full flex flex-col">
@@ -119,15 +134,26 @@ export function AttributionBySourceCard() {
                       </div>
                     </div>
                   </div>
-                  <div className="text-white font-semibold">{source.percentage}%</div>
+                  <motion.div 
+                    className="text-white font-semibold"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: index * 0.1 + 0.2, duration: 0.3 }}
+                  >
+                    {source.percentage}%
+                  </motion.div>
                 </div>
                 <div className="w-full h-1 bg-[#1a1a1a] rounded-full overflow-hidden">
-                  <div 
-                    className="h-full rounded-full transition-all duration-1000 ease-out"
+                  <motion.div 
+                    className="h-full rounded-full"
                     style={{ 
-                      width: `${source.percentage}%`,
+                      "--target-width": `${source.percentage}%`,
                       backgroundColor: source.color
-                    }}
+                    } as any}
+                    variants={progressVariants}
+                    initial="hidden"
+                    animate="visible"
+                    custom={index}
                   />
                 </div>
               </motion.div>
@@ -138,9 +164,14 @@ export function AttributionBySourceCard() {
           <div className="pt-4 border-t border-[#2a2a2a] mt-4 flex-shrink-0">
             <div className="flex items-center justify-between">
               <span className="text-[#666] text-sm font-medium">Total Visits</span>
-              <span className="text-white font-semibold">
+              <motion.span 
+                className="text-white font-semibold"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.5, duration: 0.3 }}
+              >
                 {attributionData.reduce((sum, source) => sum + source.visits, 0).toLocaleString()}
-              </span>
+              </motion.span>
             </div>
           </div>
         </motion.div>
