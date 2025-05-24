@@ -23,7 +23,7 @@ export default function LoginPage() {
         <div className="absolute inset-0 pattern-grid opacity-10"></div>
         <div className="absolute inset-0 flex items-center justify-center">
           <Image 
-            src="/library.png" 
+            src="/images/library.png" 
             fill
             alt="Library" 
             className="object-cover filter grayscale brightness-50"

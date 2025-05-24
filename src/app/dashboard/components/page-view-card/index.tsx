@@ -29,6 +29,8 @@ export function PageViewCard() {
             title="Page Views"
             timeframe={timeframe} 
             onTimeframeChange={handleTimeframeChange}
+            titleColor="text-white"
+            selectorColor="text-[#A7A7A7]"
           />
         </div>
       </CardHeader>

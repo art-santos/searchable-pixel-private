@@ -72,7 +72,7 @@ export function SplitSidebar() {
         {/* Logo Square */}
         <SidebarHeader className="box-border h-16 w-16 min-h-[64px] min-w-[64px] border-r border-b border-[#222222] bg-[#0c0c0c] flex items-center justify-center">
           <Image
-            src="/logo.svg"
+            src="/images/split-icon-white.svg"
             alt="Split Logo"
             width={32}
             height={32}

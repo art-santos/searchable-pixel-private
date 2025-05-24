@@ -83,7 +83,13 @@ export function CompetitorBenchmarkingCard() {
     >
       <CardHeader className="pb-2">
         <div className="flex flex-col gap-2">
-          <TimeframeSelector title="Competitor Benchmarking" timeframe={timeframe} onTimeframeChange={setTimeframe} />
+          <TimeframeSelector 
+            title="Competitor Benchmarking" 
+            timeframe={timeframe} 
+            onTimeframeChange={setTimeframe}
+            titleColor="text-white"
+            selectorColor="text-[#A7A7A7]"
+          />
         </div>
         <div className="mt-6 mb-6">
           <DropdownMenu>

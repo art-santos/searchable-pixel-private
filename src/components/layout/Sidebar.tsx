@@ -48,7 +48,7 @@ export function Sidebar() {
     <aside className="fixed inset-y-0 left-0 w-64 border-r border-[#222222] bg-[#0c0c0c] z-10">
       <div className="flex h-14 items-center border-b border-[#222222] px-4">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <Image src="/split-icon-white.svg" width={24} height={24} alt="Split Logo" />
+          <Image src="/images/split-icon-white.svg" width={24} height={24} alt="Split Logo" />
           <span className="text-lg font-medium text-white">Split</span>
         </Link>
       </div>

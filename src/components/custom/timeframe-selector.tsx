@@ -16,12 +16,20 @@ interface TimeframeSelectorProps {
   timeframe: TimeframeOption
   onTimeframeChange: (timeframe: TimeframeOption) => void
   title?: string
+  titleColor?: string
+  selectorColor?: string
 }
 
-export function TimeframeSelector({ timeframe, onTimeframeChange, title = "Page Views" }: TimeframeSelectorProps) {
+export function TimeframeSelector({ 
+  timeframe, 
+  onTimeframeChange, 
+  title = "Page Views",
+  titleColor = "text-[#A7A7A7]",
+  selectorColor = "text-white"
+}: TimeframeSelectorProps) {
   return (
     <div className="space-y-1">
-      <h3 className="text-base font-medium text-[#A7A7A7]">{title}</h3>
+      <h3 className={`text-base font-medium ${titleColor}`}>{title}</h3>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button 
@@ -29,7 +37,7 @@ export function TimeframeSelector({ timeframe, onTimeframeChange, title = "Page 
             className="w-fit bg-transparent hover:bg-transparent p-0 rounded-none"
           >
             <div className="flex items-center gap-2">
-              <span className="font-geist-semi text-white">{timeframe}</span>
+              <span className={`font-geist-semi ${selectorColor}`}>{timeframe}</span>
               <ChevronDown className="h-4 w-4 text-[#666666]" />
             </div>
           </Button>
