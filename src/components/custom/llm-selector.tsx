@@ -19,7 +19,7 @@ export function LLMSelector() {
           >
             <div className="flex items-center gap-2">
               <Image 
-                src="/perplexity.svg" 
+                src="/images/perplexity.svg" 
                 alt="Perplexity" 
                 width={16} 
                 height={16} 
@@ -38,7 +38,7 @@ export function LLMSelector() {
           <DropdownMenuItem className="hover:bg-[#222222] cursor-not-allowed opacity-50 rounded-none">
             <div className="flex items-center gap-2">
               <Image 
-                src="/chatgpt.svg" 
+                src="/images/chatgpt.svg" 
                 alt="ChatGPT" 
                 width={16} 
                 height={16} 
@@ -49,7 +49,7 @@ export function LLMSelector() {
           <DropdownMenuItem className="hover:bg-[#222222] cursor-not-allowed opacity-50 rounded-none">
             <div className="flex items-center gap-2">
               <Image 
-                src="/gemini.svg" 
+                src="/images/gemini.svg" 
                 alt="Gemini" 
                 width={16} 
                 height={16} 
@@ -60,7 +60,7 @@ export function LLMSelector() {
           <DropdownMenuItem className="hover:bg-[#222222] cursor-not-allowed opacity-50 rounded-none">
             <div className="flex items-center gap-2">
               <Image 
-                src="/claude.svg" 
+                src="/images/claude.svg" 
                 alt="Claude" 
                 width={16} 
                 height={16} 

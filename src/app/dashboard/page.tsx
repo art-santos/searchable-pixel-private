@@ -1,14 +1,15 @@
 'use client'
 
 import { useAuth } from '@/contexts/AuthContext'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageViewCard } from './components/page-view-card'
-import { AEOScorecard } from './components/aeo-scorecard/aeo-scorecard'
-import { TopicVisibilityCard } from './components/topic-visibility-card'
-import { CompetitorBenchmarkingCard } from './components/competitor-benchmarking-card'
+import { WelcomeCard } from './components/welcome-card'
+import { AttributionBySourceCard } from './components/attribution-by-source-card'
+import { CrawlerActivityCard } from './components/crawler-activity-card'
+import { motion, useReducedMotion } from 'framer-motion'
 
 export default function Dashboard() {
   const { user, supabase, loading } = useAuth()
+  const shouldReduceMotion = useReducedMotion()
 
   if (loading) {
     return (
@@ -19,33 +20,31 @@ export default function Dashboard() {
   }
 
   return (
-    <main className="flex flex-1 flex-col gap-6 p-4 h-[calc(100vh-64px)]">
-      <div className="grid xl:grid-cols-2 grid-cols-1 gap-3 flex-[1.2]">
-        <div className="pl-4 pr-4 pt-4 h-full"><PageViewCard /></div>
-
-        {/* AEO Scorecard */}
-        <div className="pl-4 pr-4 pt-4 h-full">
-          <Card className="h-full">
-            <CardContent className="p-6">
-              <AEOScorecard />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Bottom Row - 65/35 split */}
-      <div className="grid xl:grid-cols-12 grid-cols-1 gap-3 xl:gap-4 flex-1">
-        {/* Topic Visibility - 65% */}
-        <div className="xl:col-span-8 h-full min-h-[520px] pl-4 pr-4 pb-4">
-          <TopicVisibilityCard />
+    <div className="h-full bg-[#0c0c0c] overflow-hidden">
+      <motion.main 
+        className="h-full flex flex-col p-3"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+      >
+        {/* Top Row - 35% of available height */}
+        <div className="h-[35%] mb-16">
+          <div className="h-[40vh]">
+            <WelcomeCard />
+          </div>
         </div>
 
-        {/* Competitive Benchmarking - 35% */}
-        <div className="xl:col-span-4 h-full min-h-[520px] pl-4 pr-4 pb-4">
-          <CompetitorBenchmarkingCard />
+        {/* Bottom Row - 50% of available height */}
+        <div className="h-[50%] grid xl:grid-cols-2 grid-cols-1 gap-12">
+          <div className="h-[50vh]">
+            <PageViewCard />
+          </div>
+          <div className="h-[50vh]">
+            <AttributionBySourceCard />
+          </div>
         </div>
-      </div>
-    </main>
+      </motion.main>
+    </div>
   )
 }
  

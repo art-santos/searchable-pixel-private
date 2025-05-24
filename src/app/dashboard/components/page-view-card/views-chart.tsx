@@ -57,18 +57,21 @@ export function ViewsChart({ timeframe, isVisible, setIsVisible }: ViewsChartPro
       {isVisible && (
         <motion.div 
           className="h-full w-full"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: 10, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -10, scale: 0.98 }}
           transition={{ 
-            duration: 0.2,
+            duration: 0.3,
             ease: [0.16, 1, 0.3, 1], // Custom ease-out curve
+            type: "spring",
+            stiffness: 300,
+            damping: 30
           }}
         >
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={data}
-              margin={{ top: 20, right: 30, left: -16, bottom: 20 }}
+              margin={{ top: 10, right: 15, left: -16, bottom: 10 }}
             >
               <defs>
                 <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
@@ -105,7 +108,11 @@ export function ViewsChart({ timeframe, isVisible, setIsVisible }: ViewsChartPro
               />
               <Tooltip
                 content={<CustomTooltip />}
-                cursor={false}
+                cursor={{
+                  stroke: '#555',
+                  strokeWidth: 1,
+                  strokeDasharray: '4 4'
+                }}
               />
               <Area
                 type="linear"
@@ -113,6 +120,13 @@ export function ViewsChart({ timeframe, isVisible, setIsVisible }: ViewsChartPro
                 stroke="#fff"
                 strokeWidth={2}
                 fill="url(#viewsGradient)"
+                dot={{ fill: '#fff', strokeWidth: 2, r: 3 }}
+                activeDot={{ 
+                  r: 4, 
+                  fill: '#fff',
+                  stroke: '#333',
+                  strokeWidth: 2
+                }}
               />
             </AreaChart>
           </ResponsiveContainer>

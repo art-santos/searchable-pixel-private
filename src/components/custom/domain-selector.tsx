@@ -15,14 +15,14 @@ export function DomainSelector() {
         <DropdownMenuTrigger asChild>
           <Button 
             variant="outline" 
-            className="w-fit border border-[#333333] bg-transparent hover:bg-[#1a1a1a] px-4 rounded-none"
+            className="w-fit border border-[#333333] bg-transparent hover:bg-[#1a1a1a] px-2 rounded-none"
           >
             <div className="flex items-center gap-2">
               <Image 
-                src="/origami-favicon.svg" 
+                src="/images/origami-icon.png" 
                 alt="Origami Agents" 
-                width={16} 
-                height={16} 
+                width={20} 
+                height={20} 
               />
               <span className="font-geist-semi text-white">origamiagents.com</span>
               <ChevronDown className="h-4 w-4 text-[#666666]" />

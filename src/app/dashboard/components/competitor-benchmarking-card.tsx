@@ -91,7 +91,7 @@ export function CompetitorBenchmarkingCard() {
             selectorColor="text-[#A7A7A7]"
           />
         </div>
-        <div className="mt-6 mb-6">
+        <div className="mt-3 mb-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -116,8 +116,8 @@ export function CompetitorBenchmarkingCard() {
           </DropdownMenu>
         </div>
       </CardHeader>
-      <CardContent className="pt-2 pb-0">
-        <div className="flex flex-col gap-2">
+      <CardContent className="pt-0 pb-2">
+        <div className="flex flex-col gap-1">
           {competitors.map((comp, idx) => (
             <motion.div
               key={comp.url}
@@ -126,15 +126,15 @@ export function CompetitorBenchmarkingCard() {
               initial="hidden"
               animate="visible"
             >
-              <div className="flex items-center justify-between py-2.5 px-4 border-b border-[#222222] last:border-b-0">
+              <div className="flex items-center justify-between py-2 px-4 border-b border-[#222222] last:border-b-0">
                 <div className="flex items-center gap-4">
                   <span className="text-[#666] font-mono">{idx + 1}</span>
-                  <div className="w-9 h-9 bg-[#181818] border border-[#222] overflow-hidden">
-                    <Image src={`/images/${idx + 1}.png`} alt={`Rank ${idx + 1}`} width={36} height={36} className="w-full h-full object-cover" />
+                  <div className="w-8 h-8 bg-[#181818] border border-[#222] overflow-hidden">
+                    <Image src={`/images/${idx + 1}.png`} alt={`Rank ${idx + 1}`} width={32} height={32} className="w-full h-full object-cover" />
                   </div>
-                  <span className="text-white font-medium">{comp.url}</span>
+                  <span className="text-white font-medium text-sm">{comp.url}</span>
                 </div>
-                <span className="text-white font-mono">{comp.score.toFixed(1)}%</span>
+                <span className="text-white font-mono text-sm">{comp.score.toFixed(1)}%</span>
               </div>
             </motion.div>
           ))}

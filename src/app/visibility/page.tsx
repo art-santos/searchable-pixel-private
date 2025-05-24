@@ -126,181 +126,183 @@ export default function VisibilityPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] bg-[#0c0c0c] p-6 flex flex-col">
-      {/* Tab Navigation */}
-      <div className="flex items-center gap-2 mb-6">
-        {tabs.map((tab) => {
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`
-                px-4 py-2 rounded-md text-sm font-mono tracking-tight transition-colors border
-                ${activeTab === tab.id 
-                  ? 'bg-[#222] text-white border-[#444]' 
-                  : 'text-[#666] hover:text-white hover:bg-[#1a1a1a] border-[#333]'
-                }
-              `}
-            >
-              {tab.label}
-            </button>
-          )
-        })}
-      </div>
+    <div className="h-full bg-[#0c0c0c] overflow-y-auto">
+      <main className="h-full flex flex-col p-6">
+        {/* Tab Navigation */}
+        <div className="flex items-center gap-2 mb-6">
+          {tabs.map((tab) => {
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  px-4 py-2 rounded-md text-sm font-mono tracking-tight transition-colors border
+                  ${activeTab === tab.id 
+                    ? 'bg-[#222] text-white border-[#444]' 
+                    : 'text-[#666] hover:text-white hover:bg-[#1a1a1a] border-[#333]'
+                  }
+                `}
+              >
+                {tab.label}
+              </button>
+            )
+          })}
+        </div>
 
-      {/* Main Chart Area */}
-      <div className="flex-1 grid grid-cols-12 gap-8">
-        {/* Chart Section */}
-        <div className="col-span-8 flex flex-col">
-          {/* Score Header */}
-          <div className="mb-6">
-            <TimeframeSelector 
-              title="Visibility Score"
-              timeframe={timeframe} 
-              onTimeframeChange={setTimeframe}
-              titleColor="text-white"
-              selectorColor="text-[#A7A7A7]"
-            />
-            <div className="text-5xl font-bold text-white transition-all duration-200 mt-4">
-              {displayScore.toFixed(1)}
+        {/* Main Chart Area */}
+        <div className="flex-1 grid grid-cols-12 gap-8 min-h-0">
+          {/* Chart Section */}
+          <div className="col-span-8 flex flex-col min-h-0">
+            {/* Score Header */}
+            <div className="mb-6">
+              <TimeframeSelector 
+                title="Visibility Score"
+                timeframe={timeframe} 
+                onTimeframeChange={setTimeframe}
+                titleColor="text-white"
+                selectorColor="text-[#A7A7A7]"
+              />
+              <div className="text-5xl font-bold text-white transition-all duration-200 mt-4">
+                {displayScore.toFixed(1)}
+              </div>
+            </div>
+
+            {/* Chart Container */}
+            <div className="flex-1 rounded-lg p-0 min-h-0">
+              <AnimatePresence mode="wait">
+                {isChartVisible && (
+                  <motion.div 
+                    className="h-full w-full"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ 
+                      duration: 0.2,
+                      ease: [0.16, 1, 0.3, 1], // Custom ease-out curve
+                    }}
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart
+                        data={chartData}
+                        margin={{ top: 20, right: 30, left: -40, bottom: 20 }}
+                        onMouseMove={handleMouseMove}
+                        onMouseLeave={handleMouseLeave}
+                      >
+                        <defs>
+                          <linearGradient id="visibilityGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#fff" stopOpacity={0.15} />
+                            <stop offset="100%" stopColor="#fff" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid
+                          vertical={false}
+                          horizontal={true}
+                          strokeDasharray="4 4"
+                          stroke="#333333"
+                          opacity={0.4}
+                        />
+                        <XAxis
+                          dataKey="date"
+                          axisLine={{ stroke: '#333333' }}
+                          tick={{ 
+                            fill: '#666666', 
+                            fontSize: 11,
+                            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
+                          }}
+                          tickLine={false}
+                          interval={2}
+                        />
+                        <YAxis
+                          domain={[0, 100]}
+                          ticks={[0, 20, 40, 60, 80, 100]}
+                          axisLine={{ stroke: '#333333' }}
+                          tick={{ 
+                            fill: '#666666', 
+                            fontSize: 11,
+                            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
+                          }}
+                          tickLine={false}
+                          tickFormatter={(value) => `${value}`}
+                        />
+                        <Tooltip
+                          content={<CustomTooltip />}
+                          cursor={false}
+                        />
+                        <Area
+                          type="linear"
+                          dataKey="score"
+                          stroke="#fff"
+                          strokeWidth={2}
+                          fill="url(#visibilityGradient)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
 
-          {/* Chart Container */}
-          <div className="flex-1 rounded-lg p-0">
-            <AnimatePresence mode="wait">
-              {isChartVisible && (
-                <motion.div 
-                  className="h-full w-full"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ 
-                    duration: 0.2,
-                    ease: [0.16, 1, 0.3, 1], // Custom ease-out curve
-                  }}
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
-                      data={chartData}
-                      margin={{ top: 20, right: 30, left: -40, bottom: 20 }}
-                      onMouseMove={handleMouseMove}
-                      onMouseLeave={handleMouseLeave}
-                    >
-                      <defs>
-                        <linearGradient id="visibilityGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#fff" stopOpacity={0.15} />
-                          <stop offset="100%" stopColor="#fff" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid
-                        vertical={false}
-                        horizontal={true}
-                        strokeDasharray="4 4"
-                        stroke="#333333"
-                        opacity={0.4}
-                      />
-                      <XAxis
-                        dataKey="date"
-                        axisLine={{ stroke: '#333333' }}
-                        tick={{ 
-                          fill: '#666666', 
-                          fontSize: 11,
-                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
-                        }}
-                        tickLine={false}
-                        interval={2}
-                      />
-                      <YAxis
-                        domain={[0, 100]}
-                        ticks={[0, 20, 40, 60, 80, 100]}
-                        axisLine={{ stroke: '#333333' }}
-                        tick={{ 
-                          fill: '#666666', 
-                          fontSize: 11,
-                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
-                        }}
-                        tickLine={false}
-                        tickFormatter={(value) => `${value}`}
-                      />
-                      <Tooltip
-                        content={<CustomTooltip />}
-                        cursor={false}
-                      />
-                      <Area
-                        type="linear"
-                        dataKey="score"
-                        stroke="#fff"
-                        strokeWidth={2}
-                        fill="url(#visibilityGradient)"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* Right Sidebar */}
-        <div className="col-span-4 pl-8 space-y-8">
-          {/* Citation Metrics */}
-          <div>
-            <div className="text-[#666] text-sm mb-4 font-mono tracking-tight">Citation Breakdown</div>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <span className="text-white text-sm font-mono tracking-tight">Direct Points</span>
-                </div>
-                <span className="text-white font-semibold font-mono">{directPoints}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                  <span className="text-white text-sm font-mono tracking-tight">Indirect Points</span>
-                </div>
-                <span className="text-white font-semibold font-mono">{indirectPoints}</span>
-              </div>
-              <div className="pt-3 border-t border-[#222]">
+          {/* Right Sidebar */}
+          <div className="col-span-4 pl-8 space-y-8">
+            {/* Citation Metrics */}
+            <div>
+              <div className="text-[#666] text-sm mb-4 font-mono tracking-tight">Citation Breakdown</div>
+              <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-[#666] text-sm font-mono tracking-tight">Total Citations</span>
-                  <span className="text-white font-semibold font-mono">{totalCitations}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <span className="text-white text-sm font-mono tracking-tight">Direct Points</span>
+                  </div>
+                  <span className="text-white font-semibold font-mono">{directPoints}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                    <span className="text-white text-sm font-mono tracking-tight">Indirect Points</span>
+                  </div>
+                  <span className="text-white font-semibold font-mono">{indirectPoints}</span>
+                </div>
+                <div className="pt-3 border-t border-[#222]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#666] text-sm font-mono tracking-tight">Total Citations</span>
+                    <span className="text-white font-semibold font-mono">{totalCitations}</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Quick Actions */}
-          <div>
-            <div className="text-[#666] text-sm mb-4 font-mono tracking-tight">Quick Actions</div>
-            <div className="space-y-3">
-              <Button 
-                onClick={handleReroll}
-                disabled={isRerolling}
-                className="w-full bg-[#1a1a1a] hover:bg-[#222] border border-[#333] text-white justify-start font-mono tracking-tight"
-              >
-                <RefreshCwIcon className={`h-4 w-4 mr-2 ${isRerolling ? 'animate-spin' : ''}`} />
-                {isRerolling ? 'Rerolling...' : 'Reroll Score'}
-              </Button>
-              <Button 
-                onClick={() => setActiveTab('citations')}
-                className="w-full bg-[#1a1a1a] hover:bg-[#222] border border-[#333] text-white justify-start font-mono tracking-tight"
-              >
-                <TrendingUpIcon className="h-4 w-4 mr-2" />
-                View All Citations
-              </Button>
-              <Button 
-                onClick={() => setActiveTab('gaps')}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white justify-start font-mono tracking-tight"
-              >
-                <AlertTriangleIcon className="h-4 w-4 mr-2" />
-                Fill Content Gaps
-              </Button>
+            {/* Quick Actions */}
+            <div>
+              <div className="text-[#666] text-sm mb-4 font-mono tracking-tight">Quick Actions</div>
+              <div className="space-y-3">
+                <Button 
+                  onClick={handleReroll}
+                  disabled={isRerolling}
+                  className="w-full bg-[#1a1a1a] hover:bg-[#222] border border-[#333] text-white justify-start font-mono tracking-tight"
+                >
+                  <RefreshCwIcon className={`h-4 w-4 mr-2 ${isRerolling ? 'animate-spin' : ''}`} />
+                  {isRerolling ? 'Rerolling...' : 'Reroll Score'}
+                </Button>
+                <Button 
+                  onClick={() => setActiveTab('citations')}
+                  className="w-full bg-[#1a1a1a] hover:bg-[#222] border border-[#333] text-white justify-start font-mono tracking-tight"
+                >
+                  <TrendingUpIcon className="h-4 w-4 mr-2" />
+                  View All Citations
+                </Button>
+                <Button 
+                  onClick={() => setActiveTab('gaps')}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white justify-start font-mono tracking-tight"
+                >
+                  <AlertTriangleIcon className="h-4 w-4 mr-2" />
+                  Fill Content Gaps
+                </Button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   )
 } 

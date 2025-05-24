@@ -118,7 +118,7 @@ export function TopicVisibilityCard() {
           variants={barVariants}
           initial="hidden"
           animate="visible"
-          className="flex items-center gap-8 mt-8 mb-4"
+          className="flex items-center gap-8 mt-4 mb-2"
         >
           {barData.map((b, i) => (
             <div key={b.label} className="flex items-center gap-2">
@@ -132,13 +132,13 @@ export function TopicVisibilityCard() {
           variants={barVariants}
           initial="hidden"
           animate="visible"
-          className="mb-8"
+          className="mb-4"
         >
           <ProgressBar segments={barData} />
         </motion.div>
       </CardHeader>
-      <CardContent className="pt-2 pb-0">
-        <div className="flex flex-col gap-3">
+      <CardContent className="pt-0 pb-2">
+        <div className="flex flex-col gap-2">
           {topics.map((topic, idx) => (
             <motion.div
               key={topic.rank}
@@ -148,7 +148,7 @@ export function TopicVisibilityCard() {
               animate="visible"
             >
               <MetricItem
-                className="mb-1"
+                className="mb-0"
                 rank={topic.rank}
                 label={topic.label}
                 change={{ value: topic.change, positive: topic.positive }}
@@ -157,7 +157,7 @@ export function TopicVisibilityCard() {
             </motion.div>
           ))}
         </div>
-        <div className="pt-4 pl-2">
+        <div className="pt-2 pl-2">
           <a href="#" className="text-[#666] text-sm font-mono tracking-tight hover:text-white transition-colors">View more...</a>
         </div>
       </CardContent>
