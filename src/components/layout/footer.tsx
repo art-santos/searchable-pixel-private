@@ -91,36 +91,17 @@ export default function Footer() {
         </div>
 
         {/* Navigation Links - 2 columns on mobile, responsive grid for larger screens */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8 lg:gap-12">
-
-          {/* Product */}
-          <div>
-            <h4 className="text-white font-semibold mb-3 md:mb-4 text-sm">Product</h4>
-            <nav className="space-y-2 md:space-y-3">
-              <Link href="/integrations" className="footer-link block text-gray-400 hover:text-white text-xs sm:text-sm">
-                Integrations
-              </Link>
-              <Link href="/api" className="footer-link block text-gray-400 hover:text-white text-xs sm:text-sm">
-                API
-              </Link>
-            </nav>
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 lg:gap-12">
 
           {/* Company */}
           <div>
             <h4 className="text-white font-semibold mb-3 md:mb-4 text-sm">Company</h4>
             <nav className="space-y-2 md:space-y-3">
-              <Link href="/about" className="footer-link block text-gray-400 hover:text-white text-xs sm:text-sm">
-                About
-              </Link>
               <Link href="/customers" className="footer-link block text-gray-400 hover:text-white text-xs sm:text-sm">
                 Customers
               </Link>
-              <Link href="/blog" className="footer-link block text-gray-400 hover:text-white text-xs sm:text-sm">
-                Blog
-              </Link>
-              <Link href="/contact" className="footer-link block text-gray-400 hover:text-white text-xs sm:text-sm">
-                Contact
+              <Link href="/case-studies/origami" className="footer-link block text-gray-400 hover:text-white text-xs sm:text-sm">
+                Case Studies
               </Link>
             </nav>
           </div>
@@ -130,13 +111,7 @@ export default function Footer() {
             <h4 className="text-white font-semibold mb-3 md:mb-4 text-sm">Resources</h4>
             <nav className="space-y-2 md:space-y-3">
               <Link href="/resources" className="footer-link block text-gray-400 hover:text-white text-xs sm:text-sm">
-                Documentation
-              </Link>
-              <Link href="/case-studies" className="footer-link block text-gray-400 hover:text-white text-xs sm:text-sm">
-                Case Studies
-              </Link>
-              <Link href="/support" className="footer-link block text-gray-400 hover:text-white text-xs sm:text-sm">
-                Support
+                Blog & Guides
               </Link>
             </nav>
           </div>
@@ -150,9 +125,6 @@ export default function Footer() {
               </Link>
               <Link href="/terms" className="footer-link block text-gray-400 hover:text-white text-xs sm:text-sm">
                 Terms of Service
-              </Link>
-              <Link href="/security" className="footer-link block text-gray-400 hover:text-white text-xs sm:text-sm">
-                Security
               </Link>
             </nav>
           </div>

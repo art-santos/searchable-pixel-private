@@ -3,7 +3,6 @@
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import { SplitTopbar } from '@/components/layout/split-topbar'
 
 export default function AuthenticatedLayout({
   children,
@@ -34,11 +33,8 @@ export default function AuthenticatedLayout({
   }
   
   return (
-    <div className="min-h-screen bg-[#0c0c0c] flex">
-      <div className="flex-1 flex flex-col">
-        <SplitTopbar />
-        {children}
-      </div>
+    <div className="h-screen bg-[#0c0c0c] flex">
+      {children}
     </div>
   )
 } 

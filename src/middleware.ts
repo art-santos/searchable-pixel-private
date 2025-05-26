@@ -20,13 +20,6 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next();
     }
 
-    // Redirect any requests to /customers/ and its subpaths to the homepage
-    if (pathname.startsWith('/customers')) {
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = '/';
-      return NextResponse.redirect(redirectUrl);
-    }
-
     // Normalize article URLs to lowercase to prevent 404s
     if (pathname.startsWith('/article/')) {
       const originalSlug = pathname.replace('/article/', '');

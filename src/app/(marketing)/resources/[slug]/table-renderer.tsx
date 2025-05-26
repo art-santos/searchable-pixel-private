@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
+import { createRoot } from 'react-dom/client'
 import { DataTable } from '@/components/blog/data-table'
 
 interface TableRendererProps {
@@ -100,7 +101,6 @@ export function TableRenderer({ htmlContent }: TableRendererProps) {
       
       try {
         // Use React to render the component
-        const { createRoot } = require('react-dom/client')
         const root = createRoot(tableContainer)
         root.render(
           <DataTable

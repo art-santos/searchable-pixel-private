@@ -1,6 +1,7 @@
 'use client'
 
 import { SplitSidebar } from '@/components/layout/split-sidebar'
+import { SplitTopbar } from '@/components/layout/split-topbar'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
@@ -13,8 +14,11 @@ export default function SettingsLayout({
     <AuthenticatedLayout>
       <SidebarProvider>
         <SplitSidebar />
-        <SidebarInset className="bg-[#0c0c0c]">
-          {children}
+        <SidebarInset className="flex flex-col h-screen bg-[#0c0c0c]">
+          <SplitTopbar />
+          <div className="flex-1 overflow-hidden">
+            {children}
+          </div>
         </SidebarInset>
       </SidebarProvider>
     </AuthenticatedLayout>

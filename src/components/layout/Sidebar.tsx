@@ -28,11 +28,6 @@ export function Sidebar() {
       icon: <FileText className="h-5 w-5" /> 
     },
     { 
-      name: 'Site Audit', 
-      href: '/site-audit', 
-      icon: <Search className="h-5 w-5" /> 
-    },
-    { 
       name: 'Agent Activity', 
       href: '/agent-activity', 
       icon: <Activity className="h-5 w-5" /> 

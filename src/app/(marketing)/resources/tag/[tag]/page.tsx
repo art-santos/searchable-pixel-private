@@ -7,9 +7,10 @@ import { LPTopBar } from '@/components/layout/lp-topbar'
 import { notFound } from 'next/navigation'
 
 // Generate metadata for each tag page
-export async function generateMetadata({ params }: { params: { tag: string } }): Promise<Metadata> {
-  const tag = decodeURIComponent(params.tag)
-  const formattedTag = tag.charAt(0).toUpperCase() + tag.slice(1)
+export async function generateMetadata({ params }: { params: Promise<{ tag: string }> }): Promise<Metadata> {
+  const { tag } = await params
+  const decodedTag = decodeURIComponent(tag)
+  const formattedTag = decodedTag.charAt(0).toUpperCase() + decodedTag.slice(1)
   
   return {
     title: `${formattedTag} Resources | Split`,
@@ -17,14 +18,15 @@ export async function generateMetadata({ params }: { params: { tag: string } }):
     openGraph: {
       title: `${formattedTag} Resources | Split`,
       description: `Explore our resources and blog posts about ${formattedTag} and learn how Split can help optimize your content.`,
-      url: `/resources/tag/${params.tag}`,
+      url: `/resources/tag/${tag}`,
       type: 'website',
     },
   }
 }
 
-export default async function TagPage({ params }: { params: { tag: string } }) {
-  const tagSlug = decodeURIComponent(params.tag).toLowerCase()
+export default async function TagPage({ params }: { params: Promise<{ tag: string }> }) {
+  const { tag } = await params
+  const tagSlug = decodeURIComponent(tag).toLowerCase()
   const allPosts = await getBlogPosts()
   const allTags = getAllTags(allPosts)
   

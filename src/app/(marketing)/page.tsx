@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Schema } from '@/components/Schema'
 import CTASection from '@/components/sections/cta-section'
 import { StepOneAudit, StepTwoMonitor, StepThreeImplement } from '@/components/sections/step-cards'
@@ -106,20 +107,6 @@ export default function LandingPage() {
           opacity: 0;
         }
         
-        @keyframes logoScroll {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(-50%);
-          }
-        }
-        
-        .logo-carousel {
-          animation: logoScroll 40s linear infinite;
-          width: fit-content;
-        }
-        
         @keyframes fadeInUp {
           0% {
             opacity: 0;
@@ -150,19 +137,6 @@ export default function LandingPage() {
             box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
           }
         }
-        
-        .feature-content {
-          animation: fadeInUp 600ms ease-out forwards;
-          opacity: 0;
-        }
-        
-        .feature-content.visible {
-          opacity: 1;
-        }
-        
-        .stagger-1 { animation-delay: 100ms; }
-        .stagger-2 { animation-delay: 200ms; }
-        .stagger-3 { animation-delay: 300ms; }
         
         .dashboard-mockup {
           transition: transform 200ms ease-out, box-shadow 200ms ease-out;
@@ -222,14 +196,24 @@ export default function LandingPage() {
           opacity: 1;
         }
         
+        .feature-content {
+          animation: fadeInUp 600ms ease-out forwards;
+          opacity: 0;
+        }
+        
+        .feature-content.visible {
+          opacity: 1;
+        }
+        
+        .stagger-1 { animation-delay: 100ms; }
+        .stagger-2 { animation-delay: 200ms; }
+        .stagger-3 { animation-delay: 300ms; }
+        
         @media (prefers-reduced-motion: reduce) {
           .dashboard-fall-in {
             animation: none;
             opacity: 1;
             transform: none;
-          }
-          .logo-carousel {
-            animation: none;
           }
           .feature-content,
           .dashboard-mockup,
@@ -249,7 +233,7 @@ export default function LandingPage() {
       
       {/* Hero Section with Gradient Transition */}
       <section 
-        className="min-h-[70vh] md:min-h-[90vh] w-full relative flex items-start md:items-center justify-center pt-40 md:pt-56 lg:pt-72"
+        className="min-h-[70vh] md:min-h-[90vh] w-full relative flex items-start md:items-center justify-center pt-48 md:pt-64 lg:pt-80"
         style={{
           backgroundImage: 'url(/images/split-bg.png)',
           backgroundSize: 'cover',
@@ -359,51 +343,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Logo Carousel */}
-      <section className="w-full pt-16 pb-12 bg-[#0c0c0c] relative group cursor-pointer">
-        {/* Hover overlay with blur and button - covers entire section */}
-        <div className="absolute inset-0 bg-[#0c0c0c]/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center z-20">
-          <button className="bg-[#1a1a1a] border-2 border-[#444444] text-white px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-[#222222] hover:border-[#555555] transition-all duration-200 text-sm font-medium">
-            View our customers
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-              <polyline points="12 5 19 12 12 19"></polyline>
-            </svg>
-          </button>
-        </div>
-        
-        <div className="w-[92%] md:w-[80%] max-w-7xl mx-auto relative z-10">
-          {/* Header */}
-          <h2 className="text-center text-xs md:text-sm text-gray-600/80 mb-8 md:mb-12 font-medium tracking-tight uppercase">
-            Teams using Split to increase their LLM visibility
-          </h2>
-          
-          {/* Carousel container */}
-          <div className="relative overflow-hidden">
-            {/* Gradient overlays for blur effect */}
-            <div className="absolute left-0 top-0 w-24 md:w-32 h-full bg-gradient-to-r from-[#0c0c0c] to-transparent z-10" />
-            <div className="absolute right-0 top-0 w-24 md:w-32 h-full bg-gradient-to-l from-[#0c0c0c] to-transparent z-10" />
-            
-            {/* Scrolling container */}
-            <div className="logo-carousel flex gap-12 md:gap-16">
-              {[...Array(16)].map((_, index) => (
-                <div key={index} className="flex-shrink-0">
-                  <Image
-                    src="/images/origami-white.svg"
-                    alt="Partner Logo"
-                    width={120}
-                    height={30}
-                    className="h-6 md:h-8 w-auto opacity-70 transition-opacity duration-300"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* How It Works Header */}
-      <section className="w-full py-16 md:py-32 bg-[#0c0c0c] relative overflow-hidden">
+      <section data-section="how-it-works" className="w-full py-16 md:py-32 bg-[#0c0c0c] relative overflow-hidden scroll-mt-20">
         {/* Background Grid Pattern */}
         <div className="absolute inset-0 opacity-[0.015]" style={{
           backgroundImage: `linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)`,
@@ -421,194 +362,157 @@ export default function LandingPage() {
           </div>
 
           {/* Header Content */}
-          <div className="feature-content">
-            <div className="mb-4 md:mb-8">
-              <div className="text-xs text-gray-500 uppercase tracking-[0.2em] mb-3 md:mb-4">Process Overview</div>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 md:mb-8 leading-tight">
-                How It<span className="font-serif font-light italic"> Works</span>
-              </h2>
-            </div>
-            
-            <div className="max-w-4xl mx-auto">
-              <p className="text-lg sm:text-xl md:text-2xl text-gray-300 leading-relaxed font-light mb-4 md:mb-6">
-                Three steps to dominate AI engine visibility and get your content cited by ChatGPT, Perplexity, and Google AI.
-              </p>
-              <div className="text-xs sm:text-sm text-gray-500 font-mono">
-                AUDIT → MONITOR → IMPLEMENT
-              </div>
+          <div className="mb-4 md:mb-8">
+            <div className="text-xs text-gray-500 uppercase tracking-[0.2em] mb-3 md:mb-4">Process Overview</div>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 md:mb-8 leading-tight">
+              How It<span className="font-serif font-light italic"> Works</span>
+            </h2>
+          </div>
+          
+          <div className="max-w-4xl mx-auto mb-12 md:mb-16">
+            <p className="text-lg sm:text-xl md:text-2xl text-gray-300 leading-relaxed font-light mb-4 md:mb-6">
+              Three steps to dominate AI engine visibility and get your content cited by ChatGPT, Perplexity, and Google AI.
+            </p>
+            <div className="text-xs sm:text-sm text-gray-500 font-mono">
+              AUDIT → MONITOR → IMPLEMENT
             </div>
           </div>
 
-
-        </div>
-      </section>
-
-      {/* Step 1: Audit Your Visibility */}
-      <section className="w-full py-16 md:py-28 bg-[#0c0c0c] relative">
-        {/* Subtle background pattern */}
-        <div className="absolute inset-0 opacity-[0.02]" style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
-          backgroundSize: '24px 24px'
-        }}></div>
-        
-        <div className="w-[92%] md:w-[80%] max-w-7xl mx-auto relative">
-          <div className="grid md:grid-cols-2 gap-8 md:gap-20 items-center">
-            {/* Content */}
-            <div className="feature-content">
-              <div className="flex items-center gap-4 sm:gap-6 mb-6 md:mb-8">
-                <div className="step-number w-10 sm:w-14 h-10 sm:h-14 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white font-bold text-lg sm:text-xl">
+          {/* Three Steps in One Row */}
+          <div className="grid md:grid-cols-3 gap-8 md:gap-12 text-left">
+            
+            {/* Step 1: Audit Your Visibility */}
+            <div className="bg-[#0c0c0c] border border-[#1a1a1a] p-6 md:p-8 hover:border-[#333333] transition-all duration-300">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-8 h-8 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white font-bold text-sm">
                   1
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Step One</div>
-                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight">
+                  <h3 className="text-lg md:text-xl font-bold text-white leading-tight">
                     Audit Your Visibility
                   </h3>
                 </div>
               </div>
               
-              <p className="text-gray-300 mb-6 md:mb-10 text-base sm:text-lg leading-relaxed font-light">
+              <p className="text-gray-300 mb-6 text-sm md:text-base leading-relaxed font-light">
                 We scan your site like an AI crawler would—flagging broken schema, missing citations, and content that LLMs ignore.
               </p>
 
               {/* Features List */}
-              <div className="space-y-5">
-                <div className="feature-content stagger-1 flex items-start gap-4 group">
-                  <div className="w-1.5 h-1.5 bg-white mt-2.5 flex-shrink-0 transition-all duration-200 group-hover:bg-gray-300"></div>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
                   <div>
-                    <span className="text-gray-100 font-medium">LLMBot coverage report</span>
-                    <div className="text-sm text-gray-500 mt-1">Comprehensive analysis of AI crawler accessibility</div>
+                    <span className="text-gray-100 font-medium text-sm">LLMBot coverage report</span>
+                    <div className="text-xs text-gray-500 mt-1">Comprehensive analysis of AI crawler accessibility</div>
                   </div>
                 </div>
-                <div className="feature-content stagger-2 flex items-start gap-4 group">
-                  <div className="w-1.5 h-1.5 bg-white mt-2.5 flex-shrink-0 transition-all duration-200 group-hover:bg-gray-300"></div>
+                <div className="flex items-start gap-3">
+                  <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
                   <div>
-                    <span className="text-gray-100 font-medium">Schema & llms.txt check</span>
-                    <div className="text-sm text-gray-500 mt-1">Structured data validation and optimization</div>
+                    <span className="text-gray-100 font-medium text-sm">Schema & llms.txt check</span>
+                    <div className="text-xs text-gray-500 mt-1">Structured data validation and optimization</div>
                   </div>
                 </div>
-                <div className="feature-content stagger-3 flex items-start gap-4 group">
-                  <div className="w-1.5 h-1.5 bg-white mt-2.5 flex-shrink-0 transition-all duration-200 group-hover:bg-gray-300"></div>
+                <div className="flex items-start gap-3">
+                  <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
                   <div>
-                    <span className="text-gray-100 font-medium">Direct & indirect citation gaps</span>
-                    <div className="text-sm text-gray-500 mt-1">Identify missed opportunities for AI citations</div>
+                    <span className="text-gray-100 font-medium text-sm">Direct & indirect citation gaps</span>
+                    <div className="text-xs text-gray-500 mt-1">Identify missed opportunities for AI citations</div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Step 1 Animated Card */}
-            <StepOneAudit />
-          </div>
-        </div>
-      </section>
-
-      {/* Step 2: Monitor Your Mentions */}
-      <section className="w-full py-16 md:py-28 bg-[#0c0c0c] relative border-t border-[#1a1a1a]">
-        <div className="w-[92%] md:w-[80%] max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-8 md:gap-20 items-center">
-            {/* Step 2 Animated Card */}
-            <div className="md:order-1">
-              <StepTwoMonitor />
-            </div>
-
-            {/* Content */}
-            <div className="feature-content md:order-2">
-              <div className="flex items-center gap-4 sm:gap-6 mb-6 md:mb-8">
-                <div className="step-number w-10 sm:w-14 h-10 sm:h-14 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white font-bold text-lg sm:text-xl">
+            {/* Step 2: Monitor Your Mentions */}
+            <div className="bg-[#0c0c0c] border border-[#1a1a1a] p-6 md:p-8 hover:border-[#333333] transition-all duration-300">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-8 h-8 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white font-bold text-sm">
                   2
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Step Two</div>
-                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight">
+                  <h3 className="text-lg md:text-xl font-bold text-white leading-tight">
                     Monitor Your Mentions
                   </h3>
                 </div>
               </div>
               
-              <p className="text-gray-300 mb-6 md:mb-10 text-base sm:text-lg leading-relaxed font-light">
+              <p className="text-gray-300 mb-6 text-sm md:text-base leading-relaxed font-light">
                 Track your brand's footprint across AI engines. Know exactly where you're showing up (or not) in ChatGPT, Perplexity, and Google AI.
               </p>
 
               {/* Features List */}
-              <div className="space-y-5">
-                <div className="feature-content stagger-1 flex items-start gap-4 group">
-                  <div className="w-1.5 h-1.5 bg-white mt-2.5 flex-shrink-0 transition-all duration-200 group-hover:bg-gray-300"></div>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
                   <div>
-                    <span className="text-gray-100 font-medium">Real-time prompt-based visibility checks</span>
-                    <div className="text-sm text-gray-500 mt-1">Monitor how AI engines respond to queries about your domain</div>
+                    <span className="text-gray-100 font-medium text-sm">Real-time prompt-based visibility checks</span>
+                    <div className="text-xs text-gray-500 mt-1">Monitor how AI engines respond to queries about your domain</div>
                   </div>
                 </div>
-                <div className="feature-content stagger-2 flex items-start gap-4 group">
-                  <div className="w-1.5 h-1.5 bg-white mt-2.5 flex-shrink-0 transition-all duration-200 group-hover:bg-gray-300"></div>
+                <div className="flex items-start gap-3">
+                  <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
                   <div>
-                    <span className="text-gray-100 font-medium">Daily re-rank tracking</span>
-                    <div className="text-sm text-gray-500 mt-1">See how your visibility changes over time with trend analysis</div>
+                    <span className="text-gray-100 font-medium text-sm">Daily re-rank tracking</span>
+                    <div className="text-xs text-gray-500 mt-1">See how your visibility changes over time with trend analysis</div>
                   </div>
                 </div>
-                <div className="feature-content stagger-3 flex items-start gap-4 group">
-                  <div className="w-1.5 h-1.5 bg-white mt-2.5 flex-shrink-0 transition-all duration-200 group-hover:bg-gray-300"></div>
+                <div className="flex items-start gap-3">
+                  <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
                   <div>
-                    <span className="text-gray-100 font-medium">Competitive landscape mapping</span>
-                    <div className="text-sm text-gray-500 mt-1">Compare your AI presence against industry competitors</div>
+                    <span className="text-gray-100 font-medium text-sm">Competitive landscape mapping</span>
+                    <div className="text-xs text-gray-500 mt-1">Compare your AI presence against industry competitors</div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Step 3: Implement What Matters */}
-      <section className="w-full py-16 md:py-28 bg-[#0c0c0c] relative border-t border-[#1a1a1a]">
-        <div className="w-[92%] md:w-[80%] max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-8 md:gap-20 items-center">
-            {/* Content */}
-            <div className="feature-content">
-              <div className="flex items-center gap-4 sm:gap-6 mb-6 md:mb-8">
-                <div className="step-number w-10 sm:w-14 h-10 sm:h-14 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white font-bold text-lg sm:text-xl">
+            {/* Step 3: Generate Content That Fills Gaps */}
+            <div className="bg-[#0c0c0c] border border-[#1a1a1a] p-6 md:p-8 hover:border-[#333333] transition-all duration-300">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-8 h-8 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white font-bold text-sm">
                   3
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Step Three</div>
-                  <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-white leading-tight">
-                    Implement What Matters
+                  <h3 className="text-lg md:text-xl font-bold text-white leading-tight">
+                    AEO Engineer Goes to Work
                   </h3>
                 </div>
               </div>
               
-              <p className="text-gray-300 mb-6 md:mb-10 text-base sm:text-lg leading-relaxed font-light">
-                Get actionable fixes—not fluff. We push schema, content tweaks, and link-building suggestions to help LLMs actually quote you.
+              <p className="text-gray-300 mb-6 text-sm md:text-base leading-relaxed font-light">
+                Our engine identifies content gaps preventing LLM mentions, then generates optimized articles that fill those exact gaps. Queue, review, and publish directly to your CMS.
               </p>
 
               {/* Features List */}
-              <div className="space-y-5">
-                <div className="feature-content stagger-1 flex items-start gap-4 group">
-                  <div className="w-1.5 h-1.5 bg-white mt-2.5 flex-shrink-0 transition-all duration-200 group-hover:bg-gray-300"></div>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
                   <div>
-                    <span className="text-gray-100 font-medium">One-click schema fixes</span>
-                    <div className="text-sm text-gray-500 mt-1">Automated deployment of structured data optimizations</div>
+                    <span className="text-gray-100 font-medium text-sm">Gap analysis & content queue</span>
+                    <div className="text-xs text-gray-500 mt-1">Monitor missing topics that prevent top LLM citations</div>
                   </div>
                 </div>
-                <div className="feature-content stagger-2 flex items-start gap-4 group">
-                  <div className="w-1.5 h-1.5 bg-white mt-2.5 flex-shrink-0 transition-all duration-200 group-hover:bg-gray-300"></div>
+                <div className="flex items-start gap-3">
+                  <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
                   <div>
-                    <span className="text-gray-100 font-medium">Authority-building backlink ops</span>
-                    <div className="text-sm text-gray-500 mt-1">Strategic link placement to boost AI engine trust signals</div>
+                    <span className="text-gray-100 font-medium text-sm">AI-optimized content generation</span>
+                    <div className="text-xs text-gray-500 mt-1">Select from engine-recommended content that fills citation gaps</div>
                   </div>
                 </div>
-                <div className="feature-content stagger-3 flex items-start gap-4 group">
-                  <div className="w-1.5 h-1.5 bg-white mt-2.5 flex-shrink-0 transition-all duration-200 group-hover:bg-gray-300"></div>
+                <div className="flex items-start gap-3">
+                  <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
                   <div>
-                    <span className="text-gray-100 font-medium">Content rewrites for LLM readability</span>
-                    <div className="text-sm text-gray-500 mt-1">AI-optimized content that ranks higher in citations</div>
+                    <span className="text-gray-100 font-medium text-sm">Copy/paste or CMS integration</span>
+                    <div className="text-xs text-gray-500 mt-1">Connect to your preferred CMS or copy optimized content directly</div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Step 3 Animated Card */}
-            <StepThreeImplement />
           </div>
         </div>
       </section>
@@ -657,7 +561,7 @@ export default function LandingPage() {
 
             {/* CTA Button */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <button className="group inline-flex items-center gap-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333333] hover:border-[#444444] px-4 sm:px-6 py-2.5 sm:py-3 transition-all duration-200 text-white text-sm sm:text-base">
+              <Link href="/customers" className="group inline-flex items-center gap-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333333] hover:border-[#444444] px-4 sm:px-6 py-2.5 sm:py-3 transition-all duration-200 text-white text-sm sm:text-base">
                 <span>Read the full case study</span>
                 <svg 
                   className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" 
@@ -667,7 +571,7 @@ export default function LandingPage() {
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
-              </button>
+              </Link>
             </div>
 
             {/* Decorative Lines - Fixed positioning */}
@@ -689,6 +593,9 @@ export default function LandingPage() {
           
         </div>
       </section>
+
+      {/* Divider Line */}
+      <div className="w-full border-t border-[#1a1a1a] bg-[#0c0c0c]"></div>
 
       {/* CTA Section */}
       <CTASection />

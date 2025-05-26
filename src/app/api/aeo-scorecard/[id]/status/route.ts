@@ -4,10 +4,11 @@ import { getScorecardStatus } from '@/services/scorecard/job'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const data = await getScorecardStatus(params.id)
+    const { id } = await params
+    const data = await getScorecardStatus(id)
     if (!data) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }

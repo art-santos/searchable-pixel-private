@@ -1,11 +1,12 @@
 'use client'
 
 import { SplitSidebar } from '@/components/layout/split-sidebar'
+import { SplitTopbar } from '@/components/layout/split-topbar'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { useEffect } from 'react'
 
-export default function SiteAuditLayout({
+export default function ContentLayout({
   children,
 }: {
   children: React.ReactNode
@@ -22,8 +23,11 @@ export default function SiteAuditLayout({
     <AuthenticatedLayout>
       <SidebarProvider className="dark">
         <SplitSidebar />
-        <SidebarInset>
-          {children}
+        <SidebarInset className="flex flex-col h-screen">
+          <SplitTopbar />
+          <div className="flex-1 overflow-hidden">
+            {children}
+          </div>
         </SidebarInset>
       </SidebarProvider>
     </AuthenticatedLayout>
