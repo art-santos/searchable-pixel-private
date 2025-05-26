@@ -30,13 +30,6 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -155,8 +148,6 @@ export default function ContentPage() {
   const { loading } = useAuth()
   const shouldReduceMotion = useReducedMotion()
   const [activeTab, setActiveTab] = useState('completed')
-  const [selectedArticle, setSelectedArticle] = useState<any>(null)
-  const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [sortField, setSortField] = useState<string>('createdAt')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
@@ -458,17 +449,6 @@ export default function ContentPage() {
                       </div>
                     </TableHead>
                     <TableHead 
-                      className="text-[#888] font-medium cursor-pointer hover:text-white transition-colors h-12 w-24"
-                      onClick={() => handleSort('views')}
-                    >
-                      <div className="flex items-center gap-2">
-                        Metrics
-                        {sortField === 'views' && (
-                          sortDirection === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead 
                       className="text-[#888] font-medium cursor-pointer hover:text-white transition-colors h-12 w-20"
                       onClick={() => handleSort('createdAt')}
                     >
@@ -488,8 +468,8 @@ export default function ContentPage() {
                       key={article.id}
                       className="border-b border-[#1a1a1a] hover:bg-[#0a0a0a] transition-colors cursor-pointer group"
                       onClick={() => {
-                        setSelectedArticle(article)
-                        setIsSheetOpen(true)
+                        // Navigate to dedicated article page
+                        window.location.href = `/content/article/${article.id}`
                       }}
                     >
                       <TableCell className="text-center h-14" onClick={(e) => e.stopPropagation()}>
@@ -528,17 +508,6 @@ export default function ContentPage() {
                         </span>
                       </TableCell>
                       <TableCell className="h-14">
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className="flex items-center gap-1 text-[#888]">
-                            <Eye className="w-3 h-3" />
-                            {article.views > 1000 ? `${(article.views / 1000).toFixed(1)}k` : article.views}
-                          </span>
-                          <span className="text-[#888]">
-                            {article.engagement}%
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="h-14">
                         <span className="text-[#888] text-xs">
                           {new Date(article.createdAt).toLocaleDateString('en-US', { 
                             month: 'short', 
@@ -561,8 +530,8 @@ export default function ContentPage() {
                             <DropdownMenuItem 
                               className="hover:bg-[#2a2a2a] cursor-pointer"
                               onClick={() => {
-                                setSelectedArticle(article)
-                                setIsSheetOpen(true)
+                                // Navigate to dedicated article page
+                                window.location.href = `/content/article/${article.id}`
                               }}
                             >
                               <Eye className="w-4 h-4 mr-2" />
@@ -620,150 +589,6 @@ export default function ContentPage() {
           </motion.div>
         )}
       </motion.main>
-
-      {/* Enhanced Article Preview Sheet */}
-      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent className="w-[900px] max-w-[90vw] bg-[#0c0c0c] border-[#1a1a1a] text-white overflow-y-auto">
-          {selectedArticle && (
-            <>
-              <SheetHeader className="mb-6 pb-6 border-b border-[#1a1a1a]">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <SheetTitle className="text-white text-left text-2xl font-semibold leading-tight mb-3">
-                      {selectedArticle.title}
-                    </SheetTitle>
-                    <SheetDescription className="text-[#888] text-left text-base mb-4">
-                      {selectedArticle.subtitle}
-                    </SheetDescription>
-                    
-                    <div className="flex items-center gap-6 text-sm text-[#666]">
-                      <span className="flex items-center gap-2">
-                        <FileText className="w-4 h-4" />
-                        {selectedArticle.wordCount} words
-                      </span>
-                      <span className="flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        {selectedArticle.readTime} read
-                      </span>
-                      <span className="flex items-center gap-2">
-                        <Eye className="w-4 h-4" />
-                        {selectedArticle.views.toLocaleString()} views
-                      </span>
-                      <span className="flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4" />
-                        {selectedArticle.engagement}% engagement
-                      </span>
-                      <span className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        {new Date(selectedArticle.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="border-[#333] text-[#888] bg-[#0a0a0a] text-xs px-2 py-1">
-                      {selectedArticle.category}
-                    </Badge>
-                    <Badge variant="outline" className="border-emerald-500/20 text-emerald-400 bg-emerald-500/10 text-xs px-2 py-1">
-                      +{selectedArticle.scoreUplift}% impact
-                    </Badge>
-                  </div>
-                </div>
-              </SheetHeader>
-
-              <div className="space-y-8">
-                {/* Article Content */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-lg font-semibold text-white">Article Content</h4>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-[#333] hover:border-[#444] text-[#888] hover:text-white h-8 px-3 text-sm"
-                      >
-                        <Copy className="w-4 h-4 mr-2" />
-                        Copy Markdown
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-[#333] hover:border-[#444] text-[#888] hover:text-white h-8 px-3 text-sm"
-                      >
-                        <FileText className="w-4 h-4 mr-2" />
-                        Copy Plain Text
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-[#333] hover:border-[#444] text-[#888] hover:text-white h-8 px-3 text-sm"
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Download
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6 max-h-[60vh] overflow-y-auto">
-                    <div className="prose prose-invert prose-sm max-w-none">
-                      <pre className="whitespace-pre-wrap font-sans text-sm text-[#ccc] leading-relaxed">
-                        {selectedArticle.content}
-                      </pre>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Strategic Context */}
-                <div className="space-y-4">
-                  <h4 className="text-lg font-semibold text-white flex items-center gap-3">
-                    <Zap className="w-5 h-5" />
-                    Strategic Context
-                  </h4>
-                  
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="p-4 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
-                      <h5 className="text-sm font-medium text-white mb-2">Why We Created This</h5>
-                      <p className="text-sm text-[#ccc] leading-relaxed">
-                        {selectedArticle.createdBecause}
-                      </p>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
-                        <h5 className="text-sm font-medium text-white mb-2">Gap Addressed</h5>
-                        <p className="text-xs text-[#888]">{selectedArticle.gapAddressed}</p>
-                      </div>
-                      <div className="p-4 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
-                        <h5 className="text-sm font-medium text-white mb-2">Strategic Fit</h5>
-                        <p className="text-xs text-[#888]">{selectedArticle.strategicFit}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="space-y-4">
-                  <h4 className="text-lg font-semibold text-white">Actions</h4>
-                  <div className="flex items-center gap-3">
-                    <Button className="bg-white text-black hover:bg-[#f5f5f5] h-9 px-4 text-sm">
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Give Feedback
-                    </Button>
-                    <Button variant="outline" className="border-[#333] hover:border-[#444] text-[#888] hover:text-white h-9 px-4 text-sm">
-                      <Edit3 className="w-4 h-4 mr-2" />
-                      Edit Article
-                    </Button>
-                    <Button variant="outline" className="border-[#333] hover:border-[#444] text-[#888] hover:text-white h-9 px-4 text-sm">
-                      <Archive className="w-4 h-4 mr-2" />
-                      Archive
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
     </div>
   )
 } 
