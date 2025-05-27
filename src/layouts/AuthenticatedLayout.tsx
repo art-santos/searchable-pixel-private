@@ -34,7 +34,7 @@ export default function AuthenticatedLayout({
   
   return (
     <div className="h-screen bg-[#0c0c0c] flex">
-      {children}
+        {children}
     </div>
   )
 } 

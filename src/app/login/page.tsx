@@ -17,7 +17,7 @@ export default function LoginPage() {
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-xs">
             <Suspense fallback={<div className="text-white">Loading...</div>}>
-              <LoginForm />
+              <LoginForm onLoginSuccess={() => {}} />
             </Suspense>
           </div>
         </div>

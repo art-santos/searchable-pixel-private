@@ -120,6 +120,57 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
   const [newKeyword, setNewKeyword] = useState('')
   const [newCompetitor, setNewCompetitor] = useState('')
 
+  // Check if user just signed up and load their onboarding data
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const justSignedUp = sessionStorage.getItem('justSignedUp')
+      const justVerified = document.cookie.includes('justVerified=true')
+      const onboardingData = localStorage.getItem('onboardingData')
+      const hasCompletedOnboarding = localStorage.getItem('onboardingCompleted')
+      
+      if ((justSignedUp || justVerified) && onboardingData) {
+        // User just signed up, load their data and start scanning
+        const data = JSON.parse(onboardingData)
+        
+        // Pre-populate the form data
+        setWorkspaceData({
+          name: data.email?.split('@')[0] || '',
+          workspaceName: data.siteUrl?.replace(/^https?:\/\//, '').replace(/^www\./, '') || ''
+        })
+        
+        setAnalyticsData({
+          provider: null,
+          domain: data.siteUrl || '',
+          isConnected: false,
+          isSkipped: true // Skip analytics for new signups
+        })
+        
+        setContentData({
+          keywords: data.keywords || [],
+          businessOffering: data.businessOffering || '',
+          knownFor: data.knownFor || '',
+          competitors: data.competitors || []
+        })
+        
+        setCmsData({
+          cms: 'nextjs' // Default CMS
+        })
+        
+        // Start directly at scanning step
+        setCurrentStep('scanning')
+        
+        // Clear the signup flag and verification cookie
+        sessionStorage.removeItem('justSignedUp')
+        if (justVerified) {
+          document.cookie = 'justVerified=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+        }
+      } else if (hasCompletedOnboarding) {
+        // User has completed onboarding before, don't show overlay
+        setShowOnboarding(false)
+      }
+    }
+  }, [])
+
   // Progress calculation
   useEffect(() => {
     switch (currentStep) {
@@ -185,6 +236,12 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
           setVisibilityScore(score)
           
           clearInterval(interval)
+          
+          // Clear onboarding data after scan completes
+          setTimeout(() => {
+            localStorage.removeItem('onboardingData')
+          }, 500)
+          
           setTimeout(() => {
             setCurrentStep('results')
           }, 1500)
@@ -330,6 +387,8 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
         return true // Always can proceed from confirmation
       case 'cms':
         return cmsData.cms
+      case 'results':
+        return true // Always can proceed from results to plans
       default:
         return false
     }
@@ -881,15 +940,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                   </p>
                 </div>
 
-                {/* CTA */}
-                <div className="text-center">
-                  <Button
-                    onClick={() => setCurrentStep('paywall')}
-                    className="bg-white text-black hover:bg-[#f5f5f5] h-10 px-6 text-sm font-medium"
-                  >
-                    View Plans
-                  </Button>
-                </div>
+
               </motion.div>
             )}
 
@@ -934,12 +985,13 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
 
                 {/* Pricing Plans */}
                 <div className="grid grid-cols-3 gap-6 mb-8">
-                  {/* Basic Plan */}
+                  {/* Visibility Plan */}
                   <div className="bg-[#1a1a1a] border border-[#333] p-6">
                     <div className="text-center mb-6">
-                      <h3 className="text-lg font-medium text-white mb-2">Basic</h3>
+                      <h3 className="text-lg font-medium text-white mb-1">Visibility</h3>
+                      <p className="text-xs text-[#888] mb-3">Track your AI presence</p>
                       <div className="text-3xl font-bold text-white mb-1">
-                        ${isAnnual ? '60' : '75'}
+                        ${isAnnual ? '32' : '40'}
                       </div>
                       <div className="text-xs text-[#666]">per month</div>
                     </div>
@@ -947,30 +999,31 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                     <div className="space-y-3 mb-6">
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span className="text-sm text-white">Weekly scans</span>
+                        <span className="text-sm text-white">Weekly visibility reports</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span className="text-sm text-white">4 articles / month</span>
+                        <span className="text-sm text-white">Citation analysis</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span className="text-sm text-white">Single domain</span>
+                        <span className="text-sm text-white">Single domain tracking</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span className="text-sm text-white">Email support</span>
+                        <span className="text-sm text-white">Email alerts</span>
                       </div>
                     </div>
 
                     <Button
                       onClick={() => {
+                        localStorage.setItem('onboardingCompleted', 'true')
                         setShowOnboarding(false)
                         onComplete?.()
                       }}
                       className="w-full bg-[#333] hover:bg-[#444] text-white h-10 text-sm"
                     >
-                      Start Basic Plan
+                      Start Visibility
                     </Button>
                   </div>
 
@@ -983,9 +1036,10 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                     </div>
                     
                     <div className="text-center mb-6">
-                      <h3 className="text-lg font-medium text-white mb-2">Plus</h3>
+                      <h3 className="text-lg font-medium text-white mb-1">Plus</h3>
+                      <p className="text-xs text-[#888] mb-3">Scale your AI visibility</p>
                       <div className="text-3xl font-bold text-white mb-1">
-                        ${isAnnual ? '160' : '200'}
+                        ${isAnnual ? '80' : '100'}
                       </div>
                       <div className="text-xs text-[#666]">per month</div>
                     </div>
@@ -993,43 +1047,45 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                     <div className="space-y-3 mb-6">
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span className="text-sm text-white">Twice-weekly scans</span>
+                        <span className="text-sm text-white">Daily visibility scans</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span className="text-sm text-white">12 articles / month</span>
+                        <span className="text-sm text-white">4 AI-optimized articles</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span className="text-sm text-white">Keyword history</span>
+                        <span className="text-sm text-white">Competitor benchmarking</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span className="text-sm text-white">Competitor compare</span>
+                        <span className="text-sm text-white">Keyword trend analysis</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span className="text-sm text-white">Slack alerts</span>
+                        <span className="text-sm text-white">Slack integration</span>
                       </div>
                     </div>
 
                     <Button
                       onClick={() => {
+                        localStorage.setItem('onboardingCompleted', 'true')
                         setShowOnboarding(false)
                         onComplete?.()
                       }}
                       className="w-full bg-white text-black hover:bg-[#f5f5f5] h-10 text-sm font-medium"
                     >
-                      Start Plus Plan
+                      Start Plus
                     </Button>
                   </div>
 
                   {/* Pro Plan */}
                   <div className="bg-[#1a1a1a] border border-[#333] p-6">
                     <div className="text-center mb-6">
-                      <h3 className="text-lg font-medium text-white mb-2">Pro</h3>
+                      <h3 className="text-lg font-medium text-white mb-1">Pro</h3>
+                      <p className="text-xs text-[#888] mb-3">Full-stack AEO powerhouse</p>
                       <div className="text-3xl font-bold text-white mb-1">
-                        ${isAnnual ? '800' : '1,000'}
+                        ${isAnnual ? '320' : '400'}
                       </div>
                       <div className="text-xs text-[#666]">per month</div>
                     </div>
@@ -1037,34 +1093,35 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                     <div className="space-y-3 mb-6">
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span className="text-sm text-white">Daily scans</span>
+                        <span className="text-sm text-white">Everything in Plus</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span className="text-sm text-white">Unlimited articles</span>
+                        <span className="text-sm text-white">Unlimited visibility scans</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span className="text-sm text-white">Multi-domain</span>
+                        <span className="text-sm text-white">30 premium articles</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span className="text-sm text-white">Priority chat</span>
+                        <span className="text-sm text-white">Monthly AEO strategy call</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span className="text-sm text-white">API access</span>
+                        <span className="text-sm text-white">API access & integrations</span>
                       </div>
                     </div>
 
                     <Button
                       onClick={() => {
+                        localStorage.setItem('onboardingCompleted', 'true')
                         setShowOnboarding(false)
                         onComplete?.()
                       }}
                       className="w-full bg-[#333] hover:bg-[#444] text-white h-10 text-sm"
                     >
-                      Start Pro Plan
+                      Start Pro
                     </Button>
                   </div>
                 </div>
@@ -1073,6 +1130,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                 <div className="text-center">
                   <button
                     onClick={() => {
+                      localStorage.setItem('onboardingCompleted', 'true')
                       setShowOnboarding(false)
                       onComplete?.()
                     }}
@@ -1086,7 +1144,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
           </AnimatePresence>
 
           {/* Navigation */}
-          {currentStep !== 'scanning' && (
+          {currentStep !== 'scanning' && currentStep !== 'paywall' && (
             <div className="flex items-center justify-between mt-6">
               <Button
                 onClick={handleBack}
@@ -1098,20 +1156,26 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                 Back
               </Button>
 
-              <Button
-                onClick={handleNext}
-                disabled={!canProceed() || isLoading}
-                className="bg-white text-black hover:bg-[#f5f5f5] h-8 px-3 text-xs font-medium"
-              >
-                {isLoading ? (
-                  <div className="w-3 h-3 animate-spin rounded-full border border-current border-t-transparent mr-1" />
-                ) : (
-                  <>
-                    {currentStep === 'confirm' ? 'Run Scan' : currentStep === 'cms' ? 'Start scan' : 'Continue'}
-                    <ArrowRight className="w-3 h-3 ml-1" />
-                  </>
-                )}
-              </Button>
+                              <Button
+                  onClick={currentStep === 'results' ? () => {
+                    setIsLoading(true)
+                    setTimeout(() => {
+                      setCurrentStep('paywall')
+                      setIsLoading(false)
+                    }, 300)
+                  } : handleNext}
+                  disabled={!canProceed() || isLoading}
+                  className="bg-white text-black hover:bg-[#f5f5f5] h-8 px-3 text-xs font-medium"
+                >
+                  {isLoading ? (
+                    <div className="w-3 h-3 animate-spin rounded-full border border-current border-t-transparent mr-1" />
+                  ) : (
+                    <>
+                      {currentStep === 'confirm' ? 'Run Scan' : currentStep === 'cms' ? 'Start scan' : 'Continue'}
+                      <ArrowRight className="w-3 h-3 ml-1" />
+                    </>
+                  )}
+                </Button>
             </div>
           )}
         </div>
