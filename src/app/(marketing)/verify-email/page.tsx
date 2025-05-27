@@ -49,6 +49,20 @@ export default function VerifyEmailPage() {
         setResendMessage('Failed to resend email. Please try again.')
       } else {
         setResendMessage('Verification email sent! Check your inbox.')
+        
+        // Also re-add to Loops if resending (non-blocking)
+        const formBody = `email=${encodeURIComponent(email)}&userGroup=${encodeURIComponent('Email resend')}&source=${encodeURIComponent('Verification resend')}`
+        
+        fetch('https://app.loops.so/api/newsletter-form/cmb5vrlua29icyq0iha1pm14f', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: formBody,
+        }).catch(error => {
+          console.error('Loops re-signup error:', error)
+          // Don't block the flow on newsletter errors
+        })
       }
     } catch (err) {
       setResendMessage('Failed to resend email. Please try again.')

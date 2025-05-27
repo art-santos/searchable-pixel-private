@@ -57,16 +57,21 @@ export default function StartPage() {
     localStorage.setItem('onboardingData', JSON.stringify(onboardingData))
 
     try {
-      // Submit to Loops API (non-blocking)
+      // Submit to Loops API using proper form endpoint (non-blocking)
+      const formBody = `email=${encodeURIComponent(onboardingData.email)}&siteUrl=${encodeURIComponent(onboardingData.siteUrl)}&userGroup=${encodeURIComponent('Website signups')}&source=${encodeURIComponent('Onboarding form')}`
+      
       fetch('https://app.loops.so/api/newsletter-form/cmb5vrlua29icyq0iha1pm14f', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: JSON.stringify({
-          email: onboardingData.email,
-          siteUrl: onboardingData.siteUrl,
-        }),
+        body: formBody,
+      }).then(response => {
+        if (response.ok) {
+          console.log('Successfully added to Loops')
+        } else {
+          console.error('Loops signup failed:', response.status)
+        }
       }).catch(error => {
         console.error('Newsletter signup error:', error)
         // Don't block the flow on newsletter errors
