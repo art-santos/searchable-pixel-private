@@ -1,4 +1,31 @@
 /* Custom Scrollbar Styles */
+/* Global scrollbar for all elements */
+::-webkit-scrollbar {
+  width: 6px; /* Very slim scrollbar */
+  height: 6px; /* For horizontal scrollbars */
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; /* Invisible track */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333333; /* Dark gray thumb */
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444444; /* Slightly lighter on hover */
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #333333 transparent;
+}
+
+/* Legacy custom scrollbar class - keeping for compatibility */
 .custom-scrollbar::-webkit-scrollbar {
   width: 8px; /* Slimmer scrollbar */
   height: 8px; /* For horizontal scrollbars, if any */

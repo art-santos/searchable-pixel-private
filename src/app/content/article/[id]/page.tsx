@@ -14,7 +14,10 @@ import {
   FileText,
   Calendar,
   Clock,
-  TrendingUp
+  Hash,
+  Type,
+  Code,
+  Share2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -24,7 +27,8 @@ const mockCompletedArticles = [
   {
     id: 1,
     title: "AI Prospecting Frameworks for B2B Sales Teams",
-    subtitle: "A comprehensive guide to modern prospecting strategies",
+    metaDescription: "A comprehensive guide to modern prospecting strategies that leverage AI to identify, engage, and convert high-quality prospects in today's competitive B2B landscape.",
+    suggestedSlug: "ai-prospecting-frameworks-b2b-sales-teams",
     primaryKeyword: "ai prospecting frameworks",
     scoreUplift: 23,
     createdBecause: "Fills missing brand mention in 12/100 direct prompts targeting sales automation queries.",
@@ -42,7 +46,8 @@ const mockCompletedArticles = [
   {
     id: 2,
     title: "Enterprise AI Implementation Roadmap",
-    subtitle: "Strategic planning for large-scale AI adoption",
+    metaDescription: "Strategic planning guide for large-scale AI adoption in enterprise environments, covering assessment, planning, implementation, and optimization phases.",
+    suggestedSlug: "enterprise-ai-implementation-roadmap",
     primaryKeyword: "enterprise ai implementation",
     scoreUplift: 18,
     createdBecause: "Targets long-tail query cluster addressing enterprise adoption challenges.",
@@ -60,7 +65,8 @@ const mockCompletedArticles = [
   {
     id: 3,
     title: "Cold Email Personalization at Scale",
-    subtitle: "Balancing automation with authentic outreach",
+    metaDescription: "Learn how to balance automation with authentic outreach through advanced personalization techniques that increase response rates and build meaningful connections.",
+    suggestedSlug: "cold-email-personalization-at-scale",
     primaryKeyword: "cold email personalization",
     scoreUplift: 31,
     createdBecause: "High-converting topic with strong search intent and low competition.",
@@ -78,7 +84,8 @@ const mockCompletedArticles = [
   {
     id: 4,
     title: "B2B Lead Scoring with Machine Learning",
-    subtitle: "Advanced techniques for qualifying prospects",
+    metaDescription: "Advanced techniques for qualifying prospects using machine learning algorithms to improve sales efficiency and focus on high-value opportunities.",
+    suggestedSlug: "b2b-lead-scoring-machine-learning",
     primaryKeyword: "b2b lead scoring",
     scoreUplift: 15,
     createdBecause: "Addresses technical implementation questions from enterprise prospects.",
@@ -96,7 +103,8 @@ const mockCompletedArticles = [
   {
     id: 5,
     title: "Sales Automation ROI Calculator",
-    subtitle: "Measuring the impact of automated outreach",
+    metaDescription: "Comprehensive framework for measuring the impact of automated outreach with concrete metrics and calculation methods for sales automation investments.",
+    suggestedSlug: "sales-automation-roi-calculator",
     primaryKeyword: "sales automation roi",
     scoreUplift: 27,
     createdBecause: "High-intent commercial queries from decision makers evaluating tools.",
@@ -156,6 +164,11 @@ export default function ArticlePage() {
     }
   }
 
+  const handleAction = (action: string) => {
+    console.log(`Action: ${action}`)
+    // TODO: Implement actions
+  }
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center bg-[#0c0c0c]">
@@ -184,174 +197,178 @@ export default function ArticlePage() {
   return (
     <div className="h-[95vh] bg-[#0c0c0c] overflow-hidden">
       <motion.main 
-        className="h-full flex"
+        className="h-full flex flex-col"
         initial="hidden"
         animate="visible"
         variants={containerVariants}
       >
-        {/* Left Panel - Article Content */}
-        <div className="flex-1 p-8 overflow-y-auto">
-          <div className="max-w-4xl mx-auto space-y-8">
-            {/* Back Button */}
-            <motion.div variants={itemVariants}>
+        {/* Editor Header */}
+        <motion.div variants={itemVariants} className="border-b border-[#1a1a1a] px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* Left: Back button and title */}
+            <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
+                size="sm"
                 onClick={() => router.push('/content')}
-                className="text-[#666] hover:text-white hover:bg-[#1a1a1a] mb-6 p-2"
+                className="text-[#666] hover:text-white hover:bg-[#1a1a1a] h-8 w-8 p-0"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Content
+                <ArrowLeft className="w-4 h-4" />
               </Button>
-            </motion.div>
-
-            {/* Header */}
-            <motion.div variants={itemVariants} className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Badge variant="outline" className="border-[#333] text-[#888] bg-[#0a0a0a] text-xs px-2 py-1">
-                    {article.category}
-                  </Badge>
-                  <Badge variant="outline" className="border-emerald-500/20 text-emerald-400 bg-emerald-500/10 text-xs px-2 py-1">
-                    +{article.scoreUplift}% impact
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-[#666]">
-                  <Clock className="w-4 h-4" />
-                  <span>{article.readTime}</span>
-                  <span>•</span>
-                  <span>{article.wordCount} words</span>
-                  <span>•</span>
-                  <Calendar className="w-4 h-4" />
-                  <span>{new Date(article.createdAt).toLocaleDateString()}</span>
-                </div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-sm font-medium text-white truncate max-w-md">
+                  {article.title}
+                </h1>
+                <Badge variant="outline" className="border-[#333] text-[#666] bg-transparent text-xs px-2 py-0.5">
+                  {article.category}
+                </Badge>
               </div>
+            </div>
 
-              {/* SEO Information */}
-              <div className="space-y-4">
+            {/* Right: Actions */}
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleAction('feedback')}
+                className="text-[#666] hover:text-white hover:bg-[#1a1a1a] h-8 w-8 p-0"
+                title="Give Feedback"
+              >
+                <Sparkles className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleAction('edit')}
+                className="text-[#666] hover:text-white hover:bg-[#1a1a1a] h-8 w-8 p-0"
+                title="Edit Article"
+              >
+                <Edit3 className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleAction('share')}
+                className="text-[#666] hover:text-white hover:bg-[#1a1a1a] h-8 w-8 p-0"
+                title="Share"
+              >
+                <Share2 className="w-4 h-4" />
+              </Button>
+              <div className="w-px h-4 bg-[#1a1a1a] mx-1" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleAction('copy-text')}
+                className="text-[#666] hover:text-white hover:bg-[#1a1a1a] h-8 w-8 p-0"
+                title="Copy as Plain Text"
+              >
+                <Type className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleAction('copy-markdown')}
+                className="text-[#666] hover:text-white hover:bg-[#1a1a1a] h-8 w-8 p-0"
+                title="Copy as Markdown"
+              >
+                <Hash className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleAction('copy-html')}
+                className="text-[#666] hover:text-white hover:bg-[#1a1a1a] h-8 w-8 p-0"
+                title="Copy as HTML"
+              >
+                <Code className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleAction('download')}
+                className="text-[#666] hover:text-white hover:bg-[#1a1a1a] h-8 w-8 p-0"
+                title="Download"
+              >
+                <Download className="w-4 h-4" />
+              </Button>
+              <div className="w-px h-4 bg-[#1a1a1a] mx-1" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleAction('archive')}
+                className="text-[#666] hover:text-white hover:bg-[#1a1a1a] h-8 w-8 p-0"
+                title="Archive"
+              >
+                <Archive className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-hidden">
+          <motion.div variants={itemVariants} className="h-full p-8 overflow-y-auto">
+            <div className="max-w-4xl mx-auto space-y-8">
+              {/* Meta Information */}
+              <div className="space-y-6">
+                {/* Suggested Slug */}
                 <div>
-                  <label className="text-xs font-medium text-[#888] uppercase tracking-wide">Suggested Slug</label>
-                  <p className="text-sm text-white mt-1 font-mono bg-[#0a0a0a] px-3 py-2 border border-[#1a1a1a] inline-block">
-                    /{article.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}
-                  </p>
+                  <label className="text-xs font-medium text-[#666] uppercase tracking-wide mb-2 block">
+                    Suggested URL
+                  </label>
+                  <div className="text-sm text-[#888] font-mono bg-[#0a0a0a] px-3 py-2 border border-[#1a1a1a] rounded-md inline-block">
+                    /{article.suggestedSlug}
+                  </div>
                 </div>
                 
+                {/* Title */}
                 <div>
-                  <label className="text-xs font-medium text-[#888] uppercase tracking-wide">Title</label>
-                  <h1 className="text-3xl font-semibold text-white mt-2 leading-tight">
+                  <label className="text-xs font-medium text-[#666] uppercase tracking-wide mb-3 block">
+                    Title
+                  </label>
+                  <h1 className="text-3xl font-semibold text-white leading-tight">
                     {article.title}
                   </h1>
                 </div>
                 
+                {/* Meta Description */}
                 <div>
-                  <label className="text-xs font-medium text-[#888] uppercase tracking-wide">Meta Description</label>
-                  <p className="text-base text-[#ccc] mt-2 leading-relaxed">
-                    {article.subtitle}
+                  <label className="text-xs font-medium text-[#666] uppercase tracking-wide mb-3 block">
+                    Meta Description
+                  </label>
+                  <p className="text-base text-[#ccc] leading-relaxed">
+                    {article.metaDescription}
                   </p>
                 </div>
-              </div>
-            </motion.div>
 
-            {/* Article Content */}
-            <motion.div variants={itemVariants} className="space-y-4">
+                {/* Article Stats */}
+                <div className="flex items-center gap-6 text-sm text-[#666] pt-2">
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-4 h-4" />
+                    <span>{article.readTime}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <FileText className="w-4 h-4" />
+                    <span>{article.wordCount} words</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="w-4 h-4" />
+                    <span>{new Date(article.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Article Content */}
               <div className="border-t border-[#1a1a1a] pt-8">
-                <h2 className="text-lg font-medium text-white mb-6">Article Content</h2>
                 <div className="prose prose-invert prose-lg max-w-none">
                   <div className="text-[#ccc] leading-relaxed whitespace-pre-wrap">
                     {article.content}
                   </div>
                 </div>
               </div>
-            </motion.div>
-          </div>
+            </div>
+          </motion.div>
         </div>
-
-        {/* Right Panel - Strategic Overview */}
-        <motion.div variants={itemVariants} className="w-80 border-l border-[#1a1a1a] p-8 bg-[#0a0a0a] overflow-y-auto">
-          <div className="space-y-8">
-            <div>
-              <h3 className="text-lg font-medium text-white mb-6">Strategic Overview</h3>
-              
-              <div className="space-y-6">
-                <div>
-                  <h4 className="text-sm font-medium text-white mb-3">Purpose</h4>
-                  <p className="text-sm text-[#ccc] leading-relaxed">
-                    {article.createdBecause}
-                  </p>
-                </div>
-
-                <div className="border-t border-[#1a1a1a] pt-6">
-                  <h4 className="text-sm font-medium text-white mb-3">Gap Analysis</h4>
-                  <p className="text-sm text-[#888] leading-relaxed">
-                    {article.gapAddressed}
-                  </p>
-                </div>
-
-                <div className="border-t border-[#1a1a1a] pt-6">
-                  <h4 className="text-sm font-medium text-white mb-3">Strategic Fit</h4>
-                  <p className="text-sm text-[#888] leading-relaxed">
-                    {article.strategicFit}
-                  </p>
-                </div>
-
-                <div className="border-t border-[#1a1a1a] pt-6">
-                  <h4 className="text-sm font-medium text-white mb-3">Target Keywords</h4>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-[#ccc]">{article.primaryKeyword}</span>
-                      <span className="text-xs text-[#666]">Primary</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t border-[#1a1a1a] pt-6">
-                  <h4 className="text-sm font-medium text-white mb-3">Performance</h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-[#888]">Views</span>
-                      <span className="text-sm text-white">{article.views.toLocaleString()}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-[#888]">Engagement</span>
-                      <span className="text-sm text-emerald-400">{article.engagement}%</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t border-[#1a1a1a] pt-8">
-              <h3 className="text-lg font-medium text-white mb-4">Actions</h3>
-              <div className="space-y-3">
-                <Button className="w-full bg-white text-black hover:bg-[#f5f5f5] h-9 text-sm justify-start">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Give Feedback
-                </Button>
-                <Button variant="outline" className="w-full border-[#333] hover:border-[#444] text-[#888] hover:text-white h-9 text-sm justify-start">
-                  <Copy className="w-4 h-4 mr-2" />
-                  Copy Markdown
-                </Button>
-                <Button variant="outline" className="w-full border-[#333] hover:border-[#444] text-[#888] hover:text-white h-9 text-sm justify-start">
-                  <FileText className="w-4 h-4 mr-2" />
-                  Copy Plain Text
-                </Button>
-                <Button variant="outline" className="w-full border-[#333] hover:border-[#444] text-[#888] hover:text-white h-9 text-sm justify-start">
-                  <Download className="w-4 h-4 mr-2" />
-                  Download HTML
-                </Button>
-                <div className="border-t border-[#1a1a1a] pt-3 mt-3">
-                  <Button variant="outline" className="w-full border-[#333] hover:border-[#444] text-[#888] hover:text-white h-9 text-sm justify-start">
-                    <Edit3 className="w-4 h-4 mr-2" />
-                    Edit Article
-                  </Button>
-                  <Button variant="outline" className="w-full border-[#333] hover:border-[#444] text-[#888] hover:text-white h-9 text-sm justify-start mt-2">
-                    <Archive className="w-4 h-4 mr-2" />
-                    Archive
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
       </motion.main>
     </div>
   )
