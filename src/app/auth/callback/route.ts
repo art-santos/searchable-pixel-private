@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     
     if (!error) {
-      // Set a flag to indicate user just verified their email
+      // Set a flag to indicate user just completed auth flow
       const response = NextResponse.redirect(`${origin}${next}`)
       response.cookies.set('justVerified', 'true', {
         maxAge: 60 * 5, // 5 minutes

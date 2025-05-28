@@ -111,9 +111,6 @@ export function SignupForm({
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`
-        }
       })
 
       if (signUpError) {
@@ -121,7 +118,7 @@ export function SignupForm({
         return
       }
 
-      // Check if user was created (even if not confirmed)
+      // Check if user was created and signed in
       if (data.user) {
         // Merge onboarding data with user record (this would be handled by backend)
         if (typeof window !== 'undefined') {
@@ -132,16 +129,14 @@ export function SignupForm({
           }
         }
 
-        // Account created but needs email verification
-        showNotification("success", "Account created! Please check your email to verify.")
-        
-        // Set a flag to indicate user just signed up (for onboarding overlay after verification)
+        // Set a flag to indicate user just signed up (for onboarding overlay)
         sessionStorage.setItem('justSignedUp', 'true')
         
-        // Redirect to email verification page
-        setTimeout(() => {
-          router.push(`/verify-email?email=${encodeURIComponent(email)}`)
-        }, 1500)
+        // Call success callback
+        onSignupSuccess?.()
+        
+        // Redirect to dashboard immediately
+        router.push('/dashboard')
       } else {
         showNotification("error", "Failed to create account")
       }

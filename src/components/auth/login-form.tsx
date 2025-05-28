@@ -44,7 +44,7 @@ export function LoginForm({
       }
     }
 
-    // Check if user was redirected from dashboard (needs verification)
+    // Check if user was redirected from dashboard
     const redirectedFrom = searchParams.get('redirectedFrom')
     if (redirectedFrom === '/dashboard') {
       showNotification("info", "Please sign in to access your dashboard and see your AI visibility score.")
@@ -73,9 +73,7 @@ export function LoginForm({
       })
 
       if (error) {
-        if (error.message.includes('Email not confirmed')) {
-          showNotification("error", "Please check your email and click the verification link first.")
-        } else if (error.message.includes('Invalid login credentials')) {
+        if (error.message.includes('Invalid login credentials')) {
           showNotification("error", "Invalid email or password. Please try again.")
         } else {
           showNotification("error", error.message)
@@ -105,6 +103,11 @@ export function LoginForm({
   const handleForgotPassword = async () => {
     if (!email) {
       showNotification("error", "Please enter your email address first")
+      return
+    }
+
+    if (!supabase) {
+      showNotification("error", "Authentication client not available")
       return
     }
 

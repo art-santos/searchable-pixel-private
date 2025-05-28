@@ -17,19 +17,17 @@ export default function SignupPage() {
     }
   }, [user, loading, router])
 
-  // Load email from onboarding data
+  // Load email from onboarding data (optional)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const onboardingData = localStorage.getItem('onboardingData')
       if (onboardingData) {
         const data = JSON.parse(onboardingData)
         setLockedEmail(data.email || '')
-      } else {
-        // Redirect to start if no onboarding data
-        router.push('/start')
       }
+      // Allow signup without onboarding data - users can sign up directly
     }
-  }, [router])
+  }, [])
 
   const handleSignupSuccess = () => {
     // Don't clear onboarding data yet - score page needs it

@@ -129,7 +129,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
       const hasCompletedOnboarding = localStorage.getItem('onboardingCompleted')
       
       if ((justSignedUp || justVerified) && onboardingData) {
-        // User just signed up, load their data and start scanning
+        // User just signed up with onboarding data, load their data and start scanning
         const data = JSON.parse(onboardingData)
         
         // Pre-populate the form data
@@ -159,7 +159,16 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
         // Start directly at scanning step
         setCurrentStep('scanning')
         
-        // Clear the signup flag and verification cookie
+        // Clear the signup flag and auth completion cookie
+        sessionStorage.removeItem('justSignedUp')
+        if (justVerified) {
+          document.cookie = 'justVerified=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+        }
+      } else if ((justSignedUp || justVerified) && !onboardingData) {
+        // User signed up directly without onboarding, start from the beginning
+        setCurrentStep('workspace')
+        
+        // Clear the signup flag and auth completion cookie
         sessionStorage.removeItem('justSignedUp')
         if (justVerified) {
           document.cookie = 'justVerified=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'

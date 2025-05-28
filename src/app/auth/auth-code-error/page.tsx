@@ -23,10 +23,10 @@ export default function AuthCodeErrorPage() {
                 <AlertTriangle className="w-8 h-8 text-red-400" />
               </div>
               <h1 className="text-2xl font-bold text-white">
-                Verification failed
+                Authentication failed
               </h1>
               <p className="text-balance text-sm text-gray-400">
-                There was an issue verifying your email address
+                There was an issue with the authentication process
               </p>
             </div>
 
@@ -35,7 +35,7 @@ export default function AuthCodeErrorPage() {
               <div className="space-y-2 text-sm text-gray-400">
                 <div className="flex items-center gap-2">
                   <div className="w-1 h-1 bg-gray-500 rounded-full" />
-                  <span>The verification link has expired</span>
+                  <span>The authentication link has expired</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-1 h-1 bg-gray-500 rounded-full" />
@@ -50,10 +50,10 @@ export default function AuthCodeErrorPage() {
 
             <div className="space-y-3">
               <Button
-                onClick={() => router.push('/verify-email')}
+                onClick={() => router.push('/signup')}
                 className="w-full bg-white hover:bg-gray-100 text-black h-12 text-sm font-medium"
               >
-                Request new verification email
+                Create new account
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
 
