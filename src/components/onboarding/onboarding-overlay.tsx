@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { AEOPipeline } from '@/app/visibility-test/components/aeo-pipeline'
+import { AEOScoreCard } from '@/app/visibility-test/components/aeo-score-card'
 import { 
   CheckCircle2, 
   ArrowRight, 
@@ -87,11 +89,11 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('workspace')
   const [progress, setProgress] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
-  const [scanProgress, setScanProgress] = useState(0)
-  const [scanStage, setScanStage] = useState('Crawling your site...')
   const [showSkipWarning, setShowSkipWarning] = useState(false)
   const [visibilityScore, setVisibilityScore] = useState(0)
   const [isAnnual, setIsAnnual] = useState(false)
+  const [isPipelineOpen, setIsPipelineOpen] = useState(false)
+  const [visibilityData, setVisibilityData] = useState<any | null>(null)
 
   // Form data
   const [workspaceData, setWorkspaceData] = useState<WorkspaceData>({
@@ -204,72 +206,12 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
     }
   }, [currentStep])
 
-  // Mock scanning simulation with enhanced stages
+  // Trigger real AEO pipeline when entering the scanning step
   useEffect(() => {
     if (currentStep === 'scanning') {
-      const stages = [
-        'Initializing crawl systems...',
-        'Crawling sitemap & live pages...',
-        'Parsing robots.txt · schema · llms.txt...',
-        'Indexing page content...',
-        'Preparing AI query batches...',
-        'Running ChatGPT queries (batch 1/4)...',
-        'Running ChatGPT queries (batch 2/4)...',
-        'Running ChatGPT queries (batch 3/4)...',
-        'Running ChatGPT queries (batch 4/4)...',
-        'Querying Perplexity AI...',
-        'Analyzing Claude responses...',
-        'Testing Google AI Overview...',
-        'Cross-referencing AI citations...',
-        'Benchmarking competitor mentions...',
-        'Analyzing competitor content gaps...',
-        'Computing visibility vectors...',
-        'Calculating final score...',
-        'Generating insights report...'
-      ]
-      
-      let stageIndex = 0
-      let progressValue = 0
-      
-      const interval = setInterval(() => {
-        // Slower, more realistic progress
-        progressValue += Math.random() * 8 + 2
-        
-        if (progressValue >= 100) {
-          progressValue = 100
-          setScanProgress(100)
-          setScanStage('Scan complete!')
-          
-          // Generate random score between 15-35 for demo
-          const score = Math.floor(Math.random() * 20) + 15
-          setVisibilityScore(score)
-          
-          clearInterval(interval)
-          
-          // Clear onboarding data after scan completes
-          setTimeout(() => {
-            localStorage.removeItem('onboardingData')
-          }, 500)
-          
-          setTimeout(() => {
-            setCurrentStep('results')
-          }, 1500)
-          return
-        }
-        
-        setScanProgress(progressValue)
-        
-        // More granular stage progression
-        const newStageIndex = Math.floor(progressValue / (100 / stages.length))
-        if (newStageIndex !== stageIndex && newStageIndex < stages.length) {
-          stageIndex = newStageIndex
-          setScanStage(stages[stageIndex])
-        }
-      }, 1200) // Slower interval for longer scan
-      
-      return () => clearInterval(interval)
+      setIsPipelineOpen(true)
     }
-  }, [currentStep, onComplete])
+  }, [currentStep])
 
   // Dev mode: Exit onboarding with middle mouse button
   useEffect(() => {
@@ -375,6 +317,18 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
       }))
       setNewCompetitor('')
     }
+  }
+
+  const handlePipelineComplete = (data: any) => {
+    setVisibilityData(data)
+    setVisibilityScore(data.overallScore ?? data.aeoData?.aeo_score ?? 0)
+    localStorage.removeItem('onboardingData')
+    setIsPipelineOpen(false)
+    setCurrentStep('results')
+  }
+
+  const handlePipelineClose = () => {
+    setIsPipelineOpen(false)
   }
 
   const removeCompetitor = (index: number) => {
@@ -847,7 +801,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
               </motion.div>
             )}
 
-            {/* Step 5: Enhanced Scanning */}
+            {/* Step 5: Scanning - real pipeline runs in background */}
             {currentStep === 'scanning' && (
               <motion.div
                 key="scanning"
@@ -856,65 +810,13 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                 transition={{ duration: 0.2 }}
                 className="bg-[#0c0c0c] border border-[#1a1a1a] p-6 text-center"
               >
-                <div className="mb-6">
-                  <h2 className="text-lg font-medium text-white mb-1">Running Visibility Scan</h2>
-                  <p className="text-sm text-[#666]">Analyzing your AI visibility</p>
-                </div>
-
-                <div className="mb-6">
-                  <div className="w-full h-2 bg-[#1a1a1a] mb-3">
-                    <motion.div 
-                      className="h-full bg-white"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${scanProgress}%` }}
-                      transition={{ duration: 0.3, ease: "easeOut" }}
-                    />
-                  </div>
-                  <div className="text-sm text-[#666] font-mono">{Math.round(scanProgress)}% complete</div>
-                </div>
-
-                <div className="text-sm text-white mb-6 font-medium">{scanStage}</div>
-
-                <div className="bg-[#1a1a1a] border border-[#333] p-4 text-left">
-                  <div className="text-sm text-white font-medium mb-3">What we're doing:</div>
-                  <div className="space-y-2 text-xs text-[#666]">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${scanProgress > 12 ? 'bg-white' : 'bg-[#333]'}`} />
-                      <span className={scanProgress > 12 ? 'text-white' : ''}>Crawling sitemap & live pages</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${scanProgress > 25 ? 'bg-white' : 'bg-[#333]'}`} />
-                      <span className={scanProgress > 25 ? 'text-white' : ''}>Parsing robots.txt · schema · llms.txt</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${scanProgress > 40 ? 'bg-white' : 'bg-[#333]'}`} />
-                      <span className={scanProgress > 40 ? 'text-white' : ''}>Running 100 AI queries (ChatGPT, Perplexity, Claude)</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${scanProgress > 60 ? 'bg-white' : 'bg-[#333]'}`} />
-                      <span className={scanProgress > 60 ? 'text-white' : ''}>Benchmarking vs competitors</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-2 h-2 rounded-full ${scanProgress > 80 ? 'bg-white' : 'bg-[#333]'}`} />
-                      <span className={scanProgress > 80 ? 'text-white' : ''}>Computing Visibility Score & gap vectors</span>
-                    </div>
-                  </div>
-                </div>
-
-                {scanProgress > 50 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-4 text-xs text-[#888]"
-                  >
-                    Almost there... generating your personalized insights
-                  </motion.div>
-                )}
+                <h2 className="text-lg font-medium text-white mb-2">Launching Visibility Scan...</h2>
+                <p className="text-sm text-[#666]">Connecting to analysis pipeline</p>
               </motion.div>
             )}
 
-            {/* Step 6: Results with Minimal Content */}
-            {currentStep === 'results' && (
+            {/* Step 6: Results with real data */}
+            {currentStep === 'results' && visibilityData && (
               <motion.div
                 key="results"
                 initial={{ opacity: 0, y: 10 }}
@@ -927,28 +829,15 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                   <p className="text-sm text-[#666]">Based on analysis across 100+ AI queries</p>
                 </div>
 
-                {/* Score Display */}
-                <div className="text-center mb-8">
-                  <div className="inline-flex items-center justify-center w-24 h-24 border border-white mb-4">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-white">{visibilityScore}</div>
-                      <div className="text-xs text-[#666]">/ 100</div>
-                    </div>
-                  </div>
-                  <div className="text-sm text-[#888]">
-                    {visibilityScore < 25 ? 'Room for improvement' : 
-                     visibilityScore < 50 ? 'Good foundation' : 
-                     visibilityScore < 75 ? 'Strong visibility' : 'Excellent visibility'}
-                  </div>
+                <div className="mb-8">
+                  <AEOScoreCard data={visibilityData.aeoData} />
                 </div>
 
-                {/* Simple Upgrade Message */}
                 <div className="text-center mb-6">
                   <p className="text-sm text-[#ccc] mb-4">
                     Upgrade to <span className="text-white">Basic</span>, <span className="text-white">Plus</span>, or <span className="text-white">Pro</span> to unlock your full breakdown, see your citations, view competitive benchmarking and autonomously raise your site visibility in LLMs.
                   </p>
                 </div>
-
 
               </motion.div>
             )}
@@ -1189,6 +1078,12 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
           )}
         </div>
       </div>
+      <AEOPipeline
+        isOpen={isPipelineOpen}
+        crawlUrl={analyticsData.domain || ''}
+        onClose={handlePipelineClose}
+        onAnalysisComplete={handlePipelineComplete}
+      />
     </div>
   )
-} 
+}
