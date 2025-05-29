@@ -188,6 +188,7 @@ async function runAEOPipeline(
   
   try {
     // Step 1: Firecrawl
+    console.log('🚀 STARTING STEP 1: FIRECRAWL')
     sendProgress({
       step: 'crawl',
       progress: 0,
@@ -198,6 +199,9 @@ async function runAEOPipeline(
     const crawlSnapshot = await executeCrawlStep(targetUrl, sendProgress)
     await saveJSON(storage, 'crawl_snapshot.json', crawlSnapshot)
     
+    console.log('✅ STEP 1 COMPLETE: Firecrawl finished')
+    console.log(`📊 Crawl results: ${crawlSnapshot.results.length} pages`)
+    
     sendProgress({
       step: 'crawl',
       progress: 1,
@@ -206,6 +210,7 @@ async function runAEOPipeline(
     })
     
     // Step 2: Question Generation
+    console.log('🚀 STARTING STEP 2: QUESTION GENERATION')
     sendProgress({
       step: 'questions',
       progress: 1,
@@ -216,6 +221,9 @@ async function runAEOPipeline(
     const questions = await generateQuestions(crawlSnapshot)
     await saveJSON(storage, 'questions.json', questions)
     
+    console.log('✅ STEP 2 COMPLETE: Question generation finished')
+    console.log(`❓ Generated ${questions.questions.length} questions`)
+    
     sendProgress({
       step: 'questions',
       progress: 2,
@@ -224,6 +232,7 @@ async function runAEOPipeline(
     })
     
     // Step 3: SERP Search
+    console.log('🚀 STARTING STEP 3: SERP SEARCH')
     sendProgress({
       step: 'search',
       progress: 2,
@@ -234,6 +243,7 @@ async function runAEOPipeline(
     const serpResults = await searchQuestions(
       questions.questions,
       (completed, total, currentQuestion) => {
+        console.log(`🔍 Search progress: ${completed}/${total} - ${currentQuestion}`)
         sendProgress({
           step: 'search',
           progress: 2 + (completed / total) * 0.8, // Takes most of step 3
@@ -245,6 +255,9 @@ async function runAEOPipeline(
     
     await saveJSON(storage, 'serp_results.json', serpResults)
     
+    console.log('✅ STEP 3 COMPLETE: SERP search finished')
+    console.log(`🔍 Search results: ${Object.keys(serpResults).length} questions searched`)
+    
     sendProgress({
       step: 'search',
       progress: 3,
@@ -253,6 +266,7 @@ async function runAEOPipeline(
     })
     
     // Step 4: Classification
+    console.log('🚀 STARTING STEP 4: URL CLASSIFICATION')
     sendProgress({
       step: 'classify',
       progress: 3,
@@ -261,10 +275,13 @@ async function runAEOPipeline(
     })
     
     const targetDomain = extractDomain(targetUrl)
+    console.log(`🎯 Target domain for classification: ${targetDomain}`)
+    
     const classifiedResults = await classifyResults(
       serpResults,
       targetDomain,
       (completed, total) => {
+        console.log(`🏷️ Classification progress: ${completed}/${total}`)
         sendProgress({
           step: 'classify',
           progress: 3 + (completed / total) * 0.8,
@@ -276,6 +293,9 @@ async function runAEOPipeline(
     
     await saveJSON(storage, 'classified_results.json', classifiedResults)
     
+    console.log('✅ STEP 4 COMPLETE: URL classification finished')
+    console.log(`🏷️ Classification results: ${classifiedResults.metadata.total_urls} URLs classified`)
+
     sendProgress({
       step: 'classify',
       progress: 4,
@@ -284,6 +304,7 @@ async function runAEOPipeline(
     })
     
     // Step 5: Score Calculation
+    console.log('🚀 STARTING STEP 5: SCORE CALCULATION')
     sendProgress({
       step: 'score',
       progress: 4,
@@ -298,6 +319,9 @@ async function runAEOPipeline(
     )
     
     await saveJSON(storage, 'visibility_score.json', visibilityScore)
+    
+    console.log('✅ STEP 5 COMPLETE: Score calculation finished')
+    console.log(`📊 Final AEO Score: ${visibilityScore.aeo_score}/100`)
     
     // Final results
     sendProgress({
@@ -341,35 +365,54 @@ async function runAEOPipeline(
  * Executes the crawl step with proper error handling
  */
 async function executeCrawlStep(targetUrl: string, sendProgress: (event: ProgressEvent) => void) {
+  console.log('🕷️ Starting crawl step for:', targetUrl)
+  
   try {
     // Start crawl
+    console.log('📞 Calling asyncCrawlUrl with options:', { limit: 10, maxDepth: 2 })
     const crawlResponse = await asyncCrawlUrl(targetUrl, { 
       limit: 10,
       maxDepth: 2
     })
     
-    if (!crawlResponse.success) {
-      throw new Error('Failed to start crawl job')
+    console.log('✅ Crawl response received:', crawlResponse)
+    
+    const crawlId = crawlResponse.id || crawlResponse.runId || crawlResponse.jobId
+    console.log('🆔 Using crawl ID:', crawlId)
+    
+    if (!crawlId) {
+      console.log('❌ No crawl ID found in response:', crawlResponse)
+      throw new Error('No crawl ID returned from Firecrawl')
     }
     
     sendProgress({
       step: 'crawl',
       progress: 0.2,
       total: 5,
-      message: `Crawl job started: ${crawlResponse.id}`
+      message: `Crawl job started: ${crawlId}`
     })
     
     // Wait for completion and get results
     let attempts = 0
     const maxAttempts = 30 // 5 minutes max
     
+    console.log(`⏳ Starting crawl polling loop (max ${maxAttempts} attempts)`)
+    
     while (attempts < maxAttempts) {
+      console.log(`🔄 Polling attempt ${attempts + 1}/${maxAttempts}`)
       await new Promise(resolve => setTimeout(resolve, 10000)) // Wait 10 seconds
       
       try {
-        const results = await getCrawlResults(crawlResponse.id)
+        console.log(`📡 Calling getCrawlResults for ID: ${crawlId}`)
+        const results = await getCrawlResults(crawlId)
+        
+        console.log(`📊 Crawl results status: ${results.status}`)
+        console.log(`📊 Crawl results data length: ${results.data ? results.data.length : 'no data'}`)
         
         if (results.status === 'completed' && results.data && results.data.length > 0) {
+          console.log('🎉 Crawl completed successfully!')
+          console.log(`📄 Processing ${results.data.length} pages`)
+          
           // Transform Firecrawl data to our format
           const crawlSnapshot = {
             url: targetUrl,
@@ -386,34 +429,43 @@ async function executeCrawlStep(targetUrl: string, sendProgress: (event: Progres
             }))
           }
           
+          console.log('✅ Crawl snapshot created successfully')
           return crawlSnapshot
         }
+        
+        console.log(`⏳ Crawl still in progress (status: ${results.status})`)
         
         sendProgress({
           step: 'crawl',
           progress: 0.2 + (attempts / maxAttempts) * 0.6,
           total: 5,
-          message: `Crawling in progress... (${attempts * 10}s elapsed)`
+          message: `Crawling in progress... (${attempts * 10}s elapsed, status: ${results.status})`
         })
         
       } catch (statusError) {
-        console.log('⏳ Crawl still in progress...')
+        console.log('⚠️ Error checking crawl status:', statusError)
+        console.log('⏳ Continuing to poll...')
       }
       
       attempts++
     }
     
+    console.log('⏰ Crawl timed out after 5 minutes')
     throw new Error('Crawl timed out after 5 minutes')
     
   } catch (error) {
-    console.error('❌ Crawl error:', error)
+    console.error('❌ CRAWL STEP FAILED:', error)
+    console.log('🔍 Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    })
     
     // Fallback: create minimal snapshot for testing
-    console.log('🔄 Using fallback test data...')
+    console.log('🔄 FALLING BACK TO TEST DATA')
     console.warn(`⚠️ Website ${targetUrl} may not be accessible or may be blocking crawlers`)
     console.log('💡 Try testing with accessible websites like: openai.com, stripe.com, or github.com')
     
-    return {
+    const fallbackData = {
       url: targetUrl,
       results: [{
         url: targetUrl,
@@ -427,6 +479,9 @@ async function executeCrawlStep(targetUrl: string, sendProgress: (event: Progres
         }
       }]
     }
+    
+    console.log('📦 Fallback data created:', fallbackData)
+    return fallbackData
   }
 }
 
