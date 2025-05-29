@@ -1,17 +1,105 @@
 'use client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { AEOScorecard } from '@/app/dashboard/components/aeo-scorecard/aeo-scorecard'
 import { ScoreHistoryChart } from './score-history-chart'
+import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
 
 interface Point { date: string; score: number }
+
 export function OverallAEOCard({ history }: { history: Point[] }) {
+  const [displayScore, setDisplayScore] = useState(0)
+  const currentScore = history.length > 0 ? history[history.length - 1].score : 0
+
+  // Animate score counting up
+  useEffect(() => {
+    if (currentScore === 0) return
+    
+    let start = 0
+    const duration = 1000
+    const increment = currentScore / (duration / 16)
+    
+    const timer = setInterval(() => {
+      start += increment
+      if (start >= currentScore) {
+        setDisplayScore(currentScore)
+        clearInterval(timer)
+      } else {
+        setDisplayScore(Math.floor(start))
+      }
+    }, 16)
+    
+    return () => clearInterval(timer)
+  }, [currentScore])
+
+  const getScoreColor = (score: number) => {
+    if (score >= 70) return 'text-green-400'
+    if (score >= 40) return 'text-yellow-400'
+    return 'text-red-400'
+  }
+
+  const getScoreGrade = (score: number) => {
+    if (score >= 90) return 'A+'
+    if (score >= 80) return 'A'
+    if (score >= 70) return 'B+'
+    if (score >= 60) return 'B'
+    if (score >= 50) return 'C+'
+    if (score >= 40) return 'C'
+    if (score >= 30) return 'D'
+    return 'F'
+  }
+
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle className="text-white">Overall AEO Score</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-6 flex-1">
-        <AEOScorecard />
+        {/* Real Score Display */}
+        <div className="flex items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="relative w-32 h-32 flex-shrink-0"
+          >
+            <svg className="w-full h-full -rotate-90" viewBox="0 0 128 128">
+              <circle
+                cx="64"
+                cy="64"
+                r="56"
+                fill="none"
+                stroke="#222222"
+                strokeWidth="8"
+              />
+              <motion.circle
+                cx="64"
+                cy="64"
+                r="56"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="8"
+                strokeDasharray={`${(currentScore * 351.86) / 100} 351.86`}
+                className={getScoreColor(currentScore)}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className={`text-2xl font-bold ${getScoreColor(currentScore)}`}>
+                {displayScore}
+              </span>
+              <span className="text-xs text-gray-400">
+                Grade: {getScoreGrade(currentScore)}
+              </span>
+            </div>
+          </motion.div>
+        </div>
+        
+        {/* Score interpretation */}
+        <div className="text-center text-sm text-gray-300">
+          {currentScore >= 70 && "Excellent AI visibility! Your content is well-optimized for AI search engines."}
+          {currentScore >= 40 && currentScore < 70 && "Good foundation, but there's room for improvement in AI optimization."}
+          {currentScore < 40 && "Significant opportunities to improve your AI visibility and citations."}
+        </div>
+        
         <ScoreHistoryChart data={history} />
       </CardContent>
     </Card>
