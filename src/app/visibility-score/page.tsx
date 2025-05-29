@@ -3,17 +3,18 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { AEOPipeline } from '@/app/visibility-test/components/aeo-pipeline'
+import { AEOPipeline } from '../visibility-test/components/aeo-pipeline'
 import { AEOScoreCard } from '@/app/visibility-test/components/aeo-score-card'
 import { OverallAEOCard } from '@/app/visibility-test/components/overall-aeo-card'
 import { DirectCitationCard } from '@/app/visibility-test/components/direct-citation-card'
 import { SuggestionsCard } from '@/app/visibility-test/components/suggestions-card'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
+import { createClient } from '@/lib/supabase/client'
 
 interface OnboardingData {
-  siteUrl: string
   email: string
+  siteUrl: string
   keywords: string[]
   businessOffering: string
   knownFor: string
@@ -54,6 +55,10 @@ export default function VisibilityScorePage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isAnalyzerOpen, setIsAnalyzerOpen] = useState(false)
   const [currentStep, setCurrentStep] = useState<'welcome' | 'analyzing' | 'results'>('welcome')
+  const [isLoading, setIsLoading] = useState(true)
+  const [isPipelineOpen, setIsPipelineOpen] = useState(false)
+  const [analysisComplete, setAnalysisComplete] = useState(false)
+  const [analysisResults, setAnalysisResults] = useState(null)
 
   // Redirect if not logged in
   useEffect(() => {
@@ -64,57 +69,132 @@ export default function VisibilityScorePage() {
 
   // Load onboarding data on mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const data = localStorage.getItem('onboardingData')
-      if (data) {
-        setOnboardingData(JSON.parse(data))
-      } else {
-        // No onboarding data, redirect to start
-        router.push('/start')
+    console.log('🚀 VISIBILITY SCORE PAGE: Component mounted')
+    
+    const initializePage = async () => {
+      try {
+        // Check authentication
+        const supabase = createClient()
+        if (!supabase) {
+          console.log('❌ Failed to initialize Supabase client')
+          setIsLoading(false)
+          return
+        }
+        
+        const { data: { user }, error } = await supabase.auth.getUser()
+        
+        if (error) {
+          console.log('❌ Auth error:', error)
+          setIsLoading(false)
+          return
+        }
+        
+        if (!user) {
+          console.log('⚠️ No authenticated user found')
+          setIsLoading(false)
+          return
+        }
+        
+        console.log('✅ User authenticated:')
+        console.log('👤 User email:', user.email)
+        console.log('🆔 User ID:', user.id)
+        
+        // Get onboarding data from localStorage
+        const storedData = localStorage.getItem('onboardingData')
+        if (storedData) {
+          try {
+            const parsed = JSON.parse(storedData)
+            console.log('📦 ONBOARDING DATA FOUND:')
+            console.log('👤 Email:', parsed.email)
+            console.log('🌐 Website:', parsed.siteUrl)
+            console.log('🔍 Keywords:', parsed.keywords)
+            console.log('🏢 Business Offering:', parsed.businessOffering)
+            console.log('⭐ Known For:', parsed.knownFor)
+            console.log('🥊 Competitors:', parsed.competitors)
+            setOnboardingData(parsed)
+          } catch (e) {
+            console.log('❌ Failed to parse onboarding data:', e)
+          }
+        } else {
+          console.log('⚠️ No onboarding data found in localStorage')
+        }
+      } catch (error) {
+        console.log('❌ Page initialization error:', error)
+      } finally {
+        setIsLoading(false)
       }
     }
-  }, [router])
+
+    initializePage()
+  }, [])
 
   const startAnalysis = () => {
     if (!onboardingData?.siteUrl) return
     
+    console.log('🚀 Starting analysis manually from welcome screen')
     setCurrentStep('analyzing')
     setIsAnalyzing(true)
     setIsAnalyzerOpen(true)
   }
 
-  const handleAnalysisComplete = (data: VisibilityData) => {
-    setVisibilityData(data)
+  const handleAnalysisComplete = (results: any) => {
+    console.log('🎉 Analysis completed with results:', results)
+    setAnalysisResults(results)
+    setAnalysisComplete(true)
+    setIsPipelineOpen(false)
     setCurrentStep('results')
     setIsAnalyzing(false)
+    
+    // Store the results as visibility data for the existing UI
+    setVisibilityData(results)
     
     // Clear onboarding data now that we've used it
     localStorage.removeItem('onboardingData')
   }
 
-  const closeAnalyzer = () => {
+  const handlePipelineClose = () => {
+    console.log('🔒 Pipeline closed')
+    setIsPipelineOpen(false)
     setIsAnalyzerOpen(false)
   }
 
-  const goToDashboard = () => {
-    router.push('/dashboard')
+  if (isLoading) {
+    console.log('⏳ Page still loading...')
+    return (
+      <div className="min-h-screen bg-[#0c0c0c] flex items-center justify-center">
+        <div className="text-white">Loading...</div>
+      </div>
+    )
   }
 
-  if (loading) {
+  if (!user) {
+    console.log('🔒 Redirecting to login - no user found')
+    // In a real app, redirect to login
     return (
-      <div className="flex h-screen items-center justify-center bg-[#0c0c0c]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent text-white" />
+      <div className="min-h-screen bg-[#0c0c0c] flex items-center justify-center">
+        <div className="text-white">Please log in to view your visibility score.</div>
       </div>
     )
   }
 
   if (!onboardingData) {
+    console.log('⚠️ No onboarding data - showing error state')
     return (
-      <div className="flex h-screen items-center justify-center bg-[#0c0c0c]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent text-white" />
+      <div className="min-h-screen bg-[#0c0c0c] flex items-center justify-center">
+        <div className="text-white">No website data found. Please restart the onboarding process.</div>
       </div>
     )
   }
+
+  console.log('🎯 About to render AEO Pipeline with website:', onboardingData.siteUrl)
+
+  // Auto-start analysis when page loads
+  useEffect(() => {
+    if (onboardingData && !isPipelineOpen && !analysisComplete) {
+      console.log('🎬 Auto-starting analysis for:', onboardingData.siteUrl)
+      setIsPipelineOpen(true)
+    }
+  }, [onboardingData, isPipelineOpen, analysisComplete])
 
   return (
     <div className="min-h-screen bg-[#0c0c0c] flex flex-col">
@@ -219,7 +299,7 @@ export default function VisibilityScorePage() {
 
               <div className="text-center pt-6">
                 <Button
-                  onClick={goToDashboard}
+                  onClick={() => router.push('/dashboard')}
                   className="bg-white text-black hover:bg-gray-100 h-12 px-8 text-lg font-medium"
                 >
                   Continue to Dashboard
@@ -231,14 +311,12 @@ export default function VisibilityScorePage() {
       </main>
 
       {/* AEO Pipeline Modal */}
-      {onboardingData && (
-        <AEOPipeline 
-          isOpen={isAnalyzerOpen}
-          crawlUrl={onboardingData.siteUrl}
-          onClose={closeAnalyzer}
-          onAnalysisComplete={handleAnalysisComplete}
-        />
-      )}
+      <AEOPipeline 
+        isOpen={isPipelineOpen || isAnalyzerOpen}
+        crawlUrl={onboardingData?.siteUrl || ''}
+        onClose={handlePipelineClose}
+        onAnalysisComplete={handleAnalysisComplete}
+      />
     </div>
   )
 } 

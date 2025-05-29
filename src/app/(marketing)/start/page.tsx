@@ -25,6 +25,7 @@ export default function StartPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [newKeyword, setNewKeyword] = useState('')
   const [newCompetitor, setNewCompetitor] = useState('')
+  const [errors, setErrors] = useState({})
   
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     siteUrl: '',
@@ -157,6 +158,33 @@ export default function StartPage() {
       case 'content': return 2
       case 'signup': return 3
       default: return 1
+    }
+  }
+
+  const handleContinue = async () => {
+    if (currentStep === 'email') {
+      if (!onboardingData.email) {
+        console.log('❌ Email validation failed: empty email')
+        return
+      }
+      console.log('📝 ONBOARDING STEP 1: Email captured:', onboardingData.email)
+      setCurrentStep('content')
+    } else if (currentStep === 'content') {
+      console.log('📝 ONBOARDING STEP 2: Content data captured')
+      console.log('👤 Email:', onboardingData.email)
+      console.log('🌐 Website:', onboardingData.siteUrl)
+      console.log('🔍 Keywords:', onboardingData.keywords)
+      console.log('🏢 Business Offering:', onboardingData.businessOffering)
+      console.log('⭐ Known For:', onboardingData.knownFor)
+      console.log('🥊 Competitors:', onboardingData.competitors)
+      
+      // Save to localStorage
+      localStorage.setItem('onboardingData', JSON.stringify(onboardingData))
+      console.log('💾 Onboarding data saved to localStorage')
+      
+      // Redirect to signup
+      console.log('🔄 Redirecting to signup page...')
+      router.push('/signup')
     }
   }
 
@@ -404,7 +432,7 @@ export default function StartPage() {
                 </div>
 
                 <Button
-                  onClick={() => router.push('/signup')}
+                  onClick={handleContinue}
                   className="w-full bg-white text-black hover:bg-gray-100 h-12 text-base font-medium"
                 >
                   Create Account

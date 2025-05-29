@@ -85,15 +85,26 @@ export function AEOPipeline({ isOpen, crawlUrl, onClose, onAnalysisComplete }: A
   useEffect(() => {
     // Only run if modal is open, URL exists, and analysis isn't already running for this URL
     if (!isOpen || !crawlUrl || analyzedUrlRef.current === crawlUrl || isRunning) {
+      console.log('🔄 AEO Pipeline conditions check:')
+      console.log('  - isOpen:', isOpen)
+      console.log('  - crawlUrl:', crawlUrl)
+      console.log('  - already analyzed:', analyzedUrlRef.current === crawlUrl)
+      console.log('  - isRunning:', isRunning)
+      console.log('  - Should run:', isOpen && crawlUrl && analyzedUrlRef.current !== crawlUrl && !isRunning)
       return
     }
 
     // Also make sure we have an auth session
     if (!session) {
+      console.log('❌ AEO Pipeline: No session found')
       setError('Authentication required. Please log in.')
       setCurrentStep('error')
       return
     }
+
+    console.log('🚀 AEO PIPELINE: Starting analysis')
+    console.log('👤 Session user:', session.user?.email)
+    console.log('🌐 Target URL:', crawlUrl)
 
     const runAEOPipeline = async () => {
       try {
@@ -110,14 +121,23 @@ export function AEOPipeline({ isOpen, crawlUrl, onClose, onAnalysisComplete }: A
         addLog(`Starting AEO Visibility Pipeline for: ${crawlUrl}`, 'info')
         addLog('Initializing 5-step analysis...', 'info')
 
-                 // Create EventSource for SSE with auth token as query param
-         const eventSourceUrl = `/api/aeo/start?token=${encodeURIComponent(session.access_token)}&url=${encodeURIComponent(crawlUrl)}`
-         const eventSource = new EventSource(eventSourceUrl)
+        // Debug: Log session info
+        console.log('🔍 AEO Pipeline Debug Info:')
+        console.log('- Session exists:', !!session)
+        console.log('- Session access_token exists:', !!session?.access_token)
+        console.log('- Session access_token preview:', session?.access_token?.substring(0, 20) + '...')
+        console.log('- CrawlUrl:', crawlUrl)
+
+        // Create EventSource for SSE with auth token as query param
+        const eventSourceUrl = `/api/aeo/start?token=${encodeURIComponent(session.access_token)}&url=${encodeURIComponent(crawlUrl)}`
+        console.log('🔗 EventSource URL:', eventSourceUrl.replace(session.access_token, '[REDACTED]'))
         
+        const eventSource = new EventSource(eventSourceUrl)
         eventSourceRef.current = eventSource
 
         // Handle progress events
         eventSource.onmessage = (event) => {
+          console.log('📨 EventSource message received:', event.data)
           try {
             const progressData: ProgressEvent = JSON.parse(event.data)
             
@@ -157,16 +177,22 @@ export function AEOPipeline({ isOpen, crawlUrl, onClose, onAnalysisComplete }: A
           }
         }
 
-                 eventSource.onerror = (error) => {
-           console.error('EventSource error:', error)
-           addLog('Connection error during analysis', 'error')
-           setError('Connection lost during analysis')
-           setCurrentStep('error')
-           setIsRunning(false)
-           eventSource.close()
-         }
+        eventSource.onerror = (error) => {
+          console.error('🚨 EventSource error:', error)
+          console.log('EventSource readyState:', eventSource.readyState)
+          addLog('Connection error during analysis', 'error')
+          setError('Connection lost during analysis')
+          setCurrentStep('error')
+          setIsRunning(false)
+          eventSource.close()
+        }
 
-         // Pipeline will start automatically via EventSource GET request
+        eventSource.onopen = (event) => {
+          console.log('✅ EventSource connection opened', event)
+          addLog('Connected to analysis server', 'info')
+        }
+
+        // Pipeline will start automatically via EventSource GET request
         
       } catch (err) {
         console.error('Pipeline error:', err)

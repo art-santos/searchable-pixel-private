@@ -120,17 +120,30 @@ export function SignupForm({
 
       // Check if user was created and signed in
       if (data.user) {
-        // Merge onboarding data with user record (this would be handled by backend)
-        if (typeof window !== 'undefined') {
-          const onboardingData = localStorage.getItem('onboardingData')
-          if (onboardingData) {
-            // TODO: Send onboarding data to backend to associate with user
-            console.log('Onboarding data to merge:', JSON.parse(onboardingData))
-          }
-        }
-
         // Set a flag to indicate user just signed up (for onboarding overlay)
         sessionStorage.setItem('justSignedUp', 'true')
+        
+        console.log('✅ SIGNUP SUCCESS:')
+        console.log('👤 User created:', data.user?.email)
+        console.log('🆔 User ID:', data.user?.id)
+        
+        // Check if we have onboarding data
+        const onboardingData = localStorage.getItem('onboardingData')
+        if (onboardingData) {
+          console.log('📦 Found onboarding data in localStorage')
+          try {
+            const parsed = JSON.parse(onboardingData)
+            console.log('🔍 Onboarding data contains:')
+            console.log('  - Email:', parsed.email)
+            console.log('  - Website:', parsed.siteUrl)
+            console.log('  - Keywords:', parsed.keywords)
+            console.log('  - Business:', parsed.businessOffering)
+          } catch (e) {
+            console.log('❌ Failed to parse onboarding data:', e)
+          }
+        } else {
+          console.log('⚠️ No onboarding data found in localStorage')
+        }
         
         // Call success callback
         onSignupSuccess?.()

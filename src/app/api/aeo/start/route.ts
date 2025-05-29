@@ -17,17 +17,27 @@ interface ProgressEvent {
 }
 
 export async function GET(request: NextRequest) {
+  console.log('🔍 GET /api/aeo/start - Authentication Debug')
+  console.log('='.repeat(50))
+  
   // Handle EventSource connection with auth token as query param
   const url = new URL(request.url)
   const token = url.searchParams.get('token')
   const targetUrl = url.searchParams.get('url')
   
+  console.log('📊 Request Parameters:')
+  console.log('- Token exists:', !!token)
+  console.log('- Token preview:', token?.substring(0, 20) + '...' || 'NONE')
+  console.log('- Target URL:', targetUrl)
+  
   if (!token || !targetUrl) {
+    console.log('❌ Missing required parameters')
     return NextResponse.json({ error: 'Missing token or url parameter' }, { status: 400 })
   }
   
   // Verify authentication using query param token
   try {
+    console.log('🔐 Attempting authentication...')
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_KEY!,
@@ -39,9 +49,17 @@ export async function GET(request: NextRequest) {
       }
     )
     
+    console.log('📡 Calling supabase.auth.getUser() with token...')
     const { data: userData, error: userError } = await supabase.auth.getUser(token)
     
+    console.log('📋 Auth Response:')
+    console.log('- User data exists:', !!userData)
+    console.log('- User object exists:', !!userData?.user)
+    console.log('- User ID:', userData?.user?.id || 'NONE')
+    console.log('- Auth error:', userError ? userError.message : 'NONE')
+    
     if (userError || !userData.user) {
+      console.log('❌ Authentication failed')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     
