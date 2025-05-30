@@ -1,0 +1,16 @@
+{
+  "url": "https://origamiagents.com",
+  "results": [
+    {
+      "url": "https://origamiagents.com",
+      "title": "origamiagents.com - Test Analysis",
+      "content": "This is test content for AEO pipeline testing. The website offers various business solutions including automation tools, analytics platforms, and productivity software.",
+      "markdown": "# Test Content\n\nThis is test content for the AEO pipeline.",
+      "metadata": {
+        "description": "Test description for AEO analysis",
+        "og": {},
+        "links": []
+      }
+    }
+  ]
+}

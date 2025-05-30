@@ -1,5 +1,4 @@
 'use client'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ScoreHistoryChart } from './score-history-chart'
 import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
@@ -34,33 +33,29 @@ export function OverallAEOCard({ history }: { history: Point[] }) {
   const getScoreColor = (score: number) => {
     if (score >= 70) return 'text-green-400'
     if (score >= 40) return 'text-yellow-400'
-    return 'text-red-400'
+    return 'text-orange-400'
   }
 
   const getScoreGrade = (score: number) => {
-    if (score >= 90) return 'A+'
     if (score >= 80) return 'A'
-    if (score >= 70) return 'B+'
-    if (score >= 60) return 'B'
-    if (score >= 50) return 'C+'
-    if (score >= 40) return 'C'
-    if (score >= 30) return 'D'
-    return 'F'
+    if (score >= 65) return 'B'
+    if (score >= 50) return 'C'
+    if (score >= 35) return 'D'
+    return 'E'
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader>
-        <CardTitle className="text-white">Overall AEO Score</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-6 flex-1">
+    <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4 sm:p-6 h-full flex flex-col">
+      <h3 className="text-white font-medium text-base sm:text-lg mb-4">Score History</h3>
+      
+      <div className="flex flex-col gap-4 sm:gap-6 flex-1">
         {/* Real Score Display */}
         <div className="flex items-center justify-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
-            className="relative w-32 h-32 flex-shrink-0"
+            className="relative w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0"
           >
             <svg className="w-full h-full -rotate-90" viewBox="0 0 128 128">
               <circle
@@ -68,7 +63,7 @@ export function OverallAEOCard({ history }: { history: Point[] }) {
                 cy="64"
                 r="56"
                 fill="none"
-                stroke="#222222"
+                stroke="#1a1a1a"
                 strokeWidth="8"
               />
               <motion.circle
@@ -83,10 +78,10 @@ export function OverallAEOCard({ history }: { history: Point[] }) {
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className={`text-2xl font-bold ${getScoreColor(currentScore)}`}>
+              <span className={`text-xl sm:text-2xl font-bold ${getScoreColor(currentScore)}`}>
                 {displayScore}
               </span>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-[#666]">
                 Grade: {getScoreGrade(currentScore)}
               </span>
             </div>
@@ -94,14 +89,16 @@ export function OverallAEOCard({ history }: { history: Point[] }) {
         </div>
         
         {/* Score interpretation */}
-        <div className="text-center text-sm text-gray-300">
+        <div className="text-center text-xs sm:text-sm text-[#888] px-2">
           {currentScore >= 70 && "Excellent AI visibility! Your content is well-optimized for AI search engines."}
           {currentScore >= 40 && currentScore < 70 && "Good foundation, but there's room for improvement in AI optimization."}
           {currentScore < 40 && "Significant opportunities to improve your AI visibility and citations."}
         </div>
         
+        <div className="mt-auto">
         <ScoreHistoryChart data={history} />
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+    </div>
   )
 }

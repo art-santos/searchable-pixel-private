@@ -835,7 +835,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
 
                 <div className="text-center mb-6">
                   <p className="text-sm text-[#ccc] mb-4">
-                    Upgrade to <span className="text-white">Basic</span>, <span className="text-white">Plus</span>, or <span className="text-white">Pro</span> to unlock your full breakdown, see your citations, view competitive benchmarking and autonomously raise your site visibility in LLMs.
+                    Upgrade to <span className="text-white">Visibility</span>, <span className="text-white">Plus</span>, or <span className="text-white">Pro</span> to unlock your full breakdown, see your citations, view competitive benchmarking and autonomously raise your site visibility in LLMs.
                   </p>
                 </div>
 
@@ -897,7 +897,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                     <div className="space-y-3 mb-6">
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span className="text-sm text-white">Weekly visibility reports</span>
+                        <span className="text-sm text-white">Daily visibility scans</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
@@ -937,7 +937,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                       <h3 className="text-lg font-medium text-white mb-1">Plus</h3>
                       <p className="text-xs text-[#888] mb-3">Scale your AI visibility</p>
                       <div className="text-3xl font-bold text-white mb-1">
-                        ${isAnnual ? '80' : '100'}
+                        ${isAnnual ? '160' : '200'}
                       </div>
                       <div className="text-xs text-[#666]">per month</div>
                     </div>
@@ -945,11 +945,11 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                     <div className="space-y-3 mb-6">
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span className="text-sm text-white">Daily visibility scans</span>
+                        <span className="text-sm text-white">Daily MAX visibility scans</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span className="text-sm text-white">4 AI-optimized articles</span>
+                        <span className="text-sm text-white">10 monthly AI articles</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
@@ -961,7 +961,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span className="text-sm text-white">Slack integration</span>
+                        <span className="text-sm text-white">Priority support</span>
                       </div>
                     </div>
 
@@ -983,7 +983,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                       <h3 className="text-lg font-medium text-white mb-1">Pro</h3>
                       <p className="text-xs text-[#888] mb-3">Full-stack AEO powerhouse</p>
                       <div className="text-3xl font-bold text-white mb-1">
-                        ${isAnnual ? '320' : '400'}
+                        ${isAnnual ? '800' : '1,000'}
                       </div>
                       <div className="text-xs text-[#666]">per month</div>
                     </div>
@@ -995,19 +995,19 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span className="text-sm text-white">Unlimited visibility scans</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-white" />
                         <span className="text-sm text-white">30 premium articles</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span className="text-sm text-white">Monthly AEO strategy call</span>
+                        <span className="text-sm text-white">Unlimited MAX scans</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-white" />
-                        <span className="text-sm text-white">API access & integrations</span>
+                        <span className="text-sm text-white">Multi-brand tracking</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-white" />
+                        <span className="text-sm text-white">Up to 3 domains</span>
                       </div>
                     </div>
 

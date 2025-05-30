@@ -1,3 +1,5 @@
+'use client'
+
 import { LPTopBar } from '@/components/layout/lp-topbar'
 import Footer from '@/components/layout/footer'
 

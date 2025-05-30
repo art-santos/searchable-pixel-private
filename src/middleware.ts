@@ -4,6 +4,13 @@ import { createClient } from '@/lib/supabase/middleware'
 
 export async function middleware(request: NextRequest) {
   try {
+    const { pathname } = request.nextUrl;
+    
+    // Skip middleware for Stripe webhook - it needs raw body access
+    if (pathname === '/api/stripe/webhook') {
+      return NextResponse.next();
+    }
+    
     const { supabase, response } = createClient(request)
     await supabase.auth.getSession()
     
@@ -13,7 +20,6 @@ export async function middleware(request: NextRequest) {
     }
 
     const { data: { session } } = await supabase.auth.getSession();
-    const { pathname } = request.nextUrl;
 
     // Allow public access to image files
     if (pathname.match(/\.(jpg|jpeg|png|gif|ico|svg|webp)$/i)) {

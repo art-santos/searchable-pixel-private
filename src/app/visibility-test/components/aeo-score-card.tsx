@@ -2,13 +2,13 @@
 
 import { ShareOfVoiceInfo } from './share-of-voice-info'
 
-interface AEOScoreData {
+interface AEOData {
   aeo_score: number
   coverage_owned: number
   coverage_operated: number
   coverage_total: number
   share_of_voice: number
-  metrics: {
+  metrics?: {
     questions_analyzed: number
     total_results: number
     owned_appearances: number
@@ -21,140 +21,109 @@ interface AEOScoreData {
 }
 
 interface AEOScoreCardProps {
-  data: AEOScoreData
+  data: AEOData
 }
 
 export function AEOScoreCard({ data }: AEOScoreCardProps) {
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-400'
-    if (score >= 60) return 'text-yellow-400'
-    if (score >= 40) return 'text-orange-400'
-    return 'text-red-400'
-  }
-
   const getScoreGrade = (score: number) => {
-    if (score >= 90) return 'A+'
-    if (score >= 80) return 'A'
-    if (score >= 70) return 'B+'
-    if (score >= 60) return 'B'
-    if (score >= 50) return 'C+'
-    if (score >= 40) return 'C'
-    if (score >= 30) return 'D'
-    return 'F'
+    if (score >= 80) return { grade: 'A', label: 'Excellent', color: 'text-green-400' }
+    if (score >= 65) return { grade: 'B', label: 'Strong', color: 'text-blue-400' }
+    if (score >= 50) return { grade: 'C', label: 'Growing', color: 'text-yellow-400' }
+    if (score >= 35) return { grade: 'D', label: 'Emerging', color: 'text-orange-400' }
+    return { grade: 'E', label: 'Early Stage', color: 'text-[#888]' } // More constructive than 'F'
   }
 
-  // Calculate component scores for breakdown
-  const coverageScore = (data.coverage_owned * 0.35 + data.coverage_operated * 0.15) * 100
-  const voiceScore = data.share_of_voice * 100
-  const consistencyScore = Math.min(20, (data.metrics.top_3_presence / data.metrics.questions_analyzed) * 20)
+  const scoreInfo = getScoreGrade(data.aeo_score)
+  
+  // More encouraging messaging
+  const getInsight = (score: number) => {
+    if (score >= 80) return "You're in the top tier of AI visibility. Keep optimizing to maintain your position."
+    if (score >= 65) return "Great foundation! You're ahead of most competitors with room to grow."
+    if (score >= 50) return "You're building solid visibility. Focus on owned content to accelerate growth."
+    if (score >= 35) return "You're on the right track. Consistent optimization will improve your score."
+    return "This is where most brands start. You have significant opportunity to improve visibility."
+  }
 
   return (
-    <div className="bg-[#1a1a1a] border border-[#333] rounded-lg p-6">
-      <div className="flex justify-between items-start mb-6">
+    <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4 sm:p-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-white text-xl font-bold mb-2">AEO Visibility Score</h2>
-          <p className="text-[#999] text-sm">Answer Engine Optimization effectiveness</p>
+          <h3 className="text-white font-medium text-base sm:text-lg mb-1">AI Visibility Score</h3>
+          <p className="text-[#666] text-xs sm:text-sm">
+            How visible your brand is across AI search engines
+          </p>
         </div>
-        <div className="text-right">
-          <div className={`text-4xl font-bold ${getScoreColor(data.aeo_score)}`}>
-            {data.aeo_score}
-            <span className="text-2xl text-[#666]">/100</span>
+        <div className="text-left sm:text-right">
+          <div className={`text-2xl sm:text-3xl font-bold ${scoreInfo.color}`}>
+            {scoreInfo.grade}
           </div>
-          <div className={`text-lg font-semibold ${getScoreColor(data.aeo_score)}`}>
-            Grade {getScoreGrade(data.aeo_score)}
-          </div>
+          <div className="text-[#666] text-xs">{scoreInfo.label}</div>
         </div>
       </div>
 
-      {/* Score Breakdown */}
-      <div className="mb-6">
-        <h3 className="text-white font-semibold mb-3">Score Breakdown</h3>
-        <div className="space-y-3">
-          {/* Coverage Score (50% weight) */}
-          <div className="bg-[#222] p-3 rounded">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-[#ccc] text-sm">Coverage Score (50% weight)</span>
-              <span className="text-white font-semibold">{Math.round(coverageScore)}/50</span>
+      {/* Main Score */}
+      <div className="text-center py-6 sm:py-8 border-y border-[#1a1a1a]">
+        <div className="text-5xl sm:text-6xl font-bold text-white mb-2">
+          {data.aeo_score}
             </div>
-            <div className="w-full bg-[#333] rounded-full h-2 mb-2">
-              <div 
-                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${Math.min(100, (coverageScore / 50) * 100)}%` }}
+        <div className="text-[#666] text-xs sm:text-sm mb-3 sm:mb-4">out of 100</div>
+        <p className="text-[#888] text-xs sm:text-sm max-w-md mx-auto px-2">
+          {getInsight(data.aeo_score)}
+        </p>
+            </div>
+
+      {/* Key Metrics Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4 sm:mt-6">
+        <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded p-3 sm:p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[#666] text-xs">Owned Coverage</span>
+            <span className="text-white font-medium text-sm">
+              {Math.round(data.coverage_owned * 100)}%
+            </span>
+          </div>
+          <div className="w-full h-1 bg-[#1a1a1a] rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-white/60 rounded-full transition-all duration-300"
+              style={{ width: `${data.coverage_owned * 100}%` }}
               />
             </div>
-            <div className="text-xs text-[#999] space-y-1">
-              <div>• Owned Coverage: {Math.round(data.coverage_owned * 100)}% (35% weight)</div>
-              <div>• Operated Coverage: {Math.round(data.coverage_operated * 100)}% (15% weight)</div>
             </div>
-          </div>
 
-          {/* Share of Voice (30% weight) */}
-          <div className="bg-[#222] p-3 rounded">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-[#ccc] text-sm flex items-center">
-                Share of Voice (30% weight)
-                <ShareOfVoiceInfo />
-              </span>
-              <span className="text-white font-semibold">{Math.round(voiceScore * 0.3)}/30</span>
-            </div>
-            <div className="w-full bg-[#333] rounded-full h-2 mb-2">
-              <div 
-                className="bg-purple-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${Math.min(100, voiceScore)}%` }}
+        <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded p-3 sm:p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[#666] text-xs">Share of Voice</span>
+            <span className="text-white font-medium text-sm">
+              {Math.round(data.share_of_voice * 100)}%
+            </span>
+          </div>
+          <div className="w-full h-1 bg-[#1a1a1a] rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-white/60 rounded-full transition-all duration-300"
+              style={{ width: `${data.share_of_voice * 100}%` }}
               />
-            </div>
-            <div className="text-xs text-[#999]">
-              Position-weighted visibility: Pos 1 = 1.0pt, Pos 2 = 0.5pt, Pos 3 = 0.33pt, etc.
-            </div>
-          </div>
-
-          {/* Consistency Bonus (20% weight) */}
-          <div className="bg-[#222] p-3 rounded">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-[#ccc] text-sm">Consistency Bonus (20% weight)</span>
-              <span className="text-white font-semibold">{Math.round(consistencyScore)}/20</span>
-            </div>
-            <div className="w-full bg-[#333] rounded-full h-2 mb-2">
-              <div 
-                className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${(consistencyScore / 20) * 100}%` }}
-              />
-            </div>
-            <div className="text-xs text-[#999]">
-              Broad presence across {data.metrics.top_3_presence}/{data.metrics.questions_analyzed} questions
-            </div>
           </div>
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-[#222] p-3 rounded text-center">
-          <div className="text-2xl font-bold text-blue-400">{data.metrics.questions_analyzed}</div>
-          <div className="text-xs text-[#999]">Questions Analyzed</div>
-        </div>
-        <div className="bg-[#222] p-3 rounded text-center">
-          <div className="text-2xl font-bold text-green-400">{data.metrics.owned_appearances}</div>
-          <div className="text-xs text-[#999]">Owned Results</div>
-        </div>
-        <div className="bg-[#222] p-3 rounded text-center">
-          <div className="text-2xl font-bold text-yellow-400">{data.metrics.operated_appearances}</div>
-          <div className="text-xs text-[#999]">Operated Results</div>
-        </div>
-        <div className="bg-[#222] p-3 rounded text-center">
-          <div className="text-2xl font-bold text-purple-400">
-            {data.metrics.avg_owned_position > 0 ? data.metrics.avg_owned_position.toFixed(1) : '--'}
-          </div>
-          <div className="text-xs text-[#999]">Avg Position</div>
-        </div>
+      {/* Context Note */}
+      <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-[#0f0f0f] border border-[#1a1a1a] rounded">
+        <p className="text-[#666] text-xs leading-relaxed">
+          <span className="text-[#888]">Industry Context:</span> Most established brands score between 30-60. 
+          Scores above 70 are exceptional and typically require dedicated AI optimization efforts.
+        </p>
       </div>
 
-      {/* Methodology Note */}
-      <div className="mt-4 p-3 bg-[#111] border border-[#333] rounded text-xs text-[#999]">
-        <strong className="text-[#ccc]">Methodology:</strong> AEO Score = (Coverage × 50%) + (Share of Voice × 30%) + (Consistency × 20%). 
-        Coverage measures top-3 presence, Share of Voice uses position-weighted ranking (1/rank), 
-        and Consistency rewards broad visibility across questions.
+      {/* Analysis Stats */}
+      {data.metrics && (
+        <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-[#444]">
+          <span>{data.metrics.questions_analyzed} questions analyzed</span>
+          <span className="hidden sm:inline">•</span>
+          <span>{data.metrics.total_results} results reviewed</span>
+          <span className="hidden sm:inline">•</span>
+          <span>{data.metrics.owned_appearances} owned citations</span>
       </div>
+      )}
     </div>
   )
 } 

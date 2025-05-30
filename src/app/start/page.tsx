@@ -182,7 +182,13 @@ export default function StartPage() {
       localStorage.setItem('onboardingData', JSON.stringify(onboardingData))
       console.log('💾 Onboarding data saved to localStorage')
       
-      // Redirect to signup
+      setCurrentStep('signup')
+    } else if (currentStep === 'signup') {
+      // Save to localStorage one more time to ensure data is persisted
+      localStorage.setItem('onboardingData', JSON.stringify(onboardingData))
+      console.log('💾 Final onboarding data saved to localStorage')
+      
+      // Redirect to signup page
       console.log('🔄 Redirecting to signup page...')
       router.push('/signup')
     }

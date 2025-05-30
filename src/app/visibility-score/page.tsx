@@ -198,7 +198,7 @@ export default function VisibilityScorePage() {
 
   return (
     <div className="min-h-screen bg-[#0c0c0c] flex flex-col">
-      <main className="flex-1 flex items-center justify-center px-4 py-8">
+      <main className="flex-1 flex items-center justify-center px-4 py-6 sm:py-8 overflow-y-auto">
         <div className="w-full max-w-4xl">
           {currentStep === 'welcome' && (
             <motion.div
@@ -206,30 +206,30 @@ export default function VisibilityScorePage() {
               animate={{ opacity: 1, y: 0 }}
               className="text-center"
             >
-              <div className="mb-8">
-                <h1 className="text-4xl font-bold text-white mb-4">
+              <div className="mb-6 sm:mb-8">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 sm:mb-4 px-2">
                   Welcome to Split! 🎉
                 </h1>
-                <p className="text-xl text-gray-300 mb-6">
+                <p className="text-base sm:text-lg md:text-xl text-gray-300 mb-4 sm:mb-6 px-4">
                   Your account has been created successfully. Now let's analyze your AI visibility.
                 </p>
-                <div className="bg-[#1a1a1a] border border-[#333] p-6 rounded-lg mb-8">
-                  <h2 className="text-lg font-semibold text-white mb-4">We'll analyze:</h2>
-                  <div className="grid md:grid-cols-2 gap-4 text-left">
+                <div className="bg-[#1a1a1a] border border-[#333] p-4 sm:p-6 rounded-lg mb-6 sm:mb-8 mx-2 sm:mx-0">
+                  <h2 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">We'll analyze:</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-left">
                     <div>
-                      <span className="text-gray-400">Website:</span>
-                      <div className="text-white font-mono">{onboardingData.siteUrl}</div>
+                      <span className="text-gray-400 text-sm">Website:</span>
+                      <div className="text-white font-mono text-sm sm:text-base break-all">{onboardingData.siteUrl}</div>
                     </div>
                     {onboardingData.keywords.length > 0 && (
                       <div>
-                        <span className="text-gray-400">Keywords:</span>
-                        <div className="text-white">{onboardingData.keywords.join(', ')}</div>
+                        <span className="text-gray-400 text-sm">Keywords:</span>
+                        <div className="text-white text-sm sm:text-base">{onboardingData.keywords.join(', ')}</div>
                       </div>
                     )}
                     {onboardingData.businessOffering && (
-                      <div className="md:col-span-2">
-                        <span className="text-gray-400">Business:</span>
-                        <div className="text-white">{onboardingData.businessOffering}</div>
+                      <div className="sm:col-span-2">
+                        <span className="text-gray-400 text-sm">Business:</span>
+                        <div className="text-white text-sm sm:text-base">{onboardingData.businessOffering}</div>
                       </div>
                     )}
                   </div>
@@ -238,13 +238,13 @@ export default function VisibilityScorePage() {
 
               <Button
                 onClick={startAnalysis}
-                className="bg-white text-black hover:bg-gray-100 h-12 px-8 text-lg font-medium"
+                className="bg-white text-black hover:bg-gray-100 h-10 sm:h-11 md:h-12 px-6 sm:px-8 text-sm sm:text-base md:text-lg font-medium"
                 disabled={isAnalyzing}
               >
                 {isAnalyzing ? 'Starting Analysis...' : 'Get My AI Visibility Score'}
               </Button>
 
-              <p className="text-sm text-gray-500 mt-4">
+              <p className="text-xs sm:text-sm text-gray-500 mt-3 sm:mt-4 px-4">
                 This will take 2-3 minutes to analyze your website's AI visibility across major search engines.
               </p>
             </motion.div>
@@ -254,15 +254,15 @@ export default function VisibilityScorePage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center"
+              className="text-center px-4"
             >
-              <h1 className="text-3xl font-bold text-white mb-4">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3 sm:mb-4">
                 Analyzing Your AI Visibility...
               </h1>
-              <p className="text-gray-300 mb-8">
+              <p className="text-gray-300 mb-6 sm:mb-8 text-sm sm:text-base">
                 Our AI is crawling your website and testing how it appears in AI search results.
               </p>
-              <div className="animate-pulse text-blue-400">
+              <div className="animate-pulse text-blue-400 text-sm sm:text-base">
                 Analysis in progress...
               </div>
             </motion.div>
@@ -272,35 +272,35 @@ export default function VisibilityScorePage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="space-y-6"
+              className="space-y-4 sm:space-y-6 px-2 sm:px-0"
             >
-              <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold text-white mb-2">
+              <div className="text-center mb-6 sm:mb-8">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-2 px-2">
                   Your AI Visibility Score
                 </h1>
-                <p className="text-gray-300">
+                <p className="text-gray-300 text-sm sm:text-base px-4">
                   Here's how your website performs in AI search results
                 </p>
               </div>
 
               {/* AEO Score Card - Full width when available */}
               {visibilityData.aeoData && (
-                <div className="mb-6">
+                <div className="mb-4 sm:mb-6">
                   <AEOScoreCard data={visibilityData.aeoData} />
                 </div>
               )}
 
-              <div className="grid xl:grid-cols-2 grid-cols-1 gap-6">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
                 <OverallAEOCard history={visibilityData.scoreHistory} />
                 <DirectCitationCard data={visibilityData.citations} />
               </div>
 
               <SuggestionsCard suggestions={visibilityData.suggestions} />
 
-              <div className="text-center pt-6">
+              <div className="text-center pt-4 sm:pt-6 pb-4">
                 <Button
                   onClick={() => router.push('/dashboard')}
-                  className="bg-white text-black hover:bg-gray-100 h-12 px-8 text-lg font-medium"
+                  className="bg-white text-black hover:bg-gray-100 h-10 sm:h-11 md:h-12 px-6 sm:px-8 text-sm sm:text-base md:text-lg font-medium"
                 >
                   Continue to Dashboard
                 </Button>

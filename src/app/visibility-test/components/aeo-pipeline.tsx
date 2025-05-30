@@ -312,143 +312,99 @@ export function AEOPipeline({ isOpen, crawlUrl, onClose, onAnalysisComplete }: A
   }
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#1a1a1a] border border-[#333] rounded-lg w-full max-w-3xl max-h-[85vh] flex flex-col">
-        <div className="flex justify-between items-center border-b border-[#333] p-4">
-          <div>
-            <h2 className="text-white font-bold text-lg">AEO Visibility Pipeline</h2>
-            <p className="text-[#999] text-sm">{getCurrentStepName()}</p>
-          </div>
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="relative w-full max-w-md my-auto">
+        {/* Simple, minimal loading card */}
+        <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6 sm:p-8">
+          {/* Close button */}
           <button 
             onClick={onClose}
-            className="text-[#999] hover:text-white text-xl"
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 text-[#666] hover:text-white transition-colors p-1"
           >
-            ✕
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
+          
+          {/* Content */}
+          <div className="text-center">
+            {/* Icon */}
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#1a1a1a] flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              {currentStep === 'error' ? (
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              ) : currentStep === 'complete' ? (
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-[#333] border-t-white rounded-full animate-spin" />
+              )}
         </div>
         
-        {/* Progress Bar */}
-        <div className="p-4 border-b border-[#333]">
-          <div className="flex justify-between text-sm text-[#999] mb-2">
-            <span>Step {Math.min(progress + 1, totalSteps)} of {totalSteps}</span>
-            <span>{getProgressPercentage()}%</span>
-          </div>
-          <div className="w-full bg-[#333] rounded-full h-2">
+            {/* Status Text */}
+            <h3 className="text-white font-medium text-base sm:text-lg mb-2">
+              {currentStep === 'error' ? 'Analysis Failed' : 
+               currentStep === 'complete' ? 'Analysis Complete' :
+               'Analyzing Visibility'}
+            </h3>
+            
+            {/* Current Step */}
+            <p className="text-[#666] text-xs sm:text-sm mb-4 sm:mb-6 px-2">
+              {currentStep === 'error' && error ? error :
+               currentStep === 'complete' ? 'Your results are ready' :
+               getCurrentStepName()}
+            </p>
+            
+            {/* Progress */}
+            {currentStep !== 'error' && currentStep !== 'complete' && (
+              <div className="px-4">
+                {/* Simple progress bar */}
+                <div className="w-full h-1 bg-[#1a1a1a] rounded-full overflow-hidden mb-2">
             <div 
-              className="bg-blue-500 h-2 rounded-full transition-all duration-300 ease-out"
+                    className="h-full bg-white rounded-full transition-all duration-500 ease-out"
               style={{ width: `${getProgressPercentage()}%` }}
             />
-          </div>
-          
-          {/* Step indicators */}
-          <div className="flex justify-between mt-3 text-xs">
-            {Object.entries(STEP_NAMES).map(([key, name], index) => (
-              <div 
-                key={key}
-                className={`flex flex-col items-center ${
-                  index <= progress ? 'text-blue-400' : 'text-[#666]'
-                }`}
-              >
-                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center mb-1 ${
-                  index <= progress 
-                    ? 'border-blue-400 bg-blue-400 text-black' 
-                    : 'border-[#666]'
-                }`}>
-                  {index <= progress ? '✓' : index + 1}
                 </div>
-                <span className="text-center">{name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        <div className="p-4 flex-1 overflow-y-auto">
-          {/* Real-time Log */}
-          <div className="bg-[#111] border border-[#333] p-3 rounded h-64 overflow-y-auto font-mono text-sm">
-            {log.map((entry, i) => (
-              <div key={i} className="mb-1">
-                <span className="text-[#ccc]">{entry}</span>
-              </div>
-            ))}
-            
-            {isRunning && currentStep !== 'error' && (
-              <div className="text-blue-400 animate-pulse mt-2">
-                ▶ {getCurrentStepName()} in progress...
+                <p className="text-[#444] text-xs">
+                  {getProgressPercentage()}% complete
+                </p>
               </div>
             )}
-          </div>
           
-          {/* Status Display */}
-          <div className="mt-4 grid grid-cols-2 gap-4">
-            <div className="bg-[#222] p-3 rounded">
-              <div className="text-[#999] text-sm mb-1">Status</div>
-              <div className={`font-semibold ${
-                currentStep === 'complete' ? 'text-green-400' : 
-                currentStep === 'error' ? 'text-red-400' : 
-                'text-blue-400'
-              }`}>
-                {isRunning && currentStep !== 'error' && currentStep !== 'complete' ? 'Running' :
-                 currentStep === 'complete' ? 'Complete' :
-                 currentStep === 'error' ? 'Failed' : 'Ready'}
-              </div>
-            </div>
-            
-            <div className="bg-[#222] p-3 rounded">
-              <div className="text-[#999] text-sm mb-1">Target URL</div>
-              <div className="text-white text-sm truncate">{crawlUrl}</div>
-            </div>
-          </div>
-          
-          {/* Final Results */}
+            {/* Results Preview (Complete State) */}
           {finalResults && currentStep === 'complete' && (
-            <div className="mt-4 bg-[#222] p-4 rounded">
-              <h3 className="text-white mb-3 font-semibold">Final Results</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-[#333] p-3 rounded">
-                  <div className="text-[#999] text-sm">AEO Score</div>
-                  <div className="text-2xl font-bold text-green-400">
-                    {finalResults.aeo_score}/100
+              <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-[#1a1a1a]">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 text-left">
+                  <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded p-2.5 sm:p-3">
+                    <div className="text-[#666] text-xs mb-1">Visibility Score</div>
+                    <div className="text-white font-medium text-sm sm:text-base">{finalResults.aeo_score}/100</div>
                   </div>
-                </div>
-                <div className="bg-[#333] p-3 rounded">
-                  <div className="text-[#999] text-sm">Owned Coverage</div>
-                  <div className="text-xl font-bold text-blue-400">
-                    {Math.round(finalResults.coverage_owned * 100)}%
-                  </div>
-                </div>
-                <div className="bg-[#333] p-3 rounded">
-                  <div className="text-[#999] text-sm">Share of Voice</div>
-                  <div className="text-xl font-bold text-purple-400">
-                    {Math.round(finalResults.share_of_voice * 100)}%
-                  </div>
-                </div>
-                <div className="bg-[#333] p-3 rounded">
-                  <div className="text-[#999] text-sm">Total Results</div>
-                  <div className="text-xl font-bold text-yellow-400">
-                    {finalResults.metrics?.total_results || 0}
+                  <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded p-2.5 sm:p-3">
+                    <div className="text-[#666] text-xs mb-1">Coverage</div>
+                    <div className="text-white font-medium text-sm sm:text-base">
+                      {Math.round(finalResults.coverage_total * 100)}%
                   </div>
                 </div>
               </div>
             </div>
           )}
-          
-          {/* Error details */}
-          {currentStep === 'error' && error && (
-            <div className="mt-4 bg-red-900/20 border border-red-900 p-3 rounded text-red-400">
-              <div className="font-semibold mb-1">Analysis Failed</div>
-              <div className="text-sm">{error}</div>
             </div>
-          )}
         </div>
         
-        <div className="border-t border-[#333] p-4 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-[#333] hover:bg-[#444] text-white rounded transition-colors"
-          >
-            {currentStep === 'complete' ? 'View Dashboard' : 'Close'}
-          </button>
+        {/* Minimal activity log (collapsed by default) */}
+        {log.length > 0 && currentStep !== 'complete' && (
+          <div className="mt-3 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-2.5 sm:p-3 max-h-24 sm:max-h-32 overflow-y-auto">
+            <div className="text-[#444] text-xs space-y-1">
+              {log.slice(-3).map((logEntry, index) => (
+                <div key={index} className="truncate">
+                  {logEntry}
+                </div>
+              ))}
+            </div>
         </div>
+        )}
       </div>
     </div>
   )

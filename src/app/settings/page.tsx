@@ -1,425 +1,815 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { 
-  Settings,
-  Globe, 
-  RefreshCw, 
-  UserPlus, 
-  CheckCircle2, 
-  XCircle,
-  Link as LinkIcon,
-  ExternalLink,
-  FileText,
-  Code,
-  ToggleRight,
-  Users,
-  Mail,
-  Lock,
-  Save,
-  AlertTriangle,
-  Info,
-  Key
-} from 'lucide-react'
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Label } from "@/components/ui/label"
-import AgentCredentialsManager from '@/components/dashboard/AgentCredentialsManager'
+import { 
+  Globe, 
+  CreditCard,
+  BarChart3,
+  User,
+  CheckCircle2, 
+  ArrowRight,
+  Copy,
+  Eye,
+  EyeOff,
+  Building,
+  Mail,
+  X,
+  Check,
+  Zap,
+  Loader2,
+  ExternalLink
+} from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useSearchParams } from 'next/navigation'
 
-export default function SettingsPage() {
-  const [siteUrl, setSiteUrl] = useState('https://yoursitename.com')
-  const [cmsType, setCmsType] = useState('Webflow')
-  const [isConnected, setIsConnected] = useState(true)
-  
-  // Toggle states
-  const [autoPublish, setAutoPublish] = useState(true)
-  const [autoSitemap, setAutoSitemap] = useState(true)
-  const [structuredData, setStructuredData] = useState(true)
-  
-  // Team members
-  const teamMembers = [
-    { id: 1, name: 'Jane Smith', email: 'jane@example.com', role: 'Admin', pending: false },
-    { id: 2, name: 'John Doe', email: 'john@example.com', role: 'Editor', pending: false },
-    { id: 3, name: 'Alex Johnson', email: 'alex@example.com', role: 'Viewer', pending: true }
-  ]
-  
-  const [newEmail, setNewEmail] = useState('')
-  const [newRole, setNewRole] = useState('Viewer')
-  
-  const handleReconnect = () => {
-    // Simulate reconnection
-    setIsConnected(false)
-    setTimeout(() => {
-      setIsConnected(true)
-    }, 1500)
+interface AnalyticsProvider {
+  id: string
+  name: string
+  icon: string
+  connected: boolean
+  lastSync?: string
+}
+
+interface PricingPlan {
+  id: string
+  name: string
+  price: number
+  annualPrice: number
+  features: string[]
+  limits: {
+    scans: string
+    articles: number
+    domains: number
   }
-  
-  const handleToggle = (setting: string, value: boolean) => {
-    switch(setting) {
-      case 'autoPublish':
-        setAutoPublish(value)
-        break
-      case 'autoSitemap':
-        setAutoSitemap(value)
-        break
-      case 'structuredData':
-        setStructuredData(value)
-        break
+  recommended?: boolean
+}
+
+const pricingPlans: PricingPlan[] = [
+  {
+    id: 'visibility',
+    name: 'Visibility',
+    price: 40,
+    annualPrice: 32,
+    features: [
+      'Daily visibility scans',
+      'Citation analysis',
+      'Single domain tracking',
+      'Email alerts'
+    ],
+    limits: {
+      scans: 'Daily',
+      articles: 0,
+      domains: 1
+    }
+  },
+  {
+    id: 'plus',
+    name: 'Plus',
+    price: 200,
+    annualPrice: 160,
+    features: [
+      'Daily MAX visibility scans',
+      '10 monthly AI articles',
+      'Competitor benchmarking',
+      'Keyword trend analysis',
+      'Priority support'
+    ],
+    limits: {
+      scans: 'Unlimited',
+      articles: 10,
+      domains: 1
+    },
+    recommended: true
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    price: 1000,
+    annualPrice: 800,
+    features: [
+      'Everything in Plus',
+      '30 premium articles',
+      'Unlimited MAX scans',
+      'Multi-brand tracking',
+      'Up to 3 domains'
+    ],
+    limits: {
+      scans: 'Unlimited',
+      articles: 30,
+      domains: 3
     }
   }
+]
+
+export default function SettingsPage() {
+  const [activeSection, setActiveSection] = useState('general')
+  const [copied, setCopied] = useState(false)
+  const [showApiKey, setShowApiKey] = useState(false)
+  const [showPricingModal, setShowPricingModal] = useState(false)
+  const [isAnnualBilling, setIsAnnualBilling] = useState(false)
+  const [currentPlan, setCurrentPlan] = useState('free')
+  const [isLoading, setIsLoading] = useState(false)
+  const [stripeCustomerId, setStripeCustomerId] = useState<string | null>(null)
+  const [loadingSubscription, setLoadingSubscription] = useState(true)
   
-  const handleInvite = () => {
-    if (!newEmail.trim()) return
-    // Would normally add a new team member here
-    setNewEmail('')
+  const searchParams = useSearchParams()
+  
+  // Fetch user's subscription data on mount
+  useEffect(() => {
+    async function fetchSubscription() {
+      try {
+        const response = await fetch('/api/user/subscription')
+        if (response.ok) {
+          const data = await response.json()
+          setStripeCustomerId(data.stripeCustomerId)
+          setCurrentPlan(data.subscriptionPlan || 'free')
+          // Determine if user is on annual billing based on their current plan
+          if (data.subscriptionStatus === 'active' && data.subscriptionPeriodEnd) {
+            const periodEnd = new Date(data.subscriptionPeriodEnd)
+            const now = new Date()
+            const monthsUntilEnd = (periodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30)
+            setIsAnnualBilling(monthsUntilEnd > 6)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching subscription:', error)
+      } finally {
+        setLoadingSubscription(false)
+      }
+    }
+    
+    fetchSubscription()
+  }, [])
+  
+  // Check for Stripe redirect parameters
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      // Handle successful payment - refetch subscription data
+      async function refetchSubscription() {
+        setLoadingSubscription(true)
+        try {
+          const response = await fetch('/api/user/subscription')
+          if (response.ok) {
+            const data = await response.json()
+            setStripeCustomerId(data.stripeCustomerId)
+            setCurrentPlan(data.subscriptionPlan || 'free')
+          }
+        } catch (error) {
+          console.error('Error refetching subscription:', error)
+        } finally {
+          setLoadingSubscription(false)
+        }
+      }
+      refetchSubscription()
+    } else if (searchParams.get('canceled') === 'true') {
+      // Handle canceled payment
+      console.log('Payment canceled')
+    }
+  }, [searchParams])
+  
+  // Mock data
+  const [workspace, setWorkspace] = useState({
+    name: 'Origami Agents',
+    domain: 'origamiagents.com',
+    email: 'team@origamiagents.com'
+  })
+  
+  const [analytics, setAnalytics] = useState<AnalyticsProvider[]>([
+    { id: 'ga4', name: 'Google Analytics', icon: '📊', connected: true, lastSync: '2 hours ago' },
+    { id: 'vercel', name: 'Vercel Analytics', icon: '▲', connected: false },
+    { id: 'plausible', name: 'Plausible', icon: '📈', connected: false }
+  ])
+  
+  // Dynamic billing data based on current plan
+  const getBillingData = () => {
+    if (currentPlan === 'free') {
+      return {
+        name: 'Free',
+        price: 0,
+        period: 'forever',
+        nextBilling: null,
+        usage: {
+          scans: { used: 3, limit: '5/month' },
+          articles: { used: 0, limit: 0 },
+          domains: { used: 1, limit: 1 }
+        }
+      }
+    }
+    
+    const plan = pricingPlans.find(p => p.id === currentPlan) || pricingPlans[1]
+    return {
+      name: plan.name,
+      price: isAnnualBilling ? plan.annualPrice : plan.price,
+      period: 'month',
+      nextBilling: 'January 15, 2025',
+      usage: {
+        scans: { used: 45, limit: plan.limits.scans },
+        articles: { used: 6, limit: plan.limits.articles },
+        domains: { used: 1, limit: plan.limits.domains }
+      }
+    }
   }
+
+  const handleCopyApiKey = () => {
+    navigator.clipboard.writeText('sk_live_***************************')
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handlePlanChange = async (planId: string) => {
+    if (planId === 'free') {
+      // Handle downgrade through Stripe Customer Portal
+      await handleManageSubscription()
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId,
+          isAnnual: isAnnualBilling,
+          customerId: stripeCustomerId,
+          customerEmail: workspace.email
+        })
+      })
+
+      const { url, error } = await response.json()
+      
+      if (error) {
+        console.error('Error creating checkout session:', error)
+        // TODO: Show error toast
+        return
+      }
+
+      // Redirect to Stripe Checkout
+      window.location.href = url
+    } catch (error) {
+      console.error('Error:', error)
+      // TODO: Show error toast
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleManageSubscription = async () => {
+    if (!stripeCustomerId) {
+      console.error('No Stripe customer ID found')
+      // TODO: Show error toast
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/stripe/create-portal-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId: stripeCustomerId })
+      })
+
+      const { url, error } = await response.json()
+      
+      if (error) {
+        console.error('Error creating portal session:', error)
+        // TODO: Show error toast
+        return
+      }
+
+      // Redirect to Stripe Customer Portal
+      window.location.href = url
+    } catch (error) {
+      console.error('Error:', error)
+      // TODO: Show error toast
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const sections = [
+    { id: 'general', label: 'General', icon: Globe },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'billing', label: 'Billing', icon: CreditCard },
+    { id: 'account', label: 'Account', icon: User }
+  ]
+
+  const billingPlan = getBillingData()
   
   return (
-    <main className="flex flex-1 flex-col gap-8 p-8">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Settings</h1>
-          <p className="text-gray-400">Configure your AEO Agent and manage site connections</p>
+    <main className="flex-1 bg-[#0c0c0c]">
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-medium text-white mb-2">Settings</h1>
+          <p className="text-[#666] text-sm">Manage your workspace and integrations</p>
         </div>
         
-        <Button 
-          className="flex items-center gap-2 self-start md:self-auto bg-[#333333] hover:bg-[#444444] text-white"
-        >
-          <Save className="h-4 w-4" />
+        <div className="flex gap-8">
+          {/* Sidebar Navigation */}
+          <nav className="w-48 flex-shrink-0">
+            <ul className="space-y-1">
+              {sections.map((section) => {
+                const Icon = section.icon
+                return (
+                  <li key={section.id}>
+                    <button
+                      onClick={() => setActiveSection(section.id)}
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors ${
+                        activeSection === section.id
+                          ? 'bg-[#1a1a1a] text-white'
+                          : 'text-[#666] hover:text-white hover:bg-[#0a0a0a]'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {section.label}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </nav>
+
+          {/* Content Area */}
+          <div className="flex-1">
+            <motion.div
+              key={activeSection}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              {/* General Settings */}
+              {activeSection === 'general' && (
+                <div className="space-y-6">
+                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
+                    <h2 className="text-lg font-medium text-white mb-6">Workspace Settings</h2>
+                    
+                    <div className="space-y-6">
+                      <div>
+                        <label className="block text-sm text-[#888] mb-2">Workspace Name</label>
+                        <Input
+                          value={workspace.name}
+                          onChange={(e) => setWorkspace(prev => ({ ...prev, name: e.target.value }))}
+                          className="bg-[#1a1a1a] border-[#333] text-white h-10"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm text-[#888] mb-2">Primary Domain</label>
+                        <Input
+                          value={workspace.domain}
+                          onChange={(e) => setWorkspace(prev => ({ ...prev, domain: e.target.value }))}
+                          className="bg-[#1a1a1a] border-[#333] text-white h-10"
+                        />
+                        <p className="text-xs text-[#666] mt-2">
+                          This is the domain we'll monitor for AI visibility
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm text-[#888] mb-2">Contact Email</label>
+                        <Input
+                          value={workspace.email}
+                          onChange={(e) => setWorkspace(prev => ({ ...prev, email: e.target.value }))}
+                          className="bg-[#1a1a1a] border-[#333] text-white h-10"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end mt-6">
+                      <Button className="bg-white text-black hover:bg-gray-100 h-9 px-4 text-sm font-medium">
           Save Changes
         </Button>
       </div>
-      
-      <Tabs defaultValue="site" className="w-full">
-        <TabsList className="bg-[#222222] border border-[#333333] mb-6">
-          <TabsTrigger value="site" className="data-[state=active]:bg-[#333333] text-white">
-            Site Connection
-          </TabsTrigger>
-          <TabsTrigger value="agent" className="data-[state=active]:bg-[#333333] text-white">
-            AEO Agent Controls
-          </TabsTrigger>
-          <TabsTrigger value="team" className="data-[state=active]:bg-[#333333] text-white">
-            Team Access
-          </TabsTrigger>
-          <TabsTrigger value="api" className="data-[state=active]:bg-[#333333] text-white">
-            API Keys
-          </TabsTrigger>
-        </TabsList>
-        
-        {/* Site Connection Tab */}
-        <TabsContent value="site">
-          <Card className="border-[#333333]">
-            <CardHeader>
-              <CardTitle className="text-xl font-medium text-white">
-                Site Connection
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between py-4 border-b border-[#222222]">
-                <div className="flex items-center gap-2">
-                  <Globe className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <p className="font-medium text-white">Connected Website</p>
-                    <p className="text-sm text-gray-400">{siteUrl}</p>
                   </div>
-                </div>
-                <Button 
-                  className="bg-[#333333] hover:bg-[#444444] text-white"
-                  onClick={() => setSiteUrl(prompt('Enter site URL', siteUrl) || siteUrl)}
-                >
-                  Edit
-                </Button>
-              </div>
-              
-              <div className="flex items-center justify-between py-4 border-b border-[#222222]">
-                <div className="flex items-center gap-2">
-                  <Code className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <p className="font-medium text-white">CMS Platform</p>
-                    <p className="text-sm text-gray-400">{cmsType}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="relative inline-flex items-center rounded-md bg-[#1a1a1a] p-1 text-sm font-medium">
-                    {['Webflow', 'Next.js', 'Framer'].map((cms) => (
-                      <button
-                        key={cms}
-                        type="button"
-                        className={`relative rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${
-                          cmsType === cms 
-                            ? 'bg-[#333333] text-white' 
-                            : 'text-gray-400 hover:text-white'
-                        }`}
-                        onClick={() => setCmsType(cms)}
-                      >
-                        {cms}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between py-4">
-                <div className="flex items-center gap-2">
-                  <LinkIcon className="h-5 w-5 text-gray-400" />
-                  <div>
-                    <p className="font-medium text-white">Connection Status</p>
-                    <p className="text-sm text-gray-400">Last verified: June 15, 2023</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Badge 
-                    variant="outline" 
-                    className={isConnected 
-                      ? "bg-green-900/30 text-green-400 border-green-800/50 flex items-center gap-1.5" 
-                      : "bg-red-900/30 text-red-400 border-red-800/50 flex items-center gap-1.5"
-                    }
-                  >
-                    {isConnected ? (
-                      <>
-                        <CheckCircle2 className="h-3 w-3" />
-                        Connected
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="h-3 w-3" />
-                        Disconnected
-                      </>
-                    )}
-                  </Badge>
-                  <Button 
-                    className="bg-[#333333] hover:bg-[#444444] text-white flex items-center gap-1.5"
-                    onClick={handleReconnect}
-                    disabled={!isConnected}
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    {isConnected ? 'Refresh' : 'Connecting...'}
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="pt-4 border-t border-[#222222]">
-                <h3 className="text-sm font-medium text-white mb-4">Integration Methods</h3>
-                <div className="space-y-4">
-                  <div className="rounded-md border border-[#333333] p-4 hover:bg-[#222222] cursor-pointer">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge className="bg-[#333333] text-white border-[#444444]">Recommended</Badge>
-                        </div>
-                        <h4 className="font-medium text-white mb-1">API Integration</h4>
-                        <p className="text-sm text-gray-400">Connect your CMS via API for full automation capabilities</p>
-                      </div>
-                      <Button 
-                        className="bg-[#333333] hover:bg-[#444444] text-white"
-                      >
-                        Configure
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="rounded-md border border-[#333333] p-4 hover:bg-[#222222] cursor-pointer">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="font-medium text-white mb-1">JavaScript Snippet</h4>
-                        <p className="text-sm text-gray-400">Add our script to your site's header for basic tracking</p>
-                      </div>
-                      <Button 
-                        className="bg-[#333333] hover:bg-[#444444] text-white"
-                      >
-                        Copy Code
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="rounded-md border border-[#333333] p-4 hover:bg-[#222222] cursor-pointer">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h4 className="font-medium text-white mb-1">Manual Configuration</h4>
-                        <p className="text-sm text-gray-400">Manually upload llms.txt and implement structured data</p>
-                      </div>
-                      <Button 
-                        className="bg-[#333333] hover:bg-[#444444] text-white"
-                      >
-                        View Guide
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        {/* AEO Agent Controls Tab */}
-        <TabsContent value="agent">
-          <Card className="border-[#333333]">
-            <CardHeader>
-              <CardTitle className="text-xl font-medium text-white">
-                AEO Agent Controls
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between py-4 border-b border-[#222222]">
-                <div className="flex items-start gap-2">
-                  <FileText className="h-5 w-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-white">Auto-publish Content</p>
-                    <p className="text-sm text-gray-400">Let the agent automatically publish generated content to your site</p>
-                  </div>
-                </div>
-                <div 
-                  className={`h-6 w-11 rounded-full transition-colors cursor-pointer flex items-center ${autoPublish ? 'bg-[#333333] justify-end' : 'bg-[#222222] justify-start'}`}
-                  onClick={() => handleToggle('autoPublish', !autoPublish)}
-                >
-                  <div className={`h-5 w-5 rounded-full mx-0.5 ${autoPublish ? 'bg-white' : 'bg-gray-500'}`}></div>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between py-4 border-b border-[#222222]">
-                <div className="flex items-start gap-2">
-                  <Globe className="h-5 w-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-white">Auto-sitemap + llms.txt</p>
-                    <p className="text-sm text-gray-400">Update sitemap.xml and llms.txt with new content</p>
-                  </div>
-                </div>
-                <div 
-                  className={`h-6 w-11 rounded-full transition-colors cursor-pointer flex items-center ${autoSitemap ? 'bg-[#333333] justify-end' : 'bg-[#222222] justify-start'}`}
-                  onClick={() => handleToggle('autoSitemap', !autoSitemap)}
-                >
-                  <div className={`h-5 w-5 rounded-full mx-0.5 ${autoSitemap ? 'bg-white' : 'bg-gray-500'}`}></div>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between py-4 border-b border-[#222222]">
-                <div className="flex items-start gap-2">
-                  <Code className="h-5 w-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-white">Structured Data Injection</p>
-                    <p className="text-sm text-gray-400">Add Schema.org markup to help LLMs understand your content</p>
-                  </div>
-                </div>
-                <div 
-                  className={`h-6 w-11 rounded-full transition-colors cursor-pointer flex items-center ${structuredData ? 'bg-[#333333] justify-end' : 'bg-[#222222] justify-start'}`}
-                  onClick={() => handleToggle('structuredData', !structuredData)}
-                >
-                  <div className={`h-5 w-5 rounded-full mx-0.5 ${structuredData ? 'bg-white' : 'bg-gray-500'}`}></div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        {/* Team Access Tab */}
-        <TabsContent value="team">
-          <Card className="border-[#333333]">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-xl font-medium text-white">
-                Team Access
-              </CardTitle>
-              <Badge className="bg-[#222222] text-white border-[#333333]">
-                {teamMembers.length} members
-              </Badge>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex gap-2">
-                <Input
-                  className="bg-[#222222] border-[#333333] text-white placeholder:text-gray-500 focus-visible:ring-gray-500"
-                  placeholder="Add team member email..."
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                />
-                <Button 
-                  className="bg-[#333333] hover:bg-[#444444] text-white flex-shrink-0"
-                  onClick={handleInvite}
-                >
-                  <UserPlus className="h-4 w-4 mr-1" />
-                  Invite
-                </Button>
-              </div>
-              
-              <div className="rounded-md border border-[#333333] overflow-hidden">
-                <div className="grid grid-cols-12 gap-4 bg-[#222222] px-4 py-3 text-sm font-medium text-gray-400">
-                  <div className="col-span-5">User</div>
-                  <div className="col-span-3">Role</div>
-                  <div className="col-span-2">Status</div>
-                  <div className="col-span-2">Actions</div>
-                </div>
-                <div className="divide-y divide-[#333333]">
-                  {teamMembers.map((member) => (
-                    <div key={member.id} className="grid grid-cols-12 gap-4 px-4 py-4 items-center hover:bg-[#1a1a1a]">
-                      <div className="col-span-5">
-                        <p className="font-medium text-white">{member.name}</p>
-                        <p className="text-xs text-gray-400">{member.email}</p>
-                      </div>
-                      <div className="col-span-3">
-                        <Badge 
-                          variant="outline" 
-                          className="bg-[#222222] text-gray-300 border-[#333333]"
+
+                  {/* API Key Section */}
+                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
+                    <h3 className="text-lg font-medium text-white mb-2">API Key</h3>
+                    <p className="text-sm text-[#666] mb-6">Use this key to access the Split API</p>
+                    
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 flex items-center gap-2 bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-2">
+                        <code className="text-sm text-white font-mono flex-1">
+                          {showApiKey ? 'sk_live_1234567890abcdef' : 'sk_live_***************************'}
+                        </code>
+                        <button
+                          onClick={() => setShowApiKey(!showApiKey)}
+                          className="text-[#666] hover:text-white transition-colors"
                         >
-                          {member.role}
-                        </Badge>
-                      </div>
-                      <div className="col-span-2">
-                        {member.pending ? (
-                          <Badge className="bg-yellow-900/30 text-yellow-400 border-yellow-800/50">
-                            Pending
-                          </Badge>
+                          {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                </div>
+                <Button 
+                        onClick={handleCopyApiKey}
+                        variant="outline"
+                        className="border-[#333] hover:border-[#444] h-10 px-4"
+                >
+                        {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                </Button>
+              </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Analytics Settings */}
+              {activeSection === 'analytics' && (
+                <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
+                  <h2 className="text-lg font-medium text-white mb-2">Analytics Integrations</h2>
+                  <p className="text-sm text-[#666] mb-6">
+                    Connect your analytics platforms to track AI visibility impact
+                  </p>
+
+                  <div className="space-y-3">
+                    {analytics.map((provider) => (
+                      <div
+                        key={provider.id}
+                        className="flex items-center justify-between p-4 bg-[#0c0c0c] border border-[#1a1a1a] rounded-lg hover:border-[#333] transition-colors"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-[#1a1a1a] rounded-lg flex items-center justify-center text-lg">
+                            {provider.icon}
+                          </div>
+                          <div>
+                            <div className="text-white font-medium">{provider.name}</div>
+                            {provider.connected && provider.lastSync && (
+                              <div className="text-xs text-[#666]">Last synced {provider.lastSync}</div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {provider.connected ? (
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 text-xs text-green-400">
+                              <CheckCircle2 className="w-3 h-3" />
+                              Connected
+                            </div>
+                            <Button
+                              variant="outline"
+                              className="border-[#333] hover:border-[#444] h-8 px-3 text-xs"
+                            >
+                              Settings
+                            </Button>
+                          </div>
                         ) : (
-                          <Badge className="bg-green-900/30 text-green-400 border-green-800/50">
-                            Active
-                          </Badge>
+                          <Button
+                            className="bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333] h-8 px-3 text-xs"
+                          >
+                            Connect
+                          </Button>
                         )}
                       </div>
-                      <div className="col-span-2 flex gap-2">
-                        <Button size="sm" className="bg-[#333333] hover:bg-[#444444] text-white">
-                          Edit
-                        </Button>
-                        <Button size="sm" className="bg-[#333333] hover:bg-[#444444] text-white">
-                          Remove
-                        </Button>
+                    ))}
+              </div>
+              
+                  <div className="mt-6 p-4 bg-[#0f0f0f] border border-[#1a1a1a] rounded-lg">
+                    <p className="text-xs text-[#666]">
+                      Analytics data helps us understand how AI visibility improvements impact your actual traffic and conversions.
+                      We only access read-only data and never share it with third parties.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Billing Settings */}
+              {activeSection === 'billing' && (
+                <div className="space-y-6">
+                  {loadingSubscription ? (
+                    <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-8 flex items-center justify-center">
+                      <Loader2 className="w-6 h-6 animate-spin text-white" />
+                </div>
+                  ) : currentPlan === 'free' ? (
+                    /* Free Plan Empty State */
+                    <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-8 text-center">
+                      <div className="w-16 h-16 bg-[#1a1a1a] rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Zap className="w-8 h-8 text-[#666]" />
+              </div>
+                      <h2 className="text-xl font-medium text-white mb-2">You're on the Free plan</h2>
+                      <p className="text-[#666] text-sm mb-6 max-w-md mx-auto">
+                        Unlock daily visibility scans, AI-generated content, and advanced analytics with a paid plan
+                      </p>
+                      
+                      {/* Usage Limits */}
+                      <div className="bg-[#0c0c0c] border border-[#1a1a1a] rounded-lg p-4 mb-6 max-w-sm mx-auto">
+                        <div className="space-y-3 text-left">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-[#888]">Visibility Scans</span>
+                            <span className="text-white">{billingPlan.usage.scans.used} / {billingPlan.usage.scans.limit}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-[#888]">AI Articles</span>
+                            <span className="text-[#666]">Not available</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-[#888]">Domains</span>
+                            <span className="text-white">{billingPlan.usage.domains.used} / {billingPlan.usage.domains.limit}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <Button 
+                        onClick={() => setShowPricingModal(true)}
+                        className="bg-white text-black hover:bg-gray-100 h-10 px-6 text-sm font-medium"
+                        disabled={isLoading}
+                      >
+                        {isLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          'Upgrade Plan'
+                        )}
+                      </Button>
+                    </div>
+                  ) : (
+                    /* Paid Plan View */
+                    <>
+                      <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
+                        <div className="flex items-start justify-between mb-6">
+                          <div>
+                            <h2 className="text-lg font-medium text-white mb-1">Current Plan</h2>
+                            <p className="text-sm text-[#666]">You're on the {billingPlan.name} plan</p>
+                          </div>
+                          <Button
+                            onClick={() => setShowPricingModal(true)}
+                            variant="outline"
+                            className="border-[#333] hover:border-[#444] h-9 px-4 text-sm"
+                            disabled={isLoading}
+                          >
+                            {isLoading ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              'Change Plan'
+                            )}
+                          </Button>
+                        </div>
+
+                        <div className="flex items-end gap-1 mb-6">
+                          <span className="text-3xl font-bold text-white">${billingPlan.price}</span>
+                          <span className="text-[#666] mb-1">/{billingPlan.period}</span>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div>
+                            <div className="flex justify-between text-sm mb-2">
+                              <span className="text-[#888]">Visibility Scans</span>
+                              <span className="text-white">{billingPlan.usage.scans.limit}</span>
+                            </div>
+                            <div className="text-xs text-[#666]">{billingPlan.usage.scans.used} scans this month</div>
+                  </div>
+                  
+                          {billingPlan.usage.articles.limit > 0 && (
+                            <div>
+                              <div className="flex justify-between text-sm mb-2">
+                                <span className="text-[#888]">AI Articles</span>
+                                <span className="text-white">{billingPlan.usage.articles.used} / {billingPlan.usage.articles.limit}</span>
+                              </div>
+                              <div className="w-full h-1 bg-[#1a1a1a] rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-white/60 rounded-full"
+                                  style={{ width: `${(billingPlan.usage.articles.used / billingPlan.usage.articles.limit) * 100}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                      <div>
+                            <div className="flex justify-between text-sm mb-2">
+                              <span className="text-[#888]">Domains</span>
+                              <span className="text-white">{billingPlan.usage.domains.used} / {billingPlan.usage.domains.limit}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {billingPlan.nextBilling && (
+                          <div className="pt-4 mt-4 border-t border-[#1a1a1a]">
+                            <p className="text-xs text-[#666]">
+                              Next billing date: {billingPlan.nextBilling}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Payment Method */}
+                      <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
+                        <h3 className="text-lg font-medium text-white mb-4">Payment Method</h3>
+                        
+                        <div className="flex items-center justify-between p-4 bg-[#0c0c0c] border border-[#1a1a1a] rounded-lg">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 bg-[#1a1a1a] rounded-lg flex items-center justify-center">
+                              <CreditCard className="w-5 h-5 text-[#666]" />
+                            </div>
+                            <div>
+                              <div className="text-white text-sm">•••• •••• •••• 4242</div>
+                              <div className="text-xs text-[#666]">Expires 12/25</div>
+                            </div>
+                      </div>
+                      <Button 
+                            onClick={handleManageSubscription}
+                            variant="outline"
+                            className="border-[#333] hover:border-[#444] h-8 px-3 text-xs gap-1"
+                            disabled={isLoading || !stripeCustomerId}
+                          >
+                            {isLoading ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <>
+                                Manage
+                                <ExternalLink className="w-3 h-3" />
+                              </>
+                            )}
+                      </Button>
+                    </div>
+                        <p className="text-xs text-[#666] mt-3">
+                          Update payment method, view invoices, or cancel subscription in Stripe portal
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Account Settings */}
+              {activeSection === 'account' && (
+                <div className="space-y-6">
+                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
+                    <h2 className="text-lg font-medium text-white mb-6">Account Information</h2>
+                    
+                    <div className="space-y-6">
+                      <div>
+                        <label className="block text-sm text-[#888] mb-2">Full Name</label>
+                        <Input
+                          defaultValue="John Doe"
+                          className="bg-[#1a1a1a] border-[#333] text-white h-10"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm text-[#888] mb-2">Email Address</label>
+                        <Input
+                          defaultValue="john@origamiagents.com"
+                          type="email"
+                          className="bg-[#1a1a1a] border-[#333] text-white h-10"
+                        />
+                  </div>
+                  
+                      <div>
+                        <label className="block text-sm text-[#888] mb-2">Company</label>
+                        <Input
+                          defaultValue="Origami Agents"
+                          className="bg-[#1a1a1a] border-[#333] text-white h-10"
+                        />
                       </div>
                     </div>
-                  ))}
+
+                    <div className="flex justify-between items-center mt-8 pt-6 border-t border-[#1a1a1a]">
+                      <Button 
+                        variant="outline"
+                        className="border-red-900 text-red-400 hover:bg-red-900/20 h-9 px-4 text-sm"
+                      >
+                        Delete Account
+                      </Button>
+                      <Button className="bg-white text-black hover:bg-gray-100 h-9 px-4 text-sm font-medium">
+                        Save Changes
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+                  </div>
                 </div>
               </div>
               
-              <div className="mt-2 pl-1 text-xs text-gray-500">
-                <div className="mb-1 font-semibold text-gray-400">Role Permissions</div>
-                <div className="space-y-1">
-                  <p><span className="text-white">Admin:</span> Full access to all features including billing and team management</p>
-                  <p><span className="text-white">Editor:</span> Can create and edit content, but cannot manage team or billing</p>
-                  <p><span className="text-white">Viewer:</span> Can view content and reports, but cannot make changes</p>
+      {/* Pricing Modal */}
+      <AnimatePresence>
+        {showPricingModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-6"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            >
+              {/* Modal Header */}
+              <div className="sticky top-0 bg-[#0a0a0a] border-b border-[#1a1a1a] p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-medium text-white">Choose Your Plan</h2>
+                    <p className="text-sm text-[#666] mt-1">Select the plan that best fits your needs</p>
+                  </div>
+                  <button
+                    onClick={() => setShowPricingModal(false)}
+                    className="text-[#666] hover:text-white transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Billing Toggle */}
+                <div className="flex items-center justify-center mt-6">
+                  <span className={`text-sm mr-3 ${!isAnnualBilling ? 'text-white' : 'text-[#666]'}`}>Monthly</span>
+                  <button
+                    onClick={() => setIsAnnualBilling(!isAnnualBilling)}
+                    className={`relative w-12 h-6 rounded-full transition-colors ${
+                      isAnnualBilling ? 'bg-white' : 'bg-[#333]'
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 w-4 h-4 bg-black rounded-full transition-transform ${
+                        isAnnualBilling ? 'translate-x-7' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                  <span className={`text-sm ml-3 ${isAnnualBilling ? 'text-white' : 'text-[#666]'}`}>
+                    Annual
+                    <span className="text-xs text-[#888] ml-1">(save 20%)</span>
+                  </span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* API Keys Tab */}
-        <TabsContent value="api">
-          <Card className="border-[#333333]">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Key className="h-5 w-5 text-gray-400" />
-                <CardTitle className="text-xl font-medium text-white">
-                  API Keys
-                </CardTitle>
+              
+              {/* Pricing Plans */}
+              <div className="p-6">
+                <div className="grid md:grid-cols-3 gap-6">
+                  {pricingPlans.map((plan) => (
+                    <div
+                      key={plan.id}
+                      className={`relative bg-[#0c0c0c] border rounded-lg p-6 ${
+                        plan.recommended ? 'border-white' : 'border-[#333]'
+                      }`}
+                    >
+                      {plan.recommended && (
+                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                          <div className="bg-white text-black px-3 py-1 text-xs font-medium">
+                            RECOMMENDED
+                </div>
               </div>
-              <p className="text-sm text-gray-400 mt-2">
-                Generate and manage API keys for programmatic access to your AEO Agent
-              </p>
-            </CardHeader>
-            <CardContent>
-              <AgentCredentialsManager />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                      )}
+
+                      <div className="text-center mb-6">
+                        <h3 className="text-lg font-medium text-white mb-1">{plan.name}</h3>
+                        <div className="flex items-end justify-center gap-1 mt-3">
+                          <span className="text-3xl font-bold text-white">
+                            ${isAnnualBilling ? plan.annualPrice : plan.price}
+                          </span>
+                          <span className="text-[#666] mb-1">/month</span>
+                </div>
+                      </div>
+
+                      <div className="space-y-3 mb-6">
+                        {plan.features.map((feature, index) => (
+                          <div key={index} className="flex items-start gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-white mt-0.5 flex-shrink-0" />
+                            <span className="text-sm text-white">{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <Button
+                        onClick={() => handlePlanChange(plan.id)}
+                        className={`w-full h-10 text-sm font-medium ${
+                          currentPlan === plan.id
+                            ? 'bg-[#333] text-white cursor-default'
+                            : plan.recommended
+                            ? 'bg-white text-black hover:bg-gray-100'
+                            : 'bg-[#1a1a1a] text-white hover:bg-[#2a2a2a] border border-[#333]'
+                        }`}
+                        disabled={currentPlan === plan.id || isLoading}
+                      >
+                        {isLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : currentPlan === plan.id ? (
+                          'Current Plan'
+                        ) : (
+                          `Choose ${plan.name}`
+                        )}
+                        </Button>
+                    </div>
+                  ))}
+              </div>
+              
+                {/* Free Plan Option */}
+                {currentPlan !== 'free' && (
+                  <div className="text-center mt-8">
+                    <button
+                      onClick={() => handlePlanChange('free')}
+                      className="text-[#666] text-sm hover:text-white transition-colors"
+                      disabled={isLoading}
+                    >
+                      Downgrade to free plan
+                    </button>
+                </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   )
 } 
