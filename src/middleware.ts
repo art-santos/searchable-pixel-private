@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { isAiCrawler } from "@/lib/ai"
 import { createClient } from '@/lib/supabase/middleware'
+import { checkRouteAccess } from '@/lib/subscription/route-config'
+import { PlanType } from '@/lib/subscription/config'
 
 export async function middleware(request: NextRequest) {
   try {
@@ -58,6 +60,50 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
+    // Subscription-based route protection
+    if (session && session.user) {
+      // Get user's subscription plan
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_plan')
+        .eq('id', session.user.id)
+        .single()
+      
+      const userPlan = (profile?.subscription_plan || 'free') as PlanType
+      
+      // Check route access
+      const accessCheck = checkRouteAccess(pathname, userPlan)
+      
+      if (accessCheck.shouldRedirect) {
+        // Hard block - redirect to settings page with upgrade dialog params
+        console.log(`[MIDDLEWARE] Access denied for ${pathname} - Plan: ${userPlan}, Required: ${accessCheck.config?.requiredPlan}`)
+        
+        const redirectUrl = request.nextUrl.clone();
+        redirectUrl.pathname = '/settings';
+        
+        // Add parameters for the upgrade dialog
+        redirectUrl.searchParams.set('tab', 'billing'); // Select billing tab
+        redirectUrl.searchParams.set('showUpgrade', 'true'); // Show upgrade dialog
+        redirectUrl.searchParams.set('feature', accessCheck.config?.feature || '');
+        redirectUrl.searchParams.set('requiredPlan', accessCheck.config?.requiredPlan || '');
+        redirectUrl.searchParams.set('fromPath', pathname); // Track where they came from
+        
+        return NextResponse.redirect(redirectUrl);
+      }
+      
+      // For soft blocks, add headers so the page can show upgrade UI
+      if (accessCheck.config && accessCheck.config.softBlock && !accessCheck.allowed) {
+        console.log(`[MIDDLEWARE] Soft block for ${pathname} - Plan: ${userPlan}`)
+        
+        response.headers.set('X-Subscription-Soft-Block', 'true');
+        response.headers.set('X-Required-Plan', accessCheck.config.requiredPlan || '');
+        response.headers.set('X-Feature', accessCheck.config.feature || '');
+      }
+      
+      // Add user's plan to headers for client-side checks
+      response.headers.set('X-User-Plan', userPlan);
+    }
+
     return response;
   } catch (e) {
     console.error('Error in Supabase middleware:', e);
@@ -75,7 +121,12 @@ function isProtectedRoute(pathname: string): boolean {
     '/dashboard',
     '/profile',
     '/settings',
-    '/api-keys'
+    '/api-keys',
+    '/visibility',
+    '/content',
+    '/blog',
+    '/domains',
+    '/analytics'
   ];
   
   return protectedRoutes.some(route => pathname === route || pathname.startsWith(`${route}/`));

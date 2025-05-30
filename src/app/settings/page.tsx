@@ -19,10 +19,15 @@ import {
   Check,
   Zap,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  FileText
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSearchParams } from 'next/navigation'
+import { UpgradeDialog } from '@/components/subscription/upgrade-dialog'
+import { PlanType } from '@/lib/subscription/config'
+import { useSubscription } from '@/hooks/useSubscription'
+import { UsageDisplay } from '@/components/subscription/usage-display'
 
 interface AnalyticsProvider {
   id: string
@@ -113,8 +118,41 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [stripeCustomerId, setStripeCustomerId] = useState<string | null>(null)
   const [loadingSubscription, setLoadingSubscription] = useState(true)
+  const { usage: subscriptionUsage, refresh: refreshUsage } = useSubscription()
+  
+  // Upgrade dialog state
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false)
+  const [upgradeDialogProps, setUpgradeDialogProps] = useState<{
+    feature?: string
+    requiredPlan?: PlanType
+    fromPath?: string
+  }>({})
   
   const searchParams = useSearchParams()
+  
+  // Check URL parameters for tab selection and upgrade dialog
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    const shouldShowUpgrade = searchParams.get('showUpgrade') === 'true'
+    const feature = searchParams.get('feature')
+    const requiredPlan = searchParams.get('requiredPlan') as PlanType
+    const fromPath = searchParams.get('fromPath')
+    
+    // Auto-select tab if specified
+    if (tab) {
+      setActiveSection(tab)
+    }
+    
+    // Show upgrade dialog if redirected from protected route
+    if (shouldShowUpgrade) {
+      setUpgradeDialogProps({
+        feature: feature || undefined,
+        requiredPlan: requiredPlan || undefined,
+        fromPath: fromPath || undefined
+      })
+      setShowUpgradeDialog(true)
+    }
+  }, [searchParams])
   
   // Fetch user's subscription data on mount
   useEffect(() => {
@@ -810,6 +848,21 @@ export default function SettingsPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Upgrade Dialog - Shows when redirected from protected route */}
+      <UpgradeDialog 
+        open={showUpgradeDialog}
+        onOpenChange={(open) => {
+          setShowUpgradeDialog(open)
+          // If closing the dialog and it was the billing tab, keep it selected
+          if (!open && activeSection === 'billing') {
+            setShowPricingModal(true)
+          }
+        }}
+        feature={upgradeDialogProps.feature}
+        requiredPlan={upgradeDialogProps.requiredPlan}
+        fromPath={upgradeDialogProps.fromPath}
+      />
     </main>
   )
 } 

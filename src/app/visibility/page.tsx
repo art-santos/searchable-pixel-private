@@ -22,6 +22,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useSubscription } from '@/hooks/useSubscription'
+import { UsageDisplay } from '@/components/subscription/usage-display'
+import { ProtectedFeature } from '@/components/subscription/protected-feature'
+import { PlanType } from '@/lib/subscription/config'
+import { toast } from '@/components/ui/use-toast'
+import { createClient } from '@/lib/supabase/client'
 
 // Mock chart data - 30 days
 const chartData = [
@@ -132,6 +138,7 @@ type NodePositions = {
 
 export default function VisibilityPage() {
   const { loading } = useAuth()
+  const { subscription, usage, canPerformAction, getRemainingUsage, refresh } = useSubscription()
   const shouldReduceMotion = useReducedMotion()
   const [activeTab, setActiveTab] = useState('overview')
   const [isChartVisible, setIsChartVisible] = useState(false)
@@ -140,6 +147,8 @@ export default function VisibilityPage() {
   const [selectedQuery, setSelectedQuery] = useState<string>('AI research agents')
   const [selectedCitation, setSelectedCitation] = useState<any>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [scanType, setScanType] = useState<'basic' | 'max'>('basic')
 
   // Topic Map draggable positions
   const [topicNodePositions, setTopicNodePositions] = useState<NodePositions>({
@@ -216,6 +225,76 @@ export default function VisibilityPage() {
     return () => clearTimeout(timer)
   }, [])
 
+  // Determine available scan type based on plan
+  useEffect(() => {
+    if (subscription) {
+      const plan = subscription.plan as PlanType
+      if (plan === 'plus' || plan === 'pro') {
+        setScanType('max')
+      } else {
+        setScanType('basic')
+      }
+    }
+  }, [subscription])
+
+  const handleRefreshScore = async () => {
+    if (!subscription || !usage) return
+    
+    // Check if user has scans remaining
+    const canScan = await canPerformAction('scan')
+    
+    if (!canScan) {
+      toast({
+        title: "Scan limit reached",
+        description: `You've used all ${usage.scansLimit} of your monthly scans. Upgrade to get more.`,
+        variant: "destructive",
+      })
+      return
+    }
+    
+    setIsRefreshing(true)
+    
+    try {
+      // Track the scan usage through API
+      const response = await fetch('/api/usage/track', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          eventType: 'scan',
+          eventSubtype: scanType === 'max' ? 'max_scan' : 'basic_scan',
+        }),
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to track usage')
+      }
+      
+      // Simulate scan process
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      const remaining = getRemainingUsage('scan')
+      
+      toast({
+        title: "Visibility scan complete",
+        description: `${scanType === 'max' ? 'MAX' : 'Basic'} scan completed successfully. ${remaining > 0 ? `${remaining - 1} scans remaining this month.` : 'No scans remaining.'}`,
+      })
+      
+      // Refresh usage data
+      await refresh()
+    } catch (error) {
+      toast({
+        title: "Scan failed",
+        description: error instanceof Error ? error.message : "Something went wrong. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
   const handleMouseMove = (data: any) => {
     if (data && data.activePayload && data.activePayload[0]) {
       setHoveredScore(data.activePayload[0].value)
@@ -264,16 +343,39 @@ export default function VisibilityPage() {
             })}
           </div>
           
-          <button
-            onClick={() => {
-              // Add refresh logic here
-              console.log('Refreshing score...')
-            }}
-            className="px-4 py-2 rounded-md text-sm font-medium tracking-tight transition-colors border text-[#666] hover:text-white hover:bg-[#1a1a1a] border-[#333] flex items-center gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Refresh Score
-          </button>
+          <div className="flex items-center gap-4">
+            {/* Usage Display */}
+            {usage && (
+              <div className="flex items-center gap-2 text-sm">
+                <Zap className="w-4 h-4 text-[#666]" />
+                <span className="text-[#888]">
+                  {usage.scansLimit === -1 ? (
+                    'Unlimited scans'
+                  ) : (
+                    <>
+                      {usage.scansUsed} / {usage.scansLimit} scans
+                    </>
+                  )}
+                </span>
+                {scanType === 'max' && (
+                  <span className="text-xs text-yellow-500 font-medium bg-yellow-500/10 px-2 py-0.5 rounded">MAX</span>
+                )}
+              </div>
+            )}
+            
+            <button
+              onClick={handleRefreshScore}
+              disabled={isRefreshing || !subscription || !usage}
+              className={`px-4 py-2 rounded-md text-sm font-medium tracking-tight transition-colors border flex items-center gap-2 ${
+                isRefreshing || !subscription || !usage
+                  ? 'text-[#444] border-[#333] cursor-not-allowed'
+                  : 'text-[#666] hover:text-white hover:bg-[#1a1a1a] border-[#333]'
+              }`}
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Scanning...' : `Refresh Score${scanType === 'max' ? ' (MAX)' : ''}`}
+            </button>
+          </div>
         </motion.div>
 
         {/* Main Content Area */}
@@ -387,6 +489,50 @@ export default function VisibilityPage() {
 
             {/* Right Sidebar */}
             <div className="col-span-5 flex flex-col justify-end pb-12 px-8 space-y-8">
+              {/* Usage & Plan Info */}
+              {usage && subscription && (
+                <motion.div variants={itemVariants} className="mb-4">
+                  <UsageDisplay 
+                    usage={usage} 
+                    feature="scan"
+                    onUpgrade={() => {
+                      // Redirect to settings billing tab
+                      window.location.href = '/settings?tab=billing'
+                    }}
+                    showUpgradeButton={subscription.plan !== 'pro'}
+                  />
+                  
+                  {/* Plan-specific features */}
+                  {scanType === 'max' && (
+                    <div className="mt-4 p-3 bg-[#111] border border-[#1a1a1a] rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Zap className="w-4 h-4 text-yellow-500" />
+                        <span className="text-sm font-medium text-white">MAX Scan Active</span>
+                      </div>
+                      <p className="text-xs text-[#888]">
+                        Scanning 200+ AI queries for comprehensive visibility tracking
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Upgrade prompt when near limit */}
+                  {usage.scansLimit !== -1 && usage.scansRemaining <= 2 && usage.scansRemaining > 0 && (
+                    <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                      <p className="text-xs text-yellow-400 mb-2">
+                        Only {usage.scansRemaining} scans remaining this month
+                      </p>
+                      <Button
+                        onClick={() => window.location.href = '/settings?tab=billing'}
+                        size="sm"
+                        className="w-full h-7 bg-yellow-500 hover:bg-yellow-600 text-black text-xs"
+                      >
+                        Upgrade for more scans
+                      </Button>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+              
               {/* Citation Breakdown */}
               <motion.div variants={itemVariants}>
                 <div className="mb-6">

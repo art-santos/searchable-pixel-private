@@ -39,7 +39,8 @@ import {
   GripVertical,
   Check,
   RotateCw,
-  ChevronDown
+  ChevronDown,
+  Crown
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -69,6 +70,11 @@ import {
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { useSubscription } from '@/hooks/useSubscription'
+import { UsageDisplay } from '@/components/subscription/usage-display'
+import { PlanType } from '@/lib/subscription/config'
+import { toast } from '@/components/ui/use-toast'
+import { createClient } from '@/lib/supabase/client'
 
 const mockCompletedArticles = [
   {
@@ -418,6 +424,7 @@ const tabs = [
 
 export default function ContentPage() {
   const { loading } = useAuth()
+  const { subscription, usage, canPerformAction, getRemainingUsage, refresh } = useSubscription()
   const shouldReduceMotion = useReducedMotion()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState('completed')
@@ -437,6 +444,10 @@ export default function ContentPage() {
   const [editingTag, setEditingTag] = useState('')
   const [knowledgeFilter, setKnowledgeFilter] = useState<string>('all')
   const [knowledgeSearch, setKnowledgeSearch] = useState('')
+  const [qualityTier, setQualityTier] = useState<'standard' | 'premium'>('standard')
+  const [isGenerating, setIsGenerating] = useState(false)
+
+  const isPro = subscription?.plan === 'pro'
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -767,11 +778,113 @@ export default function ContentPage() {
                   </span>
                 ))}
               </div>
+              
+              {/* Generate Article Button */}
+              <div className="mt-4 pt-3 border-t border-[#1a1a1a]">
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleGenerateArticle(suggestion)
+                  }}
+                  disabled={isGenerating || !usage || (usage.articlesLimit !== -1 && usage.articlesRemaining === 0)}
+                  className={`w-full h-9 text-sm font-medium transition-all ${
+                    isGenerating 
+                      ? 'bg-[#1a1a1a] text-[#666]'
+                      : usage && usage.articlesRemaining > 0
+                      ? 'bg-white text-black hover:bg-gray-100'
+                      : 'bg-[#1a1a1a] text-[#666] cursor-not-allowed'
+                  }`}
+                >
+                  {isGenerating ? (
+                    <div className="flex items-center gap-2">
+                      <RotateCw className="w-4 h-4 animate-spin" />
+                      Generating...
+                    </div>
+                  ) : usage && usage.articlesRemaining === 0 ? (
+                    'No articles remaining'
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      Generate Article
+                      {qualityTier === 'premium' && isPro && (
+                        <Badge variant="outline" className="border-yellow-500/20 text-yellow-400 bg-yellow-500/10 text-xs px-1 py-0">
+                          PREMIUM
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </div>
     )
+  }
+
+  const handleGenerateArticle = async (suggestion: QueueSuggestion) => {
+    if (!subscription || !usage) return
+    
+    // Check if user has articles remaining
+    const canGenerate = await canPerformAction('article')
+    
+    if (!canGenerate) {
+      toast({
+        title: "Article limit reached",
+        description: `You've used all ${usage.articlesLimit} of your monthly AI articles. Upgrade to get more.`,
+        variant: "destructive",
+      })
+      return
+    }
+    
+    setIsGenerating(true)
+    
+    try {
+      // Track the article generation through API
+      const response = await fetch('/api/usage/track', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          eventType: 'article',
+          eventSubtype: isPro && qualityTier === 'premium' ? 'premium_article' : 'standard_article',
+          metadata: {
+            suggestionId: suggestion.id,
+            qualityTier: qualityTier,
+          }
+        }),
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to track usage')
+      }
+      
+      // Simulate article generation
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      
+      const remaining = getRemainingUsage('article')
+      
+      toast({
+        title: "Article generated successfully",
+        description: `${qualityTier === 'premium' ? 'Premium' : 'Standard'} article created. ${remaining > 0 ? `${remaining - 1} articles remaining this month.` : 'No articles remaining.'}`,
+      })
+      
+      // Refresh usage data
+      await refresh()
+      
+      // TODO: Actually generate article and redirect
+      router.push(`/content/editor?article=${suggestion.id}`)
+    } catch (error) {
+      toast({
+        title: "Generation failed",
+        description: error instanceof Error ? error.message : "Something went wrong. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   if (loading) {
@@ -1192,6 +1305,90 @@ export default function ContentPage() {
                   </div>
                 </div>
               </div>
+              
+              {/* Usage Display and Quality Tier Selection */}
+              {usage && subscription && (
+                <div className="mt-6 grid grid-cols-2 gap-4">
+                  {/* Usage Display */}
+                  <UsageDisplay 
+                    usage={usage} 
+                    feature="article"
+                    onUpgrade={() => {
+                      router.push('/settings?tab=billing')
+                    }}
+                    showUpgradeButton={subscription.plan !== 'pro'}
+                  />
+                  
+                  {/* Quality Tier Selection - Only for Pro users */}
+                  {isPro && (
+                    <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Crown className="w-5 h-5 text-yellow-500" />
+                          <h3 className="font-medium text-white">Article Quality</h3>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-3 cursor-pointer group">
+                          <input
+                            type="radio"
+                            name="quality"
+                            value="standard"
+                            checked={qualityTier === 'standard'}
+                            onChange={() => setQualityTier('standard')}
+                            className="w-4 h-4 text-white"
+                          />
+                          <div className="flex-1">
+                            <div className="text-sm text-white group-hover:text-white/90">Standard</div>
+                            <div className="text-xs text-[#666]">High-quality AI-generated content</div>
+                          </div>
+                        </label>
+                        
+                        <label className="flex items-center gap-3 cursor-pointer group">
+                          <input
+                            type="radio"
+                            name="quality"
+                            value="premium"
+                            checked={qualityTier === 'premium'}
+                            onChange={() => setQualityTier('premium')}
+                            className="w-4 h-4 text-white"
+                          />
+                          <div className="flex-1">
+                            <div className="text-sm text-white group-hover:text-white/90 flex items-center gap-2">
+                              Premium
+                              <Badge variant="outline" className="border-yellow-500/20 text-yellow-400 bg-yellow-500/10 text-xs px-1.5 py-0">
+                                PRO
+                              </Badge>
+                            </div>
+                            <div className="text-xs text-[#666]">Advanced research & expert-level writing</div>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Non-pro users see upgrade prompt instead */}
+                  {!isPro && (
+                    <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Crown className="w-5 h-5 text-[#666]" />
+                        <h3 className="font-medium text-white">Premium Articles</h3>
+                      </div>
+                      <p className="text-xs text-[#666] mb-3">
+                        Upgrade to Pro for premium quality articles with advanced research
+                      </p>
+                      <Button
+                        onClick={() => router.push('/settings?tab=billing')}
+                        size="sm"
+                        className="w-full h-8 bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white text-xs"
+                      >
+                        Upgrade to Pro
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Queue Content */}
