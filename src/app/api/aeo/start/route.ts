@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { asyncCrawlUrl, getCrawlResults } from '@/services/firecrawl-client'
+import { asyncCrawlUrl, checkCrawlStatus } from '@/services/firecrawl-client'
 import { generateQuestions } from '@/lib/aeo/qgen'
 import { searchQuestions } from '@/lib/aeo/serper'
 import { classifyResults } from '@/lib/aeo/classify'
@@ -395,7 +395,7 @@ async function executeCrawlStep(targetUrl: string, sendProgress: (event: Progres
     
     console.log('✅ Crawl response received:', crawlResponse)
     
-    const crawlId = crawlResponse.id || crawlResponse.runId || crawlResponse.jobId
+    const crawlId = crawlResponse.id
     console.log('🆔 Using crawl ID:', crawlId)
     
     if (!crawlId) {
@@ -421,11 +421,7 @@ async function executeCrawlStep(targetUrl: string, sendProgress: (event: Progres
       await new Promise(resolve => setTimeout(resolve, 10000)) // Wait 10 seconds
       
       try {
-        console.log(`📡 Calling getCrawlResults for ID: ${crawlId}`)
-        const results = await getCrawlResults(crawlId)
-        
-        console.log(`📊 Crawl results status: ${results.status}`)
-        console.log(`📊 Crawl results data length: ${results.data ? results.data.length : 'no data'}`)
+        const results = await checkCrawlStatus(crawlId)
         
         if (results.status === 'completed' && results.data && results.data.length > 0) {
           console.log('🎉 Crawl completed successfully!')
@@ -451,8 +447,6 @@ async function executeCrawlStep(targetUrl: string, sendProgress: (event: Progres
           return crawlSnapshot
         }
         
-        console.log(`⏳ Crawl still in progress (status: ${results.status})`)
-        
         sendProgress({
           step: 'crawl',
           progress: 0.2 + (attempts / maxAttempts) * 0.6,
@@ -461,8 +455,7 @@ async function executeCrawlStep(targetUrl: string, sendProgress: (event: Progres
         })
         
       } catch (statusError) {
-        console.log('⚠️ Error checking crawl status:', statusError)
-        console.log('⏳ Continuing to poll...')
+        console.log('⚠️ Error checking crawl status, continuing to poll...')
       }
       
       attempts++

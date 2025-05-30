@@ -1,4 +1,5 @@
 import OpenAI from 'openai'
+import { saveAeoQuestions } from '@/lib/onboarding/database'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -30,8 +31,12 @@ export interface QuestionSet {
 
 /**
  * Generates 50 diverse search questions from crawl data (30% direct, 70% indirect)
+ * Optionally saves to database if runId is provided
  */
-export async function generateQuestions(crawlData: CrawlSnapshot): Promise<QuestionSet> {
+export async function generateQuestions(
+  crawlData: CrawlSnapshot, 
+  runId?: string
+): Promise<QuestionSet> {
   console.log('🧠 Starting question generation for:', crawlData.url)
   
   // Prepare site summary (first 12k tokens of content + titles)
@@ -51,6 +56,22 @@ export async function generateQuestions(crawlData: CrawlSnapshot): Promise<Quest
       source_url: crawlData.url,
       total_questions: processedQuestions.length,
       content_analyzed_chars: siteSummary.length
+    }
+  }
+  
+  // Save to database if runId is provided
+  if (runId && processedQuestions.length > 0) {
+    try {
+      console.log(`💾 Saving ${processedQuestions.length} questions to database...`)
+      const saveResult = await saveAeoQuestions(runId, processedQuestions)
+      
+      if (saveResult.success) {
+        console.log('✅ Questions saved to database successfully')
+      } else {
+        console.error('❌ Failed to save questions to database:', saveResult.error)
+      }
+    } catch (error) {
+      console.error('❌ Error saving questions to database:', error)
     }
   }
   
@@ -288,7 +309,7 @@ Return as JSON: {"questions": ["question 1", "question 2", ...]}`
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4.1-mini',
       messages: [{ role: 'user', content: simplifiedPrompt }],
       temperature: 0.7,
       max_tokens: 1500,

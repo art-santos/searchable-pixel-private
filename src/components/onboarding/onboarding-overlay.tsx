@@ -1,11 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { AEOPipeline } from '@/app/visibility-test/components/aeo-pipeline'
 import { AEOScoreCard } from '@/app/visibility-test/components/aeo-score-card'
+import { OverallAEOCard } from '@/app/visibility-test/components/overall-aeo-card'
+import { DirectCitationCard } from '@/app/visibility-test/components/direct-citation-card'
+import { SuggestionsCard } from '@/app/visibility-test/components/suggestions-card'
+import { saveOnboardingData, saveAeoQuestions, saveAeoResults, updateAeoScore } from '@/lib/onboarding/database'
+import type { OnboardingData } from '@/lib/onboarding/database'
 import { 
   CheckCircle2, 
   ArrowRight, 
@@ -85,6 +91,7 @@ const cmsOptions = [
 ]
 
 export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayProps) {
+  const { user } = useAuth()
   const [showOnboarding, setShowOnboarding] = useState(true)
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('workspace')
   const [progress, setProgress] = useState(0)
@@ -94,6 +101,10 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
   const [isAnnual, setIsAnnual] = useState(false)
   const [isPipelineOpen, setIsPipelineOpen] = useState(false)
   const [visibilityData, setVisibilityData] = useState<any | null>(null)
+
+  // Database tracking
+  const [companyId, setCompanyId] = useState<string | null>(null)
+  const [runId, setRunId] = useState<string | null>(null)
 
   // Form data
   const [workspaceData, setWorkspaceData] = useState<WorkspaceData>({
@@ -247,6 +258,42 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
         setCurrentStep('cms')
         break
       case 'cms':
+        // Save data to database before starting the scan
+        if (user) {
+          try {
+            const onboardingData: OnboardingData = {
+              workspaceName: workspaceData.workspaceName,
+              userEmail: user.email || '',
+              analyticsProvider: analyticsData.provider,
+              domain: analyticsData.domain,
+              isAnalyticsConnected: analyticsData.isConnected,
+              keywords: contentData.keywords,
+              businessOffering: contentData.businessOffering,
+              knownFor: contentData.knownFor,
+              competitors: contentData.competitors,
+              cms: cmsData.cms,
+            }
+
+            console.log('💾 Saving onboarding data to database...')
+            const result = await saveOnboardingData(user, onboardingData)
+            
+            if (result.success) {
+              console.log('✅ Onboarding data saved successfully')
+              setCompanyId(result.companyId || null)
+              setRunId(result.runId || null)
+              
+              // Mark onboarding as completed in localStorage
+              localStorage.setItem('onboardingCompleted', 'true')
+            } else {
+              console.error('❌ Failed to save onboarding data:', result.error)
+              // Continue with scan even if database save fails
+            }
+          } catch (error) {
+            console.error('❌ Error saving onboarding data:', error)
+            // Continue with scan even if database save fails
+          }
+        }
+        
         setCurrentStep('scanning')
         break
     }
@@ -319,7 +366,47 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
     }
   }
 
-  const handlePipelineComplete = (data: any) => {
+  const handlePipelineComplete = async (data: any) => {
+    console.log('🎯 Pipeline completed with data:', data)
+    
+    // Save questions and results to database if we have the run ID
+    if (runId && data.questions && data.results) {
+      try {
+        console.log('💾 Saving AEO questions to database...')
+        const questionsResult = await saveAeoQuestions(runId, data.questions)
+        
+        if (questionsResult.success) {
+          console.log('✅ AEO questions saved successfully')
+        } else {
+          console.error('❌ Failed to save questions:', questionsResult.error)
+        }
+
+        console.log('💾 Saving AEO results to database...')
+        const resultsResult = await saveAeoResults(runId, data.results)
+        
+        if (resultsResult.success) {
+          console.log('✅ AEO results saved successfully')
+        } else {
+          console.error('❌ Failed to save results:', resultsResult.error)
+        }
+
+        // Update total score if available
+        const totalScore = data.overallScore ?? data.aeoData?.aeo_score ?? 0
+        if (totalScore > 0) {
+          console.log('💾 Updating AEO score...')
+          const scoreResult = await updateAeoScore(runId, totalScore)
+          
+          if (scoreResult.success) {
+            console.log('✅ AEO score updated successfully')
+          } else {
+            console.error('❌ Failed to update score:', scoreResult.error)
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error saving pipeline results:', error)
+      }
+    }
+    
     setVisibilityData(data)
     setVisibilityScore(data.overallScore ?? data.aeoData?.aeo_score ?? 0)
     localStorage.removeItem('onboardingData')

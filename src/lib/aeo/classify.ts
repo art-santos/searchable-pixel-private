@@ -41,20 +41,27 @@ export async function classifyResults(
   console.log(`📊 Found ${urlsToClassify.length} unique URLs to classify`)
   
   const classifications: ClassificationResult[] = []
-  const batchSize = 100 // Process in batches of 100 URLs
+  const batchSize = 50 // Reduced for faster processing with more batches
   
   for (let i = 0; i < urlsToClassify.length; i += batchSize) {
     const batch = urlsToClassify.slice(i, i + batchSize)
-    console.log(`🔄 Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(urlsToClassify.length / batchSize)}`)
+    const batchNum = Math.floor(i / batchSize) + 1
+    const totalBatches = Math.ceil(urlsToClassify.length / batchSize)
+    console.log(`🔄 Processing batch ${batchNum}/${totalBatches} (${batch.length} URLs)`)
+    console.log(`🤖 Using GPT-4o-mini for fast classification...`)
     
+    const startTime = Date.now()
     try {
       const batchResults = await classifyBatch(batch, targetDomain)
+      const duration = Date.now() - startTime
+      console.log(`✅ Batch ${batchNum} completed in ${(duration/1000).toFixed(1)}s`)
       classifications.push(...batchResults)
       
       onProgress?.(classifications.length, urlsToClassify.length)
       
     } catch (error) {
-      console.error('❌ Batch classification failed:', error)
+      const duration = Date.now() - startTime
+      console.error(`❌ Batch ${batchNum} failed after ${(duration/1000).toFixed(1)}s:`, error)
       
       // Fallback: rule-based classification for this batch
       const fallbackResults = batch.map(item => classifyByRules(item, targetDomain))
@@ -63,8 +70,8 @@ export async function classifyResults(
       onProgress?.(classifications.length, urlsToClassify.length)
     }
     
-    // Small delay between batches to avoid rate limits
-    await new Promise(resolve => setTimeout(resolve, 200))
+    // Minimal delay between batches
+    await new Promise(resolve => setTimeout(resolve, 100))
   }
   
   // Generate summary statistics
@@ -137,7 +144,7 @@ function extractUniqueUrls(serpResults: SerpResults): Array<{
 }
 
 /**
- * Classifies a batch of URLs using OpenAI
+ * Classifies a batch of URLs using hybrid approach: rule-based first, then GPT for unclear cases
  */
 async function classifyBatch(
   urls: Array<{ url: string; title: string; snippet: string }>,
@@ -145,41 +152,124 @@ async function classifyBatch(
 ): Promise<ClassificationResult[]> {
   const rootDomain = extractRootDomain(targetDomain)
   
-  const systemPrompt = `You are a domain classification expert. Your task is to classify URLs into three categories:
+  // First pass: rule-based classification
+  const ruleBasedResults = urls.map(url => {
+    const result = classifyByRules(url, targetDomain)
+    return {
+      ...result,
+      confidence: getClassificationConfidence(url, targetDomain)
+    }
+  })
+  
+  // Separate high-confidence vs low-confidence classifications
+  const highConfidence = ruleBasedResults.filter(r => r.confidence! >= 0.8)
+  const lowConfidence = ruleBasedResults.filter(r => r.confidence! < 0.8)
+  
+  console.log(`📊 Rule-based: ${highConfidence.length} confident, ${lowConfidence.length} need AI review`)
+  
+  // Only send unclear cases to GPT (much faster!)
+  if (lowConfidence.length === 0) {
+    console.log(`⚡ All ${urls.length} URLs classified with high confidence - skipping GPT`)
+    return ruleBasedResults.map(r => ({ ...r, confidence: undefined })) // Remove confidence from final result
+  }
+  
+  // Use GPT only for unclear cases
+  const unclearUrls = lowConfidence.map(r => ({
+    url: r.url,
+    title: r.title,
+    snippet: r.snippet
+  }))
+  
+  console.log(`🤖 Sending ${unclearUrls.length} unclear URLs to GPT-4o-mini...`)
+  
+  try {
+    const gptResults = await classifyWithGPT(unclearUrls, targetDomain)
+    
+    // Merge results: high-confidence rule-based + GPT-reviewed
+    const finalResults = [
+      ...highConfidence.map(r => ({ ...r, confidence: undefined })),
+      ...gptResults
+    ]
+    
+    // Restore original order
+    return urls.map(originalUrl => 
+      finalResults.find(result => result.url === originalUrl.url)!
+    )
+    
+  } catch (error) {
+    console.log('⚡ GPT failed, using all rule-based results')
+    return ruleBasedResults.map(r => ({ ...r, confidence: undefined }))
+  }
+}
 
-**Owned**: Same root domain as the target (including ALL subdomains)
-**Operated**: Company-controlled channels that the target company likely operates (social media profiles, marketplace listings, etc.)
-**Earned**: Independent third-party content
+/**
+ * Gets confidence score for rule-based classification
+ */
+function getClassificationConfidence(
+  item: { url: string; title: string; snippet: string },
+  targetDomain: string
+): number {
+  const rootDomain = extractRootDomain(targetDomain)
+  const urlObj = new URL(item.url)
+  const urlDomain = urlObj.hostname.replace(/^www\./, '')
+  
+  // Very high confidence for exact/subdomain matches
+  if (urlDomain === rootDomain || urlDomain.endsWith(`.${rootDomain}`)) {
+    return 0.95
+  }
+  
+  // High confidence for clear third-party domains
+  const clearThirdParty = ['wikipedia.org', 'reddit.com', 'youtube.com', 'amazon.com', 'cnet.com']
+  if (clearThirdParty.some(domain => urlDomain.includes(domain))) {
+    return 0.9
+  }
+  
+  // Medium confidence for likely operated domains
+  if (isLikelyOperatedDomain(item.url, item.title, rootDomain)) {
+    return 0.7
+  }
+  
+  // Low confidence - needs GPT review
+  return 0.5
+}
 
-Target domain: ${rootDomain}
+/**
+ * GPT classification for unclear cases only
+ */
+async function classifyWithGPT(
+  urls: Array<{ url: string; title: string; snippet: string }>,
+  targetDomain: string
+): Promise<ClassificationResult[]> {
+  const rootDomain = extractRootDomain(targetDomain)
+  
+  const systemPrompt = `URL classification for ${rootDomain}:
 
-Classification Rules:
-- Owned: ${rootDomain} or ANY subdomain like platform.${rootDomain}, community.${rootDomain}, help.${rootDomain}, api.${rootDomain}, etc.
-- Operated: Official company presence on external platforms (LinkedIn company pages, Twitter accounts, YouTube channels, etc.)
-- Earned: All other independent third-party content (tutorials, reviews, news articles, etc.)
+Owned: ${rootDomain} + subdomains  
+Operated: Official social/business profiles
+Earned: Everything else
 
-IMPORTANT: Subdomains like community.${rootDomain}, platform.${rootDomain}, help.${rootDomain} are OWNED, not earned!
+JSON only: [{"url":"...","bucket":"Owned|Operated|Earned"}]`
 
-Respond with a JSON array preserving the input order:
-[{"url": "...", "bucket": "Owned|Operated|Earned", "reasoning": "brief explanation"}, ...]
-
-JSON ONLY - NO OTHER TEXT.`
-
-  const userPrompt = `Classify these ${urls.length} URLs for target domain: ${rootDomain}
-
-URLs to classify:
-${urls.map((item, i) => `${i + 1}. ${item.url}\n   Title: ${item.title}\n   Snippet: ${item.snippet.substring(0, 100)}...`).join('\n\n')}`
+  const userPrompt = `${urls.map((item, i) => `${i + 1}. ${item.url}`).join('\n')}`
 
   try {
+    // GPT-4o-mini with timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 20000) // 20 second timeout
+    
     const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4.1-nano',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }
       ],
-      temperature: 0.1,
+      temperature: 0,
       max_tokens: 3000,
+    }, {
+      signal: controller.signal
     })
+    
+    clearTimeout(timeoutId)
 
     const content = response.choices[0]?.message?.content?.trim()
     if (!content) {
@@ -188,14 +278,42 @@ ${urls.map((item, i) => `${i + 1}. ${item.url}\n   Title: ${item.title}\n   Snip
 
     // Extract JSON from content (handle markdown code blocks)
     let jsonContent = content
-    const jsonMatch = content.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/)
-    if (jsonMatch) {
-      jsonContent = jsonMatch[1]
-    } else if (content.startsWith('```') && content.endsWith('```')) {
-      jsonContent = content.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '')
+    
+    // Remove markdown code blocks if present
+    if (content.includes('```')) {
+      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+      if (jsonMatch) {
+        jsonContent = jsonMatch[1].trim()
+      } else {
+        jsonContent = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+      }
+    }
+    
+    // Additional cleanup - ensure we start with [ and end with ]
+    jsonContent = jsonContent.trim()
+    if (!jsonContent.startsWith('[')) {
+      const arrayStart = jsonContent.indexOf('[')
+      if (arrayStart !== -1) {
+        jsonContent = jsonContent.substring(arrayStart)
+      } else {
+        throw new Error('Incomplete JSON response - missing opening bracket')
+      }
+    }
+    if (!jsonContent.endsWith(']')) {
+      const arrayEnd = jsonContent.lastIndexOf(']')
+      if (arrayEnd !== -1) {
+        jsonContent = jsonContent.substring(0, arrayEnd + 1)
+      } else {
+        throw new Error('Incomplete JSON response - missing closing bracket')
+      }
     }
 
-    console.log('🔍 OpenAI classification response preview:', jsonContent.substring(0, 200) + '...')
+    console.log('🔍 GPT JSON preview:', jsonContent.substring(0, 100) + '...')
+    
+    // Validate JSON structure before parsing
+    if (!jsonContent.startsWith('[') || !jsonContent.endsWith(']')) {
+      throw new Error('Invalid JSON structure - not a proper array')
+    }
 
     const parsed = JSON.parse(jsonContent)
     if (!Array.isArray(parsed)) {
@@ -216,11 +334,8 @@ ${urls.map((item, i) => `${i + 1}. ${item.url}\n   Title: ${item.title}\n   Snip
     })
 
   } catch (error) {
-    console.error('OpenAI classification error:', error)
-    
-    // Fallback to rule-based classification
-    console.log('🔄 Using fallback rule-based classification...')
-    return urls.map(url => classifyByRules(url, targetDomain))
+    console.error('GPT classification error:', error)
+    throw error // Let the calling function handle fallback
   }
 }
 

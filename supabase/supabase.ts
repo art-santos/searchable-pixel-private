@@ -293,15 +293,74 @@ export type Database = {
         }
         Relationships: []
       }
+      generated_content: {
+        Row: {
+          content: string
+          content_type: string | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          published: boolean | null
+          quality_tier: string | null
+          slug: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          content_type?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          published?: boolean | null
+          quality_tier?: string | null
+          slug: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          content_type?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          published?: boolean | null
+          quality_tier?: string | null
+          slug?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_content_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_by: string
           email: string | null
           first_name: string | null
           id: string
+          last_articles_reset_at: string | null
           last_name: string | null
+          last_scan_reset_at: string | null
+          monthly_articles_used: number | null
+          monthly_scans_used: number | null
           phone_number: string | null
           profile_picture_url: string | null
+          stripe_customer_id: string | null
+          subscription_id: string | null
+          subscription_period_end: string | null
+          subscription_plan: string | null
+          subscription_status: string | null
           updated_by: string
           workspace_name: string | null
           onboarding_completed: boolean | null
@@ -312,9 +371,18 @@ export type Database = {
           email?: string | null
           first_name?: string | null
           id: string
+          last_articles_reset_at?: string | null
           last_name?: string | null
+          last_scan_reset_at?: string | null
+          monthly_articles_used?: number | null
+          monthly_scans_used?: number | null
           phone_number?: string | null
           profile_picture_url?: string | null
+          stripe_customer_id?: string | null
+          subscription_id?: string | null
+          subscription_period_end?: string | null
+          subscription_plan?: string | null
+          subscription_status?: string | null
           updated_by?: string
           workspace_name?: string | null
           onboarding_completed?: boolean | null
@@ -325,15 +393,97 @@ export type Database = {
           email?: string | null
           first_name?: string | null
           id?: string
+          last_articles_reset_at?: string | null
           last_name?: string | null
+          last_scan_reset_at?: string | null
+          monthly_articles_used?: number | null
+          monthly_scans_used?: number | null
           phone_number?: string | null
           profile_picture_url?: string | null
+          stripe_customer_id?: string | null
+          subscription_id?: string | null
+          subscription_period_end?: string | null
+          subscription_plan?: string | null
+          subscription_status?: string | null
           updated_by?: string
           workspace_name?: string | null
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
         }
         Relationships: []
+      }
+      scan_history: {
+        Row: {
+          created_at: string | null
+          domain: string
+          id: string
+          results: Json | null
+          scan_type: string
+          score: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          domain: string
+          id?: string
+          results?: Json | null
+          scan_type?: string
+          score?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          domain?: string
+          id?: string
+          results?: Json | null
+          scan_type?: string
+          score?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scan_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usage_events: {
+        Row: {
+          created_at: string | null
+          event_subtype: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_subtype?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_subtype?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
