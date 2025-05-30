@@ -303,6 +303,9 @@ export type Database = {
           phone_number: string | null
           profile_picture_url: string | null
           updated_by: string
+          workspace_name: string | null
+          onboarding_completed: boolean | null
+          onboarding_completed_at: string | null
         }
         Insert: {
           created_by?: string
@@ -313,6 +316,9 @@ export type Database = {
           phone_number?: string | null
           profile_picture_url?: string | null
           updated_by?: string
+          workspace_name?: string | null
+          onboarding_completed?: boolean | null
+          onboarding_completed_at?: string | null
         }
         Update: {
           created_by?: string
@@ -323,6 +329,9 @@ export type Database = {
           phone_number?: string | null
           profile_picture_url?: string | null
           updated_by?: string
+          workspace_name?: string | null
+          onboarding_completed?: boolean | null
+          onboarding_completed_at?: string | null
         }
         Relationships: []
       }

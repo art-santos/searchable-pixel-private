@@ -1,19 +1,64 @@
 'use client'
 import { Card, CardContent } from "@/components/ui/card"
 import { motion, useAnimation, useReducedMotion } from "framer-motion"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { useAuth } from "@/contexts/AuthContext"
+import { createClient } from "@/lib/supabase/client"
 import { DomainSelector } from "@/components/custom/domain-selector"
 import { Button } from "@/components/ui/button"
 import { BarChart3, FileText, Zap, ExternalLink, BookOpen, Settings, HelpCircle, Rocket } from "lucide-react"
 
+interface UserProfile {
+  first_name: string | null
+  workspace_name: string | null
+}
+
 export function WelcomeCard() {
-  const shouldReduceMotion = useReducedMotion();
-  const controls = useAnimation();
+  const { user } = useAuth()
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [loading, setLoading] = useState(true)
+  const shouldReduceMotion = useReducedMotion()
+  const controls = useAnimation()
+  
+  // Hardcoded visibility score for now - will be dynamic later
+  const visibilityScore = 42
+
+  const supabase = createClient()
+
+  // Fetch user profile data
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user || !supabase) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('first_name, workspace_name')
+          .eq('id', user.id)
+          .single()
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching profile:', error)
+        }
+
+        setProfile(data || null)
+      } catch (err) {
+        console.error('Error in profile fetch:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProfile()
+  }, [user, supabase])
 
   useEffect(() => {
     if (shouldReduceMotion) {
-      controls.start({ opacity: 1, y: 0 });
-      return;
+      controls.start({ opacity: 1, y: 0 })
+      return
     }
     controls.start({
       opacity: 1,
@@ -22,13 +67,34 @@ export function WelcomeCard() {
         duration: 0.3,
         ease: "easeOut"
       },
-    });
-  }, [controls, shouldReduceMotion]);
+    })
+  }, [controls, shouldReduceMotion])
+
+  // Generate welcome message based on visibility score
+  const getWelcomeMessage = (score: number) => {
+    if (score < 30) {
+      return "We're off to a good start, but there's plenty of room to grow. Your AEO foundation needs some work, but that's exactly why you're here."
+    } else if (score < 50) {
+      return "You're making progress! Your AEO structure has some solid elements, but we've identified key areas where you can significantly improve your visibility."
+    } else if (score < 70) {
+      return "Looking good! Your AEO strategy is working well in most areas. Let's fine-tune the remaining gaps to maximize your LLM visibility."
+    } else if (score < 85) {
+      return "Impressive work! Your AEO structure is strong across the board. We've spotted a few optimization opportunities to push you into the top tier."
+    } else {
+      return "Outstanding! Your AEO game is incredibly strong. You're in the top tier of LLM visibility. Let's keep you there and explore advanced strategies."
+    }
+  }
+
+  // Get user's display name - simplified to just first name
+  const getDisplayName = () => {
+    if (loading) return "..."
+    return profile?.first_name || "there"
+  }
 
   const quickActions = [
-    { icon: BarChart3, label: "View Analytics", desc: "Deep dive into your data", href: "/analytics" },
-    { icon: FileText, label: "Generate Report", desc: "Export insights", href: "/reports" },
-    { icon: Zap, label: "Optimize AEO", desc: "Improve your rankings", href: "/optimization" },
+    { icon: BarChart3, label: "Visibility Scoring", desc: "Run AEO visibility scans", href: "/visibility" },
+    { icon: FileText, label: "Content Pages", desc: "View completed content", href: "/content" },
+    { icon: Zap, label: "Content Queue", desc: "Manage content pipeline", href: "/queue" },
     { icon: BookOpen, label: "Read Documentation", desc: "Learn best practices", href: "/docs" },
     { icon: Rocket, label: "What's New", desc: "Latest features & updates", href: "/changelog" },
     { icon: HelpCircle, label: "Get Support", desc: "Contact our team", href: "/support" },
@@ -50,10 +116,10 @@ export function WelcomeCard() {
             
             <div className="mb-8">
               <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
-                Glad you're back, Sam.
+                Welcome back, {getDisplayName()}.
               </h1>
               <p className="text-xl text-[#ccc] mb-6 leading-relaxed">
-                Your AEO structure is solid overall, with strong meta descriptions and clean crawling across 28 pages. However, missing llms.txt and inconsistent JSON-LD schema are reducing your LLM visibility.
+                {getWelcomeMessage(visibilityScore)}
               </p>
               <button className="text-lg text-[#888] hover:text-white transition-colors flex items-center gap-2 group">
                 See detailed analysis

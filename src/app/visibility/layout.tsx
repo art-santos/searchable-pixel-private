@@ -4,7 +4,7 @@ import { SplitSidebar } from '@/components/layout/split-sidebar'
 import { SplitTopbar } from '@/components/layout/split-topbar'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { OnboardingOverlay } from '@/components/onboarding/onboarding-overlay'
+import { SimpleWorkspaceOnboarding } from '@/components/onboarding/simple-workspace-onboarding'
 import { useEffect } from 'react'
 
 export default function VisibilityLayout({
@@ -22,7 +22,7 @@ export default function VisibilityLayout({
   
   return (
     <AuthenticatedLayout>
-      <OnboardingOverlay>
+      <SimpleWorkspaceOnboarding>
         <SidebarProvider className="dark">
           <SplitSidebar />
           <SidebarInset className="flex flex-col h-screen">
@@ -32,7 +32,7 @@ export default function VisibilityLayout({
             </div>
           </SidebarInset>
         </SidebarProvider>
-      </OnboardingOverlay>
+      </SimpleWorkspaceOnboarding>
     </AuthenticatedLayout>
   )
 } 

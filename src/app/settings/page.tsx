@@ -28,6 +28,8 @@ import { UpgradeDialog } from '@/components/subscription/upgrade-dialog'
 import { PlanType } from '@/lib/subscription/config'
 import { useSubscription } from '@/hooks/useSubscription'
 import { UsageDisplay } from '@/components/subscription/usage-display'
+import { useAuth } from '@/contexts/AuthContext'
+import { createClient } from '@/lib/supabase/client'
 
 interface AnalyticsProvider {
   id: string
@@ -49,6 +51,15 @@ interface PricingPlan {
     domains: number
   }
   recommended?: boolean
+}
+
+interface UserProfile {
+  id?: string
+  first_name?: string | null
+  workspace_name?: string | null
+  email?: string | null
+  created_by?: string
+  updated_by?: string
 }
 
 const pricingPlans: PricingPlan[] = [
@@ -109,6 +120,9 @@ const pricingPlans: PricingPlan[] = [
 ]
 
 export default function SettingsPage() {
+  const { user } = useAuth()
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [profileLoading, setProfileLoading] = useState(true)
   const [activeSection, setActiveSection] = useState('general')
   const [copied, setCopied] = useState(false)
   const [showApiKey, setShowApiKey] = useState(false)
@@ -129,6 +143,41 @@ export default function SettingsPage() {
   }>({})
   
   const searchParams = useSearchParams()
+  const supabase = createClient()
+
+  // Fetch user profile data
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user || !supabase) {
+        setProfileLoading(false)
+        return
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching profile:', error)
+        }
+
+        setProfile(data || {
+          first_name: user.email?.split('@')[0] || '',
+          workspace_name: '',
+          email: user.email
+        })
+      } catch (err) {
+        console.error('Error in profile fetch:', err)
+      } finally {
+        setProfileLoading(false)
+      }
+    }
+
+    fetchProfile()
+  }, [user, supabase])
   
   // Check URL parameters for tab selection and upgrade dialog
   useEffect(() => {
@@ -207,13 +256,61 @@ export default function SettingsPage() {
     }
   }, [searchParams])
   
-  // Mock data
+  // Dynamic workspace data from profile
   const [workspace, setWorkspace] = useState({
-    name: 'Origami Agents',
-    domain: 'origamiagents.com',
-    email: 'team@origamiagents.com'
+    name: '',
+    domain: '',
+    email: ''
   })
+
+  // Update workspace state when profile loads
+  useEffect(() => {
+    if (profile) {
+      setWorkspace({
+        name: profile.workspace_name || '',
+        domain: '', // Will be dynamic later when we add domain tracking
+        email: profile.email || user?.email || ''
+      })
+    }
+  }, [profile, user])
+
+  // Function to save workspace changes
+  const handleSaveWorkspace = async () => {
+    if (!user || !supabase) return
+
+    setIsLoading(true)
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          workspace_name: workspace.name,
+          email: workspace.email,
+          updated_by: user.id
+        })
+
+      if (error) {
+        console.error('Error updating profile:', error)
+        return
+      }
+
+      // Update local profile state
+      setProfile((prev: UserProfile | null) => ({
+        ...prev,
+        workspace_name: workspace.name,
+        email: workspace.email
+      }))
+
+      // Show success message (you can add a toast here)
+      console.log('Workspace updated successfully')
+    } catch (err) {
+      console.error('Error saving workspace:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
   
+  // Mock data
   const [analytics, setAnalytics] = useState<AnalyticsProvider[]>([
     { id: 'ga4', name: 'Google Analytics', icon: '📊', connected: true, lastSync: '2 hours ago' },
     { id: 'vercel', name: 'Vercel Analytics', icon: '▲', connected: false },
@@ -336,6 +433,14 @@ export default function SettingsPage() {
 
   const billingPlan = getBillingData()
   
+  // Get user's display name
+  const getDisplayName = () => {
+    if (profileLoading) return 'Loading...'
+    if (profile?.first_name) return profile.first_name
+    if (user?.email) return user.email.split('@')[0]
+    return 'User'
+  }
+
   return (
     <main className="flex-1 bg-[#0c0c0c]">
       <div className="max-w-5xl mx-auto px-6 py-8">
@@ -390,6 +495,7 @@ export default function SettingsPage() {
                         <Input
                           value={workspace.name}
                           onChange={(e) => setWorkspace(prev => ({ ...prev, name: e.target.value }))}
+                          placeholder="My Company"
                           className="bg-[#1a1a1a] border-[#333] text-white h-10"
                         />
                       </div>
@@ -399,6 +505,7 @@ export default function SettingsPage() {
                         <Input
                           value={workspace.domain}
                           onChange={(e) => setWorkspace(prev => ({ ...prev, domain: e.target.value }))}
+                          placeholder="example.com"
                           className="bg-[#1a1a1a] border-[#333] text-white h-10"
                         />
                         <p className="text-xs text-[#666] mt-2">
@@ -411,16 +518,25 @@ export default function SettingsPage() {
                         <Input
                           value={workspace.email}
                           onChange={(e) => setWorkspace(prev => ({ ...prev, email: e.target.value }))}
+                          placeholder="team@example.com"
                           className="bg-[#1a1a1a] border-[#333] text-white h-10"
                         />
                       </div>
                     </div>
 
                     <div className="flex justify-end mt-6">
-                      <Button className="bg-white text-black hover:bg-gray-100 h-9 px-4 text-sm font-medium">
-          Save Changes
-        </Button>
-      </div>
+                      <Button 
+                        onClick={handleSaveWorkspace}
+                        disabled={isLoading}
+                        className="bg-[#1a1a1a] hover:bg-[#222] border border-[#333] hover:border-[#444] text-white h-9 px-4 text-sm font-medium"
+                      >
+                        {isLoading ? (
+                          <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
+                        ) : (
+                          'Save Changes'
+                        )}
+                      </Button>
+                    </div>
                   </div>
 
                   {/* API Key Section */}
@@ -677,7 +793,9 @@ export default function SettingsPage() {
                       <div>
                         <label className="block text-sm text-[#888] mb-2">Full Name</label>
                         <Input
-                          defaultValue="John Doe"
+                          value={profile?.first_name || ''}
+                          onChange={(e) => setProfile((prev: UserProfile | null) => ({ ...prev, first_name: e.target.value }))}
+                          placeholder="John Doe"
                           className="bg-[#1a1a1a] border-[#333] text-white h-10"
                         />
                       </div>
@@ -685,18 +803,26 @@ export default function SettingsPage() {
                       <div>
                         <label className="block text-sm text-[#888] mb-2">Email Address</label>
                         <Input
-                          defaultValue="john@origamiagents.com"
+                          value={user?.email || ''}
                           type="email"
-                          className="bg-[#1a1a1a] border-[#333] text-white h-10"
+                          disabled
+                          className="bg-[#1a1a1a] border-[#333] text-[#888] h-10"
                         />
-                  </div>
+                        <p className="text-xs text-[#666] mt-1">
+                          Email cannot be changed here. Contact support if needed.
+                        </p>
+                      </div>
                   
                       <div>
-                        <label className="block text-sm text-[#888] mb-2">Company</label>
+                        <label className="block text-sm text-[#888] mb-2">Workspace</label>
                         <Input
-                          defaultValue="Origami Agents"
-                          className="bg-[#1a1a1a] border-[#333] text-white h-10"
+                          value={profile?.workspace_name || ''}
+                          disabled
+                          className="bg-[#1a1a1a] border-[#333] text-[#888] h-10"
                         />
+                        <p className="text-xs text-[#666] mt-1">
+                          Update workspace name in General settings
+                        </p>
                       </div>
                     </div>
 

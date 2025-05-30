@@ -51,14 +51,14 @@ export default function Dashboard() {
   return (
     <div className="h-full bg-[#0c0c0c] overflow-hidden">
       <motion.main 
-        className="h-full flex flex-col p-3"
+        className="h-full flex flex-col p-6"
         initial="hidden"
         animate="visible"
         variants={containerVariants}
       >
         {/* Top Row - 35% of available height */}
         <motion.div 
-          className="h-[35%] mb-16"
+          className="h-[35%] mb-24"
           variants={cardVariants}
         >
           <div className="h-[40vh]">
@@ -67,15 +67,15 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Bottom Row - 50% of available height */}
-        <div className="h-[50%] grid xl:grid-cols-2 grid-cols-1 gap-12">
+        <div className="h-[45%] grid xl:grid-cols-2 grid-cols-1 gap-12">
           <motion.div 
-            className="h-[50vh]"
+            className="h-[45vh]"
             variants={cardVariants}
           >
             <PageViewCard />
           </motion.div>
           <motion.div 
-            className="h-[50vh]"
+            className="h-[45vh]"
             variants={cardVariants}
           >
             <AttributionBySourceCard />

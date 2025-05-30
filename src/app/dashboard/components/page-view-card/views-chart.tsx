@@ -11,14 +11,18 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect } from 'react'
 import { TimeframeType } from '.'
 
+// AI Crawler visit data - shows typical crawling patterns
 const data = [
-  { date: 'APR 1', views: 280 },
-  { date: 'APR 4', views: 200 },
-  { date: 'APR 7', views: 300 },
-  { date: 'APR 10', views: 250 },
-  { date: 'APR 13', views: 371 },
-  { date: 'APR 16', views: 280 },
-  { date: 'APR 19', views: 450 },
+  { date: 'APR 1', crawls: 87 },
+  { date: 'APR 4', crawls: 125 },
+  { date: 'APR 7', crawls: 164 },
+  { date: 'APR 10', crawls: 98 },
+  { date: 'APR 13', crawls: 212 },
+  { date: 'APR 16', crawls: 178 },
+  { date: 'APR 19', crawls: 289 },
+  { date: 'APR 22', crawls: 195 },
+  { date: 'APR 25', crawls: 267 },
+  { date: 'APR 28', crawls: 234 },
 ]
 
 interface CustomTooltipProps {
@@ -31,7 +35,7 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-[#1a1a1a] border border-[#333333] px-3 py-2">
-        <p className="font-geist-mono text-sm text-white">{payload[0].value}</p>
+        <p className="font-geist-mono text-sm text-white">{payload[0].value} crawls</p>
         <p className="font-geist-mono text-xs text-[#666666]">{label}</p>
       </div>
     )
@@ -84,7 +88,7 @@ export function ViewsChart({ timeframe, isVisible, setIsVisible }: ViewsChartPro
                 margin={{ top: 10, right: 15, left: -16, bottom: 10 }}
               >
                 <defs>
-                  <linearGradient id="viewsGradient" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="crawlerGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#fff" stopOpacity={0.12} />
                     <stop offset="100%" stopColor="#fff" stopOpacity={0} />
                   </linearGradient>
@@ -122,10 +126,10 @@ export function ViewsChart({ timeframe, isVisible, setIsVisible }: ViewsChartPro
                 />
                 <Area
                   type="linear"
-                  dataKey="views"
+                  dataKey="crawls"
                   stroke="#fff"
                   strokeWidth={2}
-                  fill="url(#viewsGradient)"
+                  fill="url(#crawlerGradient)"
                 />
               </AreaChart>
             </ResponsiveContainer>
