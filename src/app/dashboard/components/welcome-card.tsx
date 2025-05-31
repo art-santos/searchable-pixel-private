@@ -109,10 +109,10 @@ export function WelcomeCard() {
           className="flex flex-col h-full"
         >
           {/* Top Section - Domain Selector and Quick Actions Header aligned */}
-          <div className="flex items-start justify-between mb-6">
+          <div className="flex items-center justify-between mb-6">
             <DomainSelector />
             <div className="w-80">
-              <h3 className="text-lg font-semibold text-white mb-2">Quick Actions</h3>
+              <h3 className="text-lg font-semibold text-white">Quick Actions</h3>
               <p className="text-sm text-[#888]">Everything you need to get started</p>
             </div>
           </div>

@@ -2,11 +2,9 @@
 
 import { Button } from "@/components/ui/button"
 import { ChevronDown } from "lucide-react"
-import Image from "next/image"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { createClient } from "@/lib/supabase/client"
-import { getFaviconUrl, getCachedFaviconUrl, preloadFavicon } from "@/lib/utils/favicon"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -69,18 +67,11 @@ export function DomainSelector() {
     const domain = profile?.domain || (profile?.workspace_name ? `${profile.workspace_name.toLowerCase().replace(/\s+/g, '')}.com` : null)
     
     if (domain && domain !== "your-domain.com") {
-      // Start with cached version for immediate display
-      setFaviconUrl(getCachedFaviconUrl(domain))
-      
-      // Then fetch fresh version
-      getFaviconUrl(domain).then(url => {
-        setFaviconUrl(url)
-      }).catch(() => {
-        setFaviconUrl('/images/split-icon-white.svg')
-      })
-      
-      // Preload favicon for better UX
-      preloadFavicon(domain)
+      // Use Google's favicon service directly for simplicity and reliability
+      const googleFaviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`
+      setFaviconUrl(googleFaviconUrl)
+    } else {
+      setFaviconUrl('/images/split-icon-white.svg')
     }
   }, [profile])
 
@@ -93,15 +84,16 @@ export function DomainSelector() {
             className="w-fit border border-[#333333] bg-transparent hover:bg-[#1a1a1a] px-2 rounded-none"
           >
             <div className="flex items-center gap-2">
-              <div className="relative w-4 h-4 flex-shrink-0">
-                <Image 
+              <div className="relative w-5 h-5 flex-shrink-0 flex items-center justify-center">
+                <img 
                   src={faviconUrl}
                   alt={getDisplayDomain()}
-                  width={16} 
-                  height={16}
-                  className="rounded-sm object-contain"
-                  onError={() => {
-                    setFaviconUrl('/images/split-icon-white.svg')
+                  width={20} 
+                  height={20}
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement
+                    target.src = '/images/split-icon-white.svg'
                   }}
                 />
               </div>

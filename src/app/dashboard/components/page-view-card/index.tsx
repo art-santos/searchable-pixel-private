@@ -7,13 +7,15 @@ import {
 import { ViewsChart } from "./views-chart"
 import { useState } from "react"
 import { motion, useReducedMotion } from "framer-motion"
-import { LinkIcon } from "lucide-react"
+import { LinkIcon, TrendingUp } from "lucide-react"
+import { ConnectAnalyticsDialog } from "../connect-analytics-dialog"
 
 export type TimeframeType = TimeframeOption
 
 export function PageViewCard() {
   const [timeframe, setTimeframe] = useState<TimeframeType>('Today')
   const [isChartVisible, setIsChartVisible] = useState(false)
+  const [showConnectDialog, setShowConnectDialog] = useState(false)
   const shouldReduceMotion = useReducedMotion()
   // TODO: Replace with actual analytics connection state from context/API
   const [isConnected] = useState(false) // Changed to false for empty state by default
@@ -39,7 +41,7 @@ export function PageViewCard() {
   }
 
   return (
-    <Card className="h-full flex flex-col relative overflow-hidden">
+    <Card className="h-full flex flex-col">
       <motion.div
         initial="hidden"
         animate="visible"
@@ -61,44 +63,72 @@ export function PageViewCard() {
           </div>
         </CardHeader>
         
-        <CardContent className="flex-1 min-h-0 pt-4 pr-6 pb-6 pl-6 flex flex-col">
-          <div className="flex items-center justify-between mb-4 flex-shrink-0">
-            <div className="text-sm text-[#888] font-medium">AI Engine Filter</div>
-            <LLMSelector />
-          </div>
-          
-          <div className="flex-1 min-h-0 flex items-end">
-            <div className="w-full h-full">
-              <ViewsChart 
-                timeframe={timeframe}
-                isVisible={isChartVisible}
-                setIsVisible={setIsChartVisible}
-              />
+        <CardContent className="flex-1 min-h-0 pt-4 pr-6 pb-8 pl-6 flex flex-col relative">
+          {isConnected ? (
+            <div className="flex flex-col h-full">
+              <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                <div className="text-sm text-[#888] font-medium">AI Engine Filter</div>
+                <LLMSelector />
+              </div>
+              
+              <div className="flex-1 relative" style={{ minHeight: '300px' }}>
+                <div className="absolute inset-0">
+                  <ViewsChart 
+                    timeframe={timeframe}
+                    isVisible={isChartVisible}
+                    setIsVisible={setIsChartVisible}
+                  />
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Empty State */
+            <div className="relative h-full flex flex-col">
+              {/* Preview of actual content with low opacity and blur - takes full height */}
+              <div className="absolute inset-0 opacity-30 blur-sm pointer-events-none">
+                <div className="h-full flex flex-col">
+                  <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                    <div className="text-sm text-[#888] font-medium">AI Engine Filter</div>
+                    <LLMSelector />
+                  </div>
+                  
+                  <div className="flex-1 relative" style={{ minHeight: '300px' }}>
+                    <div className="absolute inset-0">
+                      <ViewsChart 
+                        timeframe={timeframe}
+                        isVisible={true}
+                        setIsVisible={() => {}}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Empty state message - absolute positioned overlay */}
+              <div className="absolute inset-0 flex items-center justify-center z-10">
+                <div className="text-center max-w-sm">
+                  <h4 className="text-white font-medium mb-2">No data yet</h4>
+                  <p className="text-[#666] text-sm mb-6 leading-relaxed">
+                    Connect your analytics to track every time an AI engine crawls your pages
+                  </p>
+                  <button 
+                    onClick={() => setShowConnectDialog(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-white text-black rounded-md text-sm font-medium hover:bg-gray-100 transition-colors"
+                  >
+                    <LinkIcon className="w-4 h-4" />
+                    Connect Analytics
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </motion.div>
-
-      {/* Empty State Overlay */}
-      {!isConnected && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center">
-          {/* Blur/Darken Overlay - more subtle */}
-          <div className="absolute inset-0 bg-black/20 backdrop-blur-[1px]" />
-          
-          {/* Connect Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.2 }}
-            className="relative"
-          >
-            <button className="bg-[#0c0c0c] border border-[#333] hover:border-[#444] rounded-lg px-4 py-3 flex items-center gap-3 transition-all duration-200 hover:bg-[#1a1a1a] group shadow-lg">
-              <LinkIcon className="w-4 h-4 text-[#888] group-hover:text-white transition-colors" />
-              <span className="text-sm font-medium text-white">Connect your analytics</span>
-            </button>
-          </motion.div>
-        </div>
-      )}
+      
+      <ConnectAnalyticsDialog 
+        open={showConnectDialog}
+        onOpenChange={setShowConnectDialog}
+      />
     </Card>
   )
 } 
