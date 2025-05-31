@@ -208,7 +208,9 @@ export class CrawlerTracker {
    */
   async ping(): Promise<PingResponse> {
     try {
-      const pingEndpoint = this.config.apiEndpoint.replace(/\/events$/, '/ping')
+      // Extract base URL and construct ping endpoint
+      const baseUrl = this.config.apiEndpoint.replace(/\/crawler-events$/, '')
+      const pingEndpoint = `${baseUrl}/ping`
       
       const response = await fetch(pingEndpoint, {
         method: 'GET',

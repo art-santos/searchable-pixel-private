@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2] - 2025-05-31
+
+### Fixed
+- Fixed ping endpoint URL construction - was incorrectly trying to hit `/api/crawler-events` instead of `/api/ping`
+
 ## [0.1.1] - 2025-05-31
 
 ### Added
