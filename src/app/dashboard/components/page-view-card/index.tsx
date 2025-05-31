@@ -66,20 +66,20 @@ export function PageViewCard() {
         <CardContent className="flex-1 min-h-0 pt-4 pr-6 pb-8 pl-6 flex flex-col relative">
           {isConnected ? (
             <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between mb-4 flex-shrink-0">
-                <div className="text-sm text-[#888] font-medium">AI Engine Filter</div>
-                <LLMSelector />
-              </div>
-              
+          <div className="flex items-center justify-between mb-4 flex-shrink-0">
+            <div className="text-sm text-[#888] font-medium">AI Engine Filter</div>
+            <LLMSelector />
+          </div>
+          
               <div className="flex-1 relative" style={{ minHeight: '300px' }}>
                 <div className="absolute inset-0">
-                  <ViewsChart 
-                    timeframe={timeframe}
-                    isVisible={isChartVisible}
-                    setIsVisible={setIsChartVisible}
-                  />
-                </div>
-              </div>
+              <ViewsChart 
+                timeframe={timeframe}
+                isVisible={isChartVisible}
+                setIsVisible={setIsChartVisible}
+              />
+            </div>
+          </div>
             </div>
           ) : (
             /* Empty State */
@@ -124,7 +124,7 @@ export function PageViewCard() {
           )}
         </CardContent>
       </motion.div>
-      
+
       <ConnectAnalyticsDialog 
         open={showConnectDialog}
         onOpenChange={setShowConnectDialog}

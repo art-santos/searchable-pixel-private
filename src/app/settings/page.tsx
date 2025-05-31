@@ -20,7 +20,8 @@ import {
   Zap,
   Loader2,
   ExternalLink,
-  FileText
+  FileText,
+  Key
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSearchParams } from 'next/navigation'
@@ -330,10 +331,11 @@ export default function SettingsPage() {
   const sections = [
     { id: 'general', label: 'General', icon: Globe },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'api-keys', label: 'API Keys', icon: Key },
     { id: 'billing', label: 'Billing', icon: CreditCard }
     // Removed Account section - merged with General
   ]
-
+  
   // Mock data
   const [analytics, setAnalytics] = useState<AnalyticsProvider[]>([
     { id: 'ga4', name: 'Google Analytics', icon: '📊', connected: true, lastSync: '2 hours ago' },
@@ -541,8 +543,8 @@ export default function SettingsPage() {
                           className="bg-[#1a1a1a] border-[#333] text-white h-10"
                         />
                       </div>
+                      </div>
                     </div>
-                  </div>
 
                   {/* Personal Information */}
                   <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
@@ -579,44 +581,17 @@ export default function SettingsPage() {
 
                   {/* Save Button */}
                   <div className="flex justify-end">
-                    <Button 
-                      onClick={handleSaveSettings}
-                      disabled={isLoading}
-                      className="bg-[#1a1a1a] hover:bg-[#222] border border-[#333] hover:border-[#444] text-white h-9 px-4 text-sm font-medium"
-                    >
-                      {isLoading ? (
-                        <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
-                      ) : (
-                        'Save Changes'
-                      )}
-                    </Button>
-                  </div>
-
-                  {/* API Key Section */}
-                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
-                    <h3 className="text-lg font-medium text-white mb-2">API Key</h3>
-                    <p className="text-sm text-[#666] mb-6">Use this key to access the Split API</p>
-                    
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 flex items-center gap-2 bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-2">
-                        <code className="text-sm text-white font-mono flex-1">
-                          {showApiKey ? 'sk_live_1234567890abcdef' : 'sk_live_***************************'}
-                        </code>
-                        <button
-                          onClick={() => setShowApiKey(!showApiKey)}
-                          className="text-[#666] hover:text-white transition-colors"
-                        >
-                          {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                      </div>
                       <Button 
-                        onClick={handleCopyApiKey}
-                        variant="outline"
-                        className="border-[#333] hover:border-[#444] h-10 px-4"
+                      onClick={handleSaveSettings}
+                        disabled={isLoading}
+                        className="bg-[#1a1a1a] hover:bg-[#222] border border-[#333] hover:border-[#444] text-white h-9 px-4 text-sm font-medium"
                       >
-                        {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        {isLoading ? (
+                          <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
+                        ) : (
+                          'Save Changes'
+                        )}
                       </Button>
-                    </div>
                   </div>
 
                   {/* Danger Zone */}
@@ -691,6 +666,205 @@ export default function SettingsPage() {
                       Analytics data helps us understand how AI visibility improvements impact your actual traffic and conversions.
                       We only access read-only data and never share it with third parties.
                     </p>
+                  </div>
+                </div>
+              )}
+
+              {/* API Keys Settings */}
+              {activeSection === 'api-keys' && (
+                <div className="space-y-6">
+                  {/* Header */}
+                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h2 className="text-lg font-medium text-white mb-2">API Keys</h2>
+                        <p className="text-sm text-[#666]">
+                          Manage your API keys for accessing Split's AI crawler analytics
+                        </p>
+                      </div>
+                      <Button
+                        className="bg-white text-black hover:bg-gray-100 h-9 px-4 text-sm font-medium"
+                      >
+                        Generate New Key
+                      </Button>
+                    </div>
+
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                      <div className="flex gap-3">
+                        <div className="w-6 h-6 bg-amber-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-amber-400 text-xs">!</span>
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-amber-300 mb-1">Keep Your API Keys Secure</h4>
+                          <p className="text-amber-200/80 text-sm">
+                            Store keys in environment variables. Never commit them to version control or share them publicly.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* API Keys List */}
+                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
+                    <div className="p-6 border-b border-[#1a1a1a]">
+                      <h3 className="text-white font-medium">Your API Keys</h3>
+                      <p className="text-sm text-[#666] mt-1">These keys allow access to your Split analytics data</p>
+                    </div>
+
+                    <div className="divide-y divide-[#1a1a1a]">
+                      {/* Example API Key */}
+                      <div className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="w-8 h-8 bg-[#1a1a1a] rounded-lg flex items-center justify-center">
+                                <Key className="w-4 h-4 text-[#666]" />
+                              </div>
+                              <div>
+                                <h4 className="text-white font-medium">Production Key</h4>
+                                <p className="text-xs text-[#666]">Created Dec 15, 2024</p>
+                              </div>
+                            </div>
+                            
+                            <div className="bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-3 mb-3">
+                              <div className="flex items-center gap-2">
+                                <code className="text-sm text-white font-mono flex-1 truncate">
+                                  {showApiKey ? 'split_live_abc123xyz789' : 'split_live_***************************'}
+                                </code>
+                                <button
+                                  onClick={() => setShowApiKey(!showApiKey)}
+                                  className="text-[#666] hover:text-white transition-colors flex-shrink-0"
+                                >
+                                  {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-4 text-sm">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                                <span className="text-[#666]">Last used 2 hours ago</span>
+                              </div>
+                              <div className="text-[#666]">
+                                Domain: example.com
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 ml-4">
+                            <Button
+                              onClick={handleCopyApiKey}
+                              variant="outline"
+                              className="border-[#333] hover:border-[#444] h-8 px-3 text-xs"
+                            >
+                              {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              className="border-[#333] hover:border-[#444] h-8 px-3 text-xs"
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              className="border-red-900 text-red-400 hover:bg-red-900/20 h-8 px-3 text-xs"
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Empty state for no additional keys */}
+                      <div className="p-6 text-center">
+                        <div className="text-[#666] text-sm">
+                          No additional API keys. Generate a new key to get started.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Usage & Limits */}
+                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
+                    <h3 className="text-white font-medium mb-4">Usage & Limits</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div>
+                        <div className="text-2xl font-bold text-white mb-1">1,247</div>
+                        <div className="text-sm text-[#666] mb-2">API Requests (30 days)</div>
+                        <div className="w-full h-1 bg-[#1a1a1a] rounded-full">
+                          <div className="w-3/4 h-1 bg-white/60 rounded-full"></div>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <div className="text-2xl font-bold text-white mb-1">156</div>
+                        <div className="text-sm text-[#666] mb-2">AI Crawlers Detected</div>
+                        <div className="text-xs text-green-400">+12% this month</div>
+                      </div>
+                      
+                      <div>
+                        <div className="text-2xl font-bold text-white mb-1">99.9%</div>
+                        <div className="text-sm text-[#666] mb-2">API Uptime</div>
+                        <div className="text-xs text-green-400">All systems operational</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Integration Examples */}
+                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
+                    <h3 className="text-white font-medium mb-4">Quick Start</h3>
+                    <p className="text-sm text-[#666] mb-6">
+                      Get up and running with our NPM package or API endpoints
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="text-white text-sm font-medium mb-3">NPM Package</h4>
+                        <div className="bg-[#0c0c0c] border border-[#1a1a1a] rounded-lg p-4">
+                          <pre className="text-xs text-gray-300 overflow-x-auto">
+                            <code>{`npm install @split.dev/analytics
+
+// middleware.ts
+import { createCrawlerMiddleware } from '@split.dev/analytics/middleware'
+
+export const middleware = createCrawlerMiddleware({
+  apiKey: process.env.SPLIT_API_KEY
+})`}</code>
+                          </pre>
+                        </div>
+                        <div className="mt-2">
+                          <a
+                            href="/docs"
+                            className="text-blue-400 hover:text-blue-300 text-xs inline-flex items-center gap-1"
+                          >
+                            View full documentation
+                            <ArrowRight className="w-3 h-3" />
+                          </a>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h4 className="text-white text-sm font-medium mb-3">Direct API</h4>
+                        <div className="bg-[#0c0c0c] border border-[#1a1a1a] rounded-lg p-4">
+                          <pre className="text-xs text-gray-300 overflow-x-auto">
+                            <code>{`curl -X POST https://split.dev/api/crawler-events \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"events": [...]}'`}</code>
+                          </pre>
+                        </div>
+                        <div className="mt-2">
+                          <a
+                            href="/docs#api-reference"
+                            className="text-blue-400 hover:text-blue-300 text-xs inline-flex items-center gap-1"
+                          >
+                            API Reference
+                            <ArrowRight className="w-3 h-3" />
+                          </a>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

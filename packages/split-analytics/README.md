@@ -1,0 +1,201 @@
+# @split.dev/analytics
+
+Track AI crawler visits to your website. Monitor when GPTBot, Claude, Perplexity, and other AI crawlers visit your site.
+
+## Features
+
+- 🤖 Detects 15+ AI crawlers (OpenAI, Anthropic, Google, Microsoft, etc.)
+- ⚡ Lightweight middleware for Next.js and Node.js
+- 📊 Automatic batching and retry logic
+- 🔒 Privacy-first: No personal data collected
+- 📈 Real-time analytics dashboard at [split.dev](https://split.dev)
+
+## Installation
+
+```bash
+npm install @split.dev/analytics
+# or
+yarn add @split.dev/analytics
+# or
+pnpm add @split.dev/analytics
+```
+
+## Quick Start
+
+### Next.js (App Router)
+
+Create a `middleware.ts` file in your project root:
+
+```typescript
+import { createCrawlerMiddleware } from '@split.dev/analytics/middleware'
+
+export const middleware = createCrawlerMiddleware({
+  apiKey: process.env.SPLIT_API_KEY!,
+  // Optional configuration
+  exclude: ['/api/*', '/_next/*'], // Paths to exclude
+  debug: process.env.NODE_ENV === 'development'
+})
+
+// Optionally configure which routes to track
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+  ],
+}
+```
+
+### Express/Node.js
+
+```javascript
+const express = require('express')
+const { createNodeMiddleware } = require('@split.dev/analytics')
+
+const app = express()
+
+// Add Split Analytics middleware
+app.use(createNodeMiddleware({
+  apiKey: process.env.SPLIT_API_KEY,
+  debug: process.env.NODE_ENV === 'development'
+}))
+
+// Your routes
+app.get('/', (req, res) => {
+  res.send('Hello World!')
+})
+
+app.listen(3000)
+```
+
+### Custom Implementation
+
+For other frameworks or custom implementations:
+
+```javascript
+import { trackCrawler } from '@split.dev/analytics'
+
+// In your request handler
+const wasCrawler = await trackCrawler(
+  {
+    apiKey: process.env.SPLIT_API_KEY
+  },
+  {
+    url: request.url,
+    userAgent: request.headers['user-agent'],
+    headers: request.headers,
+    statusCode: response.statusCode,
+    responseTimeMs: responseTime
+  }
+)
+
+if (wasCrawler) {
+  console.log('AI crawler detected!')
+}
+```
+
+## Configuration Options
+
+```typescript
+{
+  // Required
+  apiKey: string              // Your Split Analytics API key
+  
+  // Optional
+  apiEndpoint?: string        // Custom API endpoint (default: https://split.dev/api/crawler-events)
+  batchSize?: number          // Events to batch before sending (default: 10)
+  batchIntervalMs?: number    // Max time between batches in ms (default: 5000)
+  debug?: boolean             // Enable debug logging (default: false)
+  onError?: (error) => void   // Custom error handler
+  
+  // Next.js specific options
+  exclude?: string[]          // Paths to exclude from tracking
+  include?: string[]          // If specified, only track these paths
+  addCrawlerHeaders?: boolean // Add X-AI-Crawler-* response headers
+  onCrawlerDetected?: (request, crawler) => void // Custom handler
+}
+```
+
+## Detected AI Crawlers
+
+| Crawler | Company | Purpose |
+|---------|---------|---------|
+| GPTBot | OpenAI | Training GPT models |
+| ChatGPT-User | OpenAI | ChatGPT browsing |
+| Claude-Web | Anthropic | Claude browsing |
+| ClaudeBot | Anthropic | Training Claude |
+| PerplexityBot | Perplexity | AI search engine |
+| Google-Extended | Google | Bard/Gemini training |
+| Bingbot | Microsoft | Bing/Copilot |
+| YouBot | You.com | AI search |
+| CCBot | Common Crawl | Dataset creation |
+| FacebookBot | Meta | Social AI features |
+| And more... | | |
+
+## API Key
+
+Get your free API key at [split.dev/dashboard](https://split.dev/dashboard)
+
+## Advanced Usage
+
+### Detecting Crawlers Without Tracking
+
+```javascript
+import { detectAICrawler } from '@split.dev/analytics'
+
+const detection = detectAICrawler(request.headers['user-agent'])
+
+if (detection.isAICrawler) {
+  console.log(`Detected ${detection.crawler.bot} from ${detection.crawler.company}`)
+  
+  // Serve different content, add headers, etc.
+  if (detection.crawler.company === 'OpenAI') {
+    response.headers['X-Robots-Tag'] = 'noai'
+  }
+}
+```
+
+### Manual Event Batching
+
+```javascript
+import { CrawlerTracker } from '@split.dev/analytics'
+
+const tracker = new CrawlerTracker({
+  apiKey: process.env.SPLIT_API_KEY,
+  batchSize: 50,
+  batchIntervalMs: 10000
+})
+
+// Track multiple events
+await tracker.track(event1)
+await tracker.track(event2)
+
+// Force send all queued events
+await tracker.flush()
+
+// Cleanup when shutting down
+tracker.destroy()
+```
+
+## Privacy & Security
+
+- No personal data collected
+- No cookies or tracking pixels
+- User agents are the only identifying information
+- All data is encrypted in transit
+- SOC 2 Type II compliant infrastructure
+
+## Support
+
+- Documentation: [docs.split.dev](https://docs.split.dev)
+- Issues: [github.com/split-analytics/split-analytics/issues](https://github.com/split-analytics/split-analytics/issues)
+- Email: support@split.dev
+
+## License
+
+MIT © Split Analytics 
