@@ -189,13 +189,17 @@ async function runAEOPipeline(
   encoder: TextEncoder,
   request?: NextRequest
 ) {
+  let controllerClosed = false
+
   const sendProgress = (event: ProgressEvent) => {
+    if (controllerClosed) return
     const data = `data: ${JSON.stringify(event)}\n\n`
     controller.enqueue(encoder.encode(data))
     console.log(`📡 [${event.step}] ${event.message} (${event.progress}/${event.total})`)
   }
   
   const sendError = (step: string, error: string) => {
+    if (controllerClosed) return
     const event: ProgressEvent = {
       step,
       progress: 0,
@@ -204,7 +208,6 @@ async function runAEOPipeline(
       error
     }
     sendProgress(event)
-    controller.close()
   }
   
   try {
@@ -470,11 +473,15 @@ async function runAEOPipeline(
       // Don't fail the entire pipeline for database issues
     }
     
-    controller.close()
-    
   } catch (error) {
     console.error('❌ Pipeline error:', error)
     sendError('pipeline', error instanceof Error ? error.message : String(error))
+  } finally {
+    // Ensure controller is only closed once
+    if (!controllerClosed) {
+      controllerClosed = true
+      controller.close()
+    }
   }
 }
 
