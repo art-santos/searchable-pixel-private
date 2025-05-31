@@ -376,7 +376,6 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
             if (result.success) {
               console.log('✅ Onboarding data saved successfully')
               setCompanyId(result.companyId || null)
-              setRunId(result.runId || null)
             } else {
               console.error('❌ Failed to save onboarding data:', result.error)
               // Continue with scan even if database save fails
@@ -468,22 +467,22 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
       functionCalled: true,
       timestamp: new Date().toISOString(),
       dataExists: !!data,
-      runIdExists: !!runId,
+      companyIdExists: !!companyId,
       userExists: !!user,
-      currentRunId: runId,
+      currentCompanyId: companyId,
       currentUserId: user?.id
     })
     
     console.log('🎯 Pipeline completed with data:', data)
     console.log('🔍 Pipeline data structure:', {
       hasAeoData: !!data.aeoData,
-      hasBreakdown: !!data.aeoData?.breakdown,
-      hasQuestions: !!data.aeoData?.breakdown?.by_question,
+      hasRawPipelineData: !!data.rawPipelineData,
+      hasQuestions: !!data.questions,
+      hasSerpResults: !!data.serpResults,
       hasResults: !!data.results,
-      hasQuestionsProp: !!data.questions,
       overallScore: data.overallScore,
       aeoScore: data.aeoData?.aeo_score,
-      questionCount: data.aeoData?.breakdown?.by_question?.length || 0,
+      questionCount: data.questions?.length || 0,
       resultsCount: data.results?.length || 0,
       dataKeys: Object.keys(data),
       aeoDataKeys: data.aeoData ? Object.keys(data.aeoData) : []
@@ -491,25 +490,28 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
     
     // 🚨 CRITICAL DEBUG: Check if we have the required data for saving
     console.log('🔍 CRITICAL DEBUG - Required Data Check:')
-    console.log('  - runId exists:', !!runId)
-    console.log('  - runId value:', runId)
+    console.log('  - companyId exists:', !!companyId)
+    console.log('  - companyId value:', companyId)
     console.log('  - user exists:', !!user)
     console.log('  - user.id:', user?.id)
     console.log('  - data exists:', !!data)
-    console.log('  - Will attempt database save:', !!(runId && user))
+    console.log('  - Will attempt database save:', !!(companyId && user))
     
-    // Save the complete AEO analysis to database if we have the run ID
-    if (runId && user) {
+    // Save the complete AEO analysis to database if we have the company ID
+    if (companyId && user) {
       try {
         console.log('💾 🚨 ATTEMPTING COMPLETE AEO ANALYSIS SAVE 🚨')
         console.log('📊 Save parameters:', {
-          runId,
+          companyId,
           userId: user.id,
           dataType: typeof data,
-          dataKeys: Object.keys(data)
+          dataKeys: Object.keys(data),
+          hasRawPipelineData: !!data.rawPipelineData
         })
         
-        const analysisResult = await saveCompleteAeoAnalysis(runId, data, user.id)
+        // Use rawPipelineData if available, otherwise use the transformed data
+        const pipelineData = data.rawPipelineData || data
+        const analysisResult = await saveCompleteAeoAnalysis(companyId, pipelineData, user.id)
         
         console.log('📋 Save result received:', analysisResult)
         
@@ -520,7 +522,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
           console.error('🔍 Save failure details:', {
             success: analysisResult.success,
             error: analysisResult.error,
-            runId,
+            companyId,
             userId: user.id
           })
         }
@@ -529,19 +531,19 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
         console.error('🔍 Exception details:', {
           message: error instanceof Error ? error.message : 'Unknown error',
           stack: error instanceof Error ? error.stack : undefined,
-          runId,
+          companyId,
           userId: user.id
         })
       }
     } else {
       console.error('❌ 🚨 MISSING REQUIRED DATA for saving AEO analysis:')
       console.error('🔍 Missing data analysis:', {
-        hasRunId: !!runId,
+        hasCompanyId: !!companyId,
         hasUser: !!user,
-        runId,
+        companyId,
         userId: user?.id,
         userEmail: user?.email,
-        reason: !runId ? 'No runId' : !user ? 'No user' : 'Unknown'
+        reason: !companyId ? 'No companyId' : !user ? 'No user' : 'Unknown'
       })
     }
     

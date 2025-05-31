@@ -138,14 +138,25 @@ export function AEOPipeline({ isOpen, crawlUrl, onClose, onAnalysisComplete }: A
         // Handle progress events
         eventSource.onmessage = (event) => {
           console.log('📨 EventSource message received:', event.data)
+          console.log('📨 Event data length:', event.data.length)
+          console.log('📨 Event data preview:', event.data.substring(0, 200))
+          
           try {
             const progressData: ProgressEvent = JSON.parse(event.data)
+            console.log('✅ Successfully parsed progress data:', {
+              step: progressData.step,
+              progress: progressData.progress,
+              total: progressData.total,
+              hasData: !!progressData.data,
+              hasError: !!progressData.error
+            })
             
             setCurrentStep(progressData.step)
             setProgress(progressData.progress)
             setTotalSteps(progressData.total)
             
             if (progressData.error) {
+              console.log('❌ Progress data contains error:', progressData.error)
               addLog(`Error in ${progressData.step}: ${progressData.error}`, 'error')
               setError(progressData.error)
               setCurrentStep('error')
@@ -161,14 +172,17 @@ export function AEOPipeline({ isOpen, crawlUrl, onClose, onAnalysisComplete }: A
             // Handle completion
             if (progressData.step === 'complete' && progressData.data) {
               console.log('🎯 AEO Pipeline: COMPLETION EVENT DETECTED')
-              console.log('📊 Raw completion data:', progressData.data)
+              console.log('📊 Raw completion data keys:', Object.keys(progressData.data))
+              console.log('📊 Raw completion data sample:', JSON.stringify(progressData.data, null, 2).substring(0, 500))
               
               setFinalResults(progressData.data)
               addLog('AEO Pipeline completed successfully!', 'success')
               addLog(`Final AEO Score: ${progressData.data.aeo_score}/100`, 'success')
               
               // Transform data for the dashboard UI
+              console.log('🔄 Transforming data for dashboard...')
               const dashboardData = transformToVisibilityData(progressData.data)
+              console.log('✅ Dashboard data transformed:', Object.keys(dashboardData))
               
               // Include raw AEO data for database saving
               const completeData = {
@@ -182,13 +196,14 @@ export function AEOPipeline({ isOpen, crawlUrl, onClose, onAnalysisComplete }: A
                 breakdown: progressData.data.breakdown
               }
               
-              console.log('📊 Sending complete data to onAnalysisComplete:', {
+              console.log('📊 Complete data structure:', {
                 hasDashboardData: !!dashboardData,
                 hasRawData: !!progressData.data,
                 hasQuestions: !!progressData.data.questions,
                 hasSerpResults: !!progressData.data.serpResults,
                 questionCount: progressData.data.questions?.length || 0,
-                serpResultCount: Object.keys(progressData.data.serpResults || {}).length || 0
+                serpResultCount: Object.keys(progressData.data.serpResults || {}).length || 0,
+                completeDataKeys: Object.keys(completeData)
               })
               
               console.log('🚨 CALLING onAnalysisComplete callback...')
@@ -197,13 +212,17 @@ export function AEOPipeline({ isOpen, crawlUrl, onClose, onAnalysisComplete }: A
                 console.log('✅ onAnalysisComplete callback completed successfully')
               } catch (callbackError) {
                 console.error('❌ Error in onAnalysisComplete callback:', callbackError)
+                console.error('❌ Callback error stack:', callbackError instanceof Error ? callbackError.stack : callbackError)
               }
               
               setIsRunning(false)
               eventSource.close()
+            } else if (progressData.step === 'complete') {
+              console.log('⚠️ Completion event detected but no data:', progressData)
             }
           } catch (parseError) {
-            console.error('Failed to parse SSE event:', parseError)
+            console.error('❌ Failed to parse SSE event:', parseError)
+            console.error('❌ Raw event data:', event.data)
             addLog('Failed to parse progress update', 'error')
           }
         }
@@ -211,6 +230,11 @@ export function AEOPipeline({ isOpen, crawlUrl, onClose, onAnalysisComplete }: A
         eventSource.onerror = (error) => {
           console.error('🚨 EventSource error:', error)
           console.log('EventSource readyState:', eventSource.readyState)
+          console.log('EventSource readyState meaning:', {
+            0: 'CONNECTING',
+            1: 'OPEN', 
+            2: 'CLOSED'
+          }[eventSource.readyState])
           addLog('Connection error during analysis', 'error')
           setError('Connection lost during analysis')
           setCurrentStep('error')
@@ -220,6 +244,7 @@ export function AEOPipeline({ isOpen, crawlUrl, onClose, onAnalysisComplete }: A
 
         eventSource.onopen = (event) => {
           console.log('✅ EventSource connection opened', event)
+          console.log('EventSource readyState after open:', eventSource.readyState)
           addLog('Connected to analysis server', 'info')
         }
 

@@ -1,75 +1,50 @@
 {
-  "aeo_score": 83,
+  "aeo_score": 20,
   "coverage_owned": 0.3,
-  "coverage_operated": 0.1,
+  "coverage_operated": 0,
   "coverage_total": 0.3,
-  "share_of_voice": 0.22361945675521358,
+  "share_of_voice": 0.140854710214362,
   "metrics": {
     "questions_analyzed": 10,
-    "total_results": 97,
-    "owned_appearances": 18,
-    "operated_appearances": 3,
-    "earned_appearances": 76,
-    "avg_owned_position": 5.8,
-    "avg_operated_position": 7,
+    "total_results": 95,
+    "owned_appearances": 7,
+    "operated_appearances": 0,
+    "earned_appearances": 88,
+    "avg_owned_position": 2.1,
+    "avg_operated_position": 0,
     "top_3_presence": 3
   },
   "breakdown": {
     "by_question": [
       {
-        "question": "Enterprise data unification solutions",
-        "owned_results": 0,
+        "question": "secure AI automation platforms",
+        "owned_results": 2,
         "operated_results": 0,
-        "earned_results": 10,
-        "owned_positions": [],
-        "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "Top AI platforms for businesses",
-        "owned_results": 0,
-        "operated_results": 0,
-        "earned_results": 10,
-        "owned_positions": [],
-        "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "Custom AI solutions for enterprises",
-        "owned_results": 0,
-        "operated_results": 0,
-        "earned_results": 10,
-        "owned_positions": [],
-        "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "Thinair vs other AI platforms",
-        "owned_results": 1,
-        "operated_results": 1,
         "earned_results": 8,
         "owned_positions": [
-          1
+          1,
+          2
         ],
-        "operated_positions": [
-          4
-        ],
-        "coverage_score": 1.68,
+        "operated_positions": [],
+        "coverage_score": 1,
         "voice_score": 0.5121257282211082,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "thinair pricing details",
+        "owned_results": 0,
+        "operated_results": 0,
+        "earned_results": 10,
+        "owned_positions": [],
+        "operated_positions": [],
+        "coverage_score": 0,
+        "voice_score": 0,
         "is_direct": true,
         "weight": 1.2
       },
       {
-        "question": "How to automate data integration",
+        "question": "What is thinair?",
         "owned_results": 0,
         "operated_results": 0,
         "earned_results": 10,
@@ -81,82 +56,89 @@
         "weight": 1
       },
       {
-        "question": "What is thinair Model Context Protocol?",
-        "owned_results": 8,
+        "question": "advanced AI protocol technologies",
+        "owned_results": 0,
         "operated_results": 0,
-        "earned_results": 2,
-        "owned_positions": [
-          1,
-          2,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10
-        ],
+        "earned_results": 10,
+        "owned_positions": [],
         "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 0.8008399945806802,
+        "coverage_score": 0,
+        "voice_score": 0,
         "is_direct": false,
         "weight": 1
       },
       {
-        "question": "How much does thinair cost?",
-        "owned_results": 9,
+        "question": "thinair user reviews",
+        "owned_results": 0,
         "operated_results": 0,
-        "earned_results": 1,
-        "owned_positions": [
-          1,
-          2,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10
-        ],
+        "earned_results": 10,
+        "owned_positions": [],
         "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 0.8861942826175316,
+        "coverage_score": 0,
+        "voice_score": 0,
         "is_direct": false,
         "weight": 1
       },
       {
-        "question": "Thinair AI solution reviews",
+        "question": "AI solutions for enterprise data unification",
+        "owned_results": 4,
+        "operated_results": 0,
+        "earned_results": 5,
+        "owned_positions": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 0.7364286716229484,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "top natural language query tools",
+        "owned_results": 0,
+        "operated_results": 0,
+        "earned_results": 9,
+        "owned_positions": [],
+        "operated_positions": [],
+        "coverage_score": 0,
+        "voice_score": 0,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "best AI platforms for data integration",
+        "owned_results": 0,
+        "operated_results": 0,
+        "earned_results": 9,
+        "owned_positions": [],
+        "operated_positions": [],
+        "coverage_score": 0,
+        "voice_score": 0,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "thinair MCP features",
         "owned_results": 1,
         "operated_results": 0,
         "earned_results": 9,
         "owned_positions": [
-          10
+          2
         ],
         "operated_positions": [],
-        "coverage_score": 0.5,
-        "voice_score": 0.034141715214740555,
+        "coverage_score": 1,
+        "voice_score": 0.17070857607370277,
         "is_direct": false,
         "weight": 1
       },
       {
-        "question": "Thinair customer success stories",
-        "owned_results": 0,
-        "operated_results": 2,
-        "earned_results": 8,
-        "owned_positions": [],
-        "operated_positions": [
-          8,
-          9
-        ],
-        "coverage_score": 0.25,
-        "voice_score": 0.08061238314591519,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "Best natural language query software",
+        "question": "How does thinair compare with AI solutions?",
         "owned_results": 0,
         "operated_results": 0,
-        "earned_results": 9,
+        "earned_results": 10,
         "owned_positions": [],
         "operated_positions": [],
         "coverage_score": 0,
@@ -167,54 +149,54 @@
     ],
     "by_position": {
       "position_1": {
-        "owned": 3,
+        "owned": 2,
         "operated": 0,
         "earned": 0.9999999999999999
       },
       "position_2_3": {
-        "owned": 2,
+        "owned": 4,
         "operated": 0,
-        "earned": 5.1
+        "earned": 5.999999999999999
       },
       "position_4_10": {
-        "owned": 14,
-        "operated": 3,
-        "earned": 30
+        "owned": 1,
+        "operated": 0,
+        "earned": 36.00000000000001
       }
     },
     "top_performing_content": [
       {
-        "url": "https://www.zdnet.com/article/what-is-model-context-protocol-the-emerging-standard-bridging-ai-and-data-explained/",
-        "title": "What is Model Context Protocol? The emerging standard bridging AI ...",
-        "snippet": "MCP is designed to solve a core problem in the AI ecosystem: How to seamlessly and securely connect large language models (LLMs) and AI agents to the vast, ...",
+        "url": "https://www.reltio.com/resources/blog/how-ai-is-fueling-the-growing-market-for-cloud-based-data-unification/",
+        "title": "How AI is fueling the growing market for cloud-based data unification",
+        "snippet": "These solutions, endowed with capabilities like MDM and entity resolution, are pivotal in creating a cohesive view of enterprise data. This ...",
         "bucket": "Owned",
         "reasoning": "AI classification"
       },
       {
-        "url": "https://thinair.cloud/",
-        "title": "Thinair | Accurate NLQ & AI Solutions via Model Context Protocol ...",
-        "snippet": "We analyze needs, unify your data (SaaS, DBs) via MCP, and build secure, custom AI agents & solutions that integrate seamlessly with your existing systems.",
+        "url": "https://thinair.dev/privacy-policy",
+        "title": "Accurate NLQ & AI Solutions via Model Context Protocol ... - Thinair",
+        "snippet": "Build custom AI solutions with accurate Natural Language Query (NLQ) using Thinair's Model Context Protocol (MCP). We automate data integration (SQL, APIs) ...",
+        "bucket": "Owned",
+        "reasoning": "Exact domain match"
+      },
+      {
+        "url": "https://www.mlveda.com/blog/enterprise-ai-transforming-data-silos-into-actionable-business-insights",
+        "title": "Enterprise AI Data Unification: From Silos to Actionable Insights",
+        "snippet": "Discover how enterprise AI unifies disparate data silos, leverages AI‑powered data cleansing, and deploys agentic AI for business ...",
         "bucket": "Owned",
         "reasoning": "AI classification"
       },
       {
-        "url": "https://www.thoughtworks.com/en-us/insights/blog/generative-ai/model-context-protocol-beneath-hype",
-        "title": "The Model Context Protocol: Getting beneath the hype - Thoughtworks",
-        "snippet": "Released in November 2024 by Anthropic, the Model Context Protocol is an open standard that defines and stabilizes the way developers build ...",
+        "url": "https://www.legitsecurity.com/blog/best-ai-cybersecurity-tools",
+        "title": "7 Best AI Cybersecurity Tools for Your Company - Legit Security",
+        "snippet": "Top 7 AI Cybersecurity Tools · 1. Microsoft Security Copilot · 2. Tessian · 3. Darktrace · 4. SentinelOne · 5. Cylance · 6. Cybereason · 7. Vectra AI.",
         "bucket": "Owned",
         "reasoning": "AI classification"
       },
       {
-        "url": "https://medium.com/@maliahrajan/model-context-protocol-structuring-ai-contexts-for-coherent-interactions-2b8bfa766c3e",
-        "title": "Model Context Protocol: Structuring AI Contexts for Coherent ...",
-        "snippet": "Enter the Model Context Protocol (MCP) — a standardized framework that brings structure, consistency, and reliability to context management in ...",
-        "bucket": "Owned",
-        "reasoning": "AI classification"
-      },
-      {
-        "url": "https://coinbrain.com/coins/eth-0xb9a0a0b10a325a01f1c7c3792e126e479b1cccc8",
-        "title": "Thin Air price - AIR to USD price chart & market cap | CoinBrain",
-        "snippet": "What is the price of Thin Air today? One Thin Air coin can currently be purchased for approximately $0.000000000132. What is Thin Air smart contract address?",
+        "url": "https://c3.ai/glossary/features/unified-data/",
+        "title": "What is Unified Data? | C3 AI Glossary Terms for Enterprise AI",
+        "snippet": "The C3 AI Enterprise Data Lake enables rapid data integration from disparate data sources across an organization in order to build a unified and federated data ...",
         "bucket": "Owned",
         "reasoning": "AI classification"
       }
@@ -222,7 +204,7 @@
   },
   "metadata": {
     "target_domain": "thinair.dev",
-    "calculated_at": "2025-05-31T20:47:17.866Z",
+    "calculated_at": "2025-05-31T22:12:41.055Z",
     "score_version": "1.0.0"
   }
 }

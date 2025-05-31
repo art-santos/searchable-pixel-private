@@ -25,12 +25,12 @@ export interface OnboardingData {
 
 /**
  * Saves onboarding data to the database
- * Creates/updates profile, company, and initiates AEO run
+ * Creates/updates profile and company
  */
 export async function saveOnboardingData(
   user: User, 
   onboardingData: OnboardingData
-): Promise<{ success: boolean; companyId?: string; runId?: string; error?: string }> {
+): Promise<{ success: boolean; companyId?: string; error?: string }> {
   const supabase = createClient()
   
   if (!supabase) {
@@ -105,35 +105,10 @@ export async function saveOnboardingData(
 
     const companyId = companyResult.id
 
-    // 3. Create AEO run entry for the visibility analysis
-    const aeoRunData: TablesInsert<'aeo_runs'> = {
-      company_id: companyId,
-      question_count: 0, // Will be updated when questions are generated
-      triggered_by: user.id,
-      total_score: null, // Will be calculated after analysis
-      raw_json_path: null, // Could store path to detailed results JSON
-    }
-
-    console.log('🎯 Creating AEO run for company:', companyId)
-    const { data: runResult, error: runError } = await supabase
-      .from('aeo_runs')
-      .insert(aeoRunData)
-      .select('id')
-      .single()
-
-    if (runError) {
-      console.error('❌ Error creating AEO run:', runError)
-      return { success: false, error: `Failed to create AEO run: ${runError.message}` }
-    }
-    console.log('✅ AEO run created successfully with ID:', runResult.id)
-
-    const runId = runResult.id
-
     console.log('🎉 Onboarding data save completed successfully')
     return { 
       success: true, 
-      companyId, 
-      runId 
+      companyId
     }
 
   } catch (error) {
@@ -146,14 +121,63 @@ export async function saveOnboardingData(
 }
 
 /**
+ * Creates an AEO run with the specified question count
+ */
+export async function createAeoRun(
+  companyId: string,
+  questionCount: number,
+  userId: string
+): Promise<{ success: boolean; runId?: string; error?: string }> {
+  const supabase = createClient()
+  
+  if (!supabase) {
+    return { success: false, error: 'Supabase client not available' }
+  }
+
+  try {
+    console.log(`🎯 Creating AEO run for company ${companyId} with ${questionCount} questions`)
+    
+    const aeoRunData: TablesInsert<'aeo_runs'> = {
+      company_id: companyId,
+      question_count: questionCount,
+      triggered_by: userId,
+      total_score: null, // Will be calculated after analysis
+      raw_json_path: null, // Could store path to detailed results JSON
+    }
+
+    const { data: runResult, error: runError } = await supabase
+      .from('aeo_runs')
+      .insert(aeoRunData)
+      .select('id')
+      .single()
+
+    if (runError) {
+      console.error('❌ Error creating AEO run:', runError)
+      return { success: false, error: `Failed to create AEO run: ${runError.message}` }
+    }
+    
+    console.log('✅ AEO run created successfully with ID:', runResult.id)
+    return { success: true, runId: runResult.id }
+
+  } catch (error) {
+    console.error('❌ Unexpected error creating AEO run:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    }
+  }
+}
+
+/**
  * Saves generated questions to the database
  */
 export async function saveAeoQuestions(
-  runId: string,
-  questions: string[]
-): Promise<{ success: boolean; error?: string }> {
+  companyId: string,
+  questions: string[],
+  userId: string
+): Promise<{ success: boolean; runId?: string; error?: string }> {
   console.log('💾 🚨 === STARTING AEO QUESTIONS SAVE === 🚨')
-  console.log(`📝 Input: runId=${runId}, questions count=${questions.length}`)
+  console.log(`📝 Input: companyId=${companyId}, questions count=${questions.length}, userId=${userId}`)
   
   const supabase = createClient()
   
@@ -163,6 +187,19 @@ export async function saveAeoQuestions(
   }
 
   try {
+    // 1. First create the AEO run with the correct question count
+    console.log('🎯 Creating AEO run before saving questions...')
+    const runResult = await createAeoRun(companyId, questions.length, userId)
+    
+    if (!runResult.success || !runResult.runId) {
+      console.error('❌ Failed to create AEO run:', runResult.error)
+      return { success: false, error: runResult.error }
+    }
+    
+    const runId = runResult.runId
+    console.log('✅ AEO run created with ID:', runId)
+    
+    // 2. Now save the questions
     console.log(`💾 Preparing ${questions.length} questions for database insertion...`)
     
     // Prepare questions data
@@ -200,35 +237,17 @@ export async function saveAeoQuestions(
       return { success: false, error: `Failed to save questions: ${questionsError.message}` }
     }
 
-    // Update run with question count
-    console.log('💾 🚨 UPDATING RUN QUESTION COUNT 🚨')
-    const { error: updateError } = await supabase
-      .from('aeo_runs')
-      .update({ question_count: questions.length })
-      .eq('id', runId)
-
-    console.log('📋 Question count update result:', {
-      success: !updateError,
-      error: updateError?.message || 'none',
-      questionCount: questions.length,
-      runId
-    })
-
-    if (updateError) {
-      console.error('❌ Error updating question count:', updateError)
-      // Don't fail for this - questions are saved
-    }
-
     console.log('✅ 🎉 AEO QUESTIONS SAVE COMPLETED SUCCESSFULLY! 🎉')
-    return { success: true }
+    return { success: true, runId }
 
   } catch (error) {
     console.error('❌ 🚨 EXCEPTION during questions save:', error)
     console.error('🔍 Exception details:', {
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
-      runId,
-      questionsCount: questions.length
+      companyId,
+      questionsCount: questions.length,
+      userId
     })
     return { 
       success: false, 
@@ -363,12 +382,28 @@ export async function updateAeoScore(
  */
 export function extractQuestionsFromPipelineData(pipelineData: any): string[] {
   console.log('🔍 Extracting questions from pipeline data...')
+  console.log('📊 Pipeline data structure:', {
+    keys: Object.keys(pipelineData),
+    hasQuestions: !!pipelineData.questions,
+    hasAeoData: !!pipelineData.aeoData,
+    hasBreakdown: !!pipelineData.breakdown,
+    hasSerpResults: !!pipelineData.serpResults
+  })
   
   try {
     // Check for questions array directly in pipeline data (new format)
     if (pipelineData.questions && Array.isArray(pipelineData.questions)) {
       console.log(`✅ Found ${pipelineData.questions.length} questions in pipeline data.questions`)
       return pipelineData.questions
+    }
+    
+    // Check serpResults and extract questions from there
+    if (pipelineData.serpResults && typeof pipelineData.serpResults === 'object') {
+      const questions = Object.keys(pipelineData.serpResults)
+      if (questions.length > 0) {
+        console.log(`✅ Found ${questions.length} questions from serpResults keys`)
+        return questions
+      }
     }
     
     // Check for questions in aeoData (transformed format)
@@ -399,7 +434,7 @@ export function extractQuestionsFromPipelineData(pipelineData: any): string[] {
     }
     
     console.log('⚠️ No questions found in pipeline data structure')
-    console.log('📊 Available data keys:', Object.keys(pipelineData))
+    console.log('📊 Full data sample:', JSON.stringify(pipelineData, null, 2).substring(0, 500))
     return []
     
   } catch (error) {
@@ -424,6 +459,13 @@ export function extractResultsFromPipelineData(
   bucket: 'owned' | 'operated' | 'earned'
 }> {
   console.log('🔍 Extracting results from pipeline data...')
+  console.log('📊 Pipeline data structure for results:', {
+    keys: Object.keys(pipelineData),
+    hasSerpResults: !!pipelineData.serpResults,
+    serpResultsType: typeof pipelineData.serpResults,
+    serpResultsKeys: pipelineData.serpResults ? Object.keys(pipelineData.serpResults) : null,
+    questionIdsCount: questionIds.size
+  })
   
   try {
     const results: Array<{
@@ -436,12 +478,55 @@ export function extractResultsFromPipelineData(
       bucket: 'owned' | 'operated' | 'earned'
     }> = []
     
-    const targetDomain = pipelineData.targetDomain || 'unknown'
+    const targetDomain = pipelineData.targetDomain || extractDomainFromUrl(pipelineData.crawlUrl || '')
     console.log('🎯 Target domain for classification:', targetDomain)
     
-    // Extract from SERP results (new format)
-    if (pipelineData.serpResults && Array.isArray(pipelineData.serpResults)) {
-      console.log(`📊 Processing ${pipelineData.serpResults.length} SERP results`)
+    // Handle serpResults as object (question -> results mapping)
+    if (pipelineData.serpResults && typeof pipelineData.serpResults === 'object') {
+      console.log(`📊 Processing serpResults object with ${Object.keys(pipelineData.serpResults).length} questions`)
+      
+      Object.entries(pipelineData.serpResults).forEach(([question, serpData]: [string, any]) => {
+        const questionId = questionIds.get(question)
+        
+        if (!questionId) {
+          console.log(`⚠️ No question ID found for: ${question}`)
+          return
+        }
+        
+        // Handle both array format and object with results property
+        const serpResults = Array.isArray(serpData) ? serpData : (serpData?.results || serpData?.organic || [])
+        
+        if (Array.isArray(serpResults)) {
+          console.log(`📊 Processing ${serpResults.length} results for question: ${question}`)
+          
+          serpResults.forEach((result: any, index: number) => {
+            // Classify URL as owned, operated, or earned
+            const resultDomain = extractDomainFromUrl(result.url || result.link || '')
+            let bucket: 'owned' | 'operated' | 'earned' = 'earned'
+            
+            if (resultDomain === targetDomain) {
+              bucket = 'owned'
+            } else if (isOperatedDomain(resultDomain, targetDomain)) {
+              bucket = 'operated'
+            }
+            
+            results.push({
+              questionId,
+              rank: index + 1, // SERP position (1-based)
+              url: result.url || result.link || '',
+              title: result.title || null,
+              snippet: result.snippet || result.description || null,
+              domain: resultDomain,
+              bucket
+            })
+          })
+        }
+      })
+    }
+    
+    // Extract from SERP results (array format - legacy)
+    if (pipelineData.serpResults && Array.isArray(pipelineData.serpResults) && results.length === 0) {
+      console.log(`📊 Processing ${pipelineData.serpResults.length} SERP results (array format)`)
       
       pipelineData.serpResults.forEach((serpResult: any) => {
         const question = serpResult.question
@@ -603,13 +688,13 @@ function isOperatedDomain(domain: string, targetDomain: string): boolean {
  * Comprehensive AEO data save - handles the complete pipeline data structure
  */
 export async function saveCompleteAeoAnalysis(
-  runId: string,
+  companyId: string,
   pipelineData: any,
-  userId?: string
+  userId: string
 ): Promise<{ success: boolean; error?: string }> {
   console.log('💾 🚨 === STARTING COMPLETE AEO ANALYSIS SAVE === 🚨')
   console.log('📊 Input parameters:', {
-    runId,
+    companyId,
     userId,
     hasPipelineData: !!pipelineData,
     pipelineDataType: typeof pipelineData,
@@ -638,88 +723,92 @@ export async function saveCompleteAeoAnalysis(
   })
   
   try {
-    // 1. Extract and save questions
+    // 1. Extract and save questions (this will create the AEO run)
     console.log('🔍 🚨 STEP 1: EXTRACTING QUESTIONS 🚨')
     const questions = extractQuestionsFromPipelineData(pipelineData)
     console.log(`📝 Extracted ${questions.length} questions:`, questions.slice(0, 5))
     
     if (questions.length > 0) {
-      console.log('💾 🚨 STEP 1A: SAVING QUESTIONS TO DATABASE 🚨')
-      const questionsResult = await saveAeoQuestions(runId, questions)
+      console.log('💾 🚨 STEP 1A: SAVING QUESTIONS TO DATABASE (THIS CREATES AEO RUN) 🚨')
+      const questionsResult = await saveAeoQuestions(companyId, questions, userId)
       console.log('📋 Questions save result:', questionsResult)
       
-      if (!questionsResult.success) {
+      if (!questionsResult.success || !questionsResult.runId) {
         console.error('❌ 🚨 STEP 1A FAILED: Questions save failed:', questionsResult.error)
         return questionsResult
       }
-      console.log('✅ 🎉 STEP 1A SUCCESS: Questions saved successfully! 🎉')
+      
+      const runId = questionsResult.runId
+      console.log('✅ 🎉 STEP 1A SUCCESS: Questions saved successfully with runId:', runId)
+      
+      // 2. Get question IDs for results mapping
+      console.log('🔍 🚨 STEP 2: FETCHING SAVED QUESTIONS FOR MAPPING 🚨')
+      const { data: savedQuestions, error: fetchError } = await supabase
+        .from('aeo_questions')
+        .select('id, question')
+        .eq('run_id', runId)
+      
+      console.log('📋 Fetch questions result:', {
+        savedQuestions: savedQuestions?.length || 0,
+        fetchError: fetchError?.message || 'none',
+        runId
+      })
+      
+      if (fetchError) {
+        console.error('❌ 🚨 STEP 2 FAILED: Error fetching saved questions:', fetchError)
+        return { success: false, error: `Failed to fetch questions: ${fetchError.message}` }
+      }
+      
+      console.log(`📋 🎉 STEP 2 SUCCESS: Found ${savedQuestions?.length || 0} saved questions`)
+      
+      // Create question ID mapping
+      const questionIds = new Map<string, string>()
+      savedQuestions?.forEach(q => {
+        questionIds.set(q.question, q.id)
+      })
+      console.log('🗂️ Question ID mapping created:', Array.from(questionIds.entries()).slice(0, 3))
+      
+      // 3. Extract and save results
+      console.log('🔍 🚨 STEP 3: EXTRACTING RESULTS 🚨')
+      const results = extractResultsFromPipelineData(pipelineData, questionIds)
+      console.log(`📊 Extracted ${results.length} results:`, results.slice(0, 3))
+      
+      if (results.length > 0) {
+        console.log('💾 🚨 STEP 3A: SAVING RESULTS TO DATABASE 🚨')
+        const resultsResult = await saveAeoResults(runId, results)
+        console.log('📋 Results save result:', resultsResult)
+        
+        if (!resultsResult.success) {
+          console.error('❌ 🚨 STEP 3A FAILED: Results save failed:', resultsResult.error)
+          return resultsResult
+        }
+        console.log('✅ 🎉 STEP 3A SUCCESS: Results saved successfully! 🎉')
+      } else {
+        console.warn('⚠️ 🚨 STEP 3 WARNING: No results found to save 🚨')
+      }
+      
+      // 4. Update total score and complete onboarding
+      const totalScore = pipelineData.overallScore ?? pipelineData.aeoData?.aeo_score ?? pipelineData.aeo_score ?? 0
+      console.log('📈 🚨 STEP 4: UPDATING SCORE 🚨')
+      console.log('📈 Total score to save:', totalScore)
+      
+      if (totalScore > 0) {
+        console.log('💾 🚨 STEP 4A: UPDATING AEO SCORE AND COMPLETING ONBOARDING 🚨')
+        const scoreResult = await updateAeoScore(runId, totalScore, userId)
+        console.log('📋 Score update result:', scoreResult)
+        
+        if (!scoreResult.success) {
+          console.error('❌ 🚨 STEP 4A FAILED: Score update failed:', scoreResult.error)
+          return scoreResult
+        }
+        console.log('✅ 🎉 STEP 4A SUCCESS: Score updated and onboarding completed! 🎉')
+      } else {
+        console.warn('⚠️ 🚨 STEP 4 WARNING: No valid score found to save 🚨')
+      }
+      
     } else {
       console.warn('⚠️ 🚨 STEP 1 WARNING: No questions found to save 🚨')
-    }
-    
-    // 2. Get question IDs for results mapping
-    console.log('🔍 🚨 STEP 2: FETCHING SAVED QUESTIONS FOR MAPPING 🚨')
-    const { data: savedQuestions, error: fetchError } = await supabase
-      .from('aeo_questions')
-      .select('id, question')
-      .eq('run_id', runId)
-    
-    console.log('📋 Fetch questions result:', {
-      savedQuestions: savedQuestions?.length || 0,
-      fetchError: fetchError?.message || 'none',
-      runId
-    })
-    
-    if (fetchError) {
-      console.error('❌ 🚨 STEP 2 FAILED: Error fetching saved questions:', fetchError)
-      return { success: false, error: `Failed to fetch questions: ${fetchError.message}` }
-    }
-    
-    console.log(`📋 🎉 STEP 2 SUCCESS: Found ${savedQuestions?.length || 0} saved questions`)
-    
-    // Create question ID mapping
-    const questionIds = new Map<string, string>()
-    savedQuestions?.forEach(q => {
-      questionIds.set(q.question, q.id)
-    })
-    console.log('🗂️ Question ID mapping created:', Array.from(questionIds.entries()).slice(0, 3))
-    
-    // 3. Extract and save results
-    console.log('🔍 🚨 STEP 3: EXTRACTING RESULTS 🚨')
-    const results = extractResultsFromPipelineData(pipelineData, questionIds)
-    console.log(`📊 Extracted ${results.length} results:`, results.slice(0, 3))
-    
-    if (results.length > 0) {
-      console.log('💾 🚨 STEP 3A: SAVING RESULTS TO DATABASE 🚨')
-      const resultsResult = await saveAeoResults(runId, results)
-      console.log('📋 Results save result:', resultsResult)
-      
-      if (!resultsResult.success) {
-        console.error('❌ 🚨 STEP 3A FAILED: Results save failed:', resultsResult.error)
-        return resultsResult
-      }
-      console.log('✅ 🎉 STEP 3A SUCCESS: Results saved successfully! 🎉')
-    } else {
-      console.warn('⚠️ 🚨 STEP 3 WARNING: No results found to save 🚨')
-    }
-    
-    // 4. Update total score and complete onboarding
-    const totalScore = pipelineData.overallScore ?? pipelineData.aeoData?.aeo_score ?? 0
-    console.log('📈 🚨 STEP 4: UPDATING SCORE 🚨')
-    console.log('📈 Total score to save:', totalScore)
-    
-    if (totalScore > 0) {
-      console.log('💾 🚨 STEP 4A: UPDATING AEO SCORE AND COMPLETING ONBOARDING 🚨')
-      const scoreResult = await updateAeoScore(runId, totalScore, userId)
-      console.log('📋 Score update result:', scoreResult)
-      
-      if (!scoreResult.success) {
-        console.error('❌ 🚨 STEP 4A FAILED: Score update failed:', scoreResult.error)
-        return scoreResult
-      }
-      console.log('✅ 🎉 STEP 4A SUCCESS: Score updated and onboarding completed! 🎉')
-    } else {
-      console.warn('⚠️ 🚨 STEP 4 WARNING: No valid score found to save 🚨')
+      return { success: false, error: 'No questions found in pipeline data' }
     }
     
     console.log('🎉 🚨 === COMPLETE AEO ANALYSIS SAVE COMPLETED SUCCESSFULLY === 🚨')
@@ -730,7 +819,7 @@ export async function saveCompleteAeoAnalysis(
     console.error('🔍 Error details:', {
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
-      runId,
+      companyId,
       userId
     })
     return { 

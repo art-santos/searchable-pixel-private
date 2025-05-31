@@ -140,7 +140,17 @@ export default function VisibilityScorePage() {
   }
 
   const handleAnalysisComplete = async (results: any) => {
+    console.log('🚨 🚨 🚨 HANDLE ANALYSIS COMPLETE CALLED! 🚨 🚨 🚨')
     console.log('🎉 Analysis completed with results:', results)
+    console.log('🔍 Results structure debug:', {
+      hasRawPipelineData: !!results.rawPipelineData,
+      hasQuestions: !!results.questions,
+      hasSerpResults: !!results.serpResults,
+      hasAeoData: !!results.aeoData,
+      resultKeys: Object.keys(results),
+      rawPipelineDataKeys: results.rawPipelineData ? Object.keys(results.rawPipelineData) : null
+    })
+    
     setAnalysisResults(results)
     setAnalysisComplete(true)
     setIsPipelineOpen(false)
@@ -154,8 +164,20 @@ export default function VisibilityScorePage() {
     if (user && onboardingData) {
       try {
         console.log('💾 🚨 ATTEMPTING DATABASE SAVE FROM VISIBILITY SCORE PAGE 🚨')
+        console.log('🔍 Function availability check:', {
+          saveOnboardingDataExists: typeof saveOnboardingData === 'function',
+          saveCompleteAeoAnalysisExists: typeof saveCompleteAeoAnalysis === 'function',
+        })
+        console.log('📊 Data to save:', {
+          hasUser: !!user,
+          userEmail: user.email,
+          hasOnboardingData: !!onboardingData,
+          onboardingDataKeys: Object.keys(onboardingData)
+        })
         
-        // First, save onboarding data and get company/run IDs
+        console.log('💾 Saving onboarding data to database...')
+        
+        // Map the onboarding data to the expected format
         const dbOnboardingData: DatabaseOnboardingData = {
           workspaceName: onboardingData.siteUrl.replace(/^https?:\/\//, '').replace(/^www\./, ''),
           userEmail: user.email || '',
@@ -169,26 +191,52 @@ export default function VisibilityScorePage() {
           cms: 'nextjs', // Default CMS
         }
         
-        console.log('💾 Saving onboarding data to database...')
+        console.log('📋 Mapped database data:', dbOnboardingData)
+        console.log('🔄 About to call saveOnboardingData...')
+        
         const saveResult = await saveOnboardingData(user, dbOnboardingData)
         
-        if (saveResult.success && saveResult.runId) {
-          console.log('✅ Onboarding data saved successfully, runId:', saveResult.runId)
-          
-          // Now save the complete AEO analysis
-          console.log('💾 Saving complete AEO analysis...')
-          const analysisResult = await saveCompleteAeoAnalysis(saveResult.runId, results, user.id)
-          
-          if (analysisResult.success) {
-            console.log('✅ 🎉 Complete AEO analysis saved successfully! 🎉')
-          } else {
-            console.error('❌ Failed to save AEO analysis:', analysisResult.error)
-          }
-        } else {
+        console.log('📋 saveOnboardingData result:', saveResult)
+        
+        if (!saveResult.success || !saveResult.companyId) {
           console.error('❌ Failed to save onboarding data:', saveResult.error)
+          throw new Error(`Failed to save onboarding data: ${saveResult.error}`)
+        }
+        
+        console.log('✅ Onboarding data saved successfully:', {
+          companyId: saveResult.companyId,
+          userEmail: dbOnboardingData.userEmail,
+          workspaceName: dbOnboardingData.workspaceName,
+          domain: dbOnboardingData.domain
+        })
+
+        // Now save the complete AEO analysis
+        console.log('💾 Saving complete AEO analysis...')
+        console.log('📊 Data being passed to saveCompleteAeoAnalysis:', {
+          companyId: saveResult.companyId,
+          userId: user.id,
+          hasRawPipelineData: !!results.rawPipelineData,
+          pipelineDataKeys: results.rawPipelineData ? Object.keys(results.rawPipelineData) : Object.keys(results)
+        })
+        
+        const analysisResult = await saveCompleteAeoAnalysis(saveResult.companyId, results.rawPipelineData || results, user.id)
+        
+        console.log('📋 Analysis save result:', analysisResult)
+        
+        if (analysisResult.success) {
+          console.log('✅ 🎉 Complete AEO analysis saved successfully! 🎉')
+        } else {
+          console.error('❌ Failed to save AEO analysis:', analysisResult.error)
         }
       } catch (error) {
         console.error('❌ 🚨 EXCEPTION during database save:', error)
+        console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack available')
+        console.error('❌ Error details:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          name: error instanceof Error ? error.name : 'Unknown',
+          hasUser: !!user,
+          hasOnboardingData: !!onboardingData
+        })
       }
     } else {
       console.error('❌ Missing user or onboarding data for database save:', {

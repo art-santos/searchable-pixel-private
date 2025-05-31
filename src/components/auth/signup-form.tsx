@@ -148,8 +148,8 @@ export function SignupForm({
         // Call success callback
         onSignupSuccess?.()
         
-        // Redirect to visibility score page instead of dashboard
-        router.push('/visibility-score')
+        // Redirect to dashboard which has onboarding overlay
+        router.push('/dashboard')
       } else {
         showNotification("error", "Failed to create account")
       }
