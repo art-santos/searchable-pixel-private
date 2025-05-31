@@ -13,6 +13,7 @@ import { SuggestionsCard } from '@/app/visibility-test/components/suggestions-ca
 import { saveOnboardingData, saveAeoQuestions, saveAeoResults, updateAeoScore, saveCompleteAeoAnalysis } from '@/lib/onboarding/database'
 import type { OnboardingData } from '@/lib/onboarding/database'
 import { debugOnboardingState } from '@/lib/debug/onboarding-debug'
+import '@/lib/debug/aeo-debug' // Import AEO debug utilities
 import { 
   CheckCircle2, 
   ArrowRight, 

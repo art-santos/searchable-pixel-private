@@ -6,6 +6,8 @@ import { searchQuestions } from '@/lib/aeo/serper'
 import { classifyResults } from '@/lib/aeo/classify'
 import { calculateVisibilityScore } from '@/lib/aeo/score'
 import { createStorageManager, ensureDirectory, saveJSON } from '@/lib/aeo/storage'
+import { saveCompleteAeoAnalysis, saveOnboardingData } from '@/lib/onboarding/database'
+import type { OnboardingData } from '@/lib/onboarding/database'
 
 interface ProgressEvent {
   step: string
@@ -87,7 +89,7 @@ export async function GET(request: NextRequest) {
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
     start(controller) {
-      runAEOPipeline(formattedUrl, storage, controller, encoder)
+      runAEOPipeline(formattedUrl, storage, controller, encoder, request)
     }
   })
   
@@ -164,7 +166,7 @@ export async function POST(request: NextRequest) {
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
     start(controller) {
-      runAEOPipeline(targetUrl, storage, controller, encoder)
+      runAEOPipeline(targetUrl, storage, controller, encoder, request)
     }
   })
   
@@ -184,7 +186,8 @@ async function runAEOPipeline(
   targetUrl: string,
   storage: any,
   controller: ReadableStreamDefaultController,
-  encoder: TextEncoder
+  encoder: TextEncoder,
+  request?: NextRequest
 ) {
   const sendProgress = (event: ProgressEvent) => {
     const data = `data: ${JSON.stringify(event)}\n\n`
@@ -377,6 +380,95 @@ async function runAEOPipeline(
     console.log(`🔗 Total Results: ${visibilityScore.metrics.total_results}`)
     console.log(`📁 Data saved to: ${storage.basePath}`)
     console.log('='.repeat(80))
+    
+    // 🚨 ATTEMPT DATABASE SAVE 🚨
+    try {
+      console.log('💾 🚨 ATTEMPTING DATABASE SAVE FROM API ROUTE 🚨')
+      
+      // We need to determine if this is part of onboarding or standalone analysis
+      // For now, let's create a standalone analysis entry
+      
+      // Extract user info from the earlier auth (we need to re-auth here)
+      const authHeader = request?.headers?.get?.('authorization')
+      const urlParams = new URL(request?.url || '').searchParams
+      const token = authHeader?.split(' ')[1] || urlParams.get('token')
+      
+      if (token) {
+        console.log('🔐 Re-authenticating for database save...')
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_KEY!,
+          {
+            auth: {
+              autoRefreshToken: false,
+              persistSession: false
+            }
+          }
+        )
+        
+        const { data: userData, error: userError } = await supabase.auth.getUser(token)
+        
+        if (!userError && userData?.user) {
+          console.log('✅ User re-authenticated for DB save:', userData.user.id)
+          
+          // First, try to find if there's an existing company/run for this user and domain
+          const domain = extractDomain(targetUrl)
+          
+          // Create a temporary onboarding data structure for standalone analysis
+          const tempOnboardingData: OnboardingData = {
+            workspaceName: domain.split('.')[0], // Use domain as workspace name
+            userEmail: userData.user.email || '',
+            domain: targetUrl,
+            isAnalyticsConnected: false,
+            keywords: [], // We could extract these from questions if needed
+            businessOffering: '',
+            knownFor: '',
+            competitors: [],
+            cms: 'unknown'
+          }
+          
+          console.log('🏢 Creating company/run for standalone analysis...')
+          const onboardingResult = await saveOnboardingData(userData.user, tempOnboardingData)
+          
+          if (onboardingResult.success && onboardingResult.runId) {
+            console.log('✅ Company/run created, saving complete analysis...')
+            
+            // Prepare the pipeline data in the expected format
+            const pipelineData = {
+              overallScore: visibilityScore.aeo_score,
+              aeoData: visibilityScore,
+              questions: questions.questions,
+              serpResults: serpResults,
+              classifiedResults: classifiedResults,
+              targetDomain: targetDomain,
+              breakdown: visibilityScore.breakdown,
+              crawlSnapshot: crawlSnapshot
+            }
+            
+            const analysisResult = await saveCompleteAeoAnalysis(
+              onboardingResult.runId,
+              pipelineData,
+              userData.user.id
+            )
+            
+            if (analysisResult.success) {
+              console.log('🎉 Complete AEO analysis saved to database successfully!')
+            } else {
+              console.error('❌ Failed to save complete analysis:', analysisResult.error)
+            }
+          } else {
+            console.error('❌ Failed to create company/run:', onboardingResult.error)
+          }
+        } else {
+          console.log('⚠️ Could not re-authenticate user for database save')
+        }
+      } else {
+        console.log('⚠️ No auth token available for database save')
+      }
+    } catch (dbError) {
+      console.error('❌ Database save error (non-blocking):', dbError)
+      // Don't fail the entire pipeline for database issues
+    }
     
     controller.close()
     
