@@ -1,45 +1,71 @@
 {
-  "aeo_score": 95,
+  "aeo_score": 52,
   "coverage_owned": 0.6,
   "coverage_operated": 0,
   "coverage_total": 0.6,
-  "share_of_voice": 0.4969643691107388,
+  "share_of_voice": 0.5228610797945635,
   "metrics": {
     "questions_analyzed": 10,
-    "total_results": 96,
-    "owned_appearances": 51,
-    "operated_appearances": 0,
-    "earned_appearances": 45,
-    "avg_owned_position": 5.6,
-    "avg_operated_position": 0,
+    "total_results": 92,
+    "owned_appearances": 48,
+    "operated_appearances": 2,
+    "earned_appearances": 42,
+    "avg_owned_position": 5.5,
+    "avg_operated_position": 8.5,
     "top_3_presence": 6
   },
   "breakdown": {
     "by_question": [
       {
-        "question": "How much does thinair cost?",
-        "owned_results": 9,
-        "operated_results": 0,
-        "earned_results": 1,
+        "question": "thinair customer success stories",
+        "owned_results": 8,
+        "operated_results": 2,
+        "earned_results": 0,
         "owned_positions": [
           1,
           2,
+          3,
           4,
           5,
           6,
           7,
-          8,
-          9,
           10
         ],
-        "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 0.8861942826175316,
+        "operated_positions": [
+          8,
+          9
+        ],
+        "coverage_score": 1.25,
+        "voice_score": 1,
         "is_direct": false,
         "weight": 1
       },
       {
-        "question": "top enterprise AI platforms",
+        "question": "thinair AI solution reviews",
+        "owned_results": 0,
+        "operated_results": 0,
+        "earned_results": 10,
+        "owned_positions": [],
+        "operated_positions": [],
+        "coverage_score": 0,
+        "voice_score": 0,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "thinair NLQ pricing",
+        "owned_results": 0,
+        "operated_results": 0,
+        "earned_results": 6,
+        "owned_positions": [],
+        "operated_positions": [],
+        "coverage_score": 0,
+        "voice_score": 0,
+        "is_direct": true,
+        "weight": 1.2
+      },
+      {
+        "question": "best custom AI platforms",
         "owned_results": 0,
         "operated_results": 0,
         "earned_results": 9,
@@ -51,63 +77,80 @@
         "weight": 1
       },
       {
-        "question": "thinair NLQ AI solutions reviews",
-        "owned_results": 0,
+        "question": "What is thinair MCP?",
+        "owned_results": 1,
         "operated_results": 0,
-        "earned_results": 10,
-        "owned_positions": [],
+        "earned_results": 8,
+        "owned_positions": [
+          1
+        ],
         "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
+        "coverage_score": 1,
+        "voice_score": 0.3534857623790153,
         "is_direct": false,
         "weight": 1
       },
       {
-        "question": "AI solutions for data integration",
-        "owned_results": 0,
+        "question": "AI solutions for data unification",
+        "owned_results": 4,
         "operated_results": 0,
-        "earned_results": 10,
-        "owned_positions": [],
+        "earned_results": 6,
+        "owned_positions": [
+          7,
+          8,
+          9,
+          10
+        ],
         "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
+        "coverage_score": 0.5,
+        "voice_score": 0.1635279772388565,
         "is_direct": false,
         "weight": 1
       },
       {
-        "question": "thinair customer success stories",
-        "owned_results": 0,
+        "question": "thinair vs other AI platforms",
+        "owned_results": 9,
         "operated_results": 0,
-        "earned_results": 10,
-        "owned_positions": [],
+        "earned_results": 1,
+        "owned_positions": [
+          1,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
         "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
-        "is_direct": false,
-        "weight": 1
+        "coverage_score": 1.2,
+        "voice_score": 0.9951497087115568,
+        "is_direct": true,
+        "weight": 1.2
       },
       {
-        "question": "automated data integration tools",
+        "question": "top natural language query systems",
         "owned_results": 7,
         "operated_results": 0,
         "earned_results": 2,
         "owned_positions": [
+          1,
           2,
-          4,
+          3,
           5,
-          6,
           7,
           8,
           9
         ],
         "operated_positions": [],
         "coverage_score": 1,
-        "voice_score": 0.528685650161313,
+        "voice_score": 0.8527142656754103,
         "is_direct": false,
         "weight": 1
       },
       {
-        "question": "AI solutions for SaaS onboarding",
+        "question": "enterprise data integration tools",
         "owned_results": 10,
         "operated_results": 0,
         "earned_results": 0,
@@ -130,16 +173,15 @@
         "weight": 1
       },
       {
-        "question": "thinair vs other AI platforms",
-        "owned_results": 10,
+        "question": "automated SaaS onboarding tools",
+        "owned_results": 9,
         "operated_results": 0,
-        "earned_results": 0,
+        "earned_results": 1,
         "owned_positions": [
           1,
           2,
           3,
           4,
-          5,
           6,
           7,
           8,
@@ -147,68 +189,27 @@
           10
         ],
         "operated_positions": [],
-        "coverage_score": 1.2,
-        "voice_score": 1.2,
-        "is_direct": true,
-        "weight": 1.2
-      },
-      {
-        "question": "best natural language query tools",
-        "owned_results": 7,
-        "operated_results": 0,
-        "earned_results": 2,
-        "owned_positions": [
-          1,
-          3,
-          5,
-          6,
-          7,
-          8,
-          9
-        ],
-        "operated_positions": [],
         "coverage_score": 1,
-        "voice_score": 0.7348856782157385,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "What is thinair's Model Context Protocol?",
-        "owned_results": 8,
-        "operated_results": 0,
-        "earned_results": 1,
-        "owned_positions": [
-          1,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9
-        ],
-        "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 0.8232571188104925,
+        "voice_score": 0.9317165695705188,
         "is_direct": false,
         "weight": 1
       }
     ],
     "by_position": {
       "position_1": {
-        "owned": 5,
+        "owned": 6,
         "operated": 0,
         "earned": 0.7999999999999999
       },
       "position_2_3": {
-        "owned": 8,
+        "owned": 9,
         "operated": 0,
-        "earned": 2.9999999999999996
+        "earned": 3.3
       },
       "position_4_10": {
-        "owned": 38,
-        "operated": 0,
-        "earned": 16.2
+        "owned": 33,
+        "operated": 2,
+        "earned": 14.399999999999999
       }
     },
     "top_performing_content": [
@@ -220,30 +221,30 @@
         "reasoning": "AI classification"
       },
       {
-        "url": "https://www.matillion.com/learn/blog/salesforce-integration-tools",
-        "title": "11 Best Salesforce Integration Tools (ETL & Data Integration) in 2025",
-        "snippet": "SnapLogic's modern integration platform uses AI to simplify Salesforce connections. Their Iris AI technology suggests integration patterns and ...",
+        "url": "https://www.reltio.com/resources/blog/how-ai-is-fueling-the-growing-market-for-cloud-based-data-unification/",
+        "title": "How AI is fueling the growing market for cloud-based data unification",
+        "snippet": "The pivot towards data unification and management is facilitated by cloud-based solutions that offer real-time silo breakdown through flexible ...",
         "bucket": "Owned",
         "reasoning": "AI classification"
       },
       {
-        "url": "https://userpilot.com/blog/ai-user-onboarding/",
-        "title": "AI User Onboarding: 7 Strategies to Automate Customer ... - Userpilot",
-        "snippet": "1. Localize onboarding content instantly with AI · 2. Boost user engagement with AI-powered copywriting · 3. Use AI to analyze new customer data and personalize ...",
+        "url": "https://thinair.dev/privacy-policy",
+        "title": "Accurate NLQ & AI Solutions via Model Context Protocol ... - Thinair",
+        "snippet": "Build custom AI solutions with accurate Natural Language Query (NLQ) using Thinair's Model Context Protocol (MCP). We automate data integration (SQL, APIs) ...",
+        "bucket": "Owned",
+        "reasoning": "Exact domain match"
+      },
+      {
+        "url": "https://sentiers.media/ai-is-about-power-not-technology-ais-hidden-impact-on-human-thought-companies-creating-food-out-of-thin-air-no-334/",
+        "title": "AI is about power, not technology ⊗ AI's hidden impact on human ...",
+        "snippet": "Jason Resnikoff argues that the real issue with AI is not its technological advancements, but rather how it is wielded by employers to degrade labour ...",
         "bucket": "Owned",
         "reasoning": "AI classification"
       },
       {
-        "url": "https://whatfix.com/blog/ai-user-onboarding/",
-        "title": "AI in User Onboarding: From Personalization to Optimization - Whatfix",
-        "snippet": "We explore how to use AI to create better and more scalable onboarding experiences, and strategies for doing it quickly and simply with ...",
-        "bucket": "Owned",
-        "reasoning": "AI classification"
-      },
-      {
-        "url": "https://www.contractsafe.com/blog/legal-ai-tools",
-        "title": "11 Best Legal AI Tools for Legal Professionals in 2024 - ContractSafe",
-        "snippet": "From contract management software and analytics to AI assistants and e-discovery platforms, these tools can help legal pros boost efficiency, reduce costs, and ...",
+        "url": "https://lumenalta.com/insights/9-of-the-best-natural-language-processing-tools-in-2025",
+        "title": "9 of the best natural language processing tools in 2025 | NLP tools",
+        "snippet": "9 of the best natural language processing tools in 2025 · 1. Google Cloud Natural Language API · 2. Amazon Comprehend · 3. Microsoft Azure Text ...",
         "bucket": "Owned",
         "reasoning": "AI classification"
       }
@@ -251,7 +252,7 @@
   },
   "metadata": {
     "target_domain": "thinair.dev",
-    "calculated_at": "2025-05-31T20:18:24.538Z",
+    "calculated_at": "2025-05-31T20:29:53.737Z",
     "score_version": "1.0.0"
   }
 }

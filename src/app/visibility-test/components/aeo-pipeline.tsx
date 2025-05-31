@@ -160,6 +160,9 @@ export function AEOPipeline({ isOpen, crawlUrl, onClose, onAnalysisComplete }: A
             
             // Handle completion
             if (progressData.step === 'complete' && progressData.data) {
+              console.log('🎯 AEO Pipeline: COMPLETION EVENT DETECTED')
+              console.log('📊 Raw completion data:', progressData.data)
+              
               setFinalResults(progressData.data)
               addLog('AEO Pipeline completed successfully!', 'success')
               addLog(`Final AEO Score: ${progressData.data.aeo_score}/100`, 'success')
@@ -185,10 +188,16 @@ export function AEOPipeline({ isOpen, crawlUrl, onClose, onAnalysisComplete }: A
                 hasQuestions: !!progressData.data.questions,
                 hasSerpResults: !!progressData.data.serpResults,
                 questionCount: progressData.data.questions?.length || 0,
-                serpResultCount: progressData.data.serpResults?.length || 0
+                serpResultCount: Object.keys(progressData.data.serpResults || {}).length || 0
               })
               
-              onAnalysisComplete(completeData)
+              console.log('🚨 CALLING onAnalysisComplete callback...')
+              try {
+                onAnalysisComplete(completeData)
+                console.log('✅ onAnalysisComplete callback completed successfully')
+              } catch (callbackError) {
+                console.error('❌ Error in onAnalysisComplete callback:', callbackError)
+              }
               
               setIsRunning(false)
               eventSource.close()

@@ -445,6 +445,17 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
   }
 
   const handlePipelineComplete = async (data: any) => {
+    console.log('🎯🎯🎯 === HANDLE PIPELINE COMPLETE FUNCTION CALLED === 🎯🎯🎯')
+    console.log('🔍 Function entry debug:', {
+      functionCalled: true,
+      timestamp: new Date().toISOString(),
+      dataExists: !!data,
+      runIdExists: !!runId,
+      userExists: !!user,
+      currentRunId: runId,
+      currentUserId: user?.id
+    })
+    
     console.log('🎯 Pipeline completed with data:', data)
     console.log('🔍 Pipeline data structure:', {
       hasAeoData: !!data.aeoData,
