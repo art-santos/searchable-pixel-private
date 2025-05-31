@@ -1,11 +1,31 @@
+<<<<<<< HEAD
 # Source files
 src/
 
 # Config files
+=======
+# Development files
+*.log
+.DS_Store
+.env*
+.vscode/
+.idea/
+
+# Dependencies (CRITICAL - don't include in package)
+node_modules/
+
+# Build artifacts not needed in final package
+*.map
+coverage/
+.nyc_output/
+
+# Config files not needed by end users
+>>>>>>> 8236b93 (fixed package)
 tsconfig.json
 tsup.config.ts
 jest.config.js
 
+<<<<<<< HEAD
 # Development files
 *.log
 .DS_Store
@@ -16,10 +36,32 @@ node_modules/
 *.map
 
 # Documentation source
+=======
+# Documentation source (we include built README.md)
+>>>>>>> 8236b93 (fixed package)
 docs/
 examples/
 
 # Testing
+<<<<<<< HEAD
 coverage/
 __tests__/
 *.test.* 
+=======
+__tests__/
+*.test.*
+*.spec.*
+
+# Git
+.git/
+.gitignore
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Temporary files
+*.tmp
+*.temp 
+>>>>>>> 8236b93 (fixed package)

@@ -1,27 +1,36 @@
 # @split.dev/analytics
 
-Track AI crawler visits to your website. Monitor when GPTBot, Claude, Perplexity, and other AI crawlers visit your site.
+> **Simple AI crawler tracking for any website. Zero dependencies, lightweight, reliable.**
 
-## Features
+Track when AI crawlers like GPTBot, Claude, Perplexity, and others visit your website. Get insights into your AI visibility and optimize your content for AI training and search.
 
-- 🤖 Detects 15+ AI crawlers (OpenAI, Anthropic, Google, Microsoft, etc.)
-- ⚡ Lightweight middleware for Next.js and Node.js
-- 📊 Automatic batching and retry logic
-- 🔒 Privacy-first: No personal data collected
-- 📈 Real-time analytics dashboard at [split.dev](https://split.dev)
+[![npm version](https://badge.fury.io/js/@split.dev%2Fanalytics.svg)](https://www.npmjs.com/package/@split.dev/analytics)
+[![Downloads](https://img.shields.io/npm/dm/@split.dev/analytics.svg)](https://www.npmjs.com/package/@split.dev/analytics)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
+[![Zero Dependencies](https://img.shields.io/badge/dependencies-0-green.svg)](https://www.npmjs.com/package/@split.dev/analytics)
 
-## Installation
+## ✨ Features
+
+- 🤖 **Detects 35+ AI crawlers** - GPTBot, ClaudeBot, Perplexity, Google Extended, and more
+- ⚡ **Zero dependencies** - Lightweight and fast, won't bloat your app
+- 🔒 **Privacy-first** - No personal data collection, just crawler analytics
+- 📊 **Real-time dashboard** - View your AI crawler traffic at [split.dev](https://split.dev)
+- 🛠️ **Framework agnostic** - Works with Next.js, React, Node.js, or any JavaScript app
+- 🚀 **Easy setup** - Get started in under 2 minutes
+- ✅ **Production ready** - Non-blocking tracking, comprehensive error handling
+- 🔧 **Built-in testing** - Test your integration with `--test` and `--test-api` commands
+
+## 🚀 Quick Start
+
+### 1. Install
 
 ```bash
 npm install @split.dev/analytics
-# or
-yarn add @split.dev/analytics
-# or
-pnpm add @split.dev/analytics
 ```
 
-## Quick Start
+### 2. Get API Key
 
+<<<<<<< HEAD
 ### 1. Get Your API Key
 
 Sign up at [split.dev](https://split.dev) and generate an API key from your dashboard.
@@ -49,179 +58,243 @@ if (response.status === 'ok') {
 ### 3. Next.js Setup
 
 For Next.js applications, add the middleware to track AI crawlers automatically:
+=======
+Sign up at [split.dev](https://split.dev) and get your API keys from the dashboard.
+>>>>>>> 8236b93 (fixed package)
 
-Create a `middleware.ts` file in your project root:
+**Key Types:**
+- **Test Keys** (`split_test_*`) - For development, testing, and CI/CD. Don't count toward usage limits.
+- **Live Keys** (`split_live_*`) - For production use. Count toward your plan's usage limits.
+
+### 3. Test Installation
+
+```bash
+# Test package installation
+npx @split.dev/analytics --test
+
+# Test API connection  
+npx @split.dev/analytics --test-api YOUR_API_KEY
+```
+
+### 4. Add to Your App
+
+**Next.js (Recommended)**
+
+Create `middleware.ts` in your project root:
 
 ```typescript
-import { createCrawlerMiddleware } from '@split.dev/analytics/middleware'
+import { createSplitMiddleware } from '@split.dev/analytics/middleware'
 
-export const middleware = createCrawlerMiddleware({
-  apiKey: process.env.SPLIT_API_KEY!,
-  // Optional configuration
-  exclude: ['/api/*', '/_next/*'], // Paths to exclude
-  debug: process.env.NODE_ENV === 'development'
+export const middleware = createSplitMiddleware({
+  apiKey: process.env.SPLIT_API_KEY!
 })
 
-// Optionally configure which routes to track
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)']
 }
 ```
 
-### Express/Node.js
+**React/Node.js/Other**
 
 ```javascript
-const express = require('express')
-const { createNodeMiddleware } = require('@split.dev/analytics')
+import { SplitAnalytics, isAICrawler } from '@split.dev/analytics'
 
-const app = express()
-
-// Add Split Analytics middleware
-app.use(createNodeMiddleware({
-  apiKey: process.env.SPLIT_API_KEY,
-  debug: process.env.NODE_ENV === 'development'
-}))
-
-// Your routes
-app.get('/', (req, res) => {
-  res.send('Hello World!')
+const analytics = new SplitAnalytics({
+  apiKey: process.env.SPLIT_API_KEY
 })
 
-app.listen(3000)
-```
-
-### Custom Implementation
-
-For other frameworks or custom implementations:
-
-```javascript
-import { trackCrawler } from '@split.dev/analytics'
-
-// In your request handler
-const wasCrawler = await trackCrawler(
-  {
-    apiKey: process.env.SPLIT_API_KEY
-  },
-  {
-    url: request.url,
-    userAgent: request.headers['user-agent'],
-    headers: request.headers,
-    statusCode: response.statusCode,
-    responseTimeMs: responseTime
-  }
-)
-
-if (wasCrawler) {
-  console.log('AI crawler detected!')
+// Auto-detect and track crawler visits
+if (isAICrawler(navigator.userAgent)) {
+  analytics.autoTrack({
+    url: window.location.href,
+    userAgent: navigator.userAgent
+  })
 }
 ```
 
-## Configuration Options
+**Environment Variables**
+
+```bash
+# Development
+SPLIT_API_KEY=split_test_1234567890abcdef
+
+# Production  
+SPLIT_API_KEY=split_live_1234567890abcdef
+```
+
+## 🔧 API Reference
+
+### Core Functions
 
 ```typescript
-{
-  // Required
-  apiKey: string              // Your Split Analytics API key
-  
-  // Optional
-  apiEndpoint?: string        // Custom API endpoint (default: https://split.dev/api/crawler-events)
-  batchSize?: number          // Events to batch before sending (default: 10)
-  batchIntervalMs?: number    // Max time between batches in ms (default: 5000)
-  debug?: boolean             // Enable debug logging (default: false)
-  onError?: (error) => void   // Custom error handler
-  
-  // Next.js specific options
-  exclude?: string[]          // Paths to exclude from tracking
-  include?: string[]          // If specified, only track these paths
-  addCrawlerHeaders?: boolean // Add X-AI-Crawler-* response headers
-  onCrawlerDetected?: (request, crawler) => void // Custom handler
-}
-```
+// Test connection
+const result = await ping({ apiKey: 'your-key' })
 
-## Detected AI Crawlers
+// Create analytics instance
+const analytics = new SplitAnalytics({ apiKey: 'your-key' })
 
-| Crawler | Company | Purpose |
-|---------|---------|---------|
-| GPTBot | OpenAI | Training GPT models |
-| ChatGPT-User | OpenAI | ChatGPT browsing |
-| Claude-Web | Anthropic | Claude browsing |
-| ClaudeBot | Anthropic | Training Claude |
-| PerplexityBot | Perplexity | AI search engine |
-| Google-Extended | Google | Bard/Gemini training |
-| Bingbot | Microsoft | Bing/Copilot |
-| YouBot | You.com | AI search |
-| CCBot | Common Crawl | Dataset creation |
-| FacebookBot | Meta | Social AI features |
-| And more... | | |
+// Check if user agent is a crawler
+const isCrawler = isAICrawler(userAgent)
 
-## API Key
+// Get crawler details
+const info = getCrawlerInfo(userAgent)
 
-Get your free API key at [split.dev/dashboard](https://split.dev/dashboard)
-
-## Advanced Usage
-
-### Detecting Crawlers Without Tracking
-
-```javascript
-import { detectAICrawler } from '@split.dev/analytics'
-
-const detection = detectAICrawler(request.headers['user-agent'])
-
-if (detection.isAICrawler) {
-  console.log(`Detected ${detection.crawler.bot} from ${detection.crawler.company}`)
-  
-  // Serve different content, add headers, etc.
-  if (detection.crawler.company === 'OpenAI') {
-    response.headers['X-Robots-Tag'] = 'noai'
-  }
-}
-```
-
-### Manual Event Batching
-
-```javascript
-import { CrawlerTracker } from '@split.dev/analytics'
-
-const tracker = new CrawlerTracker({
-  apiKey: process.env.SPLIT_API_KEY,
-  batchSize: 50,
-  batchIntervalMs: 10000
+// Track a visit
+await analytics.track({
+  url: 'https://example.com',
+  userAgent: 'GPTBot/1.0',
+  crawler: { name: 'GPTBot', company: 'OpenAI', category: 'ai-training' }
 })
 
-// Track multiple events
-await tracker.track(event1)
-await tracker.track(event2)
-
-// Force send all queued events
-await tracker.flush()
-
-// Cleanup when shutting down
-tracker.destroy()
+// Auto-detect and track
+await analytics.autoTrack({
+  url: 'https://example.com',
+  userAgent: userAgent
+})
 ```
 
-## Privacy & Security
+### Next.js Middleware
 
-- No personal data collected
-- No cookies or tracking pixels
-- User agents are the only identifying information
-- All data is encrypted in transit
-- SOC 2 Type II compliant infrastructure
+```typescript
+// Simple setup
+import { createSplitMiddleware } from '@split.dev/analytics/middleware'
 
-## Support
+export const middleware = createSplitMiddleware({
+  apiKey: process.env.SPLIT_API_KEY!,
+  debug: process.env.NODE_ENV === 'development'
+})
 
-- Documentation: [docs.split.dev](https://docs.split.dev)
-- Issues: [github.com/split-analytics/split-analytics/issues](https://github.com/split-analytics/split-analytics/issues)
-- Email: support@split.dev
+// Add to existing middleware
+import { trackCrawlerVisit } from '@split.dev/analytics/middleware'
 
-## License
+export async function middleware(request: NextRequest) {
+  const response = NextResponse.next()
+  
+  // Your existing logic here...
+  
+  // Add Split Analytics (non-blocking)
+  trackCrawlerVisit(request, {
+    apiKey: process.env.SPLIT_API_KEY!
+  }).catch(console.error)
+  
+  return response
+}
+```
 
-MIT © Split Analytics 
+## 🤖 Detected AI Crawlers
+
+We detect 35+ AI crawlers including:
+
+| Company | Crawlers | Purpose |
+|---------|----------|---------|
+| **OpenAI** | GPTBot, ChatGPT-User, OAI-SearchBot | Training, browsing, search |
+| **Anthropic** | ClaudeBot, Claude-Web | Training, browsing |
+| **Google** | Google-Extended, Googlebot | AI training, search |
+| **Microsoft** | Bingbot, BingPreview | Copilot, search |
+| **Perplexity** | PerplexityBot | AI search |
+| **Meta** | FacebookBot, Meta-ExternalAgent | Social AI, training |
+| **Others** | YouBot, CCBot, Bytespider, Applebot | Various AI applications |
+
+## 🔍 Testing & Debugging
+
+### Built-in Test Commands
+
+```bash
+# Test package installation
+npx @split.dev/analytics --test
+
+# Test API connection with your key
+npx @split.dev/analytics --test-api split_test_your_key
+
+# Run in your project
+npm test  # if package is installed locally
+```
+
+### Debug Mode
+
+```javascript
+const analytics = new SplitAnalytics({
+  apiKey: 'your-key',
+  debug: true  // Enable detailed logging
+})
+```
+
+### Test Installation Programmatically
+
+```javascript
+import { testInstallation } from '@split.dev/analytics'
+
+const results = await testInstallation({
+  apiKey: 'your-key'  // optional
+})
+
+console.log(results)
+// {
+//   packageImport: true,
+//   crawlerDetection: true,
+//   apiConnection: true,
+//   apiConnectionDetails: { ... }
+// }
+```
+
+## 📊 Working Examples
+
+Check the `examples/` folder for complete implementations:
+
+- `nextjs-basic.js` - Simple Next.js middleware setup
+- `nextjs-with-auth.js` - Integration with existing auth middleware
+
+## 🔒 Privacy & Security
+
+- **Zero personal data collection** - Only crawler visit metadata
+- **No cookies or tracking pixels** - Pure server-side analytics  
+- **GDPR compliant** - No personal information processed
+- **Secure transmission** - All data encrypted in transit
+
+## 🆘 Troubleshooting
+
+### Common Issues
+
+**"Invalid API key format"**
+- Ensure key starts with `split_live_` or `split_test_`
+- Get keys from: [split.dev/dashboard](https://split.dev/dashboard)
+
+**"Network error"**
+- Check internet connection
+- Verify API endpoint is accessible
+- Try test key first: `npx @split.dev/analytics --test-api YOUR_KEY`
+
+**"Middleware routing conflicts"**
+- Ensure `NextResponse.next()` is returned properly
+- Use `trackCrawlerVisit()` for existing middleware
+- Enable debug mode to see detailed logs
+
+**"TypeScript errors"**
+- Update to latest version: `npm install @split.dev/analytics@latest`
+- Check that imports match documentation
+- Enable `skipLibCheck` in tsconfig.json if needed
+
+### Get Help
+
+- **Documentation**: [docs.split.dev](https://docs.split.dev)
+- **Dashboard**: [split.dev](https://split.dev)
+- **Issues**: [GitHub Issues](https://github.com/split-dev/analytics/issues)
+
+## 🎯 What's New in v2.0.0
+
+- ✅ **Fixed middleware routing conflicts** - No more API route issues
+- ✅ **Improved error messages** - Specific, actionable error information
+- ✅ **Complete TypeScript support** - Full type definitions for all exports
+- ✅ **Built-in testing utilities** - `--test` and `--test-api` commands
+- ✅ **Better debugging** - Comprehensive debug mode and logging
+- ✅ **Working examples** - Copy-paste ready Next.js integrations
+- ✅ **Non-blocking tracking** - Won't slow down your application
+- ✅ **API key validation** - Clear validation and helpful guidance
+
+## 📝 License
+
+MIT © Split Analytics
+
+---
+
+**Made with ❤️ by the Split team** • [split.dev](https://split.dev) 

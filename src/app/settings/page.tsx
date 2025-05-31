@@ -270,7 +270,7 @@ export default function SettingsPage() {
     }
   }
   
-  const handleCreateApiKey = async () => {
+  const handleCreateApiKey = async (keyType: 'test' | 'live' = 'live') => {
     if (isCreatingKey) return
     
     setIsCreatingKey(true)
@@ -278,13 +278,13 @@ export default function SettingsPage() {
       const response = await fetch('/api/api-keys', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}) // No name needed, will auto-generate
+        body: JSON.stringify({ keyType }) // Pass the key type
       })
       
       if (response.ok) {
         const data = await response.json()
         setNewlyCreatedKey(data.apiKey.key)
-        showToast('API key created successfully')
+        showToast(`${keyType === 'test' ? 'Test' : 'Live'} API key created successfully`)
         fetchApiKeys() // Refresh the list
       } else {
         const error = await response.json()
@@ -721,47 +721,84 @@ export default function SettingsPage() {
               {/* API Keys Settings */}
               {activeSection === 'api-keys' && (
                 <div className="space-y-6">
-                  {/* Header with Generate Button */}
+                  {/* Header with Generate Buttons */}
                   <div className="flex items-start justify-between">
                     <div>
                       <h2 className="text-xl font-medium text-white mb-2">API Keys</h2>
                       <p className="text-sm text-[#666]">
-                        Manage programmatic access to your Split Analytics data
+                        Manage programmatic access to your Split Analytics data. Use test keys for development and live keys for production.
                       </p>
                     </div>
-                    <Button
-                      onClick={handleCreateApiKey}
-                      disabled={isCreatingKey}
-                      className="bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333] text-white h-9 px-4 text-sm"
-                    >
-                      {isCreatingKey ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        'Generate New Key'
-                      )}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleCreateApiKey('test')}
+                        disabled={isCreatingKey}
+                        className="bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333] text-white h-9 px-4 text-sm"
+                      >
+                        {isCreatingKey ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          'Generate Test Key'
+                        )}
+                      </Button>
+                      <Button
+                        onClick={() => handleCreateApiKey('live')}
+                        disabled={isCreatingKey}
+                        className="bg-[#333] hover:bg-[#444] border border-[#555] text-white h-9 px-4 text-sm"
+                      >
+                        {isCreatingKey ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          'Generate Live Key'
+                        )}
+                      </Button>
+                    </div>
                   </div>
 
-                  {/* Success Message */}
+                  {/* New Key Display */}
                   {newlyCreatedKey && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center gap-2 text-sm"
-                    >
-                      <CheckCircle2 className="w-4 h-4 text-green-400" />
-                      <span className="text-green-400">API Key Created Successfully</span>
-                      <span className="text-[#666]">• Save this key securely. You won't be able to see it again.</span>
-                      <button
-                        onClick={() => {
-                          setNewlyCreatedKey(null)
-                          setCopiedNewKey(false)
-                        }}
-                        className="text-[#666] hover:text-white transition-colors ml-2"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </motion.div>
+                    <div className="bg-[#0a0a0a] border border-green-500/20 rounded-lg p-4">
+                      <div className="flex items-start gap-3 mb-3">
+                        <CheckCircle2 className="w-5 h-5 text-green-400 mt-0.5" />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="text-white font-medium">API Key Created Successfully</h4>
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                              newlyCreatedKey.startsWith('split_test_') 
+                                ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' 
+                                : 'bg-green-500/10 text-green-400 border border-green-500/20'
+                            }`}>
+                              {newlyCreatedKey.startsWith('split_test_') ? 'Test Key' : 'Live Key'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-[#666] mb-3">
+                            Save this key securely. You won't be able to see it again.
+                          </p>
+                          
+                          <div className="flex items-center gap-2 p-3 bg-[#1a1a1a] rounded border border-[#333]">
+                            <code className="text-sm text-white font-mono flex-1">
+                              {newlyCreatedKey}
+                            </code>
+                            <Button
+                              onClick={handleCopyNewKey}
+                              size="sm"
+                              className="bg-[#333] hover:bg-[#444] text-white h-8 px-3 text-xs"
+                            >
+                              {copiedNewKey ? 'Copied!' : 'Copy'}
+                            </Button>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setNewlyCreatedKey(null)
+                            setCopiedNewKey(false)
+                          }}
+                          className="text-[#666] hover:text-white transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
                   )}
 
                   {/* Newly Created Key Display */}
@@ -819,6 +856,14 @@ export default function SettingsPage() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-3 mb-1">
                                 <h4 className="text-white text-sm font-medium">{apiKey.name}</h4>
+                                {/* Key Type Badge */}
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                  apiKey.key.startsWith('split_test_') 
+                                    ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' 
+                                    : 'bg-green-500/10 text-green-400 border border-green-500/20'
+                                }`}>
+                                  {apiKey.key.startsWith('split_test_') ? 'Test' : 'Live'}
+                                </span>
                                 <span className="text-xs text-[#666]">
                                   Created {new Date(apiKey.created_at).toLocaleDateString()}
                                 </span>
