@@ -1,10 +1,20 @@
 -- Fix RLS policies for AEO tables to allow server-side insertions
 -- This migration updates the RLS policies to work with both client-side and server-side operations
 
--- First, drop existing policies that are too restrictive
+-- Drop ALL existing policies on AEO tables to avoid conflicts
 DROP POLICY IF EXISTS "Owner can view questions" ON aeo_questions;
 DROP POLICY IF EXISTS "Owner can view results" ON aeo_results;
 DROP POLICY IF EXISTS "Owner can manage runs" ON aeo_runs;
+DROP POLICY IF EXISTS "Users can view their company runs" ON aeo_runs;
+DROP POLICY IF EXISTS "Users can create runs for their companies" ON aeo_runs;
+DROP POLICY IF EXISTS "Users can update their company runs" ON aeo_runs;
+DROP POLICY IF EXISTS "Users can view questions for their runs" ON aeo_questions;
+DROP POLICY IF EXISTS "Users can create questions for their runs" ON aeo_questions;
+DROP POLICY IF EXISTS "Users can view results for their questions" ON aeo_results;
+DROP POLICY IF EXISTS "Users can create results for their questions" ON aeo_results;
+DROP POLICY IF EXISTS "Service role full access to aeo_runs" ON aeo_runs;
+DROP POLICY IF EXISTS "Service role full access to aeo_questions" ON aeo_questions;
+DROP POLICY IF EXISTS "Service role full access to aeo_results" ON aeo_results;
 
 -- aeo_runs policies
 -- Allow authenticated users to view runs for companies they submitted

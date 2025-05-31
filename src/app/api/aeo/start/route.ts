@@ -191,11 +191,28 @@ async function runAEOPipeline(
 ) {
   let controllerClosed = false
 
+  const closeController = () => {
+    if (!controllerClosed) {
+      controllerClosed = true
+      try {
+        controller.close()
+      } catch (error) {
+        // Controller might already be closed, ignore error
+        console.log('Controller already closed:', error)
+      }
+    }
+  }
+
   const sendProgress = (event: ProgressEvent) => {
     if (controllerClosed) return
-    const data = `data: ${JSON.stringify(event)}\n\n`
-    controller.enqueue(encoder.encode(data))
-    console.log(`📡 [${event.step}] ${event.message} (${event.progress}/${event.total})`)
+    try {
+      const data = `data: ${JSON.stringify(event)}\n\n`
+      controller.enqueue(encoder.encode(data))
+      console.log(`📡 [${event.step}] ${event.message} (${event.progress}/${event.total})`)
+    } catch (error) {
+      console.log('Error sending progress, controller may be closed:', error)
+      controllerClosed = true
+    }
   }
   
   const sendError = (step: string, error: string) => {
@@ -478,10 +495,7 @@ async function runAEOPipeline(
     sendError('pipeline', error instanceof Error ? error.message : String(error))
   } finally {
     // Ensure controller is only closed once
-    if (!controllerClosed) {
-      controllerClosed = true
-      controller.close()
-    }
+    closeController()
   }
 }
 
