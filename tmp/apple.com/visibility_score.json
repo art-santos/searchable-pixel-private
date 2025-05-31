@@ -1,77 +1,365 @@
 {
-  "aeo_score": 87,
-  "coverage_owned": 0.6666666666666666,
-  "coverage_operated": 0.020833333333333332,
-  "coverage_total": 0.6666666666666666,
-  "share_of_voice": 0.4212240482437971,
+  "aeo_score": 95,
+  "coverage_owned": 0.8367346938775511,
+  "coverage_operated": 0.02040816326530612,
+  "coverage_total": 0.8367346938775511,
+  "share_of_voice": 0.4751567258757881,
   "metrics": {
-    "questions_analyzed": 48,
-    "total_results": 432,
-    "owned_appearances": 141,
-    "operated_appearances": 6,
-    "earned_appearances": 285,
+    "questions_analyzed": 49,
+    "total_results": 438,
+    "owned_appearances": 177,
+    "operated_appearances": 3,
+    "earned_appearances": 258,
     "avg_owned_position": 4.9,
-    "avg_operated_position": 6,
-    "top_3_presence": 30
+    "avg_operated_position": 6.3,
+    "top_3_presence": 36
   },
   "breakdown": {
     "by_question": [
       {
-        "question": "apple MacBook Air performance",
+        "question": "Apple pricing",
+        "owned_results": 8,
+        "operated_results": 0,
+        "earned_results": 2,
+        "owned_positions": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          7,
+          8,
+          10
+        ],
+        "operated_positions": [],
+        "coverage_score": 1.2,
+        "voice_score": 1.072537596531635,
+        "is_direct": true,
+        "weight": 1.2
+      },
+      {
+        "question": "Apple vision accessibility",
+        "owned_results": 4,
+        "operated_results": 0,
+        "earned_results": 2,
+        "owned_positions": [
+          1,
+          2,
+          5,
+          6
+        ],
+        "operated_positions": [],
+        "coverage_score": 1.2,
+        "voice_score": 0.9142857142857144,
+        "is_direct": true,
+        "weight": 1.2
+      },
+      {
+        "question": "Apple mobility features",
+        "owned_results": 8,
+        "operated_results": 0,
+        "earned_results": 1,
+        "owned_positions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          8,
+          9
+        ],
+        "operated_positions": [],
+        "coverage_score": 1.2,
+        "voice_score": 1.1394024407350258,
+        "is_direct": true,
+        "weight": 1.2
+      },
+      {
+        "question": "Apple vs competitors",
+        "owned_results": 0,
+        "operated_results": 0,
+        "earned_results": 10,
+        "owned_positions": [],
+        "operated_positions": [],
+        "coverage_score": 0,
+        "voice_score": 0,
+        "is_direct": true,
+        "weight": 1.2
+      },
+      {
+        "question": "Apple cognitive accessibility",
+        "owned_results": 7,
+        "operated_results": 0,
+        "earned_results": 3,
+        "owned_positions": [
+          1,
+          2,
+          4,
+          5,
+          6,
+          8,
+          10
+        ],
+        "operated_positions": [],
+        "coverage_score": 1.2,
+        "voice_score": 0.9593821975342095,
+        "is_direct": true,
+        "weight": 1.2
+      },
+      {
+        "question": "Apple AirPlay compatibility",
+        "owned_results": 7,
+        "operated_results": 0,
+        "earned_results": 1,
+        "owned_positions": [
+          1,
+          2,
+          3,
+          5,
+          6,
+          7,
+          8
+        ],
+        "operated_positions": [],
+        "coverage_score": 1.2,
+        "voice_score": 1.0896189224704336,
+        "is_direct": true,
+        "weight": 1.2
+      },
+      {
+        "question": "Apple assistive technology",
+        "owned_results": 9,
+        "operated_results": 1,
+        "earned_results": 0,
+        "owned_positions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          7,
+          8,
+          9,
+          10
+        ],
+        "operated_positions": [
+          6
+        ],
+        "coverage_score": 1.5,
+        "voice_score": 1.2,
+        "is_direct": true,
+        "weight": 1.2
+      },
+      {
+        "question": "Apple trade-in program",
+        "owned_results": 5,
+        "operated_results": 0,
+        "earned_results": 2,
+        "owned_positions": [
+          1,
+          2,
+          5,
+          6,
+          7
+        ],
+        "operated_positions": [],
+        "coverage_score": 1.2,
+        "voice_score": 0.9300275482093665,
+        "is_direct": true,
+        "weight": 1.2
+      },
+      {
+        "question": "Apple MacBook Air performance",
+        "owned_results": 8,
+        "operated_results": 0,
+        "earned_results": 2,
+        "owned_positions": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          7,
+          8,
+          10
+        ],
+        "operated_positions": [],
+        "coverage_score": 1.2,
+        "voice_score": 1.072537596531635,
+        "is_direct": true,
+        "weight": 1.2
+      },
+      {
+        "question": "Apple's latest innovations",
+        "owned_results": 9,
+        "operated_results": 0,
+        "earned_results": 1,
+        "owned_positions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "operated_positions": [],
+        "coverage_score": 1.2,
+        "voice_score": 1.159029941742311,
+        "is_direct": true,
+        "weight": 1.2
+      },
+      {
+        "question": "Apple WWDC 25 details",
+        "owned_results": 6,
+        "operated_results": 0,
+        "earned_results": 3,
+        "owned_positions": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          7
+        ],
+        "operated_positions": [],
+        "coverage_score": 1.2,
+        "voice_score": 1.0150091176883151,
+        "is_direct": true,
+        "weight": 1.2
+      },
+      {
+        "question": "Apple iPhone 16 reviews",
+        "owned_results": 3,
+        "operated_results": 0,
+        "earned_results": 7,
+        "owned_positions": [
+          1,
+          2,
+          6
+        ],
+        "operated_positions": [],
+        "coverage_score": 1.2,
+        "voice_score": 0.6828343042948111,
+        "is_direct": true,
+        "weight": 1.2
+      },
+      {
+        "question": "What is Apple?",
+        "owned_results": 6,
+        "operated_results": 0,
+        "earned_results": 3,
+        "owned_positions": [
+          2,
+          3,
+          4,
+          5,
+          7,
+          8
+        ],
+        "operated_positions": [],
+        "coverage_score": 1.2,
+        "voice_score": 0.6579884976855099,
+        "is_direct": true,
+        "weight": 1.2
+      },
+      {
+        "question": "Apple speech accessibility",
+        "owned_results": 7,
+        "operated_results": 0,
+        "earned_results": 2,
+        "owned_positions": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          7,
+          9
+        ],
+        "operated_positions": [],
+        "coverage_score": 1.2,
+        "voice_score": 1.0621405526721839,
+        "is_direct": true,
+        "weight": 1.2
+      },
+      {
+        "question": "Apple AirPods Pro with Hearing Health",
         "owned_results": 4,
         "operated_results": 0,
         "earned_results": 6,
         "owned_positions": [
           1,
-          3,
-          5,
-          9
+          2,
+          4,
+          5
         ],
         "operated_positions": [],
         "coverage_score": 1.2,
-        "voice_score": 0.6737298469042134,
+        "voice_score": 0.798916136024929,
         "is_direct": true,
         "weight": 1.2
       },
       {
-        "question": "apple iPhone pricing",
-        "owned_results": 2,
+        "question": "Apple Watch Series 10 price",
+        "owned_results": 5,
         "operated_results": 0,
-        "earned_results": 5,
+        "earned_results": 2,
         "owned_positions": [
           1,
-          2
+          2,
+          4,
+          5,
+          7
         ],
         "operated_positions": [],
         "coverage_score": 1.2,
-        "voice_score": 0.6942148760330579,
+        "voice_score": 0.9685950413223142,
         "is_direct": true,
         "weight": 1.2
       },
       {
-        "question": "apple assistive technologies",
-        "owned_results": 7,
-        "operated_results": 1,
+        "question": "Apple TV app features",
+        "owned_results": 8,
+        "operated_results": 0,
         "earned_results": 2,
         "owned_positions": [
           1,
           2,
           3,
           5,
-          7,
+          6,
           8,
-          9
+          9,
+          10
         ],
-        "operated_positions": [
-          6
-        ],
-        "coverage_score": 1.5,
-        "voice_score": 1.0566047960980895,
+        "operated_positions": [],
+        "coverage_score": 1.2,
+        "voice_score": 1.0390461997019373,
         "is_direct": true,
         "weight": 1.2
       },
       {
-        "question": "apple accessibility features",
+        "question": "Apple iPad Air with M3 chip",
+        "owned_results": 3,
+        "operated_results": 0,
+        "earned_results": 5,
+        "owned_positions": [
+          1,
+          3,
+          6
+        ],
+        "operated_positions": [],
+        "coverage_score": 1.2,
+        "voice_score": 0.6622864651773982,
+        "is_direct": true,
+        "weight": 1.2
+      },
+      {
+        "question": "Apple accessibility features",
         "owned_results": 4,
         "operated_results": 1,
         "earned_results": 2,
@@ -90,94 +378,42 @@
         "weight": 1.2
       },
       {
-        "question": "apple WWDC 25 dates",
-        "owned_results": 3,
-        "operated_results": 0,
-        "earned_results": 6,
-        "owned_positions": [
-          1,
-          3,
-          5
-        ],
-        "operated_positions": [],
-        "coverage_score": 1.2,
-        "voice_score": 0.6504138027773881,
-        "is_direct": true,
-        "weight": 1.2
-      },
-      {
-        "question": "apple Trade In program details",
+        "question": "Apple hearing features",
         "owned_results": 5,
         "operated_results": 0,
-        "earned_results": 3,
+        "earned_results": 4,
         "owned_positions": [
           1,
+          2,
           3,
           4,
-          5,
-          8
-        ],
-        "operated_positions": [],
-        "coverage_score": 1.2,
-        "voice_score": 0.84257555847569,
-        "is_direct": true,
-        "weight": 1.2
-      },
-      {
-        "question": "apple iPad Air M3 chip benefits",
-        "owned_results": 3,
-        "operated_results": 0,
-        "earned_results": 6,
-        "owned_positions": [
-          3,
-          6,
           9
         ],
         "operated_positions": [],
         "coverage_score": 1.2,
-        "voice_score": 0.2592228924112779,
+        "voice_score": 0.9308458409314069,
         "is_direct": true,
         "weight": 1.2
       },
       {
-        "question": "apple Relay for athletes",
+        "question": "best streaming devices",
         "owned_results": 4,
-        "operated_results": 1,
-        "earned_results": 5,
+        "operated_results": 0,
+        "earned_results": 6,
         "owned_positions": [
-          1,
-          8,
+          3,
+          5,
           9,
           10
         ],
-        "operated_positions": [
-          2
-        ],
-        "coverage_score": 1.7999999999999998,
-        "voice_score": 0.7522557918981169,
-        "is_direct": true,
-        "weight": 1.2
-      },
-      {
-        "question": "apple AI capabilities",
-        "owned_results": 5,
-        "operated_results": 0,
-        "earned_results": 3,
-        "owned_positions": [
-          1,
-          3,
-          5,
-          7,
-          8
-        ],
         "operated_positions": [],
-        "coverage_score": 1.2,
-        "voice_score": 0.79526938239159,
-        "is_direct": true,
-        "weight": 1.2
+        "coverage_score": 1,
+        "voice_score": 0.2541661021541796,
+        "is_direct": false,
+        "weight": 1
       },
       {
-        "question": "apple mobility features",
+        "question": "Apple's global expansion plans",
         "owned_results": 9,
         "operated_results": 0,
         "earned_results": 0,
@@ -199,543 +435,73 @@
         "weight": 1.2
       },
       {
-        "question": "apple iPhone 16 features",
-        "owned_results": 3,
-        "operated_results": 1,
-        "earned_results": 3,
-        "owned_positions": [
-          1,
-          3,
-          5
-        ],
-        "operated_positions": [
-          6
-        ],
-        "coverage_score": 1.5,
-        "voice_score": 0.7867768595041323,
-        "is_direct": true,
-        "weight": 1.2
-      },
-      {
-        "question": "apple MacBook Air sky blue",
-        "owned_results": 6,
-        "operated_results": 0,
-        "earned_results": 3,
-        "owned_positions": [
-          1,
-          3,
-          4,
-          5,
-          6,
-          9
-        ],
-        "operated_positions": [],
-        "coverage_score": 1.2,
-        "voice_score": 0.8742881189507645,
-        "is_direct": true,
-        "weight": 1.2
-      },
-      {
-        "question": "apple accessibility innovations",
-        "owned_results": 6,
-        "operated_results": 1,
-        "earned_results": 2,
-        "owned_positions": [
-          1,
-          2,
-          3,
-          5,
-          8,
-          9
-        ],
-        "operated_positions": [
-          7
-        ],
-        "coverage_score": 1.5,
-        "voice_score": 1.0232571188104924,
-        "is_direct": true,
-        "weight": 1.2
-      },
-      {
-        "question": "apple speech accessibility",
-        "owned_results": 8,
-        "operated_results": 0,
-        "earned_results": 1,
-        "owned_positions": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          8,
-          9
-        ],
-        "operated_positions": [],
-        "coverage_score": 1.2,
-        "voice_score": 1.1394024407350258,
-        "is_direct": true,
-        "weight": 1.2
-      },
-      {
-        "question": "apple Watch Series 10 pricing",
-        "owned_results": 5,
-        "operated_results": 0,
-        "earned_results": 2,
-        "owned_positions": [
-          1,
-          2,
-          3,
-          4,
-          7
-        ],
-        "operated_positions": [],
-        "coverage_score": 1.2,
-        "voice_score": 1.0303030303030303,
-        "is_direct": true,
-        "weight": 1.2
-      },
-      {
-        "question": "apple products for hearing impaired",
-        "owned_results": 7,
-        "operated_results": 0,
-        "earned_results": 3,
-        "owned_positions": [
-          1,
-          2,
-          3,
-          4,
-          7,
-          9,
-          10
-        ],
-        "operated_positions": [],
-        "coverage_score": 1.2,
-        "voice_score": 0.9985638802330307,
-        "is_direct": true,
-        "weight": 1.2
-      },
-      {
-        "question": "apple AirPlay how to use",
-        "owned_results": 8,
-        "operated_results": 0,
-        "earned_results": 2,
-        "owned_positions": [
-          1,
-          2,
-          4,
-          5,
-          6,
-          7,
-          8,
-          10
-        ],
-        "operated_positions": [],
-        "coverage_score": 1.2,
-        "voice_score": 1.0179108521880504,
-        "is_direct": true,
-        "weight": 1.2
-      },
-      {
-        "question": "apple cognitive accessibility",
-        "owned_results": 7,
-        "operated_results": 0,
-        "earned_results": 3,
-        "owned_positions": [
-          1,
-          2,
-          4,
-          5,
-          6,
-          8,
-          10
-        ],
-        "operated_positions": [],
-        "coverage_score": 1.2,
-        "voice_score": 0.9593821975342095,
-        "is_direct": true,
-        "weight": 1.2
-      },
-      {
-        "question": "apple Watch Series 10 review",
-        "owned_results": 3,
-        "operated_results": 0,
-        "earned_results": 7,
-        "owned_positions": [
-          7,
-          9,
-          10
-        ],
-        "operated_positions": [],
-        "coverage_score": 0.6,
-        "voice_score": 0.145020999864517,
-        "is_direct": true,
-        "weight": 1.2
-      },
-      {
-        "question": "apple accessibility for vision",
-        "owned_results": 7,
-        "operated_results": 0,
-        "earned_results": 2,
-        "owned_positions": [
-          1,
-          2,
-          3,
-          6,
-          7,
-          8,
-          9
-        ],
-        "operated_positions": [],
-        "coverage_score": 1.2,
-        "voice_score": 1.0091176883153319,
-        "is_direct": true,
-        "weight": 1.2
-      },
-      {
-        "question": "best noise-canceling headphones",
-        "owned_results": 7,
-        "operated_results": 0,
-        "earned_results": 3,
-        "owned_positions": [
-          1,
-          2,
-          5,
-          6,
-          7,
-          8,
-          9
-        ],
-        "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 0.7666982793659396,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "best tablets for artists",
-        "owned_results": 7,
-        "operated_results": 0,
-        "earned_results": 3,
-        "owned_positions": [
-          2,
-          3,
-          4,
-          5,
-          6,
-          8,
-          10
-        ],
-        "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 0.5718737298469042,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "wireless speaker reviews",
-        "owned_results": 2,
-        "operated_results": 0,
-        "earned_results": 8,
-        "owned_positions": [
-          1,
-          5
-        ],
-        "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 0.40970058257688663,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "smart home security systems",
-        "owned_results": 0,
-        "operated_results": 0,
-        "earned_results": 10,
-        "owned_positions": [],
-        "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "top enterprise automation tools",
-        "owned_results": 0,
-        "operated_results": 0,
-        "earned_results": 10,
-        "owned_positions": [],
-        "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "top video streaming services",
-        "owned_results": 0,
-        "operated_results": 0,
-        "earned_results": 10,
-        "owned_positions": [],
-        "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "apple HomePod accessibility",
-        "owned_results": 7,
-        "operated_results": 0,
-        "earned_results": 3,
-        "owned_positions": [
-          1,
-          2,
-          3,
-          5,
-          6,
-          7,
-          10
-        ],
-        "operated_positions": [],
-        "coverage_score": 1.2,
-        "voice_score": 1.00083999458068,
-        "is_direct": true,
-        "weight": 1.2
-      },
-      {
-        "question": "apple braille display options",
-        "owned_results": 6,
-        "operated_results": 0,
-        "earned_results": 3,
-        "owned_positions": [
-          1,
-          2,
-          3,
-          4,
-          7,
-          8
-        ],
-        "operated_positions": [],
-        "coverage_score": 1.2,
-        "voice_score": 0.9973348295693645,
-        "is_direct": true,
-        "weight": 1.2
-      },
-      {
-        "question": "best photo editing software",
-        "owned_results": 4,
-        "operated_results": 0,
-        "earned_results": 6,
-        "owned_positions": [
-          5,
-          6,
-          8,
-          9
-        ],
-        "operated_positions": [],
-        "coverage_score": 0.8,
-        "voice_score": 0.20579867226663057,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "best fitness tracking devices",
-        "owned_results": 1,
-        "operated_results": 3,
-        "earned_results": 6,
-        "owned_positions": [
-          4
-        ],
-        "operated_positions": [
-          6,
-          7,
-          8
-        ],
-        "coverage_score": 1.05,
-        "voice_score": 0.2337081696247121,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "apple AirPlay private sharing",
-        "owned_results": 7,
-        "operated_results": 0,
-        "earned_results": 2,
-        "owned_positions": [
-          1,
-          2,
-          3,
-          4,
-          6,
-          8,
-          9
-        ],
-        "operated_positions": [],
-        "coverage_score": 1.2,
-        "voice_score": 1.0545658577640622,
-        "is_direct": true,
-        "weight": 1.2
-      },
-      {
-        "question": "apple product reviews",
-        "owned_results": 3,
-        "operated_results": 0,
-        "earned_results": 7,
-        "owned_positions": [
-          1,
-          7,
-          9
-        ],
-        "operated_positions": [],
-        "coverage_score": 1.2,
-        "voice_score": 0.513751524183715,
-        "is_direct": true,
-        "weight": 1.2
-      },
-      {
-        "question": "affordable laptops with SSD",
-        "owned_results": 0,
-        "operated_results": 0,
-        "earned_results": 10,
-        "owned_positions": [],
-        "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "apple vs competitors",
-        "owned_results": 0,
-        "operated_results": 0,
-        "earned_results": 10,
-        "owned_positions": [],
-        "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
-        "is_direct": true,
-        "weight": 1.2
-      },
-      {
-        "question": "best smart home devices",
-        "owned_results": 0,
-        "operated_results": 0,
-        "earned_results": 10,
-        "owned_positions": [],
-        "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "top smartphones 2024",
-        "owned_results": 0,
-        "operated_results": 0,
-        "earned_results": 10,
-        "owned_positions": [],
-        "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "AI customer service solutions",
-        "owned_results": 0,
-        "operated_results": 0,
-        "earned_results": 10,
-        "owned_positions": [],
-        "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "best laptops for students",
-        "owned_results": 0,
-        "operated_results": 0,
-        "earned_results": 10,
-        "owned_positions": [],
-        "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "portable chargers with fast charge",
-        "owned_results": 0,
-        "operated_results": 0,
-        "earned_results": 10,
-        "owned_positions": [],
-        "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "best outdoor cameras",
-        "owned_results": 2,
-        "operated_results": 0,
-        "earned_results": 8,
-        "owned_positions": [
-          9,
-          10
-        ],
-        "operated_positions": [],
-        "coverage_score": 0.5,
-        "voice_score": 0.07207695434223005,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "most reliable tech brands",
-        "owned_results": 3,
-        "operated_results": 0,
-        "earned_results": 7,
-        "owned_positions": [
-          1,
-          2,
-          4
-        ],
-        "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 0.5974800162579597,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "best online storage solutions",
-        "owned_results": 0,
-        "operated_results": 0,
-        "earned_results": 10,
-        "owned_positions": [],
-        "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "top-rated productivity apps",
+        "question": "wireless earbuds reviews",
         "owned_results": 1,
         "operated_results": 0,
         "earned_results": 9,
         "owned_positions": [
-          3
+          9
+        ],
+        "operated_positions": [],
+        "coverage_score": 0.5,
+        "voice_score": 0.0379352391274895,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "most reliable smart home systems",
+        "owned_results": 4,
+        "operated_results": 0,
+        "earned_results": 6,
+        "owned_positions": [
+          2,
+          3,
+          7,
+          8
         ],
         "operated_positions": [],
         "coverage_score": 1,
-        "voice_score": 0.1138057173824685,
+        "voice_score": 0.37596531635279773,
         "is_direct": false,
         "weight": 1
       },
       {
-        "question": "affordable smartwatches",
+        "question": "top laptops for students",
+        "owned_results": 2,
+        "operated_results": 0,
+        "earned_results": 8,
+        "owned_positions": [
+          4,
+          8
+        ],
+        "operated_positions": [],
+        "coverage_score": 0.8,
+        "voice_score": 0.12803143205527706,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "Apple's corporate culture",
+        "owned_results": 5,
+        "operated_results": 1,
+        "earned_results": 4,
+        "owned_positions": [
+          1,
+          2,
+          4,
+          5,
+          6
+        ],
+        "operated_positions": [
+          8
+        ],
+        "coverage_score": 1.5,
+        "voice_score": 0.9184121392765209,
+        "is_direct": true,
+        "weight": 1.2
+      },
+      {
+        "question": "best smartphones 2023",
         "owned_results": 0,
         "operated_results": 0,
         "earned_results": 10,
@@ -747,7 +513,56 @@
         "weight": 1
       },
       {
-        "question": "best AI platforms 2024",
+        "question": "Apple's environmental impact",
+        "owned_results": 2,
+        "operated_results": 0,
+        "earned_results": 6,
+        "owned_positions": [
+          1,
+          4
+        ],
+        "operated_positions": [],
+        "coverage_score": 1.2,
+        "voice_score": 0.5519053876478318,
+        "is_direct": true,
+        "weight": 1.2
+      },
+      {
+        "question": "online cloud storage services",
+        "owned_results": 7,
+        "operated_results": 0,
+        "earned_results": 3,
+        "owned_positions": [
+          2,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 0.4594228424332747,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "smartwatches with health tracking",
+        "owned_results": 1,
+        "operated_results": 0,
+        "earned_results": 9,
+        "owned_positions": [
+          1
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 0.34141715214740553,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "fitness trackers with GPS",
         "owned_results": 0,
         "operated_results": 0,
         "earned_results": 10,
@@ -759,39 +574,257 @@
         "weight": 1
       },
       {
-        "question": "best ergonomic keyboards",
+        "question": "Apple's educational discounts",
+        "owned_results": 6,
+        "operated_results": 0,
+        "earned_results": 4,
+        "owned_positions": [
+          1,
+          2,
+          6,
+          8,
+          9,
+          10
+        ],
+        "operated_positions": [],
+        "coverage_score": 1.2,
+        "voice_score": 0.8205392223275979,
+        "is_direct": true,
+        "weight": 1.2
+      },
+      {
+        "question": "latest tablet releases",
+        "owned_results": 1,
+        "operated_results": 0,
+        "earned_results": 9,
+        "owned_positions": [
+          8
+        ],
+        "operated_positions": [],
+        "coverage_score": 0.5,
+        "voice_score": 0.04267714401842569,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "video conferencing tools",
+        "owned_results": 3,
+        "operated_results": 0,
+        "earned_results": 7,
+        "owned_positions": [
+          4,
+          9,
+          10
+        ],
+        "operated_positions": [],
+        "coverage_score": 0.8,
+        "voice_score": 0.15743124237908143,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "Apple's customer support",
+        "owned_results": 2,
+        "operated_results": 1,
+        "earned_results": 5,
+        "owned_positions": [
+          1,
+          2
+        ],
+        "operated_positions": [
+          5
+        ],
+        "coverage_score": 1.68,
+        "voice_score": 0.7505913272010513,
+        "is_direct": true,
+        "weight": 1.2
+      },
+      {
+        "question": "AI-powered personal assistants",
+        "owned_results": 2,
+        "operated_results": 0,
+        "earned_results": 8,
+        "owned_positions": [
+          5,
+          8
+        ],
+        "operated_positions": [],
+        "coverage_score": 0.8,
+        "voice_score": 0.1109605744479068,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "portable laptops for professionals",
+        "owned_results": 2,
+        "operated_results": 0,
+        "earned_results": 8,
+        "owned_positions": [
+          3,
+          10
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 0.14794743259720908,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "affordable noise-cancelling headphones",
+        "owned_results": 0,
+        "operated_results": 0,
+        "earned_results": 10,
+        "owned_positions": [],
+        "operated_positions": [],
+        "coverage_score": 0,
+        "voice_score": 0,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "best home automation solutions",
+        "owned_results": 3,
+        "operated_results": 0,
+        "earned_results": 7,
+        "owned_positions": [
+          3,
+          7,
+          8
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 0.205256740279095,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "smart TVs with voice control",
+        "owned_results": 3,
+        "operated_results": 0,
+        "earned_results": 7,
+        "owned_positions": [
+          2,
+          8,
+          9
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 0.25132095921961795,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "VR headsets for gaming",
         "owned_results": 3,
         "operated_results": 0,
         "earned_results": 7,
         "owned_positions": [
           3,
           6,
-          7
+          10
         ],
         "operated_positions": [],
         "coverage_score": 1,
-        "voice_score": 0.21948245495190352,
+        "voice_score": 0.20485029128844331,
         "is_direct": false,
         "weight": 1
       },
       {
-        "question": "best educational apps for kids",
-        "owned_results": 3,
+        "question": "high-performance gaming computers",
+        "owned_results": 7,
         "operated_results": 0,
-        "earned_results": 7,
+        "earned_results": 3,
         "owned_positions": [
+          1,
           3,
+          4,
+          5,
           6,
-          7
+          9,
+          10
         ],
         "operated_positions": [],
         "coverage_score": 1,
-        "voice_score": 0.21948245495190352,
+        "voice_score": 0.7378404010296707,
         "is_direct": false,
         "weight": 1
       },
       {
-        "question": "best video conferencing tools",
+        "question": "energy-efficient home appliances",
+        "owned_results": 5,
+        "operated_results": 0,
+        "earned_results": 5,
+        "owned_positions": [
+          1,
+          2,
+          4,
+          5,
+          9
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 0.7036986858149302,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "top-rated mobile apps",
+        "owned_results": 1,
+        "operated_results": 0,
+        "earned_results": 9,
+        "owned_positions": [
+          4
+        ],
+        "operated_positions": [],
+        "coverage_score": 0.8,
+        "voice_score": 0.08535428803685138,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "affordable 4K TVs",
+        "owned_results": 1,
+        "operated_results": 0,
+        "earned_results": 9,
+        "owned_positions": [
+          5
+        ],
+        "operated_positions": [],
+        "coverage_score": 0.8,
+        "voice_score": 0.06828343042948111,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "best productivity software",
+        "owned_results": 1,
+        "operated_results": 0,
+        "earned_results": 9,
+        "owned_positions": [
+          2
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 0.17070857607370277,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "best digital payment platforms",
+        "owned_results": 1,
+        "operated_results": 0,
+        "earned_results": 9,
+        "owned_positions": [
+          7
+        ],
+        "operated_positions": [],
+        "coverage_score": 0.5,
+        "voice_score": 0.04877387887820079,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "budget-friendly laptops",
         "owned_results": 0,
         "operated_results": 0,
         "earned_results": 10,
@@ -799,60 +832,74 @@
         "operated_positions": [],
         "coverage_score": 0,
         "voice_score": 0,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "AI tools for businesses",
+        "owned_results": 1,
+        "operated_results": 0,
+        "earned_results": 9,
+        "owned_positions": [
+          2
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 0.17070857607370277,
         "is_direct": false,
         "weight": 1
       }
     ],
     "by_position": {
       "position_1": {
-        "owned": 25,
+        "owned": 26,
         "operated": 0,
         "earned": 4.699999999999999
       },
       "position_2_3": {
-        "owned": 39,
-        "operated": 1,
-        "earned": 25.500000000000018
+        "owned": 48,
+        "operated": 0,
+        "earned": 24.00000000000001
       },
       "position_4_10": {
-        "owned": 98,
-        "operated": 7,
-        "earned": 91.80000000000004
+        "owned": 119,
+        "operated": 4,
+        "earned": 83.39999999999998
       }
     },
     "top_performing_content": [
       {
-        "url": "https://www.creativebloq.com/features/best-drawing-tablet",
-        "title": "The best drawing tablets: fully tested for all kinds of digital artists and ...",
-        "snippet": "The best drawing tablets in full · 01. Xencelabs Pen Tablet Medium Bundle · 02. Wacom Intuos Pro (large) · 03. Huion Inspiroy Frego M · 04.",
+        "url": "https://www.apple.com/newsroom/2025/02/apple-will-spend-more-than-500-billion-usd-in-the-us-over-the-next-four-years/",
+        "title": "Apple will spend more than $500 billion in the U.S. over the next four ...",
+        "snippet": "In the next four years, Apple plans to hire around 20,000 people, of which the vast majority will be focused on R&D, silicon engineering, ...",
+        "bucket": "Owned",
+        "reasoning": "Exact domain match"
+      },
+      {
+        "url": "https://qz.com/apple-product-release-history-imac-ipod-iphone-ai-1851559348",
+        "title": "Apple's 10 biggest innovations, from the first iMac to Apple Intelligence",
+        "snippet": "The company unveiled its AI project, Apple Intelligence — which will bring ChatGPT and a host of other AI features to the next iPhone, iPad, and ...",
         "bucket": "Owned",
         "reasoning": "AI classification"
       },
       {
         "url": "https://support.apple.com/en-us/102661",
         "title": "Use AirPlay to stream video or mirror the screen of your iPhone or iPad",
-        "snippet": "Use AirPlay to stream or share content from your Apple devices to your Apple TV, AirPlay-compatible smart TV, or Mac. Stream a video. Share your photos.",
+        "snippet": "Stream video manually from iPhone or iPad. Connect your device to the same Wi-Fi network as your Apple TV, AirPlay-compatible smart TV, or Mac.",
         "bucket": "Owned",
         "reasoning": "Subdomain of apple.com"
       },
       {
-        "url": "https://www.afb.org/blindness-and-low-vision/using-technology/cell-phones-tablets-mobile/apple-ios-iphone-and-ipad",
-        "title": "Apple iOS for iPhone and iPad: Considerations for Users with Visual ...",
-        "snippet": "Open the Settings menu by selecting the Settings icon on your device's Home screen. Select General. Select Accessibility. At the very top of the Accessibility ...",
+        "url": "https://www.apple.com/education/docs/Apple-Accessibility_DS_L417450A.pdf",
+        "title": "[PDF] Apple Technology: Uniquely Equipped to Let Every Student Succeed",
+        "snippet": "The Mac, iPod, and. iPhone come packed with assistive technologies, so students everywhere can compensate for learning differences using today's resources ...",
         "bucket": "Owned",
-        "reasoning": "AI classification"
+        "reasoning": "Exact domain match"
       },
       {
-        "url": "https://www.techradar.com/news/best-speaker",
-        "title": "The best wireless speaker, all tested by us, from Apple, JBL, Sonos ...",
-        "snippet": "The Sonos Roam 2 is our top pick if you're looking for a hybrid indoor and portable wireless speaker, making it ideal for travel, any activities ...",
-        "bucket": "Owned",
-        "reasoning": "AI classification"
-      },
-      {
-        "url": "https://abilitynet.org.uk/news-blogs/breaking-barriers-how-apples-new-voice-accessibility-improvements-address-critical-needs",
-        "title": "how Apple's new voice accessibility improvements address critical ...",
-        "snippet": "Apple's new \"Listen for Atypical Speech\" feature uses on-device AI to recognise the unique speech patterns of users with acquired or progressive ...",
+        "url": "https://www.cnn.com/cnn-underscored/reviews/macbook-air-m4",
+        "title": "I tested Apple's M4 MacBook Air, the best boring laptop I've ever used",
+        "snippet": "$100 cheaper and slightly faster than last year's model, the M4 MacBook Air makes two small steps forward for our favorite overall laptop.",
         "bucket": "Owned",
         "reasoning": "AI classification"
       }
@@ -860,7 +907,7 @@
   },
   "metadata": {
     "target_domain": "apple.com",
-    "calculated_at": "2025-05-30T21:18:55.634Z",
+    "calculated_at": "2025-05-31T05:10:50.808Z",
     "score_version": "1.0.0"
   }
 }

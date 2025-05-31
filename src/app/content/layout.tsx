@@ -4,6 +4,7 @@ import { SplitSidebar } from '@/components/layout/split-sidebar'
 import { SplitTopbar } from '@/components/layout/split-topbar'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { OnboardingOverlay } from '@/components/onboarding/onboarding-overlay'
 import { useEffect } from 'react'
 
 export default function ContentLayout({
@@ -21,15 +22,17 @@ export default function ContentLayout({
   
   return (
     <AuthenticatedLayout>
-      <SidebarProvider className="dark">
-        <SplitSidebar />
-        <SidebarInset className="flex flex-col h-screen">
-          <SplitTopbar />
-          <div className="flex-1 overflow-auto">
-            {children}
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
+      <OnboardingOverlay>
+        <SidebarProvider className="dark">
+          <SplitSidebar />
+          <SidebarInset className="flex flex-col h-screen">
+            <SplitTopbar />
+            <div className="flex-1 overflow-auto">
+              {children}
+            </div>
+          </SidebarInset>
+        </SidebarProvider>
+      </OnboardingOverlay>
     </AuthenticatedLayout>
   )
 } 

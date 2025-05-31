@@ -10,8 +10,9 @@ import { AEOScoreCard } from '@/app/visibility-test/components/aeo-score-card'
 import { OverallAEOCard } from '@/app/visibility-test/components/overall-aeo-card'
 import { DirectCitationCard } from '@/app/visibility-test/components/direct-citation-card'
 import { SuggestionsCard } from '@/app/visibility-test/components/suggestions-card'
-import { saveOnboardingData, saveAeoQuestions, saveAeoResults, updateAeoScore } from '@/lib/onboarding/database'
+import { saveOnboardingData, saveAeoQuestions, saveAeoResults, updateAeoScore, saveCompleteAeoAnalysis } from '@/lib/onboarding/database'
 import type { OnboardingData } from '@/lib/onboarding/database'
+import { debugOnboardingState } from '@/lib/debug/onboarding-debug'
 import { 
   CheckCircle2, 
   ArrowRight, 
@@ -136,13 +137,48 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
   // Check if user just signed up and load their onboarding data
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      // Debug onboarding state
+      console.log('🔍 Onboarding Overlay useEffect triggered')
+      debugOnboardingState()
+      
+      // MIGRATION: Clear old simple onboarding completion flag
+      // This ensures users who completed the simple onboarding get the full experience
+      const hasSimpleOnboardingFlag = localStorage.getItem('onboardingCompleted')
+      if (hasSimpleOnboardingFlag) {
+        // Check if this is from the simple onboarding by seeing if there's no onboarding data
+        // If there's no proper onboarding data, they likely only did the simple workspace setup
+        const hasProperOnboardingData = localStorage.getItem('onboardingData')
+        if (!hasProperOnboardingData) {
+          console.log('🔄 Clearing simple onboarding flag - user needs full onboarding experience')
+          localStorage.removeItem('onboardingCompleted')
+        }
+      }
+      
       const justSignedUp = sessionStorage.getItem('justSignedUp')
       const justVerified = document.cookie.includes('justVerified=true')
       const onboardingData = localStorage.getItem('onboardingData')
-      const hasCompletedOnboarding = localStorage.getItem('onboardingCompleted')
+      const hasCompletedOnboarding = localStorage.getItem('onboardingCompleted') // Check again after potential clearing
+      const onboardingInProgress = sessionStorage.getItem('onboardingInProgress')
       
-      if ((justSignedUp || justVerified) && onboardingData) {
-        // User just signed up with onboarding data, load their data and start scanning
+      console.log('🎯 Onboarding Flow Decision Variables:', {
+        justSignedUp,
+        justVerified,
+        hasOnboardingData: !!onboardingData,
+        hasCompletedOnboarding,
+        onboardingInProgress,
+        user: !!user
+      })
+      
+      // If user has already completed onboarding, don't show overlay
+      if (hasCompletedOnboarding) {
+        console.log('✅ User has completed onboarding - hiding overlay')
+        setShowOnboarding(false)
+        return
+      }
+      
+      // If user is resuming an interrupted onboarding session and has data
+      if (onboardingInProgress && onboardingData) {
+        console.log('🔄 Resuming interrupted onboarding session...')
         const data = JSON.parse(onboardingData)
         
         // Pre-populate the form data
@@ -152,10 +188,10 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
         })
         
         setAnalyticsData({
-          provider: null,
+          provider: data.analyticsProvider || null,
           domain: data.siteUrl || '',
-          isConnected: false,
-          isSkipped: true // Skip analytics for new signups
+          isConnected: data.isAnalyticsConnected || false,
+          isSkipped: data.isAnalyticsSkipped || true
         })
         
         setContentData({
@@ -166,30 +202,47 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
         })
         
         setCmsData({
-          cms: 'nextjs' // Default CMS
+          cms: data.cms || 'nextjs'
         })
         
-        // Start directly at scanning step
-        setCurrentStep('scanning')
-        
-        // Clear the signup flag and auth completion cookie
-        sessionStorage.removeItem('justSignedUp')
-        if (justVerified) {
-          document.cookie = 'justVerified=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+        // Resume at scanning step only if all required data is present
+        if (data.workspaceName && data.siteUrl && (data.keywords?.length > 0 || data.businessOffering)) {
+          console.log('📊 Resuming at scanning step with complete data')
+          setCurrentStep('scanning')
+        } else {
+          // Start from beginning if data is incomplete
+          console.log('⚠️ Incomplete data - starting from workspace step')
+          setCurrentStep('workspace')
         }
-      } else if ((justSignedUp || justVerified) && !onboardingData) {
-        // User signed up directly without onboarding, start from the beginning
+        
+        // Clear resumption flag
+        sessionStorage.removeItem('onboardingInProgress')
+      } else if (justSignedUp || justVerified) {
+        // User just signed up or verified email - start fresh onboarding
+        console.log('🚀 Starting fresh onboarding for new user...')
         setCurrentStep('workspace')
+        setShowOnboarding(true) // Explicitly show onboarding
         
-        // Clear the signup flag and auth completion cookie
+        // Clear any existing onboarding data for fresh start
+        localStorage.removeItem('onboardingData')
+        sessionStorage.removeItem('onboardingInProgress')
+        
+        // Clear the signup flags
         sessionStorage.removeItem('justSignedUp')
         if (justVerified) {
           document.cookie = 'justVerified=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
         }
-      } else if (hasCompletedOnboarding) {
-        // User has completed onboarding before, don't show overlay
-        setShowOnboarding(false)
+      } else {
+        // Default case - start fresh onboarding
+        console.log('🎯 Starting default onboarding flow...')
+        setCurrentStep('workspace')
+        setShowOnboarding(true) // Explicitly show onboarding
       }
+      
+      console.log('🎬 Final onboarding state:', {
+        showOnboarding,
+        currentStep
+      })
     }
   }, [])
 
@@ -244,17 +297,42 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
     setIsLoading(true)
     await new Promise(resolve => setTimeout(resolve, 300))
     
+    // Save current progress for resumption
+    const progressData = {
+      workspaceName: workspaceData.workspaceName,
+      name: workspaceData.name,
+      analyticsProvider: analyticsData.provider,
+      siteUrl: analyticsData.domain,
+      isAnalyticsConnected: analyticsData.isConnected,
+      isAnalyticsSkipped: analyticsData.isSkipped,
+      keywords: contentData.keywords,
+      businessOffering: contentData.businessOffering,
+      knownFor: contentData.knownFor,
+      competitors: contentData.competitors,
+      cms: cmsData.cms,
+      currentStep: currentStep
+    }
+    
     switch (currentStep) {
       case 'workspace':
+        // Save progress and move to analytics
+        localStorage.setItem('onboardingData', JSON.stringify(progressData))
+        sessionStorage.setItem('onboardingInProgress', 'true')
         setCurrentStep('analytics')
         break
       case 'analytics':
+        // Save progress and move to content
+        localStorage.setItem('onboardingData', JSON.stringify(progressData))
         setCurrentStep('content')
         break
       case 'content':
+        // Save progress and move to confirm
+        localStorage.setItem('onboardingData', JSON.stringify(progressData))
         setCurrentStep('confirm')
         break
       case 'confirm':
+        // Save progress and move to CMS
+        localStorage.setItem('onboardingData', JSON.stringify(progressData))
         setCurrentStep('cms')
         break
       case 'cms':
@@ -281,9 +359,6 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
               console.log('✅ Onboarding data saved successfully')
               setCompanyId(result.companyId || null)
               setRunId(result.runId || null)
-              
-              // Mark onboarding as completed in localStorage
-              localStorage.setItem('onboardingCompleted', 'true')
             } else {
               console.error('❌ Failed to save onboarding data:', result.error)
               // Continue with scan even if database save fails
@@ -294,6 +369,8 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
           }
         }
         
+        // Mark that we're starting the analysis phase
+        sessionStorage.setItem('onboardingInProgress', 'scanning')
         setCurrentStep('scanning')
         break
     }
@@ -368,48 +445,52 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
 
   const handlePipelineComplete = async (data: any) => {
     console.log('🎯 Pipeline completed with data:', data)
+    console.log('🔍 Pipeline data structure:', {
+      hasAeoData: !!data.aeoData,
+      hasBreakdown: !!data.aeoData?.breakdown,
+      hasQuestions: !!data.aeoData?.breakdown?.by_question,
+      hasResults: !!data.results,
+      hasQuestionsProp: !!data.questions,
+      overallScore: data.overallScore,
+      aeoScore: data.aeoData?.aeo_score,
+      questionCount: data.aeoData?.breakdown?.by_question?.length || 0,
+      resultsCount: data.results?.length || 0,
+      dataKeys: Object.keys(data),
+      aeoDataKeys: data.aeoData ? Object.keys(data.aeoData) : []
+    })
     
-    // Save questions and results to database if we have the run ID
-    if (runId && data.questions && data.results) {
+    // Save the complete AEO analysis to database if we have the run ID
+    if (runId && user) {
       try {
-        console.log('💾 Saving AEO questions to database...')
-        const questionsResult = await saveAeoQuestions(runId, data.questions)
+        console.log('💾 Saving complete AEO analysis to database...')
+        console.log('📊 Run ID:', runId, 'User ID:', user.id)
         
-        if (questionsResult.success) {
-          console.log('✅ AEO questions saved successfully')
-        } else {
-          console.error('❌ Failed to save questions:', questionsResult.error)
-        }
-
-        console.log('💾 Saving AEO results to database...')
-        const resultsResult = await saveAeoResults(runId, data.results)
+        const analysisResult = await saveCompleteAeoAnalysis(runId, data, user.id)
         
-        if (resultsResult.success) {
-          console.log('✅ AEO results saved successfully')
+        if (analysisResult.success) {
+          console.log('✅ Complete AEO analysis saved successfully')
         } else {
-          console.error('❌ Failed to save results:', resultsResult.error)
-        }
-
-        // Update total score if available
-        const totalScore = data.overallScore ?? data.aeoData?.aeo_score ?? 0
-        if (totalScore > 0) {
-          console.log('💾 Updating AEO score...')
-          const scoreResult = await updateAeoScore(runId, totalScore)
-          
-          if (scoreResult.success) {
-            console.log('✅ AEO score updated successfully')
-          } else {
-            console.error('❌ Failed to update score:', scoreResult.error)
-          }
+          console.error('❌ Failed to save AEO analysis:', analysisResult.error)
         }
       } catch (error) {
-        console.error('❌ Error saving pipeline results:', error)
+        console.error('❌ Error saving complete AEO analysis:', error)
       }
+    } else {
+      console.error('❌ Missing required data for saving AEO analysis:', {
+        hasRunId: !!runId,
+        hasUser: !!user,
+        runId,
+        userId: user?.id
+      })
     }
     
+    // Clear onboarding progress tracking since analysis is complete
+    sessionStorage.removeItem('onboardingInProgress')
+    localStorage.removeItem('onboardingData')
+    
+    // Set results data and move to results step
     setVisibilityData(data)
     setVisibilityScore(data.overallScore ?? data.aeoData?.aeo_score ?? 0)
-    localStorage.removeItem('onboardingData')
     setIsPipelineOpen(false)
     setCurrentStep('results')
   }

@@ -1,5 +1,5 @@
 import OpenAI from 'openai'
-import { saveAeoQuestions } from '@/lib/onboarding/database'
+import { saveAeoQuestions } from '../onboarding/database'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,

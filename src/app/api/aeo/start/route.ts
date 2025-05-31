@@ -351,9 +351,16 @@ async function runAEOPipeline(
         aeo_score: visibilityScore.aeo_score,
         coverage_owned: visibilityScore.coverage_owned,
         coverage_operated: visibilityScore.coverage_operated,
+        coverage_total: visibilityScore.coverage_total,
         share_of_voice: visibilityScore.share_of_voice,
         metrics: visibilityScore.metrics,
-        storage_path: storage.basePath
+        breakdown: visibilityScore.breakdown,
+        storage_path: storage.basePath,
+        questions: questions.questions,
+        serpResults: serpResults,
+        classifiedResults: classifiedResults,
+        crawlSnapshot: crawlSnapshot,
+        targetDomain: targetDomain
       }
     })
     

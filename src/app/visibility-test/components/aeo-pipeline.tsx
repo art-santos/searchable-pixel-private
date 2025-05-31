@@ -164,9 +164,31 @@ export function AEOPipeline({ isOpen, crawlUrl, onClose, onAnalysisComplete }: A
               addLog('AEO Pipeline completed successfully!', 'success')
               addLog(`Final AEO Score: ${progressData.data.aeo_score}/100`, 'success')
               
-              // Transform data for the dashboard
+              // Transform data for the dashboard UI
               const dashboardData = transformToVisibilityData(progressData.data)
-              onAnalysisComplete(dashboardData)
+              
+              // Include raw AEO data for database saving
+              const completeData = {
+                ...dashboardData,
+                // Add raw pipeline data for database extraction
+                rawPipelineData: progressData.data,
+                questions: progressData.data.questions,
+                serpResults: progressData.data.serpResults,
+                classifiedResults: progressData.data.classifiedResults,
+                targetDomain: progressData.data.targetDomain,
+                breakdown: progressData.data.breakdown
+              }
+              
+              console.log('📊 Sending complete data to onAnalysisComplete:', {
+                hasDashboardData: !!dashboardData,
+                hasRawData: !!progressData.data,
+                hasQuestions: !!progressData.data.questions,
+                hasSerpResults: !!progressData.data.serpResults,
+                questionCount: progressData.data.questions?.length || 0,
+                serpResultCount: progressData.data.serpResults?.length || 0
+              })
+              
+              onAnalysisComplete(completeData)
               
               setIsRunning(false)
               eventSource.close()
