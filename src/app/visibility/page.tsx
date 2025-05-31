@@ -307,30 +307,30 @@ export default function VisibilityPage() {
 
   if (loading) {
     return (
-      <div className="flex h-[calc(100vh-64px)] items-center justify-center bg-[#0c0c0c]">
+      <div className="flex h-full items-center justify-center bg-[#0c0c0c]">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent text-white" />
       </div>
     )
   }
 
   return (
-    <div className="h-[95vh] bg-[#0c0c0c] overflow-hidden">
+    <div className="min-h-full bg-[#0c0c0c]">
       <motion.main 
-        className="h-full flex flex-col p-6"
+        className="p-4 md:p-6 lg:p-8"
         initial="hidden"
         animate="visible"
         variants={containerVariants}
       >
         {/* Tab Navigation */}
-        <motion.div variants={itemVariants} className="flex items-center justify-between gap-2 mb-8">
-          <div className="flex items-center gap-2">
+        <motion.div variants={itemVariants} className="flex items-center justify-between gap-2 mb-6 md:mb-8">
+          <div className="flex items-center gap-2 flex-wrap">
             {tabs.map((tab) => {
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`
-                    px-4 py-2 rounded-md text-sm font-medium tracking-tight transition-colors border
+                    px-3 md:px-4 py-1.5 md:py-2 rounded-md text-xs md:text-sm font-medium tracking-tight transition-colors border
                     ${activeTab === tab.id 
                       ? 'bg-[#222] text-white border-[#444]' 
                       : 'text-[#666] hover:text-white hover:bg-[#1a1a1a] border-[#333]'
@@ -343,10 +343,10 @@ export default function VisibilityPage() {
             })}
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             {/* Usage Display */}
             {usage && (
-              <div className="flex items-center gap-2 text-sm">
+              <div className="hidden md:flex items-center gap-2 text-sm">
                 <Zap className="w-4 h-4 text-[#666]" />
                 <span className="text-[#888]">
                   {usage.scansLimit === -1 ? (
@@ -366,23 +366,24 @@ export default function VisibilityPage() {
             <button
               onClick={handleRefreshScore}
               disabled={isRefreshing || !subscription || !usage}
-              className={`px-4 py-2 rounded-md text-sm font-medium tracking-tight transition-colors border flex items-center gap-2 ${
+              className={`px-3 md:px-4 py-1.5 md:py-2 rounded-md text-xs md:text-sm font-medium tracking-tight transition-colors border flex items-center gap-2 ${
                 isRefreshing || !subscription || !usage
                   ? 'text-[#444] border-[#333] cursor-not-allowed'
                   : 'text-[#666] hover:text-white hover:bg-[#1a1a1a] border-[#333]'
               }`}
             >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              {isRefreshing ? 'Scanning...' : `Refresh Score${scanType === 'max' ? ' (MAX)' : ''}`}
+              <RefreshCw className={`h-3 w-3 md:h-4 md:w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{isRefreshing ? 'Scanning...' : `Refresh Score${scanType === 'max' ? ' (MAX)' : ''}`}</span>
+              <span className="sm:hidden">{isRefreshing ? '...' : 'Refresh'}</span>
             </button>
           </div>
         </motion.div>
 
         {/* Main Content Area */}
         {activeTab === 'overview' && (
-          <div className="flex-1 grid grid-cols-12 gap-8 min-h-0">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
             {/* Chart Section */}
-            <motion.div variants={itemVariants} className="col-span-7 flex flex-col min-h-0">
+            <motion.div variants={itemVariants} className="lg:col-span-7 flex flex-col">
               {/* Score Header */}
               <div className="mb-6">
                 <TimeframeSelector 
@@ -488,7 +489,7 @@ export default function VisibilityPage() {
             </motion.div>
 
             {/* Right Sidebar */}
-            <div className="col-span-5 flex flex-col justify-end pb-12 px-8 space-y-8">
+            <div className="lg:col-span-5 flex flex-col justify-end pb-12 px-8 space-y-8">
               {/* Usage & Plan Info */}
               {usage && subscription && (
                 <motion.div variants={itemVariants} className="mb-4">

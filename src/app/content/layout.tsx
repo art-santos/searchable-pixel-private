@@ -25,7 +25,7 @@ export default function ContentLayout({
         <SplitSidebar />
         <SidebarInset className="flex flex-col h-screen">
           <SplitTopbar />
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 min-h-0 overflow-auto">
             {children}
           </div>
         </SidebarInset>

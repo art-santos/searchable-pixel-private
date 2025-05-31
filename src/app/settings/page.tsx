@@ -57,6 +57,7 @@ interface UserProfile {
   id?: string
   first_name?: string | null
   workspace_name?: string | null
+  domain?: string | null
   email?: string | null
   created_by?: string
   updated_by?: string
@@ -132,6 +133,8 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [stripeCustomerId, setStripeCustomerId] = useState<string | null>(null)
   const [loadingSubscription, setLoadingSubscription] = useState(true)
+  const [showSuccessToast, setShowSuccessToast] = useState(false)
+  const [toastMessage, setToastMessage] = useState('Settings saved successfully')
   const { usage: subscriptionUsage, refresh: refreshUsage } = useSubscription()
   
   // Upgrade dialog state
@@ -268,14 +271,25 @@ export default function SettingsPage() {
     if (profile) {
       setWorkspace({
         name: profile.workspace_name || '',
-        domain: '', // Will be dynamic later when we add domain tracking
+        domain: profile.domain || '',
         email: profile.email || user?.email || ''
       })
     }
   }, [profile, user])
 
-  // Function to save workspace changes
-  const handleSaveWorkspace = async () => {
+  // Helper function to show success toast
+  const showToast = (message: string) => {
+    setToastMessage(message)
+    setShowSuccessToast(true)
+    
+    // Auto-hide toast after 3 seconds
+    setTimeout(() => {
+      setShowSuccessToast(false)
+    }, 3000)
+  }
+
+  // Unified function to save all general settings (workspace + profile)
+  const handleSaveSettings = async () => {
     if (!user || !supabase) return
 
     setIsLoading(true)
@@ -284,7 +298,9 @@ export default function SettingsPage() {
         .from('profiles')
         .upsert({
           id: user.id,
+          first_name: profile?.first_name,
           workspace_name: workspace.name,
+          domain: workspace.domain,
           email: workspace.email,
           updated_by: user.id
         })
@@ -297,19 +313,27 @@ export default function SettingsPage() {
       // Update local profile state
       setProfile((prev: UserProfile | null) => ({
         ...prev,
+        first_name: profile?.first_name,
         workspace_name: workspace.name,
+        domain: workspace.domain,
         email: workspace.email
       }))
 
-      // Show success message (you can add a toast here)
-      console.log('Workspace updated successfully')
+      showToast('Settings saved successfully')
     } catch (err) {
-      console.error('Error saving workspace:', err)
+      console.error('Error saving settings:', err)
     } finally {
       setIsLoading(false)
     }
   }
-  
+
+  const sections = [
+    { id: 'general', label: 'General', icon: Globe },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'billing', label: 'Billing', icon: CreditCard }
+    // Removed Account section - merged with General
+  ]
+
   // Mock data
   const [analytics, setAnalytics] = useState<AnalyticsProvider[]>([
     { id: 'ga4', name: 'Google Analytics', icon: '📊', connected: true, lastSync: '2 hours ago' },
@@ -350,6 +374,7 @@ export default function SettingsPage() {
   const handleCopyApiKey = () => {
     navigator.clipboard.writeText('sk_live_***************************')
     setCopied(true)
+    showToast('API key copied to clipboard')
     setTimeout(() => setCopied(false), 2000)
   }
 
@@ -424,13 +449,6 @@ export default function SettingsPage() {
     }
   }
 
-  const sections = [
-    { id: 'general', label: 'General', icon: Globe },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'billing', label: 'Billing', icon: CreditCard },
-    { id: 'account', label: 'Account', icon: User }
-  ]
-
   const billingPlan = getBillingData()
   
   // Get user's display name
@@ -442,32 +460,32 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="flex-1 bg-[#0c0c0c]">
-      <div className="max-w-5xl mx-auto px-6 py-8">
+    <main className="min-h-full bg-[#0c0c0c]">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-medium text-white mb-2">Settings</h1>
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-xl md:text-2xl font-medium text-white mb-2">Settings</h1>
           <p className="text-[#666] text-sm">Manage your workspace and integrations</p>
         </div>
         
-        <div className="flex gap-8">
-          {/* Sidebar Navigation */}
-          <nav className="w-48 flex-shrink-0">
-            <ul className="space-y-1">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+          {/* Sidebar Navigation - Responsive */}
+          <nav className="w-full lg:w-48 flex-shrink-0">
+            <ul className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
               {sections.map((section) => {
                 const Icon = section.icon
                 return (
-                  <li key={section.id}>
+                  <li key={section.id} className="flex-shrink-0">
                     <button
                       onClick={() => setActiveSection(section.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors ${
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors whitespace-nowrap ${
                         activeSection === section.id
                           ? 'bg-[#1a1a1a] text-white'
                           : 'text-[#666] hover:text-white hover:bg-[#0a0a0a]'
                       }`}
                     >
                       <Icon className="w-4 h-4" />
-                      {section.label}
+                      <span className="lg:inline">{section.label}</span>
                     </button>
                   </li>
                 )
@@ -475,8 +493,8 @@ export default function SettingsPage() {
             </ul>
           </nav>
 
-          {/* Content Area */}
-          <div className="flex-1">
+          {/* Content Area - Scrollable */}
+          <div className="flex-1 min-w-0">
             <motion.div
               key={activeSection}
               initial={{ opacity: 0, y: 10 }}
@@ -486,6 +504,7 @@ export default function SettingsPage() {
               {/* General Settings */}
               {activeSection === 'general' && (
                 <div className="space-y-6">
+                  {/* Workspace Settings */}
                   <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
                     <h2 className="text-lg font-medium text-white mb-6">Workspace Settings</h2>
                     
@@ -523,20 +542,54 @@ export default function SettingsPage() {
                         />
                       </div>
                     </div>
+                  </div>
 
-                    <div className="flex justify-end mt-6">
-                      <Button 
-                        onClick={handleSaveWorkspace}
-                        disabled={isLoading}
-                        className="bg-[#1a1a1a] hover:bg-[#222] border border-[#333] hover:border-[#444] text-white h-9 px-4 text-sm font-medium"
-                      >
-                        {isLoading ? (
-                          <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
-                        ) : (
-                          'Save Changes'
-                        )}
-                      </Button>
+                  {/* Personal Information */}
+                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
+                    <h2 className="text-lg font-medium text-white mb-6">Personal Information</h2>
+                    
+                    <div className="space-y-6">
+                      <div>
+                        <label className="block text-sm text-[#888] mb-2">Full Name</label>
+                        <Input
+                          value={profile?.first_name || ''}
+                          onChange={(e) => setProfile((prev: UserProfile | null) => ({ 
+                            ...prev, 
+                            first_name: e.target.value 
+                          }))}
+                          placeholder="John Doe"
+                          className="bg-[#1a1a1a] border-[#333] text-white h-10"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm text-[#888] mb-2">Email Address</label>
+                        <Input
+                          value={user?.email || ''}
+                          type="email"
+                          disabled
+                          className="bg-[#1a1a1a] border-[#333] text-[#888] h-10"
+                        />
+                        <p className="text-xs text-[#666] mt-1">
+                          Email cannot be changed here. Contact support if needed.
+                        </p>
+                      </div>
                     </div>
+                  </div>
+
+                  {/* Save Button */}
+                  <div className="flex justify-end">
+                    <Button 
+                      onClick={handleSaveSettings}
+                      disabled={isLoading}
+                      className="bg-[#1a1a1a] hover:bg-[#222] border border-[#333] hover:border-[#444] text-white h-9 px-4 text-sm font-medium"
+                    >
+                      {isLoading ? (
+                        <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
+                      ) : (
+                        'Save Changes'
+                      )}
+                    </Button>
                   </div>
 
                   {/* API Key Section */}
@@ -555,15 +608,30 @@ export default function SettingsPage() {
                         >
                           {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
-                </div>
-                <Button 
+                      </div>
+                      <Button 
                         onClick={handleCopyApiKey}
                         variant="outline"
                         className="border-[#333] hover:border-[#444] h-10 px-4"
-                >
+                      >
                         {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                </Button>
-              </div>
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Danger Zone */}
+                  <div className="bg-[#0a0a0a] border border-red-900/20 rounded-lg p-6">
+                    <h3 className="text-lg font-medium text-red-400 mb-2">Danger Zone</h3>
+                    <p className="text-sm text-[#666] mb-6">
+                      These actions cannot be undone. Please proceed with caution.
+                    </p>
+                    
+                    <Button 
+                      variant="outline"
+                      className="border-red-900 text-red-400 hover:bg-red-900/20 h-9 px-4 text-sm"
+                    >
+                      Delete Account
+                    </Button>
                   </div>
                 </div>
               )}
@@ -782,64 +850,6 @@ export default function SettingsPage() {
                   )}
                 </div>
               )}
-
-              {/* Account Settings */}
-              {activeSection === 'account' && (
-                <div className="space-y-6">
-                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
-                    <h2 className="text-lg font-medium text-white mb-6">Account Information</h2>
-                    
-                    <div className="space-y-6">
-                      <div>
-                        <label className="block text-sm text-[#888] mb-2">Full Name</label>
-                        <Input
-                          value={profile?.first_name || ''}
-                          onChange={(e) => setProfile((prev: UserProfile | null) => ({ ...prev, first_name: e.target.value }))}
-                          placeholder="John Doe"
-                          className="bg-[#1a1a1a] border-[#333] text-white h-10"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm text-[#888] mb-2">Email Address</label>
-                        <Input
-                          value={user?.email || ''}
-                          type="email"
-                          disabled
-                          className="bg-[#1a1a1a] border-[#333] text-[#888] h-10"
-                        />
-                        <p className="text-xs text-[#666] mt-1">
-                          Email cannot be changed here. Contact support if needed.
-                        </p>
-                      </div>
-                  
-                      <div>
-                        <label className="block text-sm text-[#888] mb-2">Workspace</label>
-                        <Input
-                          value={profile?.workspace_name || ''}
-                          disabled
-                          className="bg-[#1a1a1a] border-[#333] text-[#888] h-10"
-                        />
-                        <p className="text-xs text-[#666] mt-1">
-                          Update workspace name in General settings
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between items-center mt-8 pt-6 border-t border-[#1a1a1a]">
-                      <Button 
-                        variant="outline"
-                        className="border-red-900 text-red-400 hover:bg-red-900/20 h-9 px-4 text-sm"
-                      >
-                        Delete Account
-                      </Button>
-                      <Button className="bg-white text-black hover:bg-gray-100 h-9 px-4 text-sm font-medium">
-                        Save Changes
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </motion.div>
                   </div>
                 </div>
@@ -989,6 +999,29 @@ export default function SettingsPage() {
         requiredPlan={upgradeDialogProps.requiredPlan}
         fromPath={upgradeDialogProps.fromPath}
       />
+
+      {/* Success Toast */}
+      <AnimatePresence>
+        {showSuccessToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-6 right-6 z-50"
+          >
+            <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4 flex items-center gap-3 shadow-lg">
+              <CheckCircle2 className="w-5 h-5 text-green-400" />
+              <span className="text-white text-sm font-medium">{toastMessage}</span>
+              <button
+                onClick={() => setShowSuccessToast(false)}
+                className="text-[#666] hover:text-white transition-colors ml-2"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   )
 } 

@@ -106,53 +106,56 @@ export function WelcomeCard() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={controls}
-          className="flex h-full"
+          className="flex flex-col h-full"
         >
-          {/* Left Side - Welcome Content */}
-          <div className="flex-1 flex flex-col justify-center pr-12">
-            <div className="mb-4">
-              <DomainSelector />
-            </div>
-            
-            <div className="mb-8">
-              <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
-                Welcome back, {getDisplayName()}.
-              </h1>
-              <p className="text-xl text-[#ccc] mb-6 leading-relaxed">
-                {getWelcomeMessage(visibilityScore)}
-              </p>
-              <button className="text-lg text-[#888] hover:text-white transition-colors flex items-center gap-2 group">
-                See detailed analysis
-                <ExternalLink className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
-          </div>
-
-          {/* Right Side - Quick Actions Hub */}
-          <div className="w-80 flex flex-col">
-            <div className="mb-6">
+          {/* Top Section - Domain Selector and Quick Actions Header aligned */}
+          <div className="flex items-start justify-between mb-6">
+            <DomainSelector />
+            <div className="w-80">
               <h3 className="text-lg font-semibold text-white mb-2">Quick Actions</h3>
               <p className="text-sm text-[#888]">Everything you need to get started</p>
             </div>
-            
-            <div className="grid grid-cols-2 gap-3 flex-1">
-              {quickActions.map((action, index) => (
-                <Button
-                  key={action.label}
-                  variant="outline"
-                  className="h-auto p-4 flex flex-col items-start gap-2 bg-[#0f0f0f] border-[#2a2a2a] hover:bg-[#1a1a1a] hover:border-[#444] text-left group w-full transition-all duration-200"
-                >
-                  <action.icon className="w-5 h-5 text-[#888] group-hover:text-white transition-colors" />
-                  <div>
-                    <div className="text-sm font-medium text-white group-hover:text-white">
-                      {action.label}
+          </div>
+
+          {/* Bottom Section - Welcome Content and Quick Actions Grid */}
+          <div className="flex flex-1">
+            {/* Left Side - Welcome Content */}
+            <div className="flex-1 flex flex-col justify-center pr-12">
+              <div className="mb-8">
+                <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
+                  Welcome back, {getDisplayName()}.
+                </h1>
+                <p className="text-xl text-[#ccc] mb-6 leading-relaxed">
+                  {getWelcomeMessage(visibilityScore)}
+                </p>
+                <button className="text-lg text-[#888] hover:text-white transition-colors flex items-center gap-2 group">
+                  See detailed analysis
+                  <ExternalLink className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            </div>
+
+            {/* Right Side - Quick Actions Grid */}
+            <div className="w-80 flex flex-col">
+              <div className="grid grid-cols-2 gap-3 flex-1">
+                {quickActions.map((action, index) => (
+                  <Button
+                    key={action.label}
+                    variant="outline"
+                    className="h-auto p-4 flex flex-col items-start gap-2 bg-[#0f0f0f] border-[#2a2a2a] hover:bg-[#1a1a1a] hover:border-[#444] text-left group w-full transition-all duration-200"
+                  >
+                    <action.icon className="w-5 h-5 text-[#888] group-hover:text-white transition-colors" />
+                    <div>
+                      <div className="text-sm font-medium text-white group-hover:text-white">
+                        {action.label}
+                      </div>
+                      <div className="text-xs text-[#666] group-hover:text-[#888]">
+                        {action.desc}
+                      </div>
                     </div>
-                    <div className="text-xs text-[#666] group-hover:text-[#888]">
-                      {action.desc}
-                    </div>
-                  </div>
-                </Button>
-              ))}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
         </motion.div>

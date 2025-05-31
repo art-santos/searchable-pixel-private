@@ -42,44 +42,44 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex h-[calc(100vh-64px)] items-center justify-center bg-[#0c0c0c]">
+      <div className="flex h-full items-center justify-center bg-[#0c0c0c]">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent text-white" />
       </div>
     )
   }
 
   return (
-    <div className="h-full bg-[#0c0c0c] overflow-hidden">
+    <div className="min-h-full bg-[#0c0c0c]">
       <motion.main 
-        className="h-full flex flex-col p-6"
+        className="p-4 md:p-6 lg:p-8"
         initial="hidden"
         animate="visible"
         variants={containerVariants}
       >
-        {/* Top Row - 35% of available height */}
-        <motion.div 
-          className="h-[35%] mb-24"
-          variants={cardVariants}
-        >
-          <div className="h-[40vh]">
+        <div className="mx-auto max-w-[1600px] flex flex-col gap-4 md:gap-6 lg:gap-8">
+          {/* Welcome Card - Responsive height */}
+          <motion.div 
+            variants={cardVariants}
+            className="min-h-[300px] md:min-h-[350px] lg:min-h-[400px]"
+          >
             <WelcomeCard />
-          </div>
-        </motion.div>
+          </motion.div>
 
-        {/* Bottom Row - 50% of available height */}
-        <div className="h-[45%] grid xl:grid-cols-2 grid-cols-1 gap-12">
-          <motion.div 
-            className="h-[45vh]"
-            variants={cardVariants}
-          >
-            <PageViewCard />
-          </motion.div>
-          <motion.div 
-            className="h-[45vh]"
-            variants={cardVariants}
-          >
-            <AttributionBySourceCard />
-          </motion.div>
+          {/* Analytics Cards - Responsive grid */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6 lg:gap-8 pb-8 md:pb-12">
+            <motion.div 
+              variants={cardVariants}
+              className="min-h-[300px] md:min-h-[350px]"
+            >
+              <PageViewCard />
+            </motion.div>
+            <motion.div 
+              variants={cardVariants}
+              className="min-h-[300px] md:min-h-[350px]"
+            >
+              <AttributionBySourceCard />
+            </motion.div>
+          </div>
         </div>
       </motion.main>
     </div>
