@@ -273,10 +273,27 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
 
   // Trigger real AEO pipeline when entering the scanning step
   useEffect(() => {
+    console.log('📊 SCANNING STEP EFFECT:', {
+      currentStep,
+      isPipelineOpen,
+      shouldTrigger: currentStep === 'scanning'
+    })
+    
     if (currentStep === 'scanning') {
+      console.log('🚀 SETTING isPipelineOpen to TRUE')
       setIsPipelineOpen(true)
     }
   }, [currentStep])
+
+  // Debug AEO Pipeline props
+  useEffect(() => {
+    console.log('🔍 AEO Pipeline Props Update:', {
+      isOpen: isPipelineOpen,
+      crawlUrl: analyticsData.domain || '',
+      hasCallback: !!handlePipelineComplete,
+      analyticsData: analyticsData.domain
+    })
+  }, [isPipelineOpen, analyticsData.domain])
 
   // Dev mode: Exit onboarding with middle mouse button
   useEffect(() => {
@@ -445,6 +462,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
   }
 
   const handlePipelineComplete = async (data: any) => {
+    console.log('🚨🚨🚨 HANDLE PIPELINE COMPLETE - FUNCTION ENTRY 🚨🚨🚨')
     console.log('🎯🎯🎯 === HANDLE PIPELINE COMPLETE FUNCTION CALLED === 🎯🎯🎯')
     console.log('🔍 Function entry debug:', {
       functionCalled: true,

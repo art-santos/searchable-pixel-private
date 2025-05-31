@@ -1,196 +1,80 @@
 {
-  "thinair customer success stories": {
+  "Enterprise data unification solutions": {
     "results": [
       {
-        "title": "Client Feedback: What Customers Say About ThinAir Telematics",
-        "url": "https://www.thinair.co/clients/",
-        "snippet": "ThinAir helped us save $100,000 plus. ThinAir gives us reassurance that we have control over our trucks. We know we can find our assets at any time. Matt ...",
+        "title": "What is Data Unification and Why Is It Important? - Profisee",
+        "url": "https://profisee.com/blog/what-is-data-unification-why-is-it-important/",
+        "snippet": "Data unification enables telecom providers to merge data from network infrastructure, customer interactions, billing systems, and IoT devices.",
         "position": 1
       },
       {
-        "title": "Testimonial | ThinAir helped us save $100,000 plus",
-        "url": "https://www.thinair.co/our_testimonial/thinair-helped-us-save-100000-plus/",
-        "snippet": "ThinAir helped us save $100,000 plus ... ThinAir gives us reassurance that we have control over our trucks. We know we can find our assets at any ...",
+        "title": "What is Data Unification? - Reltio",
+        "url": "https://www.reltio.com/glossary/data-unification/",
+        "snippet": "Data unification involves consolidating data from diverse sources and formats into one cohesive view to ensure consistency across systems. Learn more!",
         "position": 2
       },
       {
-        "title": "Out of Thin Air delivers with Metrobi in LA",
-        "url": "https://metrobi.com/success-stories/out-of-thin-air-delivers-with-metrobi-in-la/",
-        "snippet": "SUCCESS STORIES · ‟My products are handled professionally and I have ... Delivery notifications and tracking improve customer satisfaction by 27%.",
+        "title": "What is Data Unification | Tamr",
+        "url": "https://www.tamr.com/blog/what-is-data-unification",
+        "snippet": "Data unification is the process of ingesting data from various operational systems and combining them into a single source by performing ...",
         "position": 3
       },
       {
-        "title": "Success Stories - Pclub.io",
-        "url": "https://www.pclub.io/success-stories",
-        "snippet": "Chris's discovery training is informative, prescriptive, and digestible. They had an immediate impact on my customer conversations and deals.",
+        "title": "The Power of Data Unification and Why It Matters for Both ...",
+        "url": "https://www.bounteous.com/insights/2025/03/21/power-data-unification-and-why-it-matters-both-technology-and-marketing/",
+        "snippet": "Unifying customer data across channels with CDPs, CRMs, and MDMs is vital, but tech resistance and jargon hinder adoption.",
         "position": 4
       },
       {
-        "title": "ThinAir Telematics Blog | News, Views, Information",
-        "url": "https://www.thinair.co/blog/",
-        "snippet": "Get the latest updates on our innovative transporation solutions, services, and achievements from the ThinAir Telematics Blog. Stay tuned.",
+        "title": "Data Unification And Management Cloud To Achieve Interoperable ...",
+        "url": "https://www.forbes.com/councils/forbestechcouncil/2024/02/23/using-data-unification-and-management-cloud-to-achieve-interoperable-data/",
+        "snippet": "These cloud-based solutions help break down silos in real time using flexible APIs. Built-in capabilities like master data management (MDM) and entity ...",
         "position": 5
       },
       {
-        "title": "CUSTOMER SERVICE VANISHES INTO THIN AIR IN THE 21ST ...",
-        "url": "https://medium.com/@xavierledru/customer-service-vanishes-into-thin-air-in-the-21st-century-0b091434c9ad",
-        "snippet": "Recently, my wife switched for a new internet and telephone provider. She did everything online. She is quite experienced.",
+        "title": "Enterprise Data Unification & Automation Solutions",
+        "url": "https://www.optisolbusiness.com/enterprise-data-unification-automation-solution",
+        "snippet": "GenAI powered data unification and automation solutions. Simplify data integration, reduce costs, and improve real-time insights with AI-powered platforms.",
         "position": 6
       },
       {
-        "title": "Home - Thin Air Web & Software",
-        "url": "https://thinairweb.com/",
-        "snippet": "Our team members have created some amazingly creative and complex systems – and we're proud that more than 75% of our customers have been with us at least 10 ...",
+        "title": "Accelerate your Data Unification and Customer-360 Journey ... - AWS",
+        "url": "https://aws.amazon.com/blogs/apn/accelerate-your-data-unification-and-customer-360-journey-with-cognizant-data-unification-framework-on-aws/",
+        "snippet": "The Cognizant Data Unification Framework is a custom-built, domain-agnostic solution designed to ingest data from multiple sources and create a unified view.",
         "position": 7
       },
       {
-        "title": "GaMEP at Georgia Tech Client Success Stories",
-        "url": "https://gamep.org/success-stories/",
-        "snippet": "Discover the impact GaMEP at Georgia Tech has had on manufacturers across Georgia. Read our client success stories and learn how we can assist you.",
+        "title": "5 Steps to Real Time Data Unification - PeopleSpheres",
+        "url": "https://peoplespheres.com/5-steps-to-real-time-data-unification/",
+        "snippet": "Master the art of real time data unification with our comprehensive guide. Explore 5 essential steps to harness the power of unified data.",
         "position": 8
       },
       {
-        "title": "Customer success story: Strongmind - Thinqi",
-        "url": "https://thinqi.com/content-hub/success-stories/customer-success-story-strongmind",
-        "snippet": "Find out how Strongmind have boosted ROI in 6 months, increased access to learning and improved the quality of knowledge and assessment with ...",
+        "title": "How to Drive Business Decisions Through Data Unification - Syncari",
+        "url": "https://syncari.com/blog/how-to-drive-business-decisions-through-data-unification/",
+        "snippet": "Syncari offers a modern autonomous data management platform to seamlessly sync, unify, and analyze data for driving business decisions. Data- ...",
         "position": 9
       },
       {
-        "title": "Customer success stories | Printful Blog",
-        "url": "https://www.printful.com/blog/success-stories",
-        "snippet": "Here's how UMAI Clothing found success by combining strategic advertising with unique, bold artwork, and how Printful helped scale their brand to six-figure ...",
+        "title": "Seeking Recommendations for which AI Tools for Enterprise are ...",
+        "url": "https://www.reddit.com/r/EnterpriseArchitect/comments/18ma5c4/seeking_recommendations_for_which_ai_tools_for/",
+        "snippet": "These tools should ideally possess the capability to seamlessly integrate across the entire organizational structure, leveraging Artificial ...",
         "position": 10
       }
     ],
     "metadata": {
-      "question": "thinair customer success stories",
+      "question": "Enterprise data unification solutions",
       "total_results": 10,
-      "search_time": "2025-05-31T20:29:39.667Z",
+      "search_time": "2025-05-31T20:46:58.391Z",
       "status": "success"
     }
   },
-  "thinair AI solution reviews": {
+  "Top AI platforms for businesses": {
     "results": [
       {
-        "title": "ThinAir Reviews: Pros And Cons of Working At ThinAir | Glassdoor",
-        "url": "https://www.glassdoor.com/Reviews/ThinAir-Reviews-E1375456.htm",
-        "snippet": "65% of employees would recommend working at ThinAir to a friend and 65% have a positive outlook for the business. This rating has been stable over the past 12 ...",
-        "position": 1
-      },
-      {
-        "title": "Read Customer Service Reviews of air.ai - Trustpilot",
-        "url": "https://www.trustpilot.com/review/air.ai",
-        "snippet": "This company is a scam. It appears to be a thin layer of automation on top of either Google Contact Center AI, or another actual startup. Its goal appears to be ...",
-        "position": 2
-      },
-      {
-        "title": "THIN/AIR™",
-        "url": "https://www.lionsharemedia.com/",
-        "snippet": "Using ThinAir 's PaaS, they can enter, launch and scale their own mobile-first media streaming services with a low cost of ownership and high lifetime value.",
-        "position": 3
-      },
-      {
-        "title": "Profile for Thin Air - Facebook",
-        "url": "https://www.facebook.com/100094042491002",
-        "snippet": "Thin Air . 57 likes. Thin Air is a collaborative cloud operating system. Work with anyone, anywhere with any application.",
-        "position": 4
-      },
-      {
-        "title": "Press Release: ThinKom, Quvia team for multi-link IFC experience ...",
-        "url": "https://runwaygirlnetwork.com/2025/04/thinkom-quvia-multi-link-boost/",
-        "snippet": "Packaged in a low-drag design to save fuel and reduce emissions, ThinAir's proven, proprietary, patented solutions are trusted by leading ...",
-        "position": 5
-      },
-      {
-        "title": "How reliable is the AI scan? : r/mynetdiary - Reddit",
-        "url": "https://www.reddit.com/r/mynetdiary/comments/1j1zb0q/how_reliable_is_the_ai_scan/",
-        "snippet": "I've only used the AI scanner once because it was totally and completely wrong. When I weighed my breakfast it worked out about 300 calories.",
-        "position": 6
-      },
-      {
-        "title": "The AI We Deserve - Boston Review",
-        "url": "https://www.bostonreview.net/forum/the-ai-we-deserve/",
-        "snippet": "The scale and speed really are impressive. How else could I get sixty personalized stories, accompanied by hours of audio across six languages, ...",
-        "position": 7
-      },
-      {
-        "title": "ThinAir - LinkedIn",
-        "url": "https://www.linkedin.com/company/thinair",
-        "snippet": "ThinAir Next-Gen Endpoint Data Visibility Platform delivers complete intelligence about every information in your organization, with simplicity and speed.",
-        "position": 8
-      },
-      {
-        "title": "Humbot AI review: Is Humbot AI Legit? - Grubby AI",
-        "url": "https://grubby.ai/es/blog/humbot-ai-review",
-        "snippet": "Humbot AI is way too unreliable for professional or academic work. The output is inconsistent, the writing is hit-or-miss, and AI detectors ...",
-        "position": 9
-      },
-      {
-        "title": "air.ai Reviews 85 - Trustpilot",
-        "url": "https://ca.trustpilot.com/review/air.ai?page=5",
-        "snippet": "This company is a scam. It appears to be a thin layer of automation on top of either Google Contact Center AI, or another actual startup. Its goal appears to be ...",
-        "position": 10
-      }
-    ],
-    "metadata": {
-      "question": "thinair AI solution reviews",
-      "total_results": 10,
-      "search_time": "2025-05-31T20:29:39.675Z",
-      "status": "success"
-    }
-  },
-  "thinair NLQ pricing": {
-    "results": [
-      {
-        "title": "Thinair | Accurate NLQ & AI Solutions via Model Context Protocol ...",
-        "url": "https://thinair.cloud/",
-        "snippet": "We analyze needs, unify your data (SaaS, DBs) via MCP, and build secure, custom AI agents & solutions that integrate seamlessly with your existing systems.",
-        "position": 1
-      },
-      {
-        "title": "Digital Thread: Transforming Visibility in Industries",
-        "url": "https://thinaer.io/",
-        "snippet": "Thinaer is an operational visibility platform that lets you know everything happening, everywhere it's happening, the moment it happens.",
-        "position": 2
-      },
-      {
-        "title": "Pricing | ThinAir Telematics",
-        "url": "https://www.thinair.co/pricing/",
-        "snippet": "Get latest pricing on all of our solutions with our new Pricing Wizard. Receive your free, no-obligation proposal along with details on our products.",
-        "position": 3
-      },
-      {
-        "title": "ThinAir Labs Unveils Data Security Approach, $15M in Funding - WSJ",
-        "url": "http://www.wsj.com/articles/thinair-labs-unveils-data-security-approach-15m-in-funding-1470223804?gaa_at=eafs&gaa_n=ASWzDAhD_I8YrhfjYpiws2VoIhA2g6u_RARuxz8PJxU1RdgQaIZOAoxxvxbe&gaa_ts=683b6a37&gaa_sig=F1xJvJkjDvLF14om6bO60XuszqygH30a7RY53li5spkkNNwECyWZxSWvvsy82aJQnjBiShUrN55vr38RdqUCfg%3D%3D",
-        "snippet": "ThinAir Labs has developed a digital safe for automatically saving sensitive documents. People can only access that safe by using two-factor ...",
-        "position": 4
-      },
-      {
-        "title": "Full text of \"AmstradComputerUser29 0487\" - Internet Archive",
-        "url": "https://archive.org/stream/AmstradComputerUser29-0487/AmstradComputerUser29-0487_djvu.txt",
-        "snippet": "Take the low-cost S.X-T5 for example. Fully IBM compatible, the NX-15 offers proportions! spacing as standard in both NLQ and draft modes, making ii idea I ...",
-        "position": 5
-      },
-      {
-        "title": "ThinAir Telematics",
-        "url": "https://www.thinair.co/",
-        "snippet": "ThinAir Telematics delivers proven IoT solutions for your fleet with real-time visibility, ELD compliance, insight. Get a free customized quote today.",
-        "position": 6
-      }
-    ],
-    "metadata": {
-      "question": "thinair NLQ pricing",
-      "total_results": 6,
-      "search_time": "2025-05-31T20:29:39.746Z",
-      "status": "success"
-    }
-  },
-  "best custom AI platforms": {
-    "results": [
-      {
-        "title": "10 best AI agent platforms & companies I'm using in 2025",
-        "url": "https://www.marketermilk.com/blog/best-ai-agent-platforms",
-        "snippet": "Here are my top picks for the best AI agent platforms: Gumloop; Relay.app; HockeyStack; Stack AI; Voiceflow; OpenAI's Operator; Devin AI ...",
+        "title": "The best AI productivity tools in 2025 - Zapier",
+        "url": "https://zapier.com/blog/best-ai-productivity-tools/",
+        "snippet": "ElevenLabs is the flashiest AI voice generator platform on the market. With high-quality output, a sound effect generator, and over 300 voices—including some of ...",
         "position": 1
       },
       {
@@ -200,15 +84,85 @@
         "position": 2
       },
       {
-        "title": "The 6 best AI app builders in 2025 - Zapier",
-        "url": "https://zapier.com/blog/best-ai-app-builder/",
-        "snippet": "The 6 best AI-powered app builders · Softr for ease of use and speed · Microsoft Power Apps for creating and editing with AI · Quickbase for ...",
+        "title": "26 best AI marketing tools I'm using to get ahead in 2025",
+        "url": "https://www.marketermilk.com/blog/ai-marketing-tools",
+        "snippet": "Some of the biggest brands like Google, IBM, and Airbnb are using AI marketing tools to gain a competitive edge. We've uncovered some of the ...",
         "position": 3
       },
       {
-        "title": "What are the best platforms / software for training ai on your own data?",
-        "url": "https://www.reddit.com/r/ArtificialInteligence/comments/17lccnd/what_are_the_best_platforms_software_for_training/",
-        "snippet": "I want to upload PDFs, websites, text, docs, etc. and train my own personal AI. Sadly, they never seem to work that well. Does anyone have any recommendations?",
+        "title": "What are the best AI tools that ACTUALLY help your business?",
+        "url": "https://www.reddit.com/r/Entrepreneur/comments/1bpvh78/what_are_the_best_ai_tools_that_actually_help/",
+        "snippet": "Data analysis tools: IBM Watson or Google Looker Studio help make sense of your data with visual reports and actionable insights.",
+        "position": 4
+      },
+      {
+        "title": "13 Best AI Business Plan Generators (Tried & Tested) - Upmetrics",
+        "url": "https://upmetrics.co/blog/ai-business-plan-generators",
+        "snippet": "Best AI business plan generators: 1. Upmetrics · 2. Bizplanr · 3. Promet AI · 4. Grammarly · 5. PlanPros · 6. 15MinutePlan · 7. LivePlan · 8.",
+        "position": 5
+      },
+      {
+        "title": "The best AI tools for business to try today | IT Pro - ITPro",
+        "url": "https://www.itpro.com/technology/artificial-intelligence/amazing-ai-tools-to-try-today",
+        "snippet": "The best AI tools for business to try today · 1. Adobe Firefly · 2. ChatGPT Plus · 3. Perplexity · 4. Altered Studio · 5. Midjourney · 6. GitHub ...",
+        "position": 6
+      },
+      {
+        "title": "The 19 Best AI Tools for Small Businesses and How to Use Them",
+        "url": "https://blog.hubspot.com/sales/small-business-ai-tools",
+        "snippet": "1. HubSpot. HubSpot is a CRM platform that can help you simplify your processes across sales, marketing, and customer support. The platform ...",
+        "position": 7
+      },
+      {
+        "title": "Top 10 AI Tools for Business: 2025's Game-Changers",
+        "url": "https://www.simplilearn.com/top-ai-tools-for-business-article",
+        "snippet": "Top 10 AI Tools for Business: 2025's Game-Changers · 1. ClickUp · 2. ChatGPT · 3. Dall-E · 4. Asana AI · 5. StoryChief · 6. Trello AI · 7. Jasper AI · 8. Perplexity AI.",
+        "position": 8
+      },
+      {
+        "title": "The Best AI Platforms: Top 12 AI Tools for Business - Upwork",
+        "url": "https://www.upwork.com/resources/ai-platforms",
+        "snippet": "The Best AI Platforms: Top 12 AI Tools for Business · 1. TensorFlow · 2. PyTorch · 3. Microsoft Azure · 4. Google Gemini · 5. Watsonx · 6.",
+        "position": 9
+      },
+      {
+        "title": "13 AI Tools I Use to Make $480,000/Month - YouTube",
+        "url": "https://www.youtube.com/watch?v=-XbfmhGk4r0",
+        "snippet": "... ai Airtable AI: https://www.airtable.com/platform/ai Agentive: https://agentivehub.com Claude: https://claude.ai Perplexity: https://www ...",
+        "position": 10
+      }
+    ],
+    "metadata": {
+      "question": "Top AI platforms for businesses",
+      "total_results": 10,
+      "search_time": "2025-05-31T20:46:58.401Z",
+      "status": "success"
+    }
+  },
+  "Custom AI solutions for enterprises": {
+    "results": [
+      {
+        "title": "Custom AI Solutions | Tryolabs",
+        "url": "https://tryolabs.com/services/custom-ai",
+        "snippet": "Build out your AI capabilities with our top tier consulting services. Boost your business results by automating and optimizing processes. Contact our experts.",
+        "position": 1
+      },
+      {
+        "title": "Custom AI Solutions & AI Agents for Process Automation",
+        "url": "https://beam.ai/solutions/custom-ai-solutions",
+        "snippet": "From AI-driven automation to custom machine learning models, we create intelligent systems that improve efficiency, reduce costs, and drive business growth.",
+        "position": 2
+      },
+      {
+        "title": "CustomGPT.ai | Custom GPTs From Your Content For Business",
+        "url": "https://customgpt.ai/",
+        "snippet": "CustomGPT.ai is the #1 no-code platform for creating custom AI agents for your business. It builds AI agents powered by advanced large language models (LLMs) ...",
+        "position": 3
+      },
+      {
+        "title": "The Rise of Customized Generative AI Models in Enterprises",
+        "url": "https://kaizen.com/insights/customized-ai-models-enterprises/",
+        "snippet": "Customizing AI models allows companies to achieve specific results, as it enables solutions to be aligned with the strategic objectives of the business.",
         "position": 4
       },
       {
@@ -218,172 +172,44 @@
         "position": 5
       },
       {
-        "title": "Best platform for creating a suite of AI tools for helping with business ...",
-        "url": "https://www.reddit.com/r/Automate/comments/1dyapsv/best_platform_for_creating_a_suite_of_ai_tools/",
-        "snippet": "Make.com - Make is a great blend of powerful yet user friendly. It's what I recommend to most people. It integrates with most big name services ...",
+        "title": "Custom AI Solutions to Maximize Efficiency & Accuracy for Your ...",
+        "url": "https://www.fullstack.com/labs/service/custom-ai-solutions",
+        "snippet": "FullStack Labs develops custom AI solutions that solve complex challenges, optimize efficiency, and deliver measurable results.",
         "position": 6
       },
       {
-        "title": "50+ AI Apps for the Price of One • Magai",
-        "url": "https://magai.co/",
-        "snippet": "Join 50000+ users discovering All-In-One AI with Magai, designed for professionals needing seamless AI model integration.",
+        "title": "Custom AI Solutions | Personalized AI Services for Businesses - Intuz",
+        "url": "https://www.intuz.com/custom-ai-development",
+        "snippet": "Empower your business with custom AI solutions. Trusted as a top custom AI development company, we deliver innovative solutions like Generative AI and NLP.",
         "position": 7
       },
       {
-        "title": "10+ AI tools you can start using for free in 2025 | Google Cloud",
-        "url": "https://cloud.google.com/use-cases/free-ai-tools",
-        "snippet": "Google Cloud offers free usage of many AI products up to monthly limits, including Translation, Speech-to-Text, Natural Language, and Video Intelligence.",
+        "title": "The Ultimate Guide to Enterprise AI Solutions (+ 13 Best Tools)",
+        "url": "https://www.moveworks.com/us/en/resources/blog/enterprise-ai-solutions",
+        "snippet": "Microsoft's Azure AI provides tools and resources enterprises need to bring custom generative AI solutions to life and solve business challenges ...",
         "position": 8
       },
       {
-        "title": "19 Best AI Platforms to Try in 2025 | LambdaTest",
-        "url": "https://www.lambdatest.com/blog/ai-platforms/",
-        "snippet": "Best Artificial Intelligence Platforms · 1. KaneAI · 2. Iguazio · 3. Databricks · 4. SAP HANA Cloud · 5. DataRobot · 6. PyTorch · 7. watsonx Assistant.",
-        "position": 9
-      }
-    ],
-    "metadata": {
-      "question": "best custom AI platforms",
-      "total_results": 9,
-      "search_time": "2025-05-31T20:29:39.748Z",
-      "status": "success"
-    }
-  },
-  "What is thinair MCP?": {
-    "results": [
-      {
-        "title": "Accurate NLQ & AI Solutions via Model Context Protocol ... - Thinair",
-        "url": "https://thinair.dev/privacy-policy",
-        "snippet": "Build custom AI solutions with accurate Natural Language Query (NLQ) using Thinair's Model Context Protocol (MCP). We automate data integration (SQL, APIs) ...",
-        "position": 1
-      },
-      {
-        "title": "What Is MCP, and Why Is Everyone – Suddenly!– Talking About It?",
-        "url": "https://huggingface.co/blog/Kseniase/mcp",
-        "snippet": "Anthropic came up with Model Context Protocol (MCP) – an open standard designed to bridge AI assistants with the world of data and tools.",
-        "position": 2
-      },
-      {
-        "title": "thinAiR Consulting - At thinAiR, we're not just a full-stack software ...",
-        "url": "http://mcp.haf.mybluehost.me/",
-        "snippet": "thinAiR Consulting provides AI and AR/VR solutions tailored to your business. At thinAiR, we're not just a full-stack software development company. Our Baton ...",
-        "position": 3
-      },
-      {
-        "title": "Model Context Protocol (MCP) Clearly Explained : r/LLMDevs - Reddit",
-        "url": "https://www.reddit.com/r/LLMDevs/comments/1jbqegg/model_context_protocol_mcp_clearly_explained/",
-        "snippet": "The Model Context Protocol (MCP) is a standardized protocol that connects AI agents to various external tools and data sources.",
-        "position": 4
-      },
-      {
-        "title": "What the heck is MCP and why is everyone talking about it?",
-        "url": "https://github.blog/ai-and-ml/llms/what-the-heck-is-mcp-and-why-is-everyone-talking-about-it/",
-        "snippet": "It feels like everyone's talking about MCP (Model Context Protocol) these days when it comes to large language models (LLMs), but hardly anyone is actually ...",
-        "position": 5
-      },
-      {
-        "title": "ThinAir Oxygen Therapy | MediCentre Bolton UK",
-        "url": "https://medicentrebolton.uk/chiropractic-care/",
-        "snippet": "ThinAir Oxygen Therapy delivers personalized programs that support the body to recover, repair, and regenerate. By harnessing the science of intermittent ...",
-        "position": 6
-      },
-      {
-        "title": "MCP Explained in 15 Minutes - YouTube",
-        "url": "https://www.youtube.com/watch?v=GQDHxlKJe_M",
-        "snippet": "Share your videos with friends, family, and the world.",
-        "position": 7
-      },
-      {
-        "title": "AI Engineer's Handbook to MCP Architecture - Medium",
-        "url": "https://medium.com/data-science-collective/ai-engineers-handbook-to-mcp-architecture-905b47965cb1",
-        "snippet": "Cut through the AI hype around MCP (Model Context Protocol): learn what MCP is, why it's not magic, and why it's ready for prime time.",
-        "position": 8
-      },
-      {
-        "title": "Thin Air Resulting in High Pressure: Mountain Sickness and ...",
-        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5385916/",
-        "snippet": "Thin Air Resulting in High Pressure: Mountain Sickness and Hypoxia-Induced Pulmonary Hypertension ... MCP: monocyte chemoattractant protein; PDGF: platelet- ...",
-        "position": 9
-      }
-    ],
-    "metadata": {
-      "question": "What is thinair MCP?",
-      "total_results": 9,
-      "search_time": "2025-05-31T20:29:39.777Z",
-      "status": "success"
-    }
-  },
-  "AI solutions for data unification": {
-    "results": [
-      {
-        "title": "Data Unification: The Key to Unlocking AI's Full Potential",
-        "url": "https://techstrong.ai/aiops/data-unification-the-key-to-unlocking-ais-full-potential/",
-        "snippet": "“Optimizing data for AI is no small feat—it requires a robust, intelligent data infrastructure capable of managing complex workflows, unifying ...",
-        "position": 1
-      },
-      {
-        "title": "Data Unification and Management - Reltio",
-        "url": "https://www.reltio.com/products/data-unification-and-management/",
-        "snippet": "Our AI-powered data unification and management capabilities transform your siloed, multisource data into unified, trusted, and interoperable data.",
-        "position": 2
-      },
-      {
-        "title": "What is Unified Data? | C3 AI Glossary Terms for Enterprise AI",
-        "url": "https://c3.ai/glossary/features/unified-data/",
-        "snippet": "The C3 AI Enterprise Data Lake enables rapid data integration from disparate data sources across an organization in order to build a unified and federated data ...",
-        "position": 3
-      },
-      {
-        "title": "Breaking Down Barriers: How Data Unification Drives AI Success",
-        "url": "https://digitalcxo.com/article/breaking-down-barriers-how-data-unification-drives-ai-success/",
-        "snippet": "According to the report, 79% of technology leaders believe unifying data is essential or very important to achieving top AI outcomes by 2025.",
-        "position": 4
-      },
-      {
-        "title": "Seeking Recommendations for which AI Tools for Enterprise are ...",
-        "url": "https://www.reddit.com/r/EnterpriseArchitect/comments/18ma5c4/seeking_recommendations_for_which_ai_tools_for/",
-        "snippet": "These tools should ideally possess the capability to seamlessly integrate across the entire organizational structure, leveraging Artificial ...",
-        "position": 5
-      },
-      {
-        "title": "Data unification can unlock AI value for the finance function - The CFO",
-        "url": "https://the-cfo.io/2024/04/05/data-unification-can-unlock-ai-value-for-the-finance-function/",
-        "snippet": "A unified, AI-ready data strategy enables finance to extract maximum value from data assets, mitigates risks from fragmented silos, and empowers ...",
-        "position": 6
-      },
-      {
-        "title": "SymphonyAI Advances AI-Powered Insights and Data Unification ...",
-        "url": "https://www.symphonyai.com/news/media/ai-media-2025-nab-show/",
-        "snippet": "SymphonyAI unveils enhanced Revedia platform with AI-powered data tools and content analytics for media companies at NAB Show 2025.",
-        "position": 7
-      },
-      {
-        "title": "The AI Journey Begins with Data Unification in a Data Lakehouse",
-        "url": "https://skypoint.ai/blog/the-ai-journey-begins-with-data-unification-in-a-data-lakehouse/",
-        "snippet": "With a unified data foundation, you can develop AI applications for predictive analytics, operational efficiency, personalized resident care, compliance ...",
-        "position": 8
-      },
-      {
-        "title": "AI-Powered Data Unification: The Secret to Accelerated Growth",
-        "url": "https://www.linkedin.com/pulse/unifying-data-ai-competitive-advantage-whitlock-dunbar-sig6e",
-        "snippet": "When we apply AI-powered tools to unify our data, we unlock a different kind of speed: informed speed. Now our teams don't have to chase down ...",
+        "title": "Custom AI Software Development | AI System Solutions - Chetu",
+        "url": "https://www.chetu.com/solutions/artificial-intelligence.php",
+        "snippet": "Our AI software development experts build custom artificial intelligence systems for AI startup companies to complete projects quickly and affordably.",
         "position": 9
       },
       {
-        "title": "How AI is fueling the growing market for cloud-based data unification",
-        "url": "https://www.reltio.com/resources/blog/how-ai-is-fueling-the-growing-market-for-cloud-based-data-unification/",
-        "snippet": "The pivot towards data unification and management is facilitated by cloud-based solutions that offer real-time silo breakdown through flexible ...",
+        "title": "Artificial Intelligence Development Services | AI Software",
+        "url": "https://www.coherentsolutions.com/artificial-intelligence",
+        "snippet": "We specialize in a variety of AI solutions, including machine learning, natural language processing, AI-powered analytics, and automation tools. Our AI software ...",
         "position": 10
       }
     ],
     "metadata": {
-      "question": "AI solutions for data unification",
+      "question": "Custom AI solutions for enterprises",
       "total_results": 10,
-      "search_time": "2025-05-31T20:29:39.800Z",
+      "search_time": "2025-05-31T20:46:58.405Z",
       "status": "success"
     }
   },
-  "thinair vs other AI platforms": {
+  "Thinair vs other AI platforms": {
     "results": [
       {
         "title": "Top 10 ThinAir Alternatives & Competitors in 2025 - G2",
@@ -424,7 +250,7 @@
       {
         "title": "Legal AI vs. ChatGPT: What Makes Them Different? - LexisNexis",
         "url": "https://www.lexisnexis.com/community/insights/legal/b/thought-leadership/posts/legal-ai-vs-chatgpt-what-makes-them-different",
-        "snippet": "Legal AI tools, such as Lexis+ AI, are technology platforms that have been specifically created, developed and trained for use in the practice of law.",
+        "snippet": "The risk of using a piece of technology that “hallucinates” research results that are entirely made up out of thin air is simply not acceptable ...",
         "position": 7
       },
       {
@@ -436,7 +262,7 @@
       {
         "title": "Best AI Tools for All Use Cases (in 2025) - Medium",
         "url": "https://medium.com/@artturi-jalli/ai-tools-for-all-use-cases-61180b538cb4",
-        "snippet": "You'll find all sorts of AI tools, such as AI writers, image generators, text-to-speech tools, and recruiting software.",
+        "snippet": "I've put together the best AI tools for different use cases. Find all sorts of AI tools, such as writer tools, image generators, ...",
         "position": 9
       },
       {
@@ -447,213 +273,423 @@
       }
     ],
     "metadata": {
-      "question": "thinair vs other AI platforms",
+      "question": "Thinair vs other AI platforms",
       "total_results": 10,
-      "search_time": "2025-05-31T20:29:39.811Z",
+      "search_time": "2025-05-31T20:46:58.409Z",
       "status": "success"
     }
   },
-  "top natural language query systems": {
+  "How to automate data integration": {
     "results": [
+      {
+        "title": "Automated Data Integration: Concepts & Strategies - Nexla",
+        "url": "https://nexla.com/data-engineering-best-practices/automated-data-integration/",
+        "snippet": "This article will cover five data integration concepts, discuss associated best practices, and present the benefits of automation.",
+        "position": 1
+      },
+      {
+        "title": "How To Automate Data Integration: Achieving Efficiency, Scalability",
+        "url": "https://www.adeptia.com/blog/automate-data-integration",
+        "snippet": "This comprehensive guide explores the benefits, challenges, and key components of data integration, including a close look at popular data automation tools.",
+        "position": 2
+      },
+      {
+        "title": "Automating Company Data Integration in Excel - Reddit",
+        "url": "https://www.reddit.com/r/excel/comments/1cdjxlq/automating_company_data_integration_in_excel/",
+        "snippet": "The goal is to add information about certain companies, and only those, to a list in an automated or simplified way. If someone can help me with ...",
+        "position": 3
+      },
+      {
+        "title": "How do I create an automated data integration for",
+        "url": "https://community.canvaslms.com/t5/Admin-Guide/How-do-I-create-an-automated-data-integration-for-an-account/ta-p/255",
+        "snippet": "This lesson will provide the basic lessons on how to use the Canvas API and the programming language of your choice to set up an automated system to manage ...",
+        "position": 4
+      },
+      {
+        "title": "Data Integration Automation | OneStream Community",
+        "url": "https://community.onestreamsoftware.com/discussions/WorkflowDI/data-integration-automation/23413",
+        "snippet": "Data Integration Automation · 1. Extract OS data and push it to DB tables - DM Sequence · 2. Execute list of DB Stored Procedures · 3. Import ...",
+        "position": 5
+      },
+      {
+        "title": "How To Create A Data Pipeline Automation [Complete Guide] | Estuary",
+        "url": "https://estuary.dev/data-pipeline-automation/",
+        "snippet": "In our comprehensive guide, learn how to create a data pipeline automation that saves you time, reduces errors, and boosts productivity.",
+        "position": 6
+      },
+      {
+        "title": "How to automate data integration | Salesforce Trailblazer Community",
+        "url": "https://trailhead.salesforce.com/trailblazer-community/feed/0D5KX000000ngUy0AI",
+        "snippet": "I'd recommend checking out Skyvia. It's a no-code platform for data integration. Skyvia supports near-real-time sync with a minimum schedule ...",
+        "position": 7
+      },
+      {
+        "title": "How to Automate the Data Integration - Metabase Discussion",
+        "url": "https://discourse.metabase.com/t/how-to-automate-the-data-integration/31839",
+        "snippet": "Create a connection from your source CRM to ideally a data warehouse such as BigQuery, for example. Then connect Metabase to BigQuery.",
+        "position": 8
+      },
+      {
+        "title": "9 Best Practices for Data Integration and Automation - eOne Solutions",
+        "url": "https://www.eonesolutions.com/blog/best-practices-for-data-integration-and-automation/",
+        "snippet": "Some of these practices include choosing the right integration software and automation tool for your needs, checking data quality during every ...",
+        "position": 9
+      },
+      {
+        "title": "How to Automate Product Data Integration via Client API Links in a ...",
+        "url": "https://www.reddit.com/r/ruby/comments/1eawjzb/how_to_automate_product_data_integration_via/",
+        "snippet": "I'm working on a B2B startup, and we have a portal where we want to automate the process for brands to make their product data live by simply ...",
+        "position": 10
+      }
+    ],
+    "metadata": {
+      "question": "How to automate data integration",
+      "total_results": 10,
+      "search_time": "2025-05-31T20:46:58.411Z",
+      "status": "success"
+    }
+  },
+  "What is thinair Model Context Protocol?": {
+    "results": [
+      {
+        "title": "Introducing the Model Context Protocol - Anthropic",
+        "url": "https://www.anthropic.com/news/model-context-protocol",
+        "snippet": "The Model Context Protocol is an open standard that enables developers to build secure, two-way connections between their data sources and AI-powered tools.",
+        "position": 1
+      },
+      {
+        "title": "Thinair | Accurate NLQ & AI Solutions via Model Context Protocol ...",
+        "url": "https://thinair.cloud/",
+        "snippet": "Thinair builds custom AI solutions on future-ready frameworks like the Model Context Protocol (MCP), becoming your strategic partner.",
+        "position": 2
+      },
+      {
+        "title": "Model Context Protocol - Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/Model_Context_Protocol",
+        "snippet": "The Model Context Protocol (MCP) is an open standard, open-source framework introduced by Anthropic to standardize the way artificial intelligence (AI) models ...",
+        "position": 3
+      },
+      {
+        "title": "Model Context Protocol (MCP) Clearly Explained : r/LLMDevs - Reddit",
+        "url": "https://www.reddit.com/r/LLMDevs/comments/1jbqegg/model_context_protocol_mcp_clearly_explained/",
+        "snippet": "The Model Context Protocol (MCP) is a standardized protocol that connects AI agents to various external tools and data sources.",
+        "position": 4
+      },
+      {
+        "title": "What is Model Context Protocol? | A Practical Guide by K2view",
+        "url": "https://www.k2view.com/model-context-protocol/",
+        "snippet": "Model Context Protocol (MCP) is a standard for connecting LLMs to enterprise data sources in real time, to ensure compliant and complete GenAI responses.",
+        "position": 5
+      },
+      {
+        "title": "Model Context Protocol: Structuring AI Contexts for Coherent ...",
+        "url": "https://medium.com/@maliahrajan/model-context-protocol-structuring-ai-contexts-for-coherent-interactions-2b8bfa766c3e",
+        "snippet": "Enter the Model Context Protocol (MCP) — a standardized framework that brings structure, consistency, and reliability to context management in ...",
+        "position": 6
+      },
+      {
+        "title": "Understanding the Model Context Protocol (MCP) | deepset Blog",
+        "url": "https://www.deepset.ai/blog/understanding-the-model-context-protocol-mcp",
+        "snippet": "MCP standardizes the integration of data and tools with AI Agents, which is proving incredibly valuable for building AI applications faster.",
+        "position": 7
+      },
+      {
+        "title": "What is Model Context Protocol? The emerging standard bridging AI ...",
+        "url": "https://www.zdnet.com/article/what-is-model-context-protocol-the-emerging-standard-bridging-ai-and-data-explained/",
+        "snippet": "MCP is designed to solve a core problem in the AI ecosystem: How to seamlessly and securely connect large language models (LLMs) and AI agents to the vast, ...",
+        "position": 8
+      },
+      {
+        "title": "The Model Context Protocol: Getting beneath the hype - Thoughtworks",
+        "url": "https://www.thoughtworks.com/en-us/insights/blog/generative-ai/model-context-protocol-beneath-hype",
+        "snippet": "Released in November 2024 by Anthropic, the Model Context Protocol is an open standard that defines and stabilizes the way developers build ...",
+        "position": 9
+      },
+      {
+        "title": "ChatGPT Revenue Surge, New AGI Timelines, Amazon's AI Agent ...",
+        "url": "https://www.marketingaiinstitute.com/blog/the-ai-show-episode-143",
+        "snippet": "[00:58:41] Mike Kaput: Our next rapid fire topic concerns something called model context protocol or MCP. [00:58:47] So in November of last year ...",
+        "position": 10
+      }
+    ],
+    "metadata": {
+      "question": "What is thinair Model Context Protocol?",
+      "total_results": 10,
+      "search_time": "2025-05-31T20:46:58.413Z",
+      "status": "success"
+    }
+  },
+  "How much does thinair cost?": {
+    "results": [
+      {
+        "title": "ThinAir TA-ABS White Polymer ABS Hand Dryer",
+        "url": "https://www.handdryersupply.com/products/thinair-ta-abs-white-polymer-abs-hand-dryer.html?srsltid=AfmBOop9WQ1RCs2iv_-BpcyB6QN7mo5UCFvZilqmuv7KpUQ7dbPVIjez",
+        "snippet": "HandDryerSupply.com has the lowest price on the TA-ABS ThinAir hand dryer. We are a trusted Excel Dryer distributor and will match or beat any advertised price ...",
+        "position": 1
+      },
+      {
+        "title": "Pricing | ThinAir Telematics",
+        "url": "https://www.thinair.co/pricing/",
+        "snippet": "Get latest pricing on all of our solutions with our new Pricing Wizard. Receive your free, no-obligation proposal along with details on our products.",
+        "position": 2
+      },
+      {
+        "title": "Excel Dryer TA-ABS ThinAir ADA Compliant Hand Dryer 110-120 Volt",
+        "url": "https://www.amazon.com/Excel-TA-ABS-ThinAir-Compliant-110-120/dp/B00R4I8XIM",
+        "snippet": "List Price: $500.00 List Price: $500.00$500.00. The List Price is the suggested retail price of a new product as provided by a manufacturer, supplier, or seller ...",
+        "position": 3
+      },
+      {
+        "title": "THIN AIR (AIR) Price Chart - Buy and Sell on Phantom",
+        "url": "https://phantom.com/tokens/solana/BtHoyZKxktnWAXr9CATuh7m6QzTAWQMW7a3FFCwepump",
+        "snippet": "The market capitalization of AIR is $1.2M as of May 21, 2025. Market capitalization is calculated by multiplying the current price of AIR by its circulating ...",
+        "position": 4
+      },
+      {
+        "title": "Wide Track Deployment Bag | Thin Air Gear – ThinAirGearUSA",
+        "url": "https://thinairgearusa.com/products/wide-track-deployment-bag",
+        "snippet": "Wide Track Deployment Bag. Regular price $449.00 Sale. Color. Black.",
+        "position": 5
+      },
+      {
+        "title": "ThinAir TA-SB Brushed Stainless Steel Hand Dryer",
+        "url": "https://www.handdryersupply.com/products/thinair-ta-sb-brushed-stainless-steel-hand-dryer.html?srsltid=AfmBOor8a40pWx6Ps_l96EBmkRguCR_SvgGiUTItn75f7aoHGShoetJc",
+        "snippet": "Get Free Shipping on ThinAir hand dryer and all orders over $155. Select \"Free Shipping\" at checkout. Sent via UPS Ground. US Domestic orders only. Need it ...",
+        "position": 6
+      },
+      {
+        "title": "thinAir: ADAPTIVE Oxygen Therapy for a Healthy Lifestyle",
+        "url": "https://www.thinair.life/",
+        "snippet": "At thinAir we specialise in a revolutionary oxygen therapy that delivers personalised programmes to support your body to Recover, Repair and Regenerate. ‍",
+        "position": 7
+      },
+      {
+        "title": "Thin Air (Ignacio López) - Vanishing Inc.",
+        "url": "https://www.vanishingincmagic.com/stage-and-parlor-magic/thin-air-ignacio-lopez/",
+        "snippet": "Overall I think this is a great prop to have, there are so many applications that it can be used for. The price might be a little high but not extremely over ...",
+        "position": 8
+      },
+      {
+        "title": "FAQs - Thin Air Sports",
+        "url": "https://thinairsports.com/faqs/",
+        "snippet": "It is a 15 day programme that trains your body to work more efficiently by gradually reducing the oxygen you breathe in a safe and controlled environment.",
+        "position": 9
+      },
+      {
+        "title": "Thin Air price - AIR to USD price chart & market cap | CoinBrain",
+        "url": "https://coinbrain.com/coins/eth-0xb9a0a0b10a325a01f1c7c3792e126e479b1cccc8",
+        "snippet": "What is the price of Thin Air today? One Thin Air coin can currently be purchased for approximately $0.000000000132. What is Thin Air smart contract address?",
+        "position": 10
+      }
+    ],
+    "metadata": {
+      "question": "How much does thinair cost?",
+      "total_results": 10,
+      "search_time": "2025-05-31T20:46:58.413Z",
+      "status": "success"
+    }
+  },
+  "Thinair AI solution reviews": {
+    "results": [
+      {
+        "title": "ThinAir Reviews: Pros And Cons of Working At ThinAir | Glassdoor",
+        "url": "https://www.glassdoor.com/Reviews/ThinAir-Reviews-E1375456.htm",
+        "snippet": "65% of employees would recommend working at ThinAir to a friend and 65% have a positive outlook for the business. This rating has been stable over the past 12 ...",
+        "position": 1
+      },
+      {
+        "title": "Read Customer Service Reviews of air.ai - Trustpilot",
+        "url": "https://www.trustpilot.com/review/air.ai",
+        "snippet": "This company is a scam. It appears to be a thin layer of automation on top of either Google Contact Center AI, or another actual startup. Its goal appears to be ...",
+        "position": 2
+      },
+      {
+        "title": "THIN/AIR™",
+        "url": "https://www.lionsharemedia.com/",
+        "snippet": "ThinAir solves this with direct distribution, AI-enabled asset, rights and data management and transparent revenue share payments.",
+        "position": 3
+      },
+      {
+        "title": "Profile for Thin Air - Facebook",
+        "url": "https://www.facebook.com/100094042491002",
+        "snippet": "⏱ ON-THE-GO: Carry your personal AI assistant wherever you go. From your daily commute to the comfort of your living room, ChatGPT is always ready to help.",
+        "position": 4
+      },
+      {
+        "title": "The AI We Deserve - Boston Review",
+        "url": "https://www.bostonreview.net/forum/the-ai-we-deserve/",
+        "snippet": "The scale and speed really are impressive. How else could I get sixty personalized stories, accompanied by hours of audio across six languages, ...",
+        "position": 5
+      },
+      {
+        "title": "ThinAir - LinkedIn",
+        "url": "https://www.linkedin.com/company/thinair",
+        "snippet": "ThinAir Next-Gen Endpoint Data Visibility Platform delivers complete intelligence about every information in your organization, with simplicity and speed.",
+        "position": 6
+      },
+      {
+        "title": "How reliable is the AI scan? : r/mynetdiary - Reddit",
+        "url": "https://www.reddit.com/r/mynetdiary/comments/1j1zb0q/how_reliable_is_the_ai_scan/",
+        "snippet": "I've only used the AI scanner once because it was totally and completely wrong. When I weighed my breakfast it worked out about 300 calories.",
+        "position": 7
+      },
+      {
+        "title": "air.ai Reviews 85 - Trustpilot",
+        "url": "https://ca.trustpilot.com/review/air.ai?page=5",
+        "snippet": "This company is a scam. It appears to be a thin layer of automation on top of either Google Contact Center AI, or another actual startup. Its goal appears to be ...",
+        "position": 8
+      },
+      {
+        "title": "Bypass AI Review: I Tried it for 14 days, Here's What I Discovered...",
+        "url": "https://aidetectplus.com/blog/bypass-ai-review",
+        "snippet": "Poor Customer Service: The support is like a brick wall. · Pricey Subscription Traps: Watch out! · Error-Prone Outputs: The AI often spits out ...",
+        "position": 9
+      },
+      {
+        "title": "Thinair | Accurate NLQ & AI Solutions via Model Context Protocol ...",
+        "url": "https://thinair.cloud/",
+        "snippet": "We analyze needs, unify your data (SaaS, DBs) via MCP, and build secure, custom AI agents & solutions that integrate seamlessly with your existing systems.",
+        "position": 10
+      }
+    ],
+    "metadata": {
+      "question": "Thinair AI solution reviews",
+      "total_results": 10,
+      "search_time": "2025-05-31T20:46:58.430Z",
+      "status": "success"
+    }
+  },
+  "Thinair customer success stories": {
+    "results": [
+      {
+        "title": "Client Feedback: What Customers Say About ThinAir Telematics",
+        "url": "https://www.thinair.co/clients/",
+        "snippet": "ThinAir helped us save $100,000 plus. ThinAir gives us reassurance that we have control over our trucks. We know we can find our assets at any time. Matt ...",
+        "position": 1
+      },
+      {
+        "title": "Testimonial | ThinAir helped us save $100,000 plus",
+        "url": "https://www.thinair.co/our_testimonial/thinair-helped-us-save-100000-plus/",
+        "snippet": "ThinAir gives us reassurance that we have control over our trucks. We know we can find our assets at any time.",
+        "position": 2
+      },
+      {
+        "title": "CUSTOMER SERVICE VANISHES INTO THIN AIR IN THE 21ST ...",
+        "url": "https://medium.com/@xavierledru/customer-service-vanishes-into-thin-air-in-the-21st-century-0b091434c9ad",
+        "snippet": "WHAT HAPPENED IN THE 21ST CENTURY? ; DECLINING EXPERTISE: when internet was in its infancy, providing support to customers was a key for success.",
+        "position": 3
+      },
+      {
+        "title": "Out of Thin Air delivers with Metrobi in LA",
+        "url": "https://metrobi.com/success-stories/out-of-thin-air-delivers-with-metrobi-in-la/",
+        "snippet": "SUCCESS STORIES · ‟My products are handled professionally and I have ... Delivery notifications and tracking improve customer satisfaction by 27%.",
+        "position": 4
+      },
+      {
+        "title": "GaMEP at Georgia Tech Client Success Stories",
+        "url": "https://gamep.org/success-stories/",
+        "snippet": "Discover the impact GaMEP at Georgia Tech has had on manufacturers across Georgia. Read our client success stories and learn how we can assist you.",
+        "position": 5
+      },
+      {
+        "title": "Success Stories - Pclub.io",
+        "url": "https://www.pclub.io/success-stories",
+        "snippet": "They had an immediate impact on my customer conversations and deals and gave me confidence that I understood the true root cause of my customer's challenges.",
+        "position": 6
+      },
+      {
+        "title": "ThinAir Telematics Blog | News, Views, Information",
+        "url": "https://www.thinair.co/blog/",
+        "snippet": "Get the latest updates on our innovative transporation solutions, services, and achievements from the ThinAir Telematics Blog. Stay tuned.",
+        "position": 7
+      },
+      {
+        "title": "Local Delivery Success Stories & Case Study | Metrobi",
+        "url": "https://metrobi.com/success-stories/",
+        "snippet": "“For a business like mine, where driving and accuracy is very important, Metrobi really solves a lot of problems. ” Alessandro Jang | Founder. Out of Thin Air.",
+        "position": 8
+      },
+      {
+        "title": "Home - Thin Air Web & Software",
+        "url": "https://thinairweb.com/",
+        "snippet": "Our team members have created some amazingly creative and complex systems – and we're proud that more than 75% of our customers have been with us at least 10 ...",
+        "position": 9
+      },
+      {
+        "title": "Customer success stories | Printful Blog",
+        "url": "https://www.printful.com/blog/success-stories",
+        "snippet": "6 Online T-Shirt Business Success Stories. By Cloe Ann Montoya. 14 min read. Success, like a perfect t-shirt design, is not born out of thin air. It's crafted ...",
+        "position": 10
+      }
+    ],
+    "metadata": {
+      "question": "Thinair customer success stories",
+      "total_results": 10,
+      "search_time": "2025-05-31T20:46:58.532Z",
+      "status": "success"
+    }
+  },
+  "Best natural language query software": {
+    "results": [
+      {
+        "title": "8 Best Tools for Natural Language Processing in 2025",
+        "url": "https://www.nobledesktop.com/classes-near-me/blog/best-natural-language-processing-tools",
+        "snippet": "Some of the best tools for NLP in 2021 include Gensim, SpaCy, IBM Watson, Natural Language Toolkit (NLTK), MonkeyLearn, TextBlob, Stanford Core ...",
+        "position": 1
+      },
       {
         "title": "9 of the best natural language processing tools in 2025 | NLP tools",
         "url": "https://lumenalta.com/insights/9-of-the-best-natural-language-processing-tools-in-2025",
         "snippet": "9 of the best natural language processing tools in 2025 · 1. Google Cloud Natural Language API · 2. Amazon Comprehend · 3. Microsoft Azure Text ...",
-        "position": 1
-      },
-      {
-        "title": "Top 10 companies advancing natural language processing",
-        "url": "https://technologymagazine.com/top10/top-10-companies-advancing-natural-language-processing",
-        "snippet": "Technology Magazine looks at 10 of the top NLP companies that are making strides in the rapidly-changing world of AI.",
         "position": 2
-      },
-      {
-        "title": "Top 10 Natural Language Processing tools and platforms",
-        "url": "https://aimagazine.com/top10/top-10-natural-language-processing-tools-and-platforms",
-        "snippet": "We look at 10 of the top NLP platforms and tools helping businesses make the most of AI. From machine translation, summarisation, ticket classification and ...",
-        "position": 3
-      },
-      {
-        "title": "What's the best way to natural language query across 1,000 ... - Reddit",
-        "url": "https://www.reddit.com/r/MachineLearning/comments/1hrfexb/whats_the_best_way_to_natural_language_query/",
-        "snippet": "reddit.com/r/rag is the best way to learn about this. Setup your own rag system or find an off the shelf solution. Elastic can be part of the ...",
-        "position": 4
       },
       {
         "title": "Top 10 Natural Language Processing Tools and Platforms - Zilliz",
         "url": "https://zilliz.com/learn/top-10-natural-language-processing-tools-and-platforms",
         "snippet": "This guide provides an overview of the top ten NLP tools and platforms, highlighting their key features, applications, and advantages to help you select the ...",
+        "position": 3
+      },
+      {
+        "title": "Need Recommendations for Natural Language Query Tools - Reddit",
+        "url": "https://www.reddit.com/r/ProductManagement/comments/1jnw8kj/need_recommendations_for_natural_language_query/",
+        "snippet": "Hex.tech or Julius AI might be good starts!",
+        "position": 4
+      },
+      {
+        "title": "Top 10 Natural Language Processing tools and platforms",
+        "url": "https://aimagazine.com/top10/top-10-natural-language-processing-tools-and-platforms",
+        "snippet": "Top 10 Natural Language Processing tools and platforms · 10: Natural Language Toolkit (NLTK) · 9: MonkeyLearn · 8: spaCy · 7: Stanford CoreNLP · 6: ...",
         "position": 5
       },
       {
-        "title": "What tools, software, etc. would you say are essential for significant ...",
-        "url": "https://www.reddit.com/r/LanguageTechnology/comments/fxwb78/what_tools_software_etc_would_you_say_are/",
-        "snippet": "I'm tasked with identifying the key tools, software, environment configuration, etc. that would be essential in non-trivial NLP development.",
+        "title": "Top 10 companies advancing natural language processing",
+        "url": "https://technologymagazine.com/top10/top-10-companies-advancing-natural-language-processing",
+        "snippet": "Google Cloud's NLP platform enables users to derive insights from unstructured text using Google machine learning. AutoML enables users to train ...",
         "position": 6
-      },
-      {
-        "title": "Top 10 Natural Language Processing Tools and Platforms - Carmatec",
-        "url": "https://www.carmatec.com/blog/top-10-natural-language-processing-tools-and-platforms/",
-        "snippet": "Some of the most popular NLP tools and platforms include Google Cloud Natural Language API, IBM Watson Natural Language Understanding, SpaCy, Microsoft Azure ...",
-        "position": 7
       },
       {
         "title": "What is the best software for natural language processing (NLP) that ...",
         "url": "https://www.quora.com/What-is-the-best-software-for-natural-language-processing-NLP-that-uses-artificial-intelligence",
-        "snippet": "Some widely-used and reputable NLP frameworks include spaCy, NLTK, and Stanford NLP for Python. For deep learning-based approaches, TensorFlow and PyTorch are ...",
+        "snippet": "Dialogflow by Google Cloud: Dialogflow offers powerful NLP capabilities, making it a top choice for building conversational AI applications.",
+        "position": 7
+      },
+      {
+        "title": "Natural Language AI - Google Cloud",
+        "url": "https://cloud.google.com/natural-language",
+        "snippet": "Analyze text with AI using pre-trained API or custom AutoML machine learning models to extract relevant entities, understand sentiment, and more.",
         "position": 8
       },
       {
-        "title": "Top 5 NLP Platforms & Comparison in 2025 - Research AIMultiple",
-        "url": "https://research.aimultiple.com/natural-language-platforms/",
-        "snippet": "Explore & compare natural language processing and understanding platforms such as Dialogflow, Wit.ai, Luis, Amazon Lex, & Watson.",
+        "title": "Top NLP Tools & Services: Elevate Business with Best AI Solutions",
+        "url": "https://indatalabs.com/blog/natural-language-processing-tools-solutions-services",
+        "snippet": "In this guide, we take an in-depth look at 11 of the best natural language processing services that will give you the keys to this code.",
         "position": 9
       }
     ],
     "metadata": {
-      "question": "top natural language query systems",
+      "question": "Best natural language query software",
       "total_results": 9,
-      "search_time": "2025-05-31T20:29:39.833Z",
-      "status": "success"
-    }
-  },
-  "enterprise data integration tools": {
-    "results": [
-      {
-        "title": "Best Data Integration Tools Reviews 2025 | Gartner Peer Insights",
-        "url": "https://www.gartner.com/reviews/market/data-integration-tools",
-        "snippet": "Find the top Data Integration Tools with Gartner. Compare and filter by verified product reviews and choose the software that's right for your organization.",
-        "position": 1
-      },
-      {
-        "title": "Top 17 Data Integration Tools in 2025 - Adverity",
-        "url": "https://www.adverity.com/blog/the-top-data-integration-tools-in-2023",
-        "snippet": "SAP Data Services is an enterprise-level data integration and ETL tool that enables the extraction, transformation, and loading of data from ...",
-        "position": 2
-      },
-      {
-        "title": "22 Best Data Integration Tools Reviewed for 2025 - The CTO Club",
-        "url": "https://thectoclub.com/tools/best-data-integration-tools/",
-        "snippet": "Discover the top data integration tools for your team. Compare features, pros & cons, prices, and more in my complete guide.",
-        "position": 3
-      },
-      {
-        "title": "What is Enterprise Data Integration? - Boomi",
-        "url": "https://boomi.com/blog/what-ls-enterprise-data-integration-and-why-does-it-matter/",
-        "snippet": "4 Ways iPaaS Enables Enterprise Data Integration · 1. Seamless Integration with Business Systems · 2. Automation and Orchestration · 3. Data ...",
-        "position": 4
-      },
-      {
-        "title": "Data Integration Tools—How to Choose the Best One? | Nexla",
-        "url": "https://nexla.com/data-integration-techniques/data-integration-tools/",
-        "snippet": "Discover the top features of modern data integration tools, including comprehensive connectors, metadata management, change data capture, security, ...",
-        "position": 5
-      },
-      {
-        "title": "What Is Enterprise Data Integration: Examples & Tools - Airbyte",
-        "url": "https://airbyte.com/data-engineering-resources/enterprise-data-integration",
-        "snippet": "Learn how enterprise data integration can transform your business. Discover its tools and real-world applications.",
-        "position": 6
-      },
-      {
-        "title": "Talend Data Integration — Software to Connect, Access, and ...",
-        "url": "https://www.talend.com/products/integrate-data/",
-        "snippet": "Talend Data Integration is an enterprise data integration tool to connect, transform, and manage data from different sources to deliver business value.",
-        "position": 7
-      },
-      {
-        "title": "17 Best Data Integration Tools in 2025 (ETL, ELT & Real-Time ...",
-        "url": "https://estuary.dev/blog/data-integration-tools/",
-        "snippet": "Explore the top 17 data integration tools of 2025. Compare ETL, ELT, CDC, and streaming platforms with key features, pricing, and insights ...",
-        "position": 8
-      },
-      {
-        "title": "All About Data Integration Tools | Informatica",
-        "url": "https://www.informatica.com/resources/articles/what-are-data-integration-tools.html",
-        "snippet": "A data integration tool is software designed to facilitate the process of integrating data from multiple sources into a single, unified view for analysis.",
-        "position": 9
-      },
-      {
-        "title": "Data Integration Tools | K2View",
-        "url": "https://www.k2view.com/platform/data-integration-tools/",
-        "snippet": "With K2View Enterprise Data Integration tools, data teams deliver scalable pipelines between any sources and any targets, in any data transport method.",
-        "position": 10
-      }
-    ],
-    "metadata": {
-      "question": "enterprise data integration tools",
-      "total_results": 10,
-      "search_time": "2025-05-31T20:29:40.077Z",
-      "status": "success"
-    }
-  },
-  "automated SaaS onboarding tools": {
-    "results": [
-      {
-        "title": "The Best User Onboarding Software for SaaS: 25+ Tools - Userlist",
-        "url": "https://userlist.com/blog/user-onboarding-software/",
-        "snippet": "You'll find tools in the following categories: Email automation; Tooltips and tours; Customer onboarding portals; Helpdesk software; Video and webinars; User ...",
-        "position": 1
-      },
-      {
-        "title": "8 Best Customer Onboarding Software For SaaS - Userpilot",
-        "url": "https://userpilot.com/blog/customer-onboarding-software-saas/",
-        "snippet": "Choosing the best customer onboarding software can make or break your SaaS. Luckily we've compiled a list of the best tools for 2023.",
-        "position": 2
-      },
-      {
-        "title": "14 SaaS Onboarding Software Tools To Boost User Activation",
-        "url": "https://encharge.io/saas-onboarding-software/",
-        "snippet": "We're introducing you to 14 SaaS onboarding software tools that will help you do just this. No fluff or fancy promises. Just practical reviews.",
-        "position": 3
-      },
-      {
-        "title": "33 user onboarding tools to drive growth - Appcues",
-        "url": "https://www.appcues.com/blog/user-onboarding-tools",
-        "snippet": "The ultimate guide to the best user onboarding tools to help you improve, target, and analyze your onboarding UX.",
-        "position": 4
-      },
-      {
-        "title": "List SaaS user onboarding tools, handpicked just for you - Reddit",
-        "url": "https://www.reddit.com/r/SaaS/comments/1h6gfzf/list_saas_user_onboarding_tools_handpicked_just/",
-        "snippet": "List SaaS user onboarding tools, handpicked just for you. Here are 10 tools that can help level up your user ...",
-        "position": 5
-      },
-      {
-        "title": "SaaS Onboarding Software - Aligned",
-        "url": "https://alignedup.com/saas-onboarding-software/",
-        "snippet": "Discover SaaS onboarding software. Establish clear objectives, enhance consistency, stay aligned, and seamlessly onboard new customers!",
-        "position": 6
-      },
-      {
-        "title": "Top 7 SaaS customer onboarding software solutions - Moxo",
-        "url": "https://www.moxo.com/blog/best-saas-customer-onboarding-softwares",
-        "snippet": "This blog post explores the best SaaS customer onboarding software available, helping you choose the right tool to make a lasting impression.",
-        "position": 7
-      },
-      {
-        "title": "20 Best User Onboarding Software To Improve User Retention In 2025",
-        "url": "https://theproductmanager.com/tools/best-user-onboarding-software/",
-        "snippet": "Discover the best user onboarding software for your team. Compare features, pros + cons, pricing, and more in my complete guide.",
-        "position": 8
-      },
-      {
-        "title": "Best SaaS Onboarding Software Solutions for 2025 - Apty",
-        "url": "https://apty.ai/blog/best-saas-onboarding-software/",
-        "snippet": "As of July 2020, the Highest-rated Digital Adoption Platforms or SaaS Onboarding Tools are: Apty; Appcues; Intercom; Whatfix; Pendo; Userguiding ...",
-        "position": 9
-      },
-      {
-        "title": "10 Best Online SaaS Onboarding Tools for a Smooth User Experience",
-        "url": "https://www.coursebox.ai/blog/best-online-saas-onboarding-tool",
-        "snippet": "Automated Course Creation: The AI course designer quickly builds course structures and quizzes, saving time on setup. Instant Assessments: ...",
-        "position": 10
-      }
-    ],
-    "metadata": {
-      "question": "automated SaaS onboarding tools",
-      "total_results": 10,
-      "search_time": "2025-05-31T20:29:40.385Z",
+      "search_time": "2025-05-31T20:46:58.534Z",
       "status": "success"
     }
   }

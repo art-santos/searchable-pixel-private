@@ -11,6 +11,8 @@ import { SuggestionsCard } from '@/app/visibility-test/components/suggestions-ca
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
+import { saveOnboardingData, saveCompleteAeoAnalysis } from '@/lib/onboarding/database'
+import type { OnboardingData as DatabaseOnboardingData } from '@/lib/onboarding/database'
 
 interface OnboardingData {
   email: string
@@ -137,7 +139,7 @@ export default function VisibilityScorePage() {
     setIsAnalyzerOpen(true)
   }
 
-  const handleAnalysisComplete = (results: any) => {
+  const handleAnalysisComplete = async (results: any) => {
     console.log('🎉 Analysis completed with results:', results)
     setAnalysisResults(results)
     setAnalysisComplete(true)
@@ -147,6 +149,53 @@ export default function VisibilityScorePage() {
     
     // Store the results as visibility data for the existing UI
     setVisibilityData(results)
+    
+    // 🚨 SAVE DATA TO DATABASE 🚨
+    if (user && onboardingData) {
+      try {
+        console.log('💾 🚨 ATTEMPTING DATABASE SAVE FROM VISIBILITY SCORE PAGE 🚨')
+        
+        // First, save onboarding data and get company/run IDs
+        const dbOnboardingData: DatabaseOnboardingData = {
+          workspaceName: onboardingData.siteUrl.replace(/^https?:\/\//, '').replace(/^www\./, ''),
+          userEmail: user.email || '',
+          analyticsProvider: null,
+          domain: onboardingData.siteUrl,
+          isAnalyticsConnected: false,
+          keywords: onboardingData.keywords || [],
+          businessOffering: onboardingData.businessOffering || '',
+          knownFor: onboardingData.knownFor || '',
+          competitors: onboardingData.competitors || [],
+          cms: 'nextjs', // Default CMS
+        }
+        
+        console.log('💾 Saving onboarding data to database...')
+        const saveResult = await saveOnboardingData(user, dbOnboardingData)
+        
+        if (saveResult.success && saveResult.runId) {
+          console.log('✅ Onboarding data saved successfully, runId:', saveResult.runId)
+          
+          // Now save the complete AEO analysis
+          console.log('💾 Saving complete AEO analysis...')
+          const analysisResult = await saveCompleteAeoAnalysis(saveResult.runId, results, user.id)
+          
+          if (analysisResult.success) {
+            console.log('✅ 🎉 Complete AEO analysis saved successfully! 🎉')
+          } else {
+            console.error('❌ Failed to save AEO analysis:', analysisResult.error)
+          }
+        } else {
+          console.error('❌ Failed to save onboarding data:', saveResult.error)
+        }
+      } catch (error) {
+        console.error('❌ 🚨 EXCEPTION during database save:', error)
+      }
+    } else {
+      console.error('❌ Missing user or onboarding data for database save:', {
+        hasUser: !!user,
+        hasOnboardingData: !!onboardingData
+      })
+    }
     
     // Clear onboarding data now that we've used it
     localStorage.removeItem('onboardingData')
