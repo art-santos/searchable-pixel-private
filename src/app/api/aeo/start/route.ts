@@ -399,8 +399,8 @@ async function runAEOPipeline(
     console.log(`📁 Data saved to: ${storage.basePath}`)
     console.log('='.repeat(80))
     
-    // Note: Database saving is handled client-side in the onboarding overlay
-    // The completion event below contains all necessary data for client-side saving
+    // 🎯 All data is now sent to client via the completion event
+    // Client-side will handle database saving with proper user context
     
   } catch (error) {
     console.error('❌ Pipeline error:', error)
