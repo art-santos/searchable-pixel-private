@@ -184,6 +184,27 @@ export function DocsSearchBar({ onNavigate }: DocsSearchBarProps) {
 
   return (
     <div className="flex items-center w-full">
+      <style jsx>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @media (prefers-reduced-motion: reduce) {
+          * {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+          }
+        }
+      `}</style>
+      
       <div className="flex items-center w-full h-10 px-2">
         <SearchIcon className="h-4 w-4 text-gray-400 mr-1.5" />
         <div className="relative flex-1">
@@ -226,23 +247,24 @@ export function DocsSearchBar({ onNavigate }: DocsSearchBarProps) {
         
         {/* Search Container */}
         <div 
-          className="fixed left-1/2 -translate-x-1/2 top-[72px] w-[560px] border border-[#222222] bg-[#0c0c0c] transform transition-all duration-200 ease-out"
+          className="fixed left-1/2 -translate-x-1/2 top-[72px] w-[560px] border border-[#222222] bg-[#0c0c0c] rounded-lg shadow-2xl transform transition-all duration-300 ease-out"
           style={{
             transformOrigin: "top",
-            transform: `translate(-50%, ${isSearchOpen ? '0' : '-8px'})`,
+            transform: `translate(-50%, ${isSearchOpen ? '0' : '-12px'}) scale(${isSearchOpen ? '1' : '0.98'})`,
+            opacity: isSearchOpen ? 1 : 0,
           }}
         >
           <div className="flex items-center h-16 px-4 border-b border-[#222222]">
-            <SearchIcon className="h-5 w-5 text-gray-400 mr-3" />
+            <SearchIcon className="h-5 w-5 text-gray-400 mr-3 transition-colors duration-200" />
             <input
               ref={searchInputRef}
               type="text"
               placeholder="Search documentation..."
-              className="flex-1 bg-transparent border-none outline-none text-gray-200 placeholder-gray-400 text-xl font-sans"
+              className="flex-1 bg-transparent border-none outline-none text-gray-200 placeholder-gray-400 text-xl font-sans transition-all duration-200 focus:text-white"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <div className="flex items-center h-7 border border-[#2F2F2F] bg-[#1C1C1C] px-2 text-gray-400">
+            <div className="flex items-center h-7 border border-[#2F2F2F] bg-[#1C1C1C] px-2 text-gray-400 rounded transition-all duration-200 hover:border-[#3F3F3F]">
               <span className="text-xs font-mono uppercase tracking-wider">ESC</span>
             </div>
           </div>
@@ -256,11 +278,15 @@ export function DocsSearchBar({ onNavigate }: DocsSearchBarProps) {
                 {filteredItems.map((item, index) => (
                   <button 
                     key={index} 
-                    className="flex items-start w-full px-4 py-2 text-left hover:bg-[#161616]"
+                    className="flex items-start w-full px-4 py-2 text-left hover:bg-[#161616] transition-all duration-150 ease-out hover:transform hover:translateX(2px)"
                     onClick={() => handleItemClick(item)}
+                    style={{ 
+                      animationDelay: `${index * 50}ms`,
+                      animation: isSearchOpen ? 'fadeInUp 0.3s ease-out forwards' : 'none'
+                    }}
                   >
                     <div>
-                      <div className="text-sm text-gray-200">
+                      <div className="text-sm text-gray-200 transition-colors duration-200">
                         {item.section} › {item.item}
                       </div>
                       <div className="text-xs text-gray-500">{item.description}</div>

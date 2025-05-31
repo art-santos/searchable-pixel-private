@@ -138,6 +138,16 @@ export default function SettingsPage() {
   const [toastMessage, setToastMessage] = useState('Settings saved successfully')
   const { usage: subscriptionUsage, refresh: refreshUsage } = useSubscription()
   
+  // API Keys state
+  const [apiKeys, setApiKeys] = useState<any[]>([])
+  const [loadingKeys, setLoadingKeys] = useState(true)
+  const [newKeyName, setNewKeyName] = useState('')
+  const [isCreatingKey, setIsCreatingKey] = useState(false)
+  const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null)
+  const [copiedNewKey, setCopiedNewKey] = useState(false)
+  const [deletingKeyId, setDeletingKeyId] = useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  
   // Upgrade dialog state
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false)
   const [upgradeDialogProps, setUpgradeDialogProps] = useState<{
@@ -233,6 +243,94 @@ export default function SettingsPage() {
     
     fetchSubscription()
   }, [])
+  
+  // Fetch API keys when section is active
+  useEffect(() => {
+    if (activeSection === 'api-keys' && user) {
+      fetchApiKeys()
+    } else if (activeSection !== 'api-keys') {
+      // Clear the newly created key message when leaving the API keys section
+      setNewlyCreatedKey(null)
+      setCopiedNewKey(false)
+    }
+  }, [activeSection, user])
+  
+  const fetchApiKeys = async () => {
+    setLoadingKeys(true)
+    try {
+      const response = await fetch('/api/api-keys')
+      if (response.ok) {
+        const data = await response.json()
+        setApiKeys(data.apiKeys || [])
+      }
+    } catch (error) {
+      console.error('Error fetching API keys:', error)
+    } finally {
+      setLoadingKeys(false)
+    }
+  }
+  
+  const handleCreateApiKey = async () => {
+    if (isCreatingKey) return
+    
+    setIsCreatingKey(true)
+    try {
+      const response = await fetch('/api/api-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}) // No name needed, will auto-generate
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setNewlyCreatedKey(data.apiKey.key)
+        showToast('API key created successfully')
+        fetchApiKeys() // Refresh the list
+      } else {
+        const error = await response.json()
+        showToast(error.error || 'Failed to create API key')
+      }
+    } catch (error) {
+      console.error('Error creating API key:', error)
+      showToast('Failed to create API key')
+    } finally {
+      setIsCreatingKey(false)
+    }
+  }
+  
+  const handleCopyApiKey = (key: string) => {
+    navigator.clipboard.writeText(key)
+    setCopied(true)
+    showToast('API key copied to clipboard')
+    setTimeout(() => setCopied(false), 2000)
+  }
+  
+  const handleCopyNewKey = () => {
+    if (newlyCreatedKey) {
+      navigator.clipboard.writeText(newlyCreatedKey)
+      setCopiedNewKey(true)
+      setTimeout(() => setCopiedNewKey(false), 2000)
+    }
+  }
+  
+  const handleDeleteApiKey = async (keyId: string) => {
+    try {
+      const response = await fetch(`/api/api-keys?id=${keyId}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        showToast('API key deleted successfully')
+        fetchApiKeys() // Refresh the list
+        setDeletingKeyId(null)
+      } else {
+        showToast('Failed to delete API key')
+      }
+    } catch (error) {
+      console.error('Error deleting API key:', error)
+      showToast('Failed to delete API key')
+    }
+  }
   
   // Check for Stripe redirect parameters
   useEffect(() => {
@@ -330,10 +428,8 @@ export default function SettingsPage() {
 
   const sections = [
     { id: 'general', label: 'General', icon: Globe },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'api-keys', label: 'API Keys', icon: Key },
     { id: 'billing', label: 'Billing', icon: CreditCard }
-    // Removed Account section - merged with General
   ]
   
   // Mock data
@@ -373,13 +469,8 @@ export default function SettingsPage() {
     }
   }
 
-  const handleCopyApiKey = () => {
-    navigator.clipboard.writeText('sk_live_***************************')
-    setCopied(true)
-    showToast('API key copied to clipboard')
-    setTimeout(() => setCopied(false), 2000)
-  }
-
+  const billingPlan = getBillingData()
+  
   const handlePlanChange = async (planId: string) => {
     if (planId === 'free') {
       // Handle downgrade through Stripe Customer Portal
@@ -450,8 +541,6 @@ export default function SettingsPage() {
       setIsLoading(false)
     }
   }
-
-  const billingPlan = getBillingData()
   
   // Get user's display name
   const getDisplayName = () => {
@@ -506,51 +595,36 @@ export default function SettingsPage() {
               {/* General Settings */}
               {activeSection === 'general' && (
                 <div className="space-y-6">
-                  {/* Workspace Settings */}
-                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
-                    <h2 className="text-lg font-medium text-white mb-6">Workspace Settings</h2>
-                    
-                    <div className="space-y-6">
-                      <div>
-                        <label className="block text-sm text-[#888] mb-2">Workspace Name</label>
-                        <Input
-                          value={workspace.name}
-                          onChange={(e) => setWorkspace(prev => ({ ...prev, name: e.target.value }))}
-                          placeholder="My Company"
-                          className="bg-[#1a1a1a] border-[#333] text-white h-10"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm text-[#888] mb-2">Primary Domain</label>
-                        <Input
-                          value={workspace.domain}
-                          onChange={(e) => setWorkspace(prev => ({ ...prev, domain: e.target.value }))}
-                          placeholder="example.com"
-                          className="bg-[#1a1a1a] border-[#333] text-white h-10"
-                        />
-                        <p className="text-xs text-[#666] mt-2">
-                          This is the domain we'll monitor for AI visibility
-                        </p>
-                      </div>
+                  {/* Header */}
+                  <div>
+                    <h2 className="text-xl font-medium text-white mb-2">General Settings</h2>
+                    <p className="text-sm text-[#666]">
+                      Manage your profile and workspace settings
+                    </p>
+                  </div>
 
-                      <div>
-                        <label className="block text-sm text-[#888] mb-2">Contact Email</label>
-                        <Input
-                          value={workspace.email}
-                          onChange={(e) => setWorkspace(prev => ({ ...prev, email: e.target.value }))}
-                          placeholder="team@example.com"
-                          className="bg-[#1a1a1a] border-[#333] text-white h-10"
-                        />
+                  {/* Personal Information with Profile Picture */}
+                  <div className="space-y-6">
+                    <h3 className="text-white font-medium">Personal Information</h3>
+                    
+                    {/* Profile Picture */}
+                    <div className="flex items-center gap-6">
+                      <div className="relative">
+                        <div className="w-20 h-20 bg-[#1a1a1a] rounded-full flex items-center justify-center text-2xl font-medium text-white">
+                          {getDisplayName().charAt(0).toUpperCase()}
+                        </div>
+                        <button className="absolute bottom-0 right-0 w-7 h-7 bg-[#0a0a0a] border border-[#333] rounded-full flex items-center justify-center hover:bg-[#1a1a1a] transition-colors">
+                          <User className="w-3.5 h-3.5 text-[#666]" />
+                        </button>
                       </div>
+                      <div className="text-sm text-[#666]">
+                        <p>Upload a profile picture</p>
+                        <p className="text-xs mt-1">JPG, GIF or PNG. Max size 5MB.</p>
                       </div>
                     </div>
 
-                  {/* Personal Information */}
-                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
-                    <h2 className="text-lg font-medium text-white mb-6">Personal Information</h2>
-                    
-                    <div className="space-y-6">
+                    {/* Name and Email */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm text-[#888] mb-2">Full Name</label>
                         <Input
@@ -560,7 +634,7 @@ export default function SettingsPage() {
                             first_name: e.target.value 
                           }))}
                           placeholder="John Doe"
-                          className="bg-[#1a1a1a] border-[#333] text-white h-10"
+                          className="bg-[#0a0a0a] border-[#2a2a2a] text-white h-10"
                         />
                       </div>
                       
@@ -570,102 +644,70 @@ export default function SettingsPage() {
                           value={user?.email || ''}
                           type="email"
                           disabled
-                          className="bg-[#1a1a1a] border-[#333] text-[#888] h-10"
+                          className="bg-[#0a0a0a] border-[#2a2a2a] text-[#666] h-10 cursor-not-allowed"
                         />
-                        <p className="text-xs text-[#666] mt-1">
-                          Email cannot be changed here. Contact support if needed.
-                        </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Save Button */}
-                  <div className="flex justify-end">
-                      <Button 
-                      onClick={handleSaveSettings}
-                        disabled={isLoading}
-                        className="bg-[#1a1a1a] hover:bg-[#222] border border-[#333] hover:border-[#444] text-white h-9 px-4 text-sm font-medium"
-                      >
-                        {isLoading ? (
-                          <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
-                        ) : (
-                          'Save Changes'
-                        )}
-                      </Button>
+                  {/* Workspace Settings */}
+                  <div className="space-y-6 pt-6 border-t border-[#1a1a1a]">
+                    <h3 className="text-white font-medium">Workspace Settings</h3>
+                    
+                    <div>
+                      <label className="block text-sm text-[#888] mb-2">Workspace Name</label>
+                      <Input
+                        value={workspace.name}
+                        onChange={(e) => setWorkspace(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="My Company"
+                        className="bg-[#0a0a0a] border-[#2a2a2a] text-white h-10"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm text-[#888] mb-2">Primary Domain</label>
+                      <Input
+                        value={workspace.domain}
+                        onChange={(e) => setWorkspace(prev => ({ ...prev, domain: e.target.value }))}
+                        placeholder="example.com"
+                        className="bg-[#0a0a0a] border-[#2a2a2a] text-white h-10"
+                      />
+                      <p className="text-xs text-[#666] mt-2">
+                        This is the domain we'll monitor for AI visibility
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm text-[#888] mb-2">Contact Email</label>
+                      <Input
+                        value={workspace.email}
+                        onChange={(e) => setWorkspace(prev => ({ ...prev, email: e.target.value }))}
+                        placeholder="team@example.com"
+                        className="bg-[#0a0a0a] border-[#2a2a2a] text-white h-10"
+                      />
+                    </div>
                   </div>
 
-                  {/* Danger Zone */}
-                  <div className="bg-[#0a0a0a] border border-red-900/20 rounded-lg p-6">
-                    <h3 className="text-lg font-medium text-red-400 mb-2">Danger Zone</h3>
-                    <p className="text-sm text-[#666] mb-6">
-                      These actions cannot be undone. Please proceed with caution.
-                    </p>
-                    
+                  {/* Save Button */}
+                  <div className="flex justify-end pt-4">
                     <Button 
-                      variant="outline"
-                      className="border-red-900 text-red-400 hover:bg-red-900/20 h-9 px-4 text-sm"
+                      onClick={handleSaveSettings}
+                      disabled={isLoading}
+                      className="bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333] text-white h-9 px-6 text-sm"
                     >
-                      Delete Account
+                      {isLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        'Save Changes'
+                      )}
                     </Button>
                   </div>
-                </div>
-              )}
 
-              {/* Analytics Settings */}
-              {activeSection === 'analytics' && (
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
-                  <h2 className="text-lg font-medium text-white mb-2">Analytics Integrations</h2>
-                  <p className="text-sm text-[#666] mb-6">
-                    Connect your analytics platforms to track AI visibility impact
-                  </p>
-
-                  <div className="space-y-3">
-                    {analytics.map((provider) => (
-                      <div
-                        key={provider.id}
-                        className="flex items-center justify-between p-4 bg-[#0c0c0c] border border-[#1a1a1a] rounded-lg hover:border-[#333] transition-colors"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-[#1a1a1a] rounded-lg flex items-center justify-center text-lg">
-                            {provider.icon}
-                          </div>
-                          <div>
-                            <div className="text-white font-medium">{provider.name}</div>
-                            {provider.connected && provider.lastSync && (
-                              <div className="text-xs text-[#666]">Last synced {provider.lastSync}</div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        {provider.connected ? (
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2 text-xs text-green-400">
-                              <CheckCircle2 className="w-3 h-3" />
-                              Connected
-                            </div>
-                            <Button
-                              variant="outline"
-                              className="border-[#333] hover:border-[#444] h-8 px-3 text-xs"
-                            >
-                              Settings
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button
-                            className="bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333] h-8 px-3 text-xs"
-                          >
-                            Connect
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-              </div>
-              
-                  <div className="mt-6 p-4 bg-[#0f0f0f] border border-[#1a1a1a] rounded-lg">
-                    <p className="text-xs text-[#666]">
-                      Analytics data helps us understand how AI visibility improvements impact your actual traffic and conversions.
-                      We only access read-only data and never share it with third parties.
-                    </p>
+                  {/* Delete Account - Small text link */}
+                  <div className="pt-8 border-t border-[#1a1a1a] text-center">
+                    <button className="text-xs text-[#666] hover:text-red-400 transition-colors">
+                      Delete Account
+                    </button>
                   </div>
                 </div>
               )}
@@ -673,198 +715,115 @@ export default function SettingsPage() {
               {/* API Keys Settings */}
               {activeSection === 'api-keys' && (
                 <div className="space-y-6">
-                  {/* Header */}
-                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h2 className="text-lg font-medium text-white mb-2">API Keys</h2>
-                        <p className="text-sm text-[#666]">
-                          Manage your API keys for accessing Split's AI crawler analytics
-                        </p>
-                      </div>
-                      <Button
-                        className="bg-white text-black hover:bg-gray-100 h-9 px-4 text-sm font-medium"
-                      >
-                        Generate New Key
-                      </Button>
+                  {/* Header with Generate Button */}
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h2 className="text-xl font-medium text-white mb-2">API Keys</h2>
+                      <p className="text-sm text-[#666]">
+                        Manage programmatic access to your Split Analytics data
+                      </p>
                     </div>
-
-                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
-                      <div className="flex gap-3">
-                        <div className="w-6 h-6 bg-amber-500/20 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-amber-400 text-xs">!</span>
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-amber-300 mb-1">Keep Your API Keys Secure</h4>
-                          <p className="text-amber-200/80 text-sm">
-                            Store keys in environment variables. Never commit them to version control or share them publicly.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                    <Button
+                      onClick={handleCreateApiKey}
+                      disabled={isCreatingKey}
+                      className="bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333] text-white h-9 px-4 text-sm"
+                    >
+                      {isCreatingKey ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        'Generate New Key'
+                      )}
+                    </Button>
                   </div>
 
-                  {/* API Keys List */}
-                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
-                    <div className="p-6 border-b border-[#1a1a1a]">
-                      <h3 className="text-white font-medium">Your API Keys</h3>
-                      <p className="text-sm text-[#666] mt-1">These keys allow access to your Split analytics data</p>
-                    </div>
+                  {/* Success Message */}
+                  {newlyCreatedKey && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-2 text-sm"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-green-400" />
+                      <span className="text-green-400">API Key Created Successfully</span>
+                      <span className="text-[#666]">• Save this key securely. You won't be able to see it again.</span>
+                      <button
+                        onClick={() => {
+                          setNewlyCreatedKey(null)
+                          setCopiedNewKey(false)
+                        }}
+                        className="text-[#666] hover:text-white transition-colors ml-2"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </motion.div>
+                  )}
 
-                    <div className="divide-y divide-[#1a1a1a]">
-                      {/* Example API Key */}
-                      <div className="p-6">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-3 mb-3">
-                              <div className="w-8 h-8 bg-[#1a1a1a] rounded-lg flex items-center justify-center">
-                                <Key className="w-4 h-4 text-[#666]" />
+                  {/* Keys List */}
+                  {loadingKeys ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-6 h-6 animate-spin text-[#666]" />
+                    </div>
+                  ) : apiKeys.length === 0 && !newlyCreatedKey ? (
+                    <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-8 text-center">
+                      <Key className="w-10 h-10 text-[#333] mx-auto mb-3" />
+                      <p className="text-[#666] text-sm">No API keys yet</p>
+                      <p className="text-xs text-[#666] mt-1">Generate your first key to get started</p>
+                    </div>
+                  ) : (
+                    <div className="border border-[#1a1a1a] rounded-lg divide-y divide-[#1a1a1a]">
+                      {/* Existing keys */}
+                      {apiKeys.map((apiKey) => (
+                        <div
+                          key={apiKey.id}
+                          className="p-4 hover:bg-[#0a0a0a] transition-colors"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-3 mb-1">
+                                <h4 className="text-white text-sm font-medium">{apiKey.name}</h4>
+                                <span className="text-xs text-[#666]">
+                                  Created {new Date(apiKey.created_at).toLocaleDateString()}
+                                </span>
                               </div>
-                              <div>
-                                <h4 className="text-white font-medium">Production Key</h4>
-                                <p className="text-xs text-[#666]">Created Dec 15, 2024</p>
-                              </div>
-                            </div>
-                            
-                            <div className="bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-3 mb-3">
+                              
                               <div className="flex items-center gap-2">
-                                <code className="text-sm text-white font-mono flex-1 truncate">
-                                  {showApiKey ? 'split_live_abc123xyz789' : 'split_live_***************************'}
+                                <code className="text-xs text-[#666] font-mono">
+                                  {apiKey.key}
                                 </code>
                                 <button
-                                  onClick={() => setShowApiKey(!showApiKey)}
-                                  className="text-[#666] hover:text-white transition-colors flex-shrink-0"
+                                  onClick={() => handleCopyApiKey(apiKey.key)}
+                                  className="text-[#666] hover:text-white transition-colors"
                                 >
-                                  {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                  <Copy className="w-3 h-3" />
                                 </button>
                               </div>
                             </div>
-
-                            <div className="flex items-center gap-4 text-sm">
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                                <span className="text-[#666]">Last used 2 hours ago</span>
-                              </div>
-                              <div className="text-[#666]">
-                                Domain: example.com
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 ml-4">
-                            <Button
-                              onClick={handleCopyApiKey}
-                              variant="outline"
-                              className="border-[#333] hover:border-[#444] h-8 px-3 text-xs"
+                            
+                            <button
+                              onClick={() => {
+                                setDeletingKeyId(apiKey.id)
+                                setShowDeleteConfirm(true)
+                              }}
+                              className="text-[#666] hover:text-red-400 transition-colors p-1"
                             >
-                              {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              className="border-[#333] hover:border-[#444] h-8 px-3 text-xs"
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              variant="outline"
-                              className="border-red-900 text-red-400 hover:bg-red-900/20 h-8 px-3 text-xs"
-                            >
-                              Delete
-                            </Button>
+                              <X className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
-                      </div>
-
-                      {/* Empty state for no additional keys */}
-                      <div className="p-6 text-center">
-                        <div className="text-[#666] text-sm">
-                          No additional API keys. Generate a new key to get started.
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  </div>
+                  )}
 
-                  {/* Usage & Limits */}
-                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
-                    <h3 className="text-white font-medium mb-4">Usage & Limits</h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div>
-                        <div className="text-2xl font-bold text-white mb-1">1,247</div>
-                        <div className="text-sm text-[#666] mb-2">API Requests (30 days)</div>
-                        <div className="w-full h-1 bg-[#1a1a1a] rounded-full">
-                          <div className="w-3/4 h-1 bg-white/60 rounded-full"></div>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <div className="text-2xl font-bold text-white mb-1">156</div>
-                        <div className="text-sm text-[#666] mb-2">AI Crawlers Detected</div>
-                        <div className="text-xs text-green-400">+12% this month</div>
-                      </div>
-                      
-                      <div>
-                        <div className="text-2xl font-bold text-white mb-1">99.9%</div>
-                        <div className="text-sm text-[#666] mb-2">API Uptime</div>
-                        <div className="text-xs text-green-400">All systems operational</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Integration Examples */}
-                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
-                    <h3 className="text-white font-medium mb-4">Quick Start</h3>
-                    <p className="text-sm text-[#666] mb-6">
-                      Get up and running with our NPM package or API endpoints
-                    </p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="text-white text-sm font-medium mb-3">NPM Package</h4>
-                        <div className="bg-[#0c0c0c] border border-[#1a1a1a] rounded-lg p-4">
-                          <pre className="text-xs text-gray-300 overflow-x-auto">
-                            <code>{`npm install @split.dev/analytics
-
-// middleware.ts
-import { createCrawlerMiddleware } from '@split.dev/analytics/middleware'
-
-export const middleware = createCrawlerMiddleware({
-  apiKey: process.env.SPLIT_API_KEY
-})`}</code>
-                          </pre>
-                        </div>
-                        <div className="mt-2">
-                          <a
-                            href="/docs"
-                            className="text-blue-400 hover:text-blue-300 text-xs inline-flex items-center gap-1"
-                          >
-                            View full documentation
-                            <ArrowRight className="w-3 h-3" />
-                          </a>
-                        </div>
-                      </div>
-
-                      <div>
-                        <h4 className="text-white text-sm font-medium mb-3">Direct API</h4>
-                        <div className="bg-[#0c0c0c] border border-[#1a1a1a] rounded-lg p-4">
-                          <pre className="text-xs text-gray-300 overflow-x-auto">
-                            <code>{`curl -X POST https://split.dev/api/crawler-events \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{"events": [...]}'`}</code>
-                          </pre>
-                        </div>
-                        <div className="mt-2">
-                          <a
-                            href="/docs#api-reference"
-                            className="text-blue-400 hover:text-blue-300 text-xs inline-flex items-center gap-1"
-                          >
-                            API Reference
-                            <ArrowRight className="w-3 h-3" />
-                          </a>
-                        </div>
-                      </div>
-                    </div>
+                  {/* Documentation Link */}
+                  <div className="text-center pt-4">
+                    <a
+                      href="/docs#api-keys"
+                      className="inline-flex items-center gap-1.5 text-xs text-[#666] hover:text-white transition-colors"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      View API documentation
+                      <ArrowRight className="w-3 h-3" />
+                    </a>
                   </div>
                 </div>
               )}
@@ -872,163 +831,198 @@ export const middleware = createCrawlerMiddleware({
               {/* Billing Settings */}
               {activeSection === 'billing' && (
                 <div className="space-y-6">
+                  {/* Header */}
+                  <div>
+                    <h2 className="text-xl font-medium text-white mb-2">Billing</h2>
+                    <p className="text-sm text-[#666]">
+                      Manage your subscription and payment methods
+                    </p>
+                  </div>
+
                   {loadingSubscription ? (
-                    <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-8 flex items-center justify-center">
-                      <Loader2 className="w-6 h-6 animate-spin text-white" />
-                </div>
-                  ) : currentPlan === 'free' ? (
-                    /* Free Plan Empty State */
-                    <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-8 text-center">
-                      <div className="w-16 h-16 bg-[#1a1a1a] rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Zap className="w-8 h-8 text-[#666]" />
-              </div>
-                      <h2 className="text-xl font-medium text-white mb-2">You're on the Free plan</h2>
-                      <p className="text-[#666] text-sm mb-6 max-w-md mx-auto">
-                        Unlock daily visibility scans, AI-generated content, and advanced analytics with a paid plan
-                      </p>
-                      
-                      {/* Usage Limits */}
-                      <div className="bg-[#0c0c0c] border border-[#1a1a1a] rounded-lg p-4 mb-6 max-w-sm mx-auto">
-                        <div className="space-y-3 text-left">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-[#888]">Visibility Scans</span>
-                            <span className="text-white">{billingPlan.usage.scans.used} / {billingPlan.usage.scans.limit}</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-[#888]">AI Articles</span>
-                            <span className="text-[#666]">Not available</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-[#888]">Domains</span>
-                            <span className="text-white">{billingPlan.usage.domains.used} / {billingPlan.usage.domains.limit}</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <Button 
-                        onClick={() => setShowPricingModal(true)}
-                        className="bg-white text-black hover:bg-gray-100 h-10 px-6 text-sm font-medium"
-                        disabled={isLoading}
-                      >
-                        {isLoading ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          'Upgrade Plan'
-                        )}
-                      </Button>
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-6 h-6 animate-spin text-[#666]" />
                     </div>
                   ) : (
-                    /* Paid Plan View */
                     <>
-                      <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
+                      {/* Current Plan Section */}
+                      <div>
                         <div className="flex items-start justify-between mb-6">
                           <div>
-                            <h2 className="text-lg font-medium text-white mb-1">Current Plan</h2>
-                            <p className="text-sm text-[#666]">You're on the {billingPlan.name} plan</p>
+                            {currentPlan === 'free' ? (
+                              <div>
+                                <span className="text-2xl font-bold text-white">Free Plan</span>
+                                <p className="text-sm text-[#666] mt-1">Limited features</p>
+                              </div>
+                            ) : (
+                              <div>
+                                <div className="flex items-baseline gap-3">
+                                  <span className="text-2xl font-bold text-white">{billingPlan.name}</span>
+                                  <span className="text-lg text-[#666]">${billingPlan.price}/month</span>
+                                </div>
+                                {billingPlan.nextBilling && (
+                                  <p className="text-sm text-[#666] mt-1">
+                                    Renews on {billingPlan.nextBilling}
+                                  </p>
+                                )}
+                              </div>
+                            )}
                           </div>
                           <Button
                             onClick={() => setShowPricingModal(true)}
-                            variant="outline"
-                            className="border-[#333] hover:border-[#444] h-9 px-4 text-sm"
+                            className="bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333] text-white h-9 px-4 text-sm"
                             disabled={isLoading}
                           >
                             {isLoading ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : currentPlan === 'free' ? (
+                              'Upgrade'
                             ) : (
                               'Change Plan'
                             )}
                           </Button>
                         </div>
 
-                        <div className="flex items-end gap-1 mb-6">
-                          <span className="text-3xl font-bold text-white">${billingPlan.price}</span>
-                          <span className="text-[#666] mb-1">/{billingPlan.period}</span>
-                        </div>
-
+                        {/* Usage Metrics */}
                         <div className="space-y-4">
+                          {/* Visibility Scans */}
                           <div>
                             <div className="flex justify-between text-sm mb-2">
                               <span className="text-[#888]">Visibility Scans</span>
-                              <span className="text-white">{billingPlan.usage.scans.limit}</span>
+                              <span className="text-white">
+                                {billingPlan.usage.scans.used} / {billingPlan.usage.scans.limit}
+                              </span>
                             </div>
-                            <div className="text-xs text-[#666]">{billingPlan.usage.scans.used} scans this month</div>
-                  </div>
-                  
-                          {billingPlan.usage.articles.limit > 0 && (
-                            <div>
-                              <div className="flex justify-between text-sm mb-2">
-                                <span className="text-[#888]">AI Articles</span>
-                                <span className="text-white">{billingPlan.usage.articles.used} / {billingPlan.usage.articles.limit}</span>
-                              </div>
-                              <div className="w-full h-1 bg-[#1a1a1a] rounded-full overflow-hidden">
+                            <div className="w-full h-2 bg-[#1a1a1a] rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full rounded-full transition-all duration-300 ${
+                                  currentPlan === 'free' ? 'bg-white/40' : 'bg-green-500/60'
+                                }`}
+                                style={{ 
+                                  width: `${
+                                    billingPlan.usage.scans.limit === 'Unlimited' 
+                                      ? '100' 
+                                      : (billingPlan.usage.scans.used / parseInt(billingPlan.usage.scans.limit.split('/')[0])) * 100
+                                  }%` 
+                                }}
+                              />
+                            </div>
+                            {currentPlan !== 'free' && (
+                              <p className="text-xs text-[#666] mt-1">
+                                {billingPlan.usage.scans.limit === 'Unlimited' ? 'Unlimited scans available' : `${billingPlan.usage.scans.used} scans used this month`}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* AI Articles */}
+                          <div>
+                            <div className="flex justify-between text-sm mb-2">
+                              <span className="text-[#888]">AI Articles</span>
+                              <span className={`${billingPlan.usage.articles.limit === 0 ? 'text-[#666]' : 'text-white'}`}>
+                                {billingPlan.usage.articles.limit === 0 
+                                  ? 'Not available' 
+                                  : `${billingPlan.usage.articles.used} / ${billingPlan.usage.articles.limit}`
+                                }
+                              </span>
+                            </div>
+                            <div className="w-full h-2 bg-[#1a1a1a] rounded-full overflow-hidden">
+                              {billingPlan.usage.articles.limit > 0 && (
                                 <div 
-                                  className="h-full bg-white/60 rounded-full"
+                                  className="h-full bg-blue-500/60 rounded-full transition-all duration-300"
                                   style={{ width: `${(billingPlan.usage.articles.used / billingPlan.usage.articles.limit) * 100}%` }}
                                 />
-                              </div>
+                              )}
                             </div>
-                          )}
+                            {billingPlan.usage.articles.limit > 0 && (
+                              <p className="text-xs text-[#666] mt-1">
+                                {billingPlan.usage.articles.limit - billingPlan.usage.articles.used} articles remaining
+                              </p>
+                            )}
+                          </div>
 
-                      <div>
+                          {/* Domains */}
+                          <div>
                             <div className="flex justify-between text-sm mb-2">
                               <span className="text-[#888]">Domains</span>
-                              <span className="text-white">{billingPlan.usage.domains.used} / {billingPlan.usage.domains.limit}</span>
+                              <span className="text-white">
+                                {billingPlan.usage.domains.used} / {billingPlan.usage.domains.limit}
+                              </span>
                             </div>
-                          </div>
-                        </div>
-
-                        {billingPlan.nextBilling && (
-                          <div className="pt-4 mt-4 border-t border-[#1a1a1a]">
-                            <p className="text-xs text-[#666]">
-                              Next billing date: {billingPlan.nextBilling}
+                            <div className="w-full h-2 bg-[#1a1a1a] rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-white/40 rounded-full transition-all duration-300"
+                                style={{ width: `${(billingPlan.usage.domains.used / billingPlan.usage.domains.limit) * 100}%` }}
+                              />
+                            </div>
+                            <p className="text-xs text-[#666] mt-1">
+                              {billingPlan.usage.domains.limit - billingPlan.usage.domains.used} domain slots available
                             </p>
                           </div>
-                        )}
+                        </div>
                       </div>
 
-                      {/* Payment Method */}
-                      <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
-                        <h3 className="text-lg font-medium text-white mb-4">Payment Method</h3>
-                        
-                        <div className="flex items-center justify-between p-4 bg-[#0c0c0c] border border-[#1a1a1a] rounded-lg">
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 bg-[#1a1a1a] rounded-lg flex items-center justify-center">
-                              <CreditCard className="w-5 h-5 text-[#666]" />
+                      {/* Payment Method - Only show for paid plans */}
+                      {currentPlan !== 'free' && (
+                        <div className="border border-[#1a1a1a] rounded-lg p-6">
+                          <h3 className="text-white font-medium mb-4">Payment Method</h3>
+                          
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-[#1a1a1a] rounded-lg flex items-center justify-center">
+                                <CreditCard className="w-5 h-5 text-[#666]" />
+                              </div>
+                              <div>
+                                <p className="text-white text-sm">•••• •••• •••• 4242</p>
+                                <p className="text-xs text-[#666]">Expires 12/25</p>
+                              </div>
                             </div>
-                            <div>
-                              <div className="text-white text-sm">•••• •••• •••• 4242</div>
-                              <div className="text-xs text-[#666]">Expires 12/25</div>
-                            </div>
-                      </div>
-                      <Button 
-                            onClick={handleManageSubscription}
-                            variant="outline"
-                            className="border-[#333] hover:border-[#444] h-8 px-3 text-xs gap-1"
-                            disabled={isLoading || !stripeCustomerId}
+                            <Button 
+                              onClick={handleManageSubscription}
+                              variant="outline"
+                              className="border-[#333] hover:border-[#444] text-[#666] hover:text-white h-8 px-3 text-xs gap-1"
+                              disabled={isLoading || !stripeCustomerId}
+                            >
+                              {isLoading ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <>
+                                  Manage
+                                  <ExternalLink className="w-3 h-3" />
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                          <p className="text-xs text-[#666] mt-3">
+                            Update payment method, view invoices, or cancel subscription
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Upgrade CTA for Free Plan */}
+                      {currentPlan === 'free' && (
+                        <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6 text-center">
+                          <Zap className="w-10 h-10 text-[#666] mx-auto mb-3" />
+                          <h3 className="text-white font-medium mb-2">Unlock More Features</h3>
+                          <p className="text-[#666] text-sm mb-4 max-w-md mx-auto">
+                            Get daily visibility scans, AI-generated content, and advanced analytics
+                          </p>
+                          <Button 
+                            onClick={() => setShowPricingModal(true)}
+                            className="bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333] text-white h-9 px-6 text-sm"
                           >
-                            {isLoading ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <>
-                                Manage
-                                <ExternalLink className="w-3 h-3" />
-                              </>
-                            )}
-                      </Button>
-                    </div>
-                        <p className="text-xs text-[#666] mt-3">
-                          Update payment method, view invoices, or cancel subscription in Stripe portal
-                        </p>
-                      </div>
+                            View Available Plans
+                          </Button>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
               )}
             </motion.div>
-                  </div>
-                </div>
-              </div>
-              
+          </div>
+        </div>
+      </div>
+      
       {/* Pricing Modal */}
       <AnimatePresence>
         {showPricingModal && (
@@ -1095,8 +1089,8 @@ export const middleware = createCrawlerMiddleware({
                         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                           <div className="bg-white text-black px-3 py-1 text-xs font-medium">
                             RECOMMENDED
-                </div>
-              </div>
+                          </div>
+                        </div>
                       )}
 
                       <div className="text-center mb-6">
@@ -1106,7 +1100,7 @@ export const middleware = createCrawlerMiddleware({
                             ${isAnnualBilling ? plan.annualPrice : plan.price}
                           </span>
                           <span className="text-[#666] mb-1">/month</span>
-                </div>
+                        </div>
                       </div>
 
                       <div className="space-y-3 mb-6">
@@ -1136,11 +1130,11 @@ export const middleware = createCrawlerMiddleware({
                         ) : (
                           `Choose ${plan.name}`
                         )}
-                        </Button>
+                      </Button>
                     </div>
                   ))}
-              </div>
-              
+                </div>
+                
                 {/* Free Plan Option */}
                 {currentPlan !== 'free' && (
                   <div className="text-center mt-8">
@@ -1151,7 +1145,7 @@ export const middleware = createCrawlerMiddleware({
                     >
                       Downgrade to free plan
                     </button>
-                </div>
+                  </div>
                 )}
               </div>
             </motion.div>
@@ -1193,6 +1187,62 @@ export const middleware = createCrawlerMiddleware({
                 <X className="w-4 h-4" />
               </button>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Dialog */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-6"
+            onClick={() => setShowDeleteConfirm(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg w-full max-w-md"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-red-500/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <X className="w-5 h-5 text-red-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-medium text-white mb-1">Delete API Key</h3>
+                    <p className="text-sm text-[#666] mb-6">
+                      This action cannot be undone. This API key will be permanently deleted and any applications using it will lose access.
+                    </p>
+                    
+                    <div className="flex gap-3 justify-end">
+                      <Button
+                        onClick={() => setShowDeleteConfirm(false)}
+                        variant="outline"
+                        className="border-[#333] hover:border-[#444] text-[#666] hover:text-white h-9 px-4 text-sm"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          if (deletingKeyId) {
+                            handleDeleteApiKey(deletingKeyId)
+                          }
+                          setShowDeleteConfirm(false)
+                        }}
+                        className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 h-9 px-4 text-sm"
+                      >
+                        Delete Key
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

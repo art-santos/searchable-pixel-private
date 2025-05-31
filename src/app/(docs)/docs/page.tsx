@@ -50,9 +50,8 @@ const navigation: NavSection[] = [
     id: 'getting-started',
     title: 'Getting Started',
     items: [
-      { id: 'introduction', title: 'Introduction', href: '#introduction', icon: BookOpen },
-      { id: 'installation', title: 'Installation', href: '#installation', icon: Download },
-      { id: 'quickstart', title: 'Quickstart', href: '#quickstart', icon: Zap }
+      { id: 'quickstart', title: 'Quickstart', href: '#quickstart', icon: Zap },
+      { id: 'installation', title: 'Installation', href: '#installation', icon: Download }
     ]
   },
   {
@@ -75,9 +74,9 @@ const navigation: NavSection[] = [
 ]
 
 export default function DocsPage() {
-  const [activeSection, setActiveSection] = useState('introduction')
+  const [activeSection, setActiveSection] = useState('quickstart')
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
-  const [expandedSections, setExpandedSections] = useState<string[]>(['getting-started'])
+  const [expandedSections, setExpandedSections] = useState<string[]>(['getting-started', 'integration', 'features'])
   const [copyingMarkdown, setCopyingMarkdown] = useState(false)
   const [isContentLoading, setIsContentLoading] = useState(false)
 
@@ -119,29 +118,48 @@ export default function DocsPage() {
 
   const generateMarkdownForSection = (sectionId: string): string => {
     const sections: Record<string, string> = {
-      introduction: `# Split Analytics Documentation
+      quickstart: `# Quickstart
 
-Track and analyze AI crawler visits to your website. Monitor when GPT, Claude, Perplexity, and other AI bots access your content.
+Get up and running with Split Analytics in under 5 minutes.
 
-## Overview
+## Prerequisites
+- Node.js 16.8 or later
+- A Next.js, Express, or Node.js application
+- A Split Analytics account (free tier available)
 
-Split Analytics provides real-time insights into how AI systems discover and interact with your content, helping you optimize for the AI-first web.
+## 1. Install the package
+\`\`\`bash
+npm install @split.dev/analytics
+\`\`\`
 
-### Key Features
-- Detect 15+ AI crawlers from major companies
-- Zero-configuration middleware for Next.js
-- Privacy-first approach with no personal data collection
-- Automatic event batching and retry logic
+## 2. Get your API key
+Sign in to your Split Analytics dashboard and navigate to Settings → API Keys to generate a new key.
 
-## Why AI Crawler Analytics?
+Your API key will look like: \`split_live_1234567890abcdef...\`
 
-As AI becomes the primary interface for information discovery, understanding how AI systems interact with your content is crucial. Traditional analytics miss AI traffic entirely, leaving you blind to this growing segment.
+## 3. Add to your application
+For Next.js applications, create a \`middleware.ts\` file in your project root:
 
-### What You Get
-- Which AI platforms are accessing your content
-- What pages AI systems find most valuable
-- How often AI crawlers visit your site
-- Response times and performance metrics`,
+\`\`\`typescript
+import { createCrawlerMiddleware } from '@split.dev/analytics/middleware'
+
+export const middleware = createCrawlerMiddleware({
+  apiKey: process.env.SPLIT_API_KEY!
+})
+
+export const config = {
+  matcher: '/((?!api|_next/static|_next/image|favicon.ico).*)',
+}
+\`\`\`
+
+## 4. Set your environment variable
+Add your API key to your environment variables:
+
+\`\`\`bash
+SPLIT_API_KEY=split_live_your_actual_api_key_here
+\`\`\`
+
+✅ That's it! Your application is now tracking AI crawler visits.`,
 
       installation: `# Installation
 
@@ -193,75 +211,32 @@ SPLIT_API_KEY=split_live_your_actual_api_key_here
 |------------|---------|
 | Node.js | 16.8 or later |
 | Next.js (optional) | 13.0 or later |
-| TypeScript (optional) | 4.5 or later |`,
-
-      quickstart: `# Quickstart
-
-Get up and running with Split Analytics in under 5 minutes.
-
-## Prerequisites
-- Node.js 16.8 or later
-- A Next.js, Express, or Node.js application
-- A Split Analytics account (free tier available)
-
-## 1. Install the package
-\`\`\`bash
-npm install @split.dev/analytics
-\`\`\`
-
-## 2. Get your API key
-Sign in to your Split Analytics dashboard and navigate to Settings → API Keys to generate a new key.
-
-Your API key will look like: \`split_live_1234567890abcdef...\`
-
-## 3. Add to your application
-For Next.js applications, create a \`middleware.ts\` file in your project root:
-
-\`\`\`typescript
-import { createCrawlerMiddleware } from '@split.dev/analytics/middleware'
-
-export const middleware = createCrawlerMiddleware({
-  apiKey: process.env.SPLIT_API_KEY!
-})
-
-export const config = {
-  matcher: '/((?!api|_next/static|_next/image|favicon.ico).*)',
-}
-\`\`\`
-
-## 4. Set your environment variable
-Add your API key to your environment variables:
-
-\`\`\`bash
-SPLIT_API_KEY=split_live_your_actual_api_key_here
-\`\`\`
-
-✅ That's it! Your application is now tracking AI crawler visits.`
+| TypeScript (optional) | 4.5 or later |`
     }
     
     return sections[sectionId] || `# ${sectionId}\n\nContent not available.`
   }
 
   const CodeBlock = ({ children, language = 'bash', id }: { children: string, language?: string, id: string }) => (
-    <div className="relative group my-6">
+    <div className="relative group my-6 code-block-container">
       <div className="flex items-center justify-between bg-[#0a0a0a] border border-[#1a1a1a] rounded-t-lg px-4 py-2">
         <span className="text-xs text-gray-400 font-mono">{language}</span>
-        <button
-          onClick={() => copyCode(children, id)}
-          className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1 text-xs text-gray-400 hover:text-white"
-        >
-          {copiedCode === id ? (
+      <button
+        onClick={() => copyCode(children, id)}
+          className={`copy-button opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center gap-1 text-xs text-gray-400 hover:text-white ${copiedCode === id ? 'copy-success' : ''}`}
+      >
+        {copiedCode === id ? (
             <>
               <Check className="h-3 w-3" />
               Copied
             </>
-          ) : (
+        ) : (
             <>
               <Copy className="h-3 w-3" />
               Copy
             </>
-          )}
-        </button>
+        )}
+      </button>
       </div>
       <pre className="bg-[#0a0a0a] border border-t-0 border-[#1a1a1a] rounded-b-lg p-4 overflow-x-auto text-sm font-mono">
         <code className="text-gray-300">{children}</code>
@@ -290,9 +265,9 @@ SPLIT_API_KEY=split_live_your_actual_api_key_here
   }
 
   const StepCard = ({ number, title, children }: { number: number, title: string, children: React.ReactNode }) => (
-    <div className="border border-[#1a1a1a] rounded-lg p-6 my-6">
+    <div className="step-card border border-[#1a1a1a] rounded-lg p-6 my-6">
       <div className="flex items-start gap-4">
-        <div className="flex-shrink-0 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center text-sm font-bold">
+        <div className="flex-shrink-0 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200">
           {number}
         </div>
         <div className="flex-1">
@@ -308,9 +283,9 @@ SPLIT_API_KEY=split_live_your_actual_api_key_here
       {features.map((feature, index) => {
         const Icon = feature.icon
         return (
-          <div key={index} className="border border-[#1a1a1a] rounded-lg p-4 bg-[#0a0a0a]">
+          <div key={index} className="feature-card border border-[#1a1a1a] rounded-lg p-4 bg-[#0a0a0a]" style={{ animationDelay: `${index * 100}ms` }}>
             <div className="flex items-start gap-3">
-              <Icon className="h-5 w-5 text-gray-400 mt-0.5" />
+              <Icon className="h-5 w-5 text-gray-400 mt-0.5 transition-all duration-200" />
               <div>
                 <h4 className="text-white font-medium mb-1">{feature.title}</h4>
                 <p className="text-gray-400 text-sm">{feature.description}</p>
@@ -353,33 +328,128 @@ SPLIT_API_KEY=split_live_your_actual_api_key_here
           }
           
           .sidebar-item {
-            transition: all 0.2s ease-out;
+            transition: all 0.15s ease-out;
           }
           
           .sidebar-item:hover {
-            transform: translateX(2px);
+            transform: translateX(3px);
           }
           
           .accordion-button {
+            transition: all 0.2s ease-out;
+            position: relative;
+          }
+          
+          .accordion-button:hover {
+            background-color: rgba(255, 255, 255, 0.03);
+            transform: translateX(2px);
+          }
+          
+          .accordion-chevron {
             transition: transform 0.2s ease-out;
           }
           
-          .accordion-expanded {
-            transform: rotate(0deg);
+          .accordion-expanded .accordion-chevron {
+            transform: rotate(90deg);
+          }
+          
+          .copy-button {
+            transition: all 0.15s ease-out;
+          }
+          
+          .copy-button:hover {
+            transform: translateY(-1px);
+            background-color: rgba(255, 255, 255, 0.1);
+          }
+          
+          .copy-button:active {
+            transform: translateY(0);
+          }
+          
+          .copy-success {
+            animation: copySuccess 0.3s ease-out;
+          }
+          
+          @keyframes copySuccess {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+          }
+          
+          .markdown-button {
+            transition: all 0.2s ease-out;
+          }
+          
+          .markdown-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          }
+          
+          .markdown-button:active {
+            transform: translateY(-1px);
+          }
+          
+          .feature-card {
+            transition: all 0.2s ease-out;
+          }
+          
+          .feature-card:hover {
+            transform: translateY(-2px);
+            background-color: rgba(255, 255, 255, 0.02);
+          }
+          
+          .step-card {
+            transition: all 0.2s ease-out;
+          }
+          
+          .step-card:hover {
+            transform: translateY(-1px);
+            border-color: rgba(255, 255, 255, 0.15);
+          }
+          
+          .code-block-container {
+            transition: all 0.15s ease-out;
+          }
+          
+          .code-block-container:hover {
+            border-color: rgba(255, 255, 255, 0.1);
           }
           
           .fade-in {
-            animation: fadeInUp 0.3s ease-out;
+            animation: fadeInUp 0.4s ease-out;
           }
+          
+          .stagger-1 { animation-delay: 0.1s; }
+          .stagger-2 { animation-delay: 0.2s; }
+          .stagger-3 { animation-delay: 0.3s; }
           
           @keyframes fadeInUp {
             from {
               opacity: 0;
-              transform: translateY(12px);
+              transform: translateY(16px);
             }
             to {
               opacity: 1;
               transform: translateY(0);
+            }
+          }
+          
+          .bounce-in {
+            animation: bounceIn 0.5s ease-out;
+          }
+          
+          @keyframes bounceIn {
+            0% {
+              opacity: 0;
+              transform: scale(0.9) translateY(10px);
+            }
+            60% {
+              opacity: 1;
+              transform: scale(1.02) translateY(-2px);
+            }
+            100% {
+              opacity: 1;
+              transform: scale(1) translateY(0);
             }
           }
         }
@@ -388,47 +458,54 @@ SPLIT_API_KEY=split_live_your_actual_api_key_here
           .accordion-content,
           .page-content,
           .sidebar-item,
-          .accordion-button {
+          .accordion-button,
+          .copy-button,
+          .markdown-button,
+          .feature-card,
+          .step-card,
+          .code-block-container {
             transition: none;
           }
           
-          .fade-in {
+          .fade-in,
+          .bounce-in {
             animation: none;
           }
         }
       `}</style>
-
-      {/* Sidebar Navigation - Full Height */}
-      <div className="w-80 border-r border-[#1a1a1a] bg-[#0c0c0c] fixed left-0 top-0 bottom-0 overflow-y-auto flex flex-col">
+      
+      {/* Sidebar Navigation - Full Height - Lower z-index */}
+      <div className="w-80 border-r border-[#1a1a1a] bg-[#0c0c0c] fixed left-0 top-0 bottom-0 overflow-y-auto flex flex-col z-10">
         
         {/* Logo and Search */}
-        <div className="p-4 pt-4 space-y-8">
-          <Link href="/" className="flex items-center justify-start">
+        <div className="p-4 pt-6 space-y-8">
+          <div className="flex items-center justify-start gap-3">
+            <Link href="/" className="flex items-center justify-start transition-all duration-200 hover:opacity-80">
             <Image 
-              src="/images/split-full-text.svg" 
-              alt="Split Analytics" 
-              width={80} 
+                src="/images/split-full-text.svg" 
+                alt="Split Analytics" 
+                width={80} 
               height={28} 
             />
           </Link>
-          <div className="border border-[#1a1a1a] rounded-md p-2">
+            <span className="text-gray-600 text-sm font-medium">Docs</span>
+        </div>
+          <div className="border border-[#1a1a1a] rounded-md p-2 transition-all duration-200 hover:border-[#2a2a2a]">
             <DocsSearchBar onNavigate={handleSectionChange} />
           </div>
         </div>
 
         {/* Navigation */}
         <div className="flex-1 px-6 py-4">
-          {navigation.map((section) => (
-            <div key={section.id} className="mb-8">
+          {navigation.map((section, sectionIndex) => (
+            <div key={section.id} className={`mb-8 fade-in stagger-${Math.min(sectionIndex + 1, 3)}`}>
               <button
                 onClick={() => toggleSection(section.id)}
-                className="flex items-center justify-between w-full text-left px-4 py-3 text-sm font-bold text-white hover:text-gray-300 transition-all duration-200 accordion-button"
+                className={`accordion-button ${expandedSections.includes(section.id) ? 'accordion-expanded' : ''} flex items-center justify-between w-full text-left px-4 py-3 text-sm font-bold text-white hover:text-gray-300 rounded-md`}
               >
                 <span>{section.title}</span>
                 <ChevronRight 
-                  className={`h-4 w-4 transition-transform duration-200 ease-out ${
-                    expandedSections.includes(section.id) ? 'rotate-90' : ''
-                  }`} 
+                  className="accordion-chevron h-4 w-4" 
                 />
               </button>
               
@@ -437,32 +514,33 @@ SPLIT_API_KEY=split_live_your_actual_api_key_here
                   ? 'accordion-enter-active' 
                   : 'accordion-enter'
               }`}>
-                {expandedSections.includes(section.id) && (
+              {expandedSections.includes(section.id) && (
                   <div className="relative">
                     {/* Vertical Line */}
                     <div className="absolute left-4 top-0 bottom-0 w-px bg-[#2a2a2a]"></div>
                     
-                    <div className="mt-2 space-y-1">
-                      {section.items.map((item) => {
-                        const Icon = item.icon
-                        return (
-                          <button
-                            key={item.id}
+                <div className="mt-2 space-y-1">
+                  {section.items.map((item, itemIndex) => {
+                    const Icon = item.icon
+                    return (
+                      <button
+                        key={item.id}
                             onClick={() => handleSectionChange(item.id)}
-                            className={`sidebar-item w-full text-left flex items-center gap-3 pl-8 pr-4 py-3 text-sm transition-all duration-200 ${
-                              activeSection === item.id
+                            className={`sidebar-item ${activeSection === item.id ? 'active' : ''} w-full text-left flex items-center gap-3 pl-8 pr-4 py-3 text-sm rounded-md transition-all duration-200 ${
+                          activeSection === item.id
                                 ? 'text-white font-bold'
                                 : 'text-gray-400 hover:text-gray-200'
-                            }`}
-                          >
-                            <Icon className="h-4 w-4 flex-shrink-0" />
-                            <span>{item.title}</span>
-                          </button>
-                        )
-                      })}
+                        }`}
+                         style={{ animationDelay: `${(itemIndex + 1) * 50}ms` }}
+                      >
+                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        <span>{item.title}</span>
+                      </button>
+                    )
+                  })}
                     </div>
-                  </div>
-                )}
+                </div>
+              )}
               </div>
             </div>
           ))}
@@ -472,7 +550,7 @@ SPLIT_API_KEY=split_live_your_actual_api_key_here
         <div className="sticky bottom-0 p-6 border-t border-[#1a1a1a] bg-[#0c0c0c]">
           <Link 
             href="/" 
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
+            className="flex items-center gap-2 text-gray-400 hover:text-white transition-all duration-200 text-sm hover:transform hover:translateX(2px)"
           >
             <ArrowLeft className="h-4 w-4" />
             Return to home
@@ -480,18 +558,18 @@ SPLIT_API_KEY=split_live_your_actual_api_key_here
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 ml-80 relative z-10">
+      {/* Main Content - Lower z-index to allow search overlay to blur it */}
+      <div className="flex-1 ml-80 relative z-0">
         <div className="max-w-4xl mx-auto px-8 py-12">
           
           {/* Page Header with Copy Button */}
-          <div className="flex items-start justify-between mb-8">
+          <div className="flex items-start justify-between mb-8 fade-in">
             <div className="flex-1">
-          {activeSection === 'introduction' && (
+          {activeSection === 'quickstart' && (
               <div>
-                <h1 className="text-4xl font-bold text-white mb-4">Split Analytics Documentation</h1>
+                <h1 className="text-4xl font-bold text-white mb-4">Quickstart</h1>
                 <p className="text-gray-400 text-lg leading-relaxed">
-                  Track and analyze AI crawler visits to your website. Monitor when GPT, Claude, Perplexity, and other AI bots access your content.
+                  Get up and running with Split Analytics in under 5 minutes.
                 </p>
               </div>
               )}
@@ -501,16 +579,8 @@ SPLIT_API_KEY=split_live_your_actual_api_key_here
                   <p className="text-gray-400 text-lg leading-relaxed">
                     Install the package and get your API key to start tracking AI crawler visits.
                   </p>
-            </div>
-          )}
-          {activeSection === 'quickstart' && (
-              <div>
-                <h1 className="text-4xl font-bold text-white mb-4">Quickstart</h1>
-                <p className="text-gray-400 text-lg leading-relaxed">
-                  Get up and running with Split Analytics in under 5 minutes.
-                </p>
               </div>
-              )}
+          )}
               {activeSection === 'nextjs' && (
                 <div>
                   <h1 className="text-4xl font-bold text-white mb-4">Next.js Integration</h1>
@@ -525,7 +595,7 @@ SPLIT_API_KEY=split_live_your_actual_api_key_here
                   <p className="text-gray-400 text-lg leading-relaxed">
                     Add Split Analytics to your Node.js or Express applications.
                   </p>
-                </div>
+              </div>
               )}
               {activeSection === 'custom' && (
                 <div>
@@ -533,15 +603,15 @@ SPLIT_API_KEY=split_live_your_actual_api_key_here
                   <p className="text-gray-400 text-lg leading-relaxed">
                     Manual integration for any JavaScript environment or custom use cases.
                   </p>
-                </div>
-              )}
+            </div>
+          )}
               {activeSection === 'crawlers' && (
-                <div>
+              <div>
                   <h1 className="text-4xl font-bold text-white mb-4">AI Crawler Detection</h1>
-                  <p className="text-gray-400 text-lg leading-relaxed">
+                <p className="text-gray-400 text-lg leading-relaxed">
                     Comprehensive list of AI crawlers detected by Split Analytics.
-                    </p>
-                  </div>
+                </p>
+              </div>
               )}
               {activeSection === 'configuration' && (
                 <div>
@@ -556,7 +626,7 @@ SPLIT_API_KEY=split_live_your_actual_api_key_here
             {/* Copy as Markdown Button */}
             <button
               onClick={copyPageAsMarkdown}
-              className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#2a2a2a] rounded-lg text-gray-300 hover:text-white transition-all text-sm font-medium"
+              className={`markdown-button flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#2a2a2a] rounded-lg text-gray-300 hover:text-white text-sm font-medium ${copyingMarkdown ? 'copy-success' : ''}`}
               disabled={copyingMarkdown}
             >
               {copyingMarkdown ? (
@@ -574,171 +644,32 @@ SPLIT_API_KEY=split_live_your_actual_api_key_here
           </div>
 
           {/* Page Content */}
-          <div className="relative">
+          <div className={`page-content ${isContentLoading ? 'page-content-loading' : ''}`}>
             
-            {activeSection === 'introduction' && (
-              <div className="space-y-8">
-                <InfoCard title="What is Split Analytics?" variant="info">
-                  <p>Split Analytics provides real-time insights into how AI systems discover and interact with your content, helping you optimize for the AI-first web.</p>
-                  <p>Traditional analytics miss AI traffic entirely, leaving you blind to this rapidly growing segment of web visitors.</p>
-                </InfoCard>
-
-                <FeatureGrid features={[
-                  {
-                    title: "AI Crawler Detection",
-                    description: "Detect 15+ AI crawlers from OpenAI, Anthropic, Perplexity, and more",
-                    icon: Bot
-                  },
-                  {
-                    title: "Zero Configuration",
-                    description: "Drop-in middleware for Next.js with automatic detection",
-                    icon: Zap
-                  },
-                  {
-                    title: "Privacy First",
-                    description: "No personal data collection, only crawler analytics",
-                    icon: Shield
-                  },
-                  {
-                    title: "Real-time Insights",
-                    description: "Live dashboard with performance metrics and trends",
-                    icon: Gauge
-                  }
-                ]} />
-
-                <InfoCard title="Why AI Crawler Analytics Matter">
-                  <p>As AI becomes the primary interface for information discovery, understanding how AI systems interact with your content is crucial for:</p>
-                  <ul className="list-disc list-inside space-y-2">
-                    <li>Optimizing content for AI training and retrieval</li>
-                    <li>Understanding which pages AI systems find valuable</li>
-                    <li>Monitoring crawler behavior and performance impact</li>
-                    <li>Preparing for the AI-first web ecosystem</li>
-                  </ul>
-                </InfoCard>
-
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
-                  <h3 className="text-white font-semibold text-lg mb-4">Supported AI Crawlers</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {[
-                      { name: "GPTBot", company: "OpenAI" },
-                      { name: "Claude-Web", company: "Anthropic" },
-                      { name: "PerplexityBot", company: "Perplexity" },
-                      { name: "Google-Extended", company: "Google" },
-                      { name: "Bingbot", company: "Microsoft" },
-                      { name: "And 10+ more...", company: "" }
-                    ].map((crawler, index) => (
-                      <div key={index} className="text-center">
-                        <div className="text-gray-300 font-medium text-sm">{crawler.name}</div>
-                        {crawler.company && <div className="text-gray-500 text-xs">{crawler.company}</div>}
-                      </div>
-                    ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeSection === 'installation' && (
-            <div className="space-y-8">
-                <StepCard number={1} title="Install the Package">
-                  <p>Choose your preferred package manager to install Split Analytics:</p>
-                  <CodeBlock language="bash" id="install-npm">npm install @split.dev/analytics</CodeBlock>
-                  <CodeBlock language="bash" id="install-yarn">yarn add @split.dev/analytics</CodeBlock>
-                  <CodeBlock language="bash" id="install-pnpm">pnpm add @split.dev/analytics</CodeBlock>
-                </StepCard>
-
-                <StepCard number={2} title="Get Your API Key">
-                  <p>Sign up for Split Analytics and generate your API key:</p>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 bg-[#1a1a1a] rounded-full flex items-center justify-center text-xs text-gray-400">1</div>
-                      <span>Sign up at <a href="https://split.dev" className="text-white hover:underline">split.dev</a></span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 bg-[#1a1a1a] rounded-full flex items-center justify-center text-xs text-gray-400">2</div>
-                      <span>Navigate to Settings → API Keys</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 bg-[#1a1a1a] rounded-full flex items-center justify-center text-xs text-gray-400">3</div>
-                      <span>Click "Generate New Key"</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 bg-[#1a1a1a] rounded-full flex items-center justify-center text-xs text-gray-400">4</div>
-                      <span>Copy the key immediately (it won't be shown again)</span>
-                  </div>
-                </div>
-                  <InfoCard title="API Key Format" variant="info">
-                    <p>Your API key will look like: <code className="text-white bg-[#1a1a1a] px-2 py-1 rounded">split_live_1234567890abcdef...</code></p>
-                  </InfoCard>
-                </StepCard>
-
-                <StepCard number={3} title="Environment Setup">
-                  <p>Add your API key to your environment variables:</p>
-                  <CodeBlock language="bash" id="env-setup">{`# .env.local (Next.js)
-SPLIT_API_KEY=split_live_your_actual_api_key_here
-
-# .env (Node.js)
-SPLIT_API_KEY=split_live_your_actual_api_key_here`}</CodeBlock>
-                  <InfoCard title="Security Best Practice" variant="warning">
-                    <p>⚠️ <strong>Never commit API keys to your repository.</strong> Always use environment variables and add <code className="text-gray-300 bg-[#1a1a1a] px-1.5 py-0.5 rounded">.env*</code> to your <code className="text-gray-300 bg-[#1a1a1a] px-1.5 py-0.5 rounded">.gitignore</code></p>
-                  </InfoCard>
-                </StepCard>
-
-                <InfoCard title="System Requirements">
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="border-b border-[#1a1a1a]">
-                          <th className="text-left py-2 pr-8 text-white font-medium">Requirement</th>
-                          <th className="text-left py-2 text-white font-medium">Version</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr className="border-b border-[#1a1a1a]">
-                          <td className="py-2 pr-8">Node.js</td>
-                          <td className="py-2">16.8 or later</td>
-                      </tr>
-                      <tr className="border-b border-[#1a1a1a]">
-                          <td className="py-2 pr-8">Next.js (optional)</td>
-                          <td className="py-2">13.0 or later</td>
-                      </tr>
-                      <tr>
-                          <td className="py-2 pr-8">TypeScript (optional)</td>
-                          <td className="py-2">4.5 or later</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                </InfoCard>
-            </div>
-          )}
-
             {activeSection === 'quickstart' && (
-            <div className="space-y-8">
-                <InfoCard title="Prerequisites" variant="info">
-                  <ul className="space-y-2">
+              <div className="prose prose-invert max-w-none">
+                <h2 className="text-xl font-semibold text-white mb-4">Prerequisites</h2>
+                <ul className="space-y-2 text-gray-300 mb-8">
                     <li>• Node.js 16.8 or later</li>
                     <li>• A Next.js, Express, or Node.js application</li>
                     <li>• A Split Analytics account (free tier available)</li>
                   </ul>
-                </InfoCard>
 
-                <StepCard number={1} title="Install the Package">
-                  <CodeBlock language="bash" id="quickstart-install">npm install @split.dev/analytics</CodeBlock>
-                  <p className="text-sm text-gray-400">
-                    Or using yarn: <code className="text-gray-300 bg-[#1a1a1a] px-1.5 py-0.5 rounded">yarn add @split.dev/analytics</code>
-                  </p>
-                </StepCard>
+                <h2 className="text-2xl font-bold text-white mb-6">Step 1: Install the Package</h2>
+                <CodeBlock language="bash" id="quickstart-install">npm install @split.dev/analytics</CodeBlock>
+                <p className="text-sm text-gray-400 mb-8">
+                  Or using yarn: <code className="text-gray-300 bg-[#1a1a1a] px-1.5 py-0.5 rounded">yarn add @split.dev/analytics</code>
+                </p>
 
-                <StepCard number={2} title="Get Your API Key">
-                  <p>Sign in to your Split Analytics dashboard and navigate to Settings → API Keys to generate a new key.</p>
-                  <InfoCard title="API Key Example" variant="default">
-                    <p>Your API key will look like: <code className="text-white bg-[#1a1a1a] px-2 py-1 rounded">split_live_1234567890abcdef...</code></p>
-                  </InfoCard>
-                </StepCard>
+                <h2 className="text-2xl font-bold text-white mb-6">Step 2: Get Your API Key</h2>
+                <p className="text-gray-300 mb-4">Sign in to your Split Analytics dashboard and navigate to Settings → API Keys to generate a new key.</p>
+                <p className="text-gray-300 text-sm mb-8">
+                  Your API key will look like: <code className="text-white bg-[#1a1a1a] px-2 py-1 rounded">split_live_1234567890abcdef...</code>
+                </p>
 
-                <StepCard number={3} title="Add to Your Application">
-                  <p>For Next.js applications, create a <code className="text-gray-300 bg-[#1a1a1a] px-1.5 py-0.5 rounded">middleware.ts</code> file in your project root:</p>
-                  <CodeBlock language="typescript" id="quickstart-middleware">{`import { createCrawlerMiddleware } from '@split.dev/analytics/middleware'
+                <h2 className="text-2xl font-bold text-white mb-6">Step 3: Add to Your Application</h2>
+                <p className="text-gray-300 mb-4">For Next.js applications, create a <code className="text-gray-300 bg-[#1a1a1a] px-1.5 py-0.5 rounded">middleware.ts</code> file in your project root:</p>
+                <CodeBlock language="typescript" id="quickstart-middleware">{`import { createCrawlerMiddleware } from '@split.dev/analytics/middleware'
 
 export const middleware = createCrawlerMiddleware({
   apiKey: process.env.SPLIT_API_KEY!
@@ -747,31 +678,95 @@ export const middleware = createCrawlerMiddleware({
 export const config = {
   matcher: '/((?!api|_next/static|_next/image|favicon.ico).*)',
 }`}</CodeBlock>
-                </StepCard>
 
-                <StepCard number={4} title="Set Environment Variable">
-                  <p>Add your API key to your environment variables:</p>
-                  <CodeBlock language="bash" id="quickstart-env">SPLIT_API_KEY=split_live_your_actual_api_key_here</CodeBlock>
-                  <p className="text-sm text-gray-400">
-                    Add this to your <code className="text-gray-300 bg-[#1a1a1a] px-1.5 py-0.5 rounded">.env.local</code> file for local development.
-                  </p>
-                </StepCard>
+                <h2 className="text-2xl font-bold text-white mb-6">Step 4: Set Environment Variable</h2>
+                <p className="text-gray-300 mb-4">Add your API key to your environment variables:</p>
+                <CodeBlock language="bash" id="quickstart-env">SPLIT_API_KEY=split_live_your_actual_api_key_here</CodeBlock>
+                <p className="text-sm text-gray-400 mb-8">
+                  Add this to your <code className="text-gray-300 bg-[#1a1a1a] px-1.5 py-0.5 rounded">.env.local</code> file for local development.
+                </p>
 
-                <InfoCard title="You're All Set!" variant="success">
-                  <p className="flex items-center gap-2">
-                    <Check className="h-5 w-5 text-green-400" />
-                    Your application is now tracking AI crawler visits.
-                  </p>
-                  <p className="mt-2">Visit your Split Analytics dashboard to see real-time crawler activity on your website.</p>
-                </InfoCard>
+                <p className="text-gray-300 flex items-center gap-2 mt-8">
+                  <Check className="h-5 w-5" />
+                  <strong>You're All Set!</strong>
+                </p>
+                <p className="text-gray-300 mt-2">Your application is now tracking AI crawler visits. Visit your Split Analytics dashboard to see real-time crawler activity on your website.</p>
+            </div>
+          )}
+
+          {activeSection === 'installation' && (
+              <div className="prose prose-invert max-w-none">
+                <h2 className="text-2xl font-bold text-white mb-6">1. Install the Package</h2>
+                <p className="text-gray-300 mb-4">Choose your preferred package manager to install Split Analytics:</p>
+                
+                <h3 className="text-lg font-semibold text-white mb-3">npm</h3>
+                <CodeBlock language="bash" id="install-npm">npm install @split.dev/analytics</CodeBlock>
+                
+                <h3 className="text-lg font-semibold text-white mb-3">yarn</h3>
+                <CodeBlock language="bash" id="install-yarn">yarn add @split.dev/analytics</CodeBlock>
+                
+                <h3 className="text-lg font-semibold text-white mb-3">pnpm</h3>
+                <CodeBlock language="bash" id="install-pnpm">pnpm add @split.dev/analytics</CodeBlock>
+
+                <h2 className="text-2xl font-bold text-white mb-6 mt-12">2. Get Your API Key</h2>
+                <p className="text-gray-300 mb-4">Sign up for Split Analytics and generate your API key:</p>
+                
+                <ol className="list-decimal list-inside space-y-2 text-gray-300 mb-6">
+                  <li>Sign up at <a href="https://split.dev" className="text-white hover:underline">split.dev</a></li>
+                  <li>Navigate to Settings → API Keys</li>
+                  <li>Click "Generate New Key"</li>
+                  <li>Copy the key immediately (it won't be shown again)</li>
+                </ol>
+
+                <h3 className="text-white font-medium mb-2">API Key Format</h3>
+                <p className="text-gray-300 text-sm mb-6">
+                  Your API key will look like: <code className="text-white bg-[#1a1a1a] px-2 py-1 rounded">split_live_1234567890abcdef...</code>
+                </p>
+
+                <h2 className="text-2xl font-bold text-white mb-6 mt-12">3. Environment Setup</h2>
+                <p className="text-gray-300 mb-4">Add your API key to your environment variables:</p>
+                <CodeBlock language="bash" id="env-setup">{`# .env.local (Next.js)
+SPLIT_API_KEY=split_live_your_actual_api_key_here
+
+# .env (Node.js)
+SPLIT_API_KEY=split_live_your_actual_api_key_here`}</CodeBlock>
+
+                <h3 className="text-white font-medium mb-2">⚠️ Security Best Practice</h3>
+                <p className="text-gray-300 text-sm mb-6">
+                  Never commit API keys to your repository. Always use environment variables.
+                </p>
+
+                <h2 className="text-2xl font-bold text-white mb-6 mt-12">System Requirements</h2>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse border border-[#1a1a1a]">
+                    <thead>
+                      <tr className="border-b border-[#1a1a1a]">
+                        <th className="text-left py-3 px-4 text-white font-medium border-r border-[#1a1a1a]">Requirement</th>
+                        <th className="text-left py-3 px-4 text-white font-medium">Version</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-[#1a1a1a]">
+                        <td className="py-3 px-4 text-gray-300 border-r border-[#1a1a1a]">Node.js</td>
+                        <td className="py-3 px-4 text-gray-300">16.8 or later</td>
+                      </tr>
+                      <tr className="border-b border-[#1a1a1a]">
+                        <td className="py-3 px-4 text-gray-300 border-r border-[#1a1a1a]">Next.js (optional)</td>
+                        <td className="py-3 px-4 text-gray-300">13.0 or later</td>
+                      </tr>
+                      <tr>
+                        <td className="py-3 px-4 text-gray-300 border-r border-[#1a1a1a]">TypeScript (optional)</td>
+                        <td className="py-3 px-4 text-gray-300">4.5 or later</td>
+                      </tr>
+                    </tbody>
+                  </table>
+              </div>
             </div>
           )}
 
           {activeSection === 'nextjs' && (
             <div className="space-y-8">
-                <InfoCard title="Next.js App Router (Recommended)" variant="info">
-                  <p>For Next.js 13+ with App Router, we provide zero-configuration middleware that automatically detects and tracks AI crawlers.</p>
-                </InfoCard>
+                <p className="text-gray-300">For Next.js 13+ with App Router, we provide zero-configuration middleware that automatically detects and tracks AI crawlers.</p>
 
                 <StepCard number={1} title="Create Middleware">
                   <p>Create a <code className="text-gray-300 bg-[#1a1a1a] px-1.5 py-0.5 rounded">middleware.ts</code> file in your project root:</p>
@@ -798,9 +793,9 @@ export const config = {
 }`}</CodeBlock>
                 </StepCard>
 
-                <InfoCard title="Configuration Options">
-                  <p>The middleware accepts various configuration options:</p>
-                  <CodeBlock language="typescript" id="nextjs-config">{`interface MiddlewareConfig {
+                <h3 className="text-xl font-semibold text-white mb-4">Configuration Options</h3>
+                <p className="text-gray-300 mb-4">The middleware accepts various configuration options:</p>
+                <CodeBlock language="typescript" id="nextjs-config">{`interface MiddlewareConfig {
   // Required
   apiKey: string
   
@@ -821,7 +816,6 @@ export const config = {
   onCrawlerDetected?: (request: NextRequest, crawler: CrawlerInfo) => void
   onError?: (error: Error) => void
 }`}</CodeBlock>
-                </InfoCard>
 
                 <StepCard number={2} title="Custom Headers">
                   <p>Add custom headers when AI crawlers are detected:</p>
@@ -835,12 +829,10 @@ export const config = {
     }
   }
 })`}</CodeBlock>
-                  <InfoCard title="Response Headers" variant="default">
-                    <p>This will add headers like:</p>
-                    <CodeBlock language="text" id="response-headers">{`X-AI-Crawler: true
+                  <p className="text-gray-300 mt-4">This will add headers like:</p>
+                  <CodeBlock language="text" id="response-headers">{`X-AI-Crawler: true
 X-AI-Crawler-Name: GPTBot
 X-AI-Crawler-Company: OpenAI`}</CodeBlock>
-                  </InfoCard>
                 </StepCard>
 
                 <FeatureGrid features={[
@@ -1027,9 +1019,7 @@ export function customAnalyticsMiddleware(config) {
 
             {activeSection === 'crawlers' && (
               <div className="space-y-8">
-                <InfoCard title="AI Crawler Database" variant="info">
-                  <p>Split Analytics maintains an up-to-date database of AI crawlers from major companies. Our detection engine is continuously updated as new crawlers emerge.</p>
-                </InfoCard>
+                <p className="text-gray-300">Split Analytics maintains an up-to-date database of AI crawlers from major companies. Our detection engine is continuously updated as new crawlers emerge.</p>
 
                 <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg overflow-hidden">
                   <div className="bg-[#1a1a1a] px-6 py-3 border-b border-[#2a2a2a]">
@@ -1111,9 +1101,7 @@ if (detection.isAICrawler) {
 
             {activeSection === 'configuration' && (
               <div className="space-y-8">
-                <InfoCard title="Environment Configuration" variant="info">
-                  <p>Configure Split Analytics using environment variables for secure and flexible deployment across different environments.</p>
-                </InfoCard>
+                <p className="text-gray-300">Configure Split Analytics using environment variables for secure and flexible deployment across different environments.</p>
 
                 <StepCard number={1} title="Environment Variables">
                   <p>Configure Split Analytics using environment variables:</p>
@@ -1155,22 +1143,21 @@ SPLIT_BATCH_INTERVAL=5000          # Batch interval in ms`}</CodeBlock>
 })`}</CodeBlock>
                 </StepCard>
 
-                <InfoCard title="API Configuration">
-                  <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-white mb-4">API Configuration</h3>
+                <div className="space-y-4">
                 <div>
-                      <h4 className="text-white font-medium mb-2">API Key Format</h4>
-                      <p className="text-sm">
-                        Keys start with <code className="text-gray-300 bg-[#1a1a1a] px-1.5 py-0.5 rounded">split_live_</code> for production or <code className="text-gray-300 bg-[#1a1a1a] px-1.5 py-0.5 rounded">split_test_</code> for development
-                      </p>
+                    <h4 className="text-white font-medium mb-2">API Key Format</h4>
+                    <p className="text-sm text-gray-300">
+                      Keys start with <code className="text-gray-300 bg-[#1a1a1a] px-1.5 py-0.5 rounded">split_live_</code> for production or <code className="text-gray-300 bg-[#1a1a1a] px-1.5 py-0.5 rounded">split_test_</code> for development
+                    </p>
                 </div>
                 <div>
-                      <h4 className="text-white font-medium mb-2">Domain Security</h4>
-                      <p className="text-sm">
-                        Configure allowed domains in your dashboard under Settings → API Keys → Domain Restrictions
-                      </p>
-                </div>
+                    <h4 className="text-white font-medium mb-2">Domain Security</h4>
+                    <p className="text-sm text-gray-300">
+                      Configure allowed domains in your dashboard under Settings → API Keys → Domain Restrictions
+                    </p>
               </div>
-                </InfoCard>
+            </div>
 
                 <FeatureGrid features={[
                   {
