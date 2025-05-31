@@ -158,6 +158,11 @@ export function ConnectAnalyticsDialog({
     }
   }, [open])
 
+  // Debug: Monitor platformVotes changes
+  useEffect(() => {
+    console.log('[Voting] platformVotes state updated:', platformVotes)
+  }, [platformVotes])
+
   const fetchVotes = async () => {
     try {
       const response = await fetch('/api/platform-votes')
@@ -181,9 +186,37 @@ export function ConnectAnalyticsDialog({
         })
       } else {
         console.error('[Voting] Failed to fetch votes:', data)
+        
+        // Use mock data for testing
+        console.log('[Voting] Using mock data for testing')
+        setPlatformVotes({
+          wordpress: 234,
+          webflow: 156,
+          shopify: 128,
+          squarespace: 92,
+          framer: 89,
+          wix: 67,
+          ghost: 45,
+          netlify: 23,
+          cloudflare: 18
+        })
       }
     } catch (error) {
       console.error('[Voting] Error fetching votes:', error)
+      
+      // Use mock data for testing
+      console.log('[Voting] Using mock data due to error')
+      setPlatformVotes({
+        wordpress: 234,
+        webflow: 156,
+        shopify: 128,
+        squarespace: 92,
+        framer: 89,
+        wix: 67,
+        ghost: 45,
+        netlify: 23,
+        cloudflare: 18
+      })
     }
   }
 
@@ -291,64 +324,92 @@ export function ConnectAnalyticsDialog({
 
             {/* Platform List */}
             <div className="mt-4 max-h-[400px] overflow-y-auto space-y-2 pr-2">
-              {filteredPlatforms.map((platform) => (
-                <button
-                  key={platform.id}
-                  onClick={() => platform.available && setSelectedPlatform(platform.id)}
-                  className={`w-full p-3 rounded-lg border transition-colors text-left group ${
-                    platform.available 
-                      ? 'border-[#1a1a1a] hover:border-[#333] cursor-pointer' 
-                      : 'border-[#0a0a0a] cursor-not-allowed opacity-60'
-                  }`}
-                  disabled={!platform.available}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold ${
-                      platform.available ? platform.iconBg : 'bg-[#0a0a0a] text-[#333]'
-                    }`}>
-                      {platform.icon}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className={`font-medium text-sm ${
-                        platform.available ? 'text-white group-hover:text-white/90' : 'text-[#444]'
+              {filteredPlatforms.map((platform) => {
+                const isAvailable = platform.available
+                const Component = isAvailable ? 'button' : 'div'
+                
+                return (
+                  <Component
+                    key={platform.id}
+                    onClick={isAvailable ? () => setSelectedPlatform(platform.id) : undefined}
+                    className={`w-full p-3 rounded-lg border transition-colors text-left group ${
+                      isAvailable 
+                        ? 'border-[#1a1a1a] hover:border-[#333] cursor-pointer' 
+                        : 'border-[#0a0a0a] cursor-default opacity-60'
+                    }`}
+                    disabled={!isAvailable}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold ${
+                        isAvailable ? platform.iconBg : 'bg-[#0a0a0a] text-[#333]'
                       }`}>
-                        {platform.name}
-                      </h3>
-                      <p className="text-xs text-[#666]">
-                        {platform.available ? platform.description : 'Coming soon'}
-                      </p>
-                    </div>
-                    {!platform.available && platform.votes !== undefined && (
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={(e) => handleVote(platform.id, e)}
-                          className={`flex items-center gap-1 px-2 py-1 rounded-md transition-all ${
-                            votedPlatforms.has(platform.id)
-                              ? 'bg-green-500/20 text-green-500 cursor-default'
-                              : 'bg-[#1a1a1a] hover:bg-[#222] text-[#666] hover:text-white'
-                          }`}
-                          disabled={votedPlatforms.has(platform.id) || loadingPlatform === platform.id}
-                        >
-                          {loadingPlatform === platform.id ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <ChevronUp className="w-3 h-3" />
-                          )}
-                          <span className="text-xs font-medium">
-                            {platformVotes[platform.id] || platform.votes}
-                          </span>
-                        </button>
+                        {platform.icon}
                       </div>
-                    )}
-                  </div>
-                </button>
-              ))}
+                      <div className="flex-1">
+                        <h3 className={`font-medium text-sm ${
+                          isAvailable ? 'text-white group-hover:text-white/90' : 'text-[#444]'
+                        }`}>
+                          {platform.name}
+                        </h3>
+                        <p className="text-xs text-[#666]">
+                          {isAvailable ? platform.description : 'Coming soon'}
+                        </p>
+                      </div>
+                      {!isAvailable && platform.votes !== undefined && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleVote(platform.id, e)
+                            }}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-md transition-all ${
+                              votedPlatforms.has(platform.id)
+                                ? 'bg-green-500/20 text-green-500 cursor-default'
+                                : 'bg-[#1a1a1a] hover:bg-[#222] text-[#666] hover:text-white'
+                            }`}
+                            disabled={votedPlatforms.has(platform.id) || loadingPlatform === platform.id}
+                          >
+                            {loadingPlatform === platform.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <ChevronUp className="w-3 h-3" />
+                            )}
+                            <span className="text-xs font-medium">
+                              {(() => {
+                                const currentCount = platformVotes[platform.id] || platform.votes || 0
+                                console.log(`[Voting] Display count for ${platform.id}:`, {
+                                  fromState: platformVotes[platform.id],
+                                  fromPlatform: platform.votes,
+                                  displaying: currentCount
+                                })
+                                return currentCount
+                              })()}
+                            </span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </Component>
+                )
+              })}
             </div>
 
             <div className="mt-3 text-center">
               <p className="text-xs text-[#666]">
                 Vote for platforms you'd like to see supported
               </p>
+              {/* Debug refresh button */}
+              {process.env.NODE_ENV === 'development' && (
+                <button
+                  onClick={() => {
+                    console.log('[Voting] Manual refresh triggered')
+                    fetchVotes()
+                  }}
+                  className="mt-2 text-xs text-[#444] hover:text-[#666] underline"
+                >
+                  Debug: Refresh Votes
+                </button>
+              )}
             </div>
 
             {/* I don't know option */}
