@@ -13,13 +13,13 @@ CREATE TABLE IF NOT EXISTS crawler_visits (
   response_time_ms INTEGER,
   country TEXT,
   metadata JSONB,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  
-  -- Add indexes for common queries
-  INDEX idx_crawler_visits_user_domain (user_id, domain),
-  INDEX idx_crawler_visits_timestamp (timestamp DESC),
-  INDEX idx_crawler_visits_crawler (crawler_name)
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Create indexes for crawler_visits
+CREATE INDEX IF NOT EXISTS idx_crawler_visits_user_domain ON crawler_visits (user_id, domain);
+CREATE INDEX IF NOT EXISTS idx_crawler_visits_timestamp ON crawler_visits (timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_crawler_visits_crawler ON crawler_visits (crawler_name);
 
 -- Create aggregated stats table for performance
 CREATE TABLE IF NOT EXISTS crawler_stats_daily (
@@ -36,11 +36,11 @@ CREATE TABLE IF NOT EXISTS crawler_stats_daily (
   paths JSONB, -- { "/": 20, "/about": 5, ... }
   
   -- Ensure one row per user/domain/date/crawler
-  UNIQUE(user_id, domain, date, crawler_name),
-  
-  -- Indexes
-  INDEX idx_crawler_stats_daily_lookup (user_id, domain, date)
+  UNIQUE(user_id, domain, date, crawler_name)
 );
+
+-- Create indexes for crawler_stats_daily
+CREATE INDEX IF NOT EXISTS idx_crawler_stats_daily_lookup ON crawler_stats_daily (user_id, domain, date);
 
 -- Create API keys table for authenticating requests
 CREATE TABLE IF NOT EXISTS api_keys (
@@ -51,11 +51,12 @@ CREATE TABLE IF NOT EXISTS api_keys (
   domains TEXT[], -- Allowed domains for this key
   created_at TIMESTAMPTZ DEFAULT NOW(),
   last_used_at TIMESTAMPTZ,
-  is_active BOOLEAN DEFAULT true,
-  
-  INDEX idx_api_keys_hash (key_hash),
-  INDEX idx_api_keys_user (user_id)
+  is_active BOOLEAN DEFAULT true
 );
+
+-- Create indexes for api_keys
+CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys (key_hash);
+CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys (user_id);
 
 -- Enable RLS
 ALTER TABLE crawler_visits ENABLE ROW LEVEL SECURITY;
@@ -93,19 +94,27 @@ RETURNS TABLE (
   is_valid BOOLEAN
 ) AS $$
 BEGIN
-  RETURN QUERY
-  SELECT 
-    ak.user_id,
-    ak.domains,
-    ak.is_active
-  FROM api_keys ak
-  WHERE ak.key_hash = validate_api_key.key_hash
-    AND ak.is_active = true;
+  -- Check if api_keys table exists and has key_hash column
+  IF EXISTS (
+    SELECT 1 
+    FROM information_schema.columns 
+    WHERE table_name = 'api_keys' 
+    AND column_name = 'key_hash'
+  ) THEN
+    RETURN QUERY
+    SELECT 
+      ak.user_id,
+      ak.domains,
+      ak.is_active
+    FROM api_keys ak
+    WHERE ak.key_hash = validate_api_key.key_hash
+      AND ak.is_active = true;
     
-  -- Update last used timestamp
-  UPDATE api_keys
-  SET last_used_at = NOW()
-  WHERE api_keys.key_hash = validate_api_key.key_hash;
+    -- Update last used timestamp
+    UPDATE api_keys
+    SET last_used_at = NOW()
+    WHERE api_keys.key_hash = validate_api_key.key_hash;
+  END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

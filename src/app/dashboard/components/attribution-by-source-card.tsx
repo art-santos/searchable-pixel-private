@@ -1,115 +1,193 @@
 'use client'
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { motion, useReducedMotion } from "framer-motion"
-import { Sparkles, LinkIcon, BarChart3 } from "lucide-react"
+import { Sparkles, LinkIcon, BarChart3, Loader2 } from "lucide-react"
 import Image from "next/image"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   TimeframeSelector,
   TimeframeOption,
 } from "@/components/custom/timeframe-selector"
 import { ConnectAnalyticsDialog } from "./connect-analytics-dialog"
+import { useAuth } from "@/contexts/AuthContext"
 
-// AI Engine crawler data - actual bot names from server logs (top 5)
-const crawlerData = [
-  { 
-    name: 'GPTBot', 
-    percentage: 34.8, 
-    crawls: 1268,
-    icon: '/images/chatgpt.svg',
-    color: '#555'
-  },
-  { 
-    name: 'ChatGPT-User', 
-    percentage: 26.2, 
-    crawls: 954,
-    icon: '/images/chatgpt.svg',
-    color: '#555'
-  },
-  { 
-    name: 'PerplexityBot', 
-    percentage: 19.5, 
-    crawls: 710,
-    icon: '/images/perplexity.svg',
-    color: '#555'
-  },
-  { 
-    name: 'Google-Extended', 
-    percentage: 12.3, 
-    crawls: 448,
-    icon: '/images/gemini.svg',
-    color: '#555'
-  },
-  { 
-    name: 'Claude-Web', 
-    percentage: 7.2, 
-    crawls: 262,
-    icon: '/images/claude.svg',
-    color: '#555'
-  }
-]
+interface CrawlerData {
+  name: string
+  company: string
+  percentage: number
+  crawls: number
+  icon: string
+  color: string
+}
 
 export function AttributionBySourceCard() {
   const shouldReduceMotion = useReducedMotion()
-  const [timeframe, setTimeframe] = useState<TimeframeOption>('Last 30 days')
+  const { supabase } = useAuth()
+  const [timeframe, setTimeframe] = useState<TimeframeOption>('Today')
+  const [isConnected, setIsConnected] = useState(false)
   const [showConnectDialog, setShowConnectDialog] = useState(false)
-  // TODO: Replace with actual analytics connection state from context/API
-  const [isConnected] = useState(false) // Changed to false for empty state by default
+  const [crawlerData, setCrawlerData] = useState<CrawlerData[]>([])
+  const [totalCrawls, setTotalCrawls] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const cardVariants = shouldReduceMotion ? {
-    hidden: { opacity: 1, y: 0 },
-    visible: { opacity: 1, y: 0 }
-  } : {
-    hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: { duration: 0.3, ease: 'easeOut' }
-    }
-  }
+  // Fetch crawler data when component mounts or timeframe changes
+  useEffect(() => {
+    fetchCrawlerData()
+  }, [timeframe])
 
-  const itemVariants = shouldReduceMotion ? {
-    hidden: { opacity: 1 },
-    visible: { opacity: 1 }
-  } : {
-    hidden: { opacity: 0 },
-    visible: (i: number) => ({
-      opacity: 1,
-      transition: { delay: i * 0.05, duration: 0.3, ease: 'easeOut' }
-    })
-  }
-
-  const progressVariants = shouldReduceMotion ? {
-    hidden: { width: "var(--target-width)" },
-    visible: { width: "var(--target-width)" }
-  } : {
-    hidden: { width: "0%" },
-    visible: { 
-      width: "var(--target-width)",
-      transition: {
-        duration: 0.8,
-        ease: [0.16, 1, 0.3, 1],
-        delay: 0.3
+  const fetchCrawlerData = async () => {
+    setIsLoading(true)
+    setError(null)
+    
+    try {
+      // Map timeframe to API parameter
+      const timeframeMap: Record<TimeframeOption, string> = {
+        'Today': 'today',
+        'This Week': '7d',
+        'This Month': '30d',
+        'Custom Range': '90d'
       }
+      
+      // Get the current session token from Supabase
+      const sessionResult = await supabase?.auth.getSession()
+      const session = sessionResult?.data?.session
+      
+      const response = await fetch(`/api/dashboard/crawler-stats?timeframe=${timeframeMap[timeframe]}`, {
+        headers: {
+          'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch crawler data')
+      }
+      
+      const data = await response.json()
+      
+      // Check if user has any data
+      if (data.totalCrawls > 0) {
+        setIsConnected(true)
+        setCrawlerData(data.crawlers)
+        setTotalCrawls(data.totalCrawls)
+      } else {
+        setIsConnected(false)
+        // Use placeholder data for empty state preview
+        setCrawlerData([
+          { 
+            name: 'GPTBot', 
+            company: 'OpenAI',
+            percentage: 34.8, 
+            crawls: 0,
+            icon: '/images/chatgpt.svg',
+            color: '#555'
+          },
+          { 
+            name: 'ChatGPT-User', 
+            company: 'OpenAI',
+            percentage: 26.2, 
+            crawls: 0,
+            icon: '/images/chatgpt.svg',
+            color: '#555'
+          },
+          { 
+            name: 'PerplexityBot', 
+            company: 'Perplexity',
+            percentage: 19.5, 
+            crawls: 0,
+            icon: '/images/perplexity.svg',
+            color: '#555'
+          },
+          { 
+            name: 'Google-Extended', 
+            company: 'Google',
+            percentage: 12.3, 
+            crawls: 0,
+            icon: '/images/gemini.svg',
+            color: '#555'
+          },
+          { 
+            name: 'Claude-Web', 
+            company: 'Anthropic',
+            percentage: 7.2, 
+            crawls: 0,
+            icon: '/images/claude.svg',
+            color: '#555'
+          }
+        ])
+      }
+    } catch (err) {
+      console.error('Error fetching crawler data:', err)
+      setError('Failed to load crawler data')
+      setIsConnected(false)
+    } finally {
+      setIsLoading(false)
     }
   }
+
+  const cardVariants = shouldReduceMotion
+    ? { hidden: {}, visible: {} }
+    : {
+        hidden: { opacity: 0, y: 20 },
+        visible: {
+          opacity: 1,
+          y: 0,
+          transition: { duration: 0.4, ease: "easeOut" },
+        },
+      }
+
+  const itemVariants = shouldReduceMotion
+    ? { hidden: {}, visible: {} }
+    : {
+        hidden: { opacity: 0, x: -20 },
+        visible: (i: number) => ({
+          opacity: 1,
+          x: 0,
+          transition: {
+            delay: i * 0.05,
+            duration: 0.3,
+            ease: "easeOut",
+          },
+        }),
+      }
+
+  const progressVariants = shouldReduceMotion
+    ? { hidden: {}, visible: {} }
+    : {
+        hidden: { width: 0 },
+        visible: (i: number) => ({
+          width: "var(--target-width)",
+          transition: {
+            delay: i * 0.05 + 0.2,
+            duration: 0.6,
+            ease: [0.16, 1, 0.3, 1],
+          },
+        }),
+      }
 
   return (
     <Card className="h-full flex flex-col">
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={cardVariants}
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={cardVariants}
         className="h-full flex flex-col"
-        >
+      >
         <CardHeader className="pb-4 pt-4 pl-6 flex-shrink-0 border-b border-[#1a1a1a]">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-1">Crawls by Source</h3>
+              <h3 className="text-lg font-semibold text-white mb-1">
+                Attribution by Source
+              </h3>
+              {isConnected && totalCrawls > 0 && (
+                <p className="text-sm text-[#666]">
+                  {totalCrawls.toLocaleString()} crawls tracked
+                </p>
+              )}
             </div>
-            <TimeframeSelector 
+            <TimeframeSelector
               title=""
-              timeframe={timeframe} 
+              timeframe={timeframe}
               onTimeframeChange={setTimeframe}
               titleColor="text-white"
               selectorColor="text-[#A7A7A7]"
@@ -118,90 +196,120 @@ export function AttributionBySourceCard() {
         </CardHeader>
 
         <CardContent className="flex-1 min-h-0 pt-6 pr-6 pb-8 pl-6 flex flex-col relative">
-          {isConnected ? (
-            <>
-          {/* Crawler List */}
-              <div className="flex-1 space-y-5 min-h-0">
-            {crawlerData.map((source, index) => (
-              <motion.div
-                key={source.name}
-                custom={index}
-                variants={itemVariants}
-                initial="hidden"
-                animate="visible"
-                className="group"
-              >
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a]">
-                      {source.icon === 'sparkles' ? (
-                        <Sparkles className="w-3.5 h-3.5 text-[#888]" />
-                      ) : source.icon ? (
-                        <Image 
-                          src={source.icon} 
-                          alt={source.name}
-                          width={14}
-                          height={14}
-                        />
-                      ) : (
-                        <div className="w-2.5 h-2.5 rounded-full bg-[#666]" />
-                      )}
-                    </div>
-                    <div>
-                      <div className="text-white font-medium text-sm">{source.name}</div>
-                      <div className="text-[#666] text-xs">
-                        {source.crawls.toLocaleString()} crawls
-                      </div>
-                    </div>
-                  </div>
-                  <motion.div 
-                    className="text-white font-semibold text-sm"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: index * 0.05 + 0.2, duration: 0.3 }}
-                  >
-                    {source.percentage}%
-                  </motion.div>
-                </div>
-                <div className="w-full h-1 bg-[#1a1a1a] rounded-full overflow-hidden">
-                  <motion.div 
-                    className="h-full rounded-full"
-                    style={{ 
-                      "--target-width": `${source.percentage}%`,
-                      backgroundColor: source.color
-                    } as any}
-                    variants={progressVariants}
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="w-6 h-6 animate-spin text-[#666]" />
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <p className="text-[#666] text-sm">{error}</p>
+                <button 
+                  onClick={fetchCrawlerData}
+                  className="mt-2 text-sm text-white hover:underline"
+                >
+                  Try again
+                </button>
+              </div>
+            </div>
+          ) : isConnected ? (
+            <div className="flex-1 flex flex-col min-h-0">
+              {/* Crawler List */}
+              <div className="flex-1 space-y-5 overflow-y-auto pr-2">
+                {crawlerData.slice(0, 5).map((source, index) => (
+                  <motion.div
+                    key={source.name}
+                    custom={index}
+                    variants={itemVariants}
                     initial="hidden"
                     animate="visible"
-                    custom={index}
-                  />
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                    className="group"
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a]">
+                          {source.icon === 'sparkles' ? (
+                            <Sparkles className="w-3.5 h-3.5 text-[#888]" />
+                          ) : source.icon ? (
+                            <Image 
+                              src={source.icon} 
+                              alt={source.name}
+                              width={14}
+                              height={14}
+                            />
+                          ) : (
+                            <div className="w-2.5 h-2.5 rounded-full bg-[#666]" />
+                          )}
+                        </div>
+                        <div>
+                          <div className="text-white font-medium text-sm">{source.name}</div>
+                          <div className="text-[#666] text-xs">
+                            {source.crawls.toLocaleString()} crawls
+                          </div>
+                        </div>
+                      </div>
+                      <motion.div 
+                        className="text-white font-semibold text-sm"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: index * 0.05 + 0.2, duration: 0.3 }}
+                      >
+                        {source.percentage.toFixed(1)}%
+                      </motion.div>
+                    </div>
+                    <div className="w-full h-1 bg-[#1a1a1a] rounded-full overflow-hidden">
+                      <motion.div 
+                        className="h-full rounded-full"
+                        style={{ 
+                          "--target-width": `${source.percentage}%`,
+                          backgroundColor: source.color
+                        } as any}
+                        variants={progressVariants}
+                        initial="hidden"
+                        animate="visible"
+                        custom={index}
+                      />
+                    </div>
+                  </motion.div>
+                ))}
 
-          {/* Total */}
-          <div className="pt-4 border-t border-[#2a2a2a] mt-4 flex-shrink-0">
-            <div className="flex items-center justify-between">
-              <span className="text-[#666] text-sm font-medium">Total Crawls</span>
-              <motion.span 
-                className="text-white font-semibold"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 1.2, duration: 0.3 }}
-              >
-                {crawlerData.reduce((sum, source) => sum + source.crawls, 0).toLocaleString()}
-              </motion.span>
+                {totalCrawls > 5 && (
+                  <motion.div
+                    initial="hidden"
+                    animate="visible"
+                    variants={itemVariants}
+                    custom={5}
+                    className="mt-4 flex-shrink-0"
+                  >
+                    <button className="text-sm text-[#666] hover:text-white transition-colors w-full text-center py-2">
+                      View all sources →
+                    </button>
+                  </motion.div>
+                )}
+              </div>
+
+              {/* Total */}
+              <div className="pt-4 border-t border-[#2a2a2a] mt-4 flex-shrink-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#666] text-sm font-medium">Total Crawls</span>
+                  <motion.span 
+                    className="text-white font-semibold"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.2, duration: 0.3 }}
+                  >
+                    {totalCrawls.toLocaleString()}
+                  </motion.span>
+                </div>
+              </div>
             </div>
-          </div>
-            </>
           ) : (
             /* Empty State */
-            <div className="relative h-full">
-              {/* Preview of actual content with low opacity and blur - takes full height */}
-              <div className="absolute inset-0 opacity-30 blur-sm pointer-events-none flex flex-col">
-                <div className="flex-1 space-y-5 min-h-0">
-                  {crawlerData.map((source, index) => (
+            <div className="relative h-full flex flex-col">
+              {/* Preview - takes full height */}
+              <div className="absolute inset-0 opacity-30 blur-sm pointer-events-none">
+                <div className="flex-1 space-y-5 overflow-hidden">
+                  {crawlerData.slice(0, 5).map((source, index) => (
                     <div key={source.name} className="group">
                       <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-3">
@@ -227,7 +335,7 @@ export function AttributionBySourceCard() {
                           </div>
                         </div>
                         <div className="text-white font-semibold text-sm">
-                          {source.percentage}%
+                          {source.percentage.toFixed(1)}%
                         </div>
                       </div>
                       <div className="w-full h-1 bg-[#1a1a1a] rounded-full overflow-hidden">
@@ -248,7 +356,7 @@ export function AttributionBySourceCard() {
                   <div className="flex items-center justify-between">
                     <span className="text-[#666] text-sm font-medium">Total Crawls</span>
                     <span className="text-white font-semibold">
-                      {crawlerData.reduce((sum, source) => sum + source.crawls, 0).toLocaleString()}
+                      {totalCrawls.toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -267,11 +375,11 @@ export function AttributionBySourceCard() {
                   >
                     <LinkIcon className="w-4 h-4" />
                     Connect Analytics
-            </button>
+                  </button>
                 </div>
               </div>
-        </div>
-      )}
+            </div>
+          )}
         </CardContent>
       </motion.div>
       

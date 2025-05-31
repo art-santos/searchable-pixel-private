@@ -6,18 +6,12 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogFooter
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, ExternalLink, HelpCircle, Search, ChevronUp, Loader2, ChevronRight, ArrowUp, ChevronLeft, AlertCircle, Triangle, Code2, Globe, Hash, Cloud, Ghost, ShoppingBag, Frame, Layers, Wand2, Square } from 'lucide-react'
+import { ArrowLeft, ExternalLink, HelpCircle, Search, ChevronUp, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import { useToast } from '@/components/ui/use-toast'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { cn } from '@/lib/utils'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
 
 interface ConnectAnalyticsDialogProps {
   open: boolean
@@ -29,7 +23,7 @@ type Platform = {
   name: string
   description: string
   category: 'framework' | 'cms' | 'nocode' | 'custom'
-  icon: React.ComponentType<{ className?: string }>
+  icon?: string
   iconBg?: string
   available: boolean
   votes?: number
@@ -41,7 +35,7 @@ const platforms: Platform[] = [
     name: 'Vercel / Next.js',
     description: 'Next.js apps hosted on Vercel',
     category: 'framework',
-    icon: Triangle,
+    icon: '▲',
     iconBg: 'bg-white text-black',
     available: true
   },
@@ -50,7 +44,7 @@ const platforms: Platform[] = [
     name: 'Custom Server',
     description: 'Node.js, Python, PHP, or other',
     category: 'custom',
-    icon: Code2,
+    icon: '</>',
     iconBg: 'bg-[#1a1a1a] text-[#666]',
     available: true
   },
@@ -59,7 +53,7 @@ const platforms: Platform[] = [
     name: 'WordPress',
     description: 'WordPress.com or self-hosted',
     category: 'cms',
-    icon: Globe,
+    icon: 'W',
     iconBg: 'bg-[#21759b] text-white',
     available: false,
     votes: 0
@@ -69,7 +63,7 @@ const platforms: Platform[] = [
     name: 'Netlify',
     description: 'Sites with Netlify Edge Functions',
     category: 'framework',
-    icon: Hash,
+    icon: 'N',
     iconBg: 'bg-[#00D9FF] text-black',
     available: false,
     votes: 0
@@ -79,7 +73,7 @@ const platforms: Platform[] = [
     name: 'Cloudflare',
     description: 'Sites using Cloudflare Workers',
     category: 'framework',
-    icon: Cloud,
+    icon: 'C',
     iconBg: 'bg-[#F38020] text-white',
     available: false,
     votes: 0
@@ -89,7 +83,7 @@ const platforms: Platform[] = [
     name: 'Ghost',
     description: 'Ghost CMS blogs',
     category: 'cms',
-    icon: Ghost,
+    icon: 'G',
     iconBg: 'bg-[#15171A] text-white border border-[#333]',
     available: false,
     votes: 0
@@ -99,7 +93,7 @@ const platforms: Platform[] = [
     name: 'Shopify',
     description: 'E-commerce sites on Shopify',
     category: 'cms',
-    icon: ShoppingBag,
+    icon: 'S',
     iconBg: 'bg-[#96BF48] text-white',
     available: false,
     votes: 0
@@ -109,7 +103,7 @@ const platforms: Platform[] = [
     name: 'Framer',
     description: 'Sites built with Framer',
     category: 'nocode',
-    icon: Frame,
+    icon: 'F',
     iconBg: 'bg-[#0055FF] text-white',
     available: false,
     votes: 0
@@ -119,7 +113,7 @@ const platforms: Platform[] = [
     name: 'Webflow',
     description: 'Sites built with Webflow',
     category: 'nocode',
-    icon: Layers,
+    icon: 'W',
     iconBg: 'bg-[#4353FF] text-white',
     available: false,
     votes: 0
@@ -129,7 +123,7 @@ const platforms: Platform[] = [
     name: 'Wix',
     description: 'Sites built with Wix',
     category: 'nocode',
-    icon: Wand2,
+    icon: 'W',
     iconBg: 'bg-[#0C6EFC] text-white',
     available: false,
     votes: 0
@@ -139,7 +133,7 @@ const platforms: Platform[] = [
     name: 'Squarespace',
     description: 'Sites built with Squarespace',
     category: 'nocode',
-    icon: Square,
+    icon: 'S',
     iconBg: 'bg-black text-white border border-[#333]',
     available: false,
     votes: 0
@@ -156,18 +150,6 @@ export function ConnectAnalyticsDialog({
   const [platformVotes, setPlatformVotes] = useState<Record<string, number>>({})
   const [loadingPlatform, setLoadingPlatform] = useState<string | null>(null)
   const { toast } = useToast()
-  const [showVercelInstructions, setShowVercelInstructions] = useState(false)
-  const [showCustomInstructions, setShowCustomInstructions] = useState(false)
-  const [apiKey, setApiKey] = useState<string | null>(null)
-  const [isGeneratingKey, setIsGeneratingKey] = useState(false)
-  const [isVoting, setIsVoting] = useState(false)
-  const [userVotes, setUserVotes] = useState<string[]>([])
-  const [voteCounts, setVoteCounts] = useState<Record<string, number>>({})
-
-  // Define unavailable platforms (all except vercel and custom)
-  const unavailablePlatforms = platforms
-    .filter(p => !p.available)
-    .map(p => p.id)
 
   // Fetch vote data when dialog opens
   useEffect(() => {
@@ -249,6 +231,20 @@ export function ConnectAnalyticsDialog({
     )
   }, [searchQuery])
 
+  const sortedPlatforms = useMemo(() => {
+    const sorted = [...filteredPlatforms].sort((a, b) => {
+      // Available platforms first
+      if (a.available && !b.available) return -1
+      if (!a.available && b.available) return 1
+      
+      // Then sort by vote count (highest first)
+      const aVotes = platformVotes[a.id] || 0
+      const bVotes = platformVotes[b.id] || 0
+      return bVotes - aVotes
+    })
+    return sorted
+  }, [filteredPlatforms, platformVotes])
+
   const handleBack = () => {
     setSelectedPlatform(null)
     setSearchQuery('')
@@ -313,360 +309,233 @@ export function ConnectAnalyticsDialog({
 
   const selectedPlatformData = platforms.find(p => p.id === selectedPlatform)
 
-  const handlePlatformSelect = async (platformId: string) => {
-    if (unavailablePlatforms.includes(platformId)) {
-      // Handle voting for coming soon platforms
-      setIsVoting(true)
-      try {
-        const response = await fetch('/api/platform-votes', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ platformId })
-        })
-
-        if (!response.ok) {
-          const error = await response.json()
-          if (response.status === 401) {
-            toast({
-              title: 'Please sign in to vote for platforms',
-              variant: 'destructive'
-            })
-          } else {
-            throw new Error(error.error || 'Failed to vote')
-          }
-          return
-        }
-
-        const data = await response.json()
-        
-        setUserVotes(prev => [...prev, platformId])
-        setVoteCounts(prev => ({
-          ...prev,
-          [platformId]: data.voteCount
-        }))
-        setVotedPlatforms(prev => new Set(prev).add(platformId))
-        
-        toast({
-          title: 'Thanks for voting!',
-          description: 'We\'ll prioritize based on demand.'
-        })
-      } catch (error) {
-        console.error('Error voting:', error)
-        toast({
-          title: 'Failed to submit vote',
-          variant: 'destructive'
-        })
-      } finally {
-        setIsVoting(false)
-      }
-    } else {
-      // Handle available platforms (Vercel, Custom Server)
-      if (platformId === 'vercel') {
-        setShowVercelInstructions(true)
-      } else if (platformId === 'custom') {
-        setShowCustomInstructions(true)
-      }
-    }
-  }
-
-  const generateApiKey = async () => {
-    setIsGeneratingKey(true)
-    try {
-      const response = await fetch('/api/api-keys', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: 'My Website',
-          domains: [] // No restrictions for now
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to generate API key')
-      }
-
-      const data = await response.json()
-      setApiKey(data.key.api_key)
-      toast({
-        title: 'API key generated!',
-        description: 'Make sure to save it - you won\'t be able to see it again.'
-      })
-    } catch (error) {
-      console.error('Error generating API key:', error)
-      toast({
-        title: 'Failed to generate API key',
-        variant: 'destructive'
-      })
-    } finally {
-      setIsGeneratingKey(false)
-    }
-  }
-
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px] bg-black border-[#1a1a1a]">
-        {!showVercelInstructions && !showCustomInstructions ? (
+        {selectedPlatform === null ? (
+          // Platform selection screen
           <>
             <DialogHeader>
-              <DialogTitle className="text-xl font-semibold">Connect Your Analytics</DialogTitle>
-              <DialogDescription className="text-base">
-                How do you host your website? We'll show you the best way to add AI crawler tracking.
-              </DialogDescription>
+              <DialogTitle className="text-xl text-white">
+                How do you host your website?
+              </DialogTitle>
+              <p className="text-sm text-[#666] mt-2">
+                Search or select your platform for setup instructions
+              </p>
             </DialogHeader>
 
-            {/* Search bar */}
-            <div className="relative mt-4">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            {/* Search Input */}
+            <div className="mt-4 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#666]" />
               <Input
+                type="text"
                 placeholder="Search platforms..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
+                className="pl-10 bg-[#0a0a0a] border-[#1a1a1a] text-white placeholder:text-[#444]"
               />
             </div>
 
-            <ScrollArea className="h-[400px] pr-4">
-              <div className="grid gap-2 py-4">
-                {filteredPlatforms.map((platform) => (
-                  <Button
+            {/* Platform List */}
+            <div className="mt-4 max-h-[400px] overflow-y-auto space-y-2 pr-2">
+              {sortedPlatforms.map((platform) => {
+                const isAvailable = platform.available
+                const Component = isAvailable ? 'button' : 'div'
+                
+                return (
+                  <Component
                     key={platform.id}
-                    variant="outline"
-                    className={cn(
-                      "relative h-auto justify-start p-4 hover:bg-accent",
-                      isVoting && "opacity-50 pointer-events-none"
-                    )}
-                    onClick={() => handlePlatformSelect(platform.id)}
-                    disabled={isVoting}
+                    onClick={isAvailable ? () => setSelectedPlatform(platform.id) : undefined}
+                    className={`w-full p-3 rounded-lg border transition-colors text-left group ${
+                      isAvailable 
+                        ? 'border-[#1a1a1a] hover:border-[#333] cursor-pointer' 
+                        : 'border-[#0a0a0a] cursor-default opacity-60'
+                    }`}
+                    disabled={!isAvailable}
                   >
-                    <div className="flex items-start gap-3 w-full">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                        <platform.icon className="h-5 w-5" />
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold ${
+                        isAvailable ? platform.iconBg : 'bg-[#0a0a0a] text-[#333]'
+                      }`}>
+                        {platform.icon}
                       </div>
-                      <div className="flex-1 text-left">
-                        <div className="font-medium flex items-center gap-2">
+                      <div className="flex-1">
+                        <h3 className={`font-medium text-sm ${
+                          isAvailable ? 'text-white group-hover:text-white/90' : 'text-[#444]'
+                        }`}>
                           {platform.name}
-                          {unavailablePlatforms.includes(platform.id) && (
-                            <Badge variant="secondary" className="text-xs">
-                              Coming Soon
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {platform.description}
-                        </div>
-                        {unavailablePlatforms.includes(platform.id) && platformVotes[platform.id] !== undefined && (
-                          <div className="flex items-center gap-2 mt-2">
-                            <Button
-                              size="sm"
-                              variant={votedPlatforms.has(platform.id) ? "default" : "outline"}
-                              className={cn(
-                                "h-7 gap-1",
-                                votedPlatforms.has(platform.id) && "bg-green-600 hover:bg-green-700"
-                              )}
-                              disabled
-                            >
-                              <ArrowUp className="h-3 w-3" />
-                              <span className="text-xs">{platformVotes[platform.id] || 0}</span>
-                            </Button>
-                            <span className="text-xs text-muted-foreground">
-                              {votedPlatforms.has(platform.id) ? "You voted" : "Vote to prioritize"}
-                            </span>
-                          </div>
-                        )}
+                        </h3>
+                        <p className="text-xs text-[#666]">
+                          {isAvailable ? platform.description : 'Coming soon'}
+                        </p>
                       </div>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                      {!isAvailable && platform.votes !== undefined && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleVote(platform.id, e)
+                            }}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-md transition-all ${
+                              votedPlatforms.has(platform.id)
+                                ? 'bg-green-500/20 text-green-500 cursor-default'
+                                : 'bg-[#1a1a1a] hover:bg-[#222] text-[#666] hover:text-white'
+                            }`}
+                            disabled={votedPlatforms.has(platform.id) || loadingPlatform === platform.id}
+                          >
+                            {loadingPlatform === platform.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <ChevronUp className="w-3 h-3" />
+                            )}
+                            <span className="text-xs font-medium">
+                              {(() => {
+                                const currentCount = platformVotes[platform.id] || platform.votes || 0
+                                console.log(`[Voting] Display count for ${platform.id}:`, {
+                                  fromState: platformVotes[platform.id],
+                                  fromPlatform: platform.votes,
+                                  displaying: currentCount
+                                })
+                                return currentCount
+                              })()}
+                            </span>
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  </Button>
-                ))}
-              </div>
-            </ScrollArea>
-
-            <DialogFooter className="sm:justify-between">
-              <Button variant="ghost" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button variant="link" asChild>
-                <a href="mailto:support@split.dev">Need help?</a>
-              </Button>
-            </DialogFooter>
-          </>
-        ) : showVercelInstructions ? (
-          <>
-            <DialogHeader>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute left-4 top-4"
-                onClick={() => setShowVercelInstructions(false)}
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Back
-              </Button>
-              <DialogTitle className="text-xl font-semibold mt-2">Setup for Vercel / Next.js</DialogTitle>
-              <DialogDescription>
-                Track AI crawlers visiting your Next.js application
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <h3 className="font-medium">1. Generate your API key</h3>
-                {!apiKey ? (
-                  <Button 
-                    onClick={generateApiKey} 
-                    disabled={isGeneratingKey}
-                    className="w-full"
-                  >
-                    {isGeneratingKey ? "Generating..." : "Generate API Key"}
-                  </Button>
-                ) : (
-                  <div className="p-3 bg-muted rounded-lg font-mono text-sm break-all">
-                    {apiKey}
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Save this key - you won't be able to see it again!
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="font-medium">2. Install the package</h3>
-                <pre className="p-3 bg-muted rounded-lg overflow-x-auto">
-                  <code className="text-sm">npm install @split.dev/analytics</code>
-                </pre>
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="font-medium">3. Create middleware.ts in your project root</h3>
-                <pre className="p-3 bg-muted rounded-lg overflow-x-auto text-sm">
-                  <code>{`import { createCrawlerMiddleware } from '@split.dev/analytics/middleware'
-
-export const middleware = createCrawlerMiddleware({
-  apiKey: process.env.SPLIT_API_KEY!
-})
-
-export const config = {
-  matcher: '/((?!api|_next/static|_next/image|favicon.ico).*)',
-}`}</code>
-                </pre>
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="font-medium">4. Add to your .env.local</h3>
-                <pre className="p-3 bg-muted rounded-lg overflow-x-auto">
-                  <code className="text-sm">SPLIT_API_KEY={apiKey || 'your_api_key_here'}</code>
-                </pre>
-              </div>
-
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  That's it! Your app will now track AI crawler visits automatically.
-                </AlertDescription>
-              </Alert>
+                  </Component>
+                )
+              })}
             </div>
 
-            <DialogFooter>
-              <Button onClick={() => onOpenChange(false)}>Done</Button>
-            </DialogFooter>
+            <div className="mt-3 text-center">
+              <p className="text-xs text-[#666]">
+                Vote for platforms you'd like to see supported
+              </p>
+            </div>
+
+            {/* I don't know option */}
+            <button
+              onClick={() => window.open('mailto:support@split.dev?subject=Help with analytics setup', '_blank')}
+              className="mt-4 w-full p-4 rounded-lg border border-dashed border-[#1a1a1a] hover:border-[#333] transition-colors group"
+            >
+              <div className="flex items-center justify-center gap-3">
+                <HelpCircle className="w-5 h-5 text-[#666]" />
+                <span className="text-[#666] group-hover:text-[#888]">I don't know / Need help</span>
+              </div>
+            </button>
           </>
         ) : (
+          // Setup instructions based on selection
           <>
-            <DialogHeader>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute left-4 top-4"
-                onClick={() => setShowCustomInstructions(false)}
+            <div className="flex items-center gap-3 mb-4">
+              <button
+                onClick={handleBack}
+                className="p-2 rounded-lg hover:bg-[#1a1a1a] transition-colors"
               >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Back
-              </Button>
-              <DialogTitle className="text-xl font-semibold mt-2">Setup for Custom Servers</DialogTitle>
-              <DialogDescription>
-                Track AI crawlers on Express, Node.js, or any custom server
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <h3 className="font-medium">1. Generate your API key</h3>
-                {!apiKey ? (
-                  <Button 
-                    onClick={generateApiKey} 
-                    disabled={isGeneratingKey}
-                    className="w-full"
-                  >
-                    {isGeneratingKey ? "Generating..." : "Generate API Key"}
-                  </Button>
-                ) : (
-                  <div className="p-3 bg-muted rounded-lg font-mono text-sm break-all">
-                    {apiKey}
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Save this key - you won't be able to see it again!
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="font-medium">2. Install the package</h3>
-                <pre className="p-3 bg-muted rounded-lg overflow-x-auto">
-                  <code className="text-sm">npm install @split.dev/analytics</code>
-                </pre>
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="font-medium">3. Add to your Express/Node.js server</h3>
-                <pre className="p-3 bg-muted rounded-lg overflow-x-auto text-sm">
-                  <code>{`const express = require('express')
-const { createNodeMiddleware } = require('@split.dev/analytics')
-
-const app = express()
-
-// Add Split Analytics middleware
-app.use(createNodeMiddleware({
-  apiKey: process.env.SPLIT_API_KEY
-}))
-
-// Your routes
-app.get('/', (req, res) => {
-  res.send('Hello World!')
-})`}</code>
-                </pre>
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="font-medium">4. For other frameworks</h3>
-                <pre className="p-3 bg-muted rounded-lg overflow-x-auto text-sm">
-                  <code>{`import { trackCrawler } from '@split.dev/analytics'
-
-// In your request handler
-const wasCrawler = await trackCrawler(
-  { apiKey: process.env.SPLIT_API_KEY },
-  {
-    url: request.url,
-    userAgent: request.headers['user-agent']
-  }
-)`}</code>
-                </pre>
-              </div>
-
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Your server will now track AI crawler visits automatically!
-                </AlertDescription>
-              </Alert>
+                <ArrowLeft className="w-4 h-4 text-[#666]" />
+              </button>
+              <DialogTitle className="text-xl text-white">
+                {selectedPlatformData?.name} Setup
+              </DialogTitle>
             </div>
 
-            <DialogFooter>
-              <Button onClick={() => onOpenChange(false)}>Done</Button>
-            </DialogFooter>
+            <div className="space-y-4">
+              {/* Vercel/Next.js Instructions */}
+              {selectedPlatform === 'vercel' && (
+                <>
+                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4">
+                    <h4 className="font-medium text-white mb-3">Quick Setup</h4>
+                    <ol className="space-y-3">
+                      <li className="flex gap-3">
+                        <span className="text-[#666] flex-shrink-0">1.</span>
+                        <div>
+                          <p className="text-sm text-[#ccc]">Install our package:</p>
+                          <code className="block mt-1 text-xs bg-[#1a1a1a] px-3 py-2 rounded font-mono text-[#888]">
+                            npm install @split.dev/analytics
+                          </code>
+                        </div>
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="text-[#666] flex-shrink-0">2.</span>
+                        <div>
+                          <p className="text-sm text-[#ccc]">Add to your middleware.ts:</p>
+                          <code className="block mt-1 text-xs bg-[#1a1a1a] px-3 py-2 rounded font-mono text-[#888] whitespace-pre">
+{`import { splitAnalytics } from '@split.dev/analytics/next'
+
+export const middleware = splitAnalytics({
+  apiKey: process.env.SPLIT_API_KEY
+})`}
+                          </code>
+                        </div>
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="text-[#666] flex-shrink-0">3.</span>
+                        <p className="text-sm text-[#ccc]">Deploy your changes</p>
+                      </li>
+                    </ol>
+                  </div>
+                  <Button 
+                    className="w-full" 
+                    variant="outline"
+                    onClick={() => window.open('/docs', '_blank')}
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    View full documentation
+                  </Button>
+                </>
+              )}
+
+              {/* Custom/API Instructions */}
+              {selectedPlatform === 'custom' && (
+                <>
+                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4">
+                    <h4 className="font-medium text-white mb-3">Quick Setup</h4>
+                    <ol className="space-y-3">
+                      <li className="flex gap-3">
+                        <span className="text-[#666] flex-shrink-0">1.</span>
+                        <div>
+                          <p className="text-sm text-[#ccc]">Install our package:</p>
+                          <code className="block mt-1 text-xs bg-[#1a1a1a] px-3 py-2 rounded font-mono text-[#888]">
+                            npm install @split.dev/analytics
+                          </code>
+                        </div>
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="text-[#666] flex-shrink-0">2.</span>
+                        <div>
+                          <p className="text-sm text-[#ccc]">Add to your server:</p>
+                          <code className="block mt-1 text-xs bg-[#1a1a1a] px-3 py-2 rounded font-mono text-[#888] whitespace-pre overflow-x-auto">
+{`const { splitAnalytics } = require('@split.dev/analytics')
+
+app.use(splitAnalytics({
+  apiKey: process.env.SPLIT_API_KEY
+}))`}
+                          </code>
+                        </div>
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="text-[#666] flex-shrink-0">3.</span>
+                        <p className="text-sm text-[#ccc]">Deploy your changes</p>
+                      </li>
+                    </ol>
+                  </div>
+                  <div className="space-y-2">
+                    <Button 
+                      className="w-full" 
+                      variant="outline"
+                      onClick={() => window.open('/docs', '_blank')}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      View full documentation
+                    </Button>
+                    <p className="text-xs text-[#666] text-center">
+                      Supports Express, Fastify, Koa, and raw Node.js
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
           </>
         )}
       </DialogContent>
