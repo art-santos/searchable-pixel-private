@@ -144,36 +144,36 @@ async function callOpenAI(siteSummary: string, siteUrl: string): Promise<string[
   const brandName = domain.split('.')[0]
   
   // Determine question counts (50% direct, 50% indirect for more balanced analysis) 
-  const totalQuestions = 50
-  const directCount = Math.ceil(totalQuestions * 0.5) // ~25 questions
-  const indirectCount = totalQuestions - directCount // ~25 questions
+  const totalQuestions = 10 // Reduced from 50 for testing
+  const directCount = Math.ceil(totalQuestions * 0.5) // ~5 questions
+  const indirectCount = totalQuestions - directCount // ~5 questions
 
-  const systemPrompt = `You are an expert AEO (Answer Engine Optimization) analyst. Your task is to generate exactly 50 high-quality search questions for competitive visibility analysis.
+  const systemPrompt = `You are an expert AEO (Answer Engine Optimization) analyst. Your task is to generate exactly 10 high-quality search questions for competitive visibility analysis.
 
 CRITICAL REQUIREMENTS:
-1. Generate EXACTLY 50 questions total
-2. Split: 25 direct (brand-specific) + 25 indirect (competitive)
+1. Generate EXACTLY 10 questions total
+2. Split: 5 direct (brand-specific) + 5 indirect (competitive)
 3. Each question must be 10-75 characters
 4. Questions must be realistic search queries that real users would type
 5. Direct questions MUST mention "${brandName}" explicitly
 6. Indirect questions must NOT mention any brand names
 
-DIRECT QUESTIONS (25 total):
+DIRECT QUESTIONS (5 total):
 - About ${brandName} specifically: pricing, features, reviews, comparisons
 - Examples: "What is ${brandName}?", "${brandName} pricing", "${brandName} vs competitors"
 
-INDIRECT QUESTIONS (25 total):  
+INDIRECT QUESTIONS (5 total):  
 - Generic industry/use case searches where competitors fight for visibility
 - Examples: "best AI platforms", "enterprise automation tools", "AI customer service solutions"
 - NO brand names mentioned
 
 OUTPUT FORMAT:
 Return ONLY valid JSON in this exact format:
-{"questions": ["question 1", "question 2", ..., "question 50"]}
+{"questions": ["question 1", "question 2", ..., "question 10"]}
 
 NO explanatory text. NO markdown. ONLY the JSON object.`
 
-  const userPrompt = `Analyze this website and generate 50 search questions:
+  const userPrompt = `Analyze this website and generate 10 search questions:
 
 TARGET: ${siteUrl}
 BRAND: ${brandName}
@@ -181,7 +181,7 @@ BRAND: ${brandName}
 CONTENT SUMMARY:
 ${siteSummary}
 
-Generate 25 ${brandName}-specific questions + 25 competitive industry questions.`
+Generate 5 ${brandName}-specific questions + 5 competitive industry questions.`
 
   try {
     console.log(`🤖 Calling OpenAI GPT-4o to generate questions for ${brandName}...`)
@@ -236,8 +236,8 @@ Generate 25 ${brandName}-specific questions + 25 competitive industry questions.
       !q.match(/^(what is \w+|how to \w+)$/i) // Not overly generic
     )
 
-    if (validQuestions.length < 30) {
-      throw new Error(`Only ${validQuestions.length} valid questions generated, need at least 30`)
+    if (validQuestions.length < 8) {
+      throw new Error(`Only ${validQuestions.length} valid questions generated, need at least 8`)
     }
 
     console.log(`🤖 OpenAI generated ${validQuestions.length} valid questions`)
@@ -271,13 +271,13 @@ async function postProcessQuestions(questions: string[]): Promise<string[]> {
     return true
   })
   
-  // Ensure we have at least 30 questions
-  if (unique.length < 30) {
+  // Ensure we have at least 8 questions
+  if (unique.length < 8) {
     console.warn(`⚠️ Only ${unique.length} unique questions generated`)
   }
   
-  // Return up to 50 questions
-  return unique.slice(0, 50)
+  // Return up to 10 questions
+  return unique.slice(0, 10)
 }
 
 /**
@@ -299,11 +299,11 @@ async function retryWithSimplifiedPrompt(siteSummary: string, siteUrl: string): 
   const domain = siteUrl.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
   const brandName = domain.split('.')[0]
 
-  const simplifiedPrompt = `Generate 50 search questions about ${brandName} and ${brandName}'s industry.
+  const simplifiedPrompt = `Generate 10 search questions about ${brandName} and ${brandName}'s industry.
 
 Mix of:
-- 25 brand questions mentioning "${brandName}" (examples: "What is ${brandName}?", "${brandName} pricing", "${brandName} features")  
-- 25 industry questions NOT mentioning any brand names (examples: "best AI tools", "enterprise software platforms", "automation solutions")
+- 5 brand questions mentioning "${brandName}" (examples: "What is ${brandName}?", "${brandName} pricing", "${brandName} features")  
+- 5 industry questions NOT mentioning any brand names (examples: "best AI tools", "enterprise software platforms", "automation solutions")
 
 Return as JSON: {"questions": ["question 1", "question 2", ...]}`
 
@@ -320,7 +320,7 @@ Return as JSON: {"questions": ["question 1", "question 2", ...]}`
       const parsed = JSON.parse(content)
       if (parsed.questions && Array.isArray(parsed.questions)) {
         console.log(`🔄 Simplified prompt generated ${parsed.questions.length} questions`)
-        return parsed.questions.slice(0, 50)
+        return parsed.questions.slice(0, 10)
       }
     }
   } catch (retryError) {
@@ -336,65 +336,25 @@ Return as JSON: {"questions": ["question 1", "question 2", ...]}`
  * Generates improved fallback questions when AI fails
  */
 function generateImprovedFallbackQuestions(brandName: string): string[] {
-  // High-quality brand questions
+  // High-quality brand questions (5 total)
   const brandQuestions = [
     `What is ${brandName}?`,
     `${brandName} pricing`,
     `${brandName} vs competitors`,
     `How does ${brandName} work?`,
-    `${brandName} features`,
-    `${brandName} API documentation`,
-    `How to get started with ${brandName}`,
-    `${brandName} customer support`,
-    `${brandName} use cases`,
-    `${brandName} integration guide`,
-    `${brandName} review`,
-    `${brandName} tutorial`,
-    `${brandName} login`,
-    `${brandName} account setup`,
-    `${brandName} business solutions`,
-    `${brandName} enterprise pricing`,
-    `${brandName} security features`,
-    `${brandName} updates and news`,
-    `${brandName} partnerships`,
-    `${brandName} success stories`,
-    `${brandName} trial version`,
-    `${brandName} implementation guide`,
-    `${brandName} best practices`,
-    `${brandName} troubleshooting`,
-    `${brandName} alternatives`
+    `${brandName} features`
   ]
 
-  // High-quality industry questions (competitive)
+  // High-quality industry questions (5 total)
   const industryQuestions = [
     'best AI platforms for business',
     'enterprise automation tools',
     'top artificial intelligence solutions',
     'business intelligence software',
-    'cloud-based AI services',
-    'AI tools for productivity',
-    'machine learning platforms',
-    'data analysis software',
-    'customer service automation',
-    'AI content generation tools',
-    'intelligent chatbot platforms',
-    'automated workflow solutions',
-    'business process automation',
-    'AI-powered analytics',
-    'enterprise AI integration',
-    'artificial intelligence APIs',
-    'AI development platforms',
-    'smart business tools',
-    'AI customer engagement',
-    'automated decision making',
-    'AI project management',
-    'intelligent data processing',
-    'AI marketing automation',
-    'business AI implementation',
-    'AI software comparison'
+    'AI tools for productivity'
   ]
 
-  // Combine and ensure we have 50 questions
+  // Combine for 10 total questions
   const allQuestions = [...brandQuestions, ...industryQuestions]
-  return allQuestions.slice(0, 50)
+  return allQuestions.slice(0, 10)
 } 

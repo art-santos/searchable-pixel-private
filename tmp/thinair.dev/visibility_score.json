@@ -1,49 +1,30 @@
 {
-  "aeo_score": 95,
-  "coverage_owned": 0.7083333333333334,
-  "coverage_operated": 0.16666666666666666,
-  "coverage_total": 0.75,
-  "share_of_voice": 0.4317329625121786,
+  "aeo_score": 66,
+  "coverage_owned": 0.6326530612244898,
+  "coverage_operated": 0.1836734693877551,
+  "coverage_total": 0.6530612244897959,
+  "share_of_voice": 0.4707921708544408,
   "metrics": {
-    "questions_analyzed": 48,
-    "total_results": 376,
-    "owned_appearances": 132,
-    "operated_appearances": 9,
-    "earned_appearances": 235,
-    "avg_owned_position": 5.2,
-    "avg_operated_position": 5.4,
-    "top_3_presence": 33
+    "questions_analyzed": 49,
+    "total_results": 395,
+    "owned_appearances": 136,
+    "operated_appearances": 7,
+    "earned_appearances": 252,
+    "avg_owned_position": 5.1,
+    "avg_operated_position": 5.2,
+    "top_3_presence": 29
   },
   "breakdown": {
     "by_question": [
       {
-        "question": "thinair for SaaS onboarding",
+        "question": "thinair's MCP benefits",
         "owned_results": 0,
-        "operated_results": 1,
-        "earned_results": 9,
+        "operated_results": 0,
+        "earned_results": 4,
         "owned_positions": [],
-        "operated_positions": [
-          1
-        ],
-        "coverage_score": 0.5,
-        "voice_score": 0.34141715214740553,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "thinair competitive analysis",
-        "owned_results": 2,
-        "operated_results": 1,
-        "earned_results": 7,
-        "owned_positions": [
-          5,
-          10
-        ],
-        "operated_positions": [
-          6
-        ],
-        "coverage_score": 1.05,
-        "voice_score": 0.1593280043354559,
+        "operated_positions": [],
+        "coverage_score": 0,
+        "voice_score": 0,
         "is_direct": false,
         "weight": 1
       },
@@ -55,20 +36,118 @@
         "owned_positions": [
           1,
           2,
+          3,
           5,
           6,
-          7,
           9,
           10
         ],
         "operated_positions": [],
         "coverage_score": 1.2,
-        "voice_score": 0.9097954206747054,
+        "voice_score": 0.9878336268798266,
         "is_direct": true,
         "weight": 1.2
       },
       {
-        "question": "thinair automation tools",
+        "question": "thinair privacy policy",
+        "owned_results": 9,
+        "operated_results": 0,
+        "earned_results": 0,
+        "owned_positions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 1,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "thinair SaaS onboarding",
+        "owned_results": 5,
+        "operated_results": 2,
+        "earned_results": 3,
+        "owned_positions": [
+          1,
+          2,
+          3,
+          5,
+          8
+        ],
+        "operated_positions": [
+          4,
+          6
+        ],
+        "coverage_score": 1.4,
+        "voice_score": 0.8791491667795691,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "thinair reviews",
+        "owned_results": 0,
+        "operated_results": 0,
+        "earned_results": 10,
+        "owned_positions": [],
+        "operated_positions": [],
+        "coverage_score": 0,
+        "voice_score": 0,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "thinair AI automation",
+        "owned_results": 6,
+        "operated_results": 2,
+        "earned_results": 2,
+        "owned_positions": [
+          1,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "operated_positions": [
+          2,
+          9
+        ],
+        "coverage_score": 1.5,
+        "voice_score": 0.9231811407668339,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "thinair custom AI agents",
+        "owned_results": 8,
+        "operated_results": 0,
+        "earned_results": 2,
+        "owned_positions": [
+          1,
+          2,
+          4,
+          5,
+          7,
+          8,
+          9,
+          10
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 0.8292914239262974,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "How thinair integrates data?",
         "owned_results": 9,
         "operated_results": 1,
         "earned_results": 0,
@@ -79,12 +158,12 @@
           4,
           5,
           6,
-          7,
+          8,
           9,
           10
         ],
         "operated_positions": [
-          8
+          7
         ],
         "coverage_score": 1.25,
         "voice_score": 1,
@@ -92,417 +171,149 @@
         "weight": 1
       },
       {
-        "question": "thinair partnership benefits",
-        "owned_results": 6,
-        "operated_results": 1,
-        "earned_results": 3,
-        "owned_positions": [
-          2,
-          3,
-          4,
-          5,
-          7,
-          10
-        ],
-        "operated_positions": [
-          1
-        ],
-        "coverage_score": 1.5,
-        "voice_score": 0.8624847581628506,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "thinair vs other AI solutions",
-        "owned_results": 1,
+        "question": "thinair enterprise solutions",
+        "owned_results": 10,
         "operated_results": 0,
-        "earned_results": 9,
-        "owned_positions": [
-          3
-        ],
-        "operated_positions": [],
-        "coverage_score": 1.2,
-        "voice_score": 0.1365668608589622,
-        "is_direct": true,
-        "weight": 1.2
-      },
-      {
-        "question": "thinair API integration",
-        "owned_results": 1,
-        "operated_results": 3,
-        "earned_results": 6,
-        "owned_positions": [
-          4
-        ],
-        "operated_positions": [
-          5,
-          6,
-          7
-        ],
-        "coverage_score": 1.4400000000000002,
-        "voice_score": 0.311177347242921,
-        "is_direct": true,
-        "weight": 1.2
-      },
-      {
-        "question": "thinair AI solutions features",
-        "owned_results": 5,
-        "operated_results": 2,
-        "earned_results": 3,
+        "earned_results": 0,
         "owned_positions": [
           1,
           2,
           3,
           4,
-          7
-        ],
-        "operated_positions": [
+          5,
+          6,
+          7,
+          8,
           9,
           10
         ],
-        "coverage_score": 1.25,
-        "voice_score": 0.8321365668608589,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "Benefits of thinair MCP",
-        "owned_results": 1,
-        "operated_results": 0,
-        "earned_results": 9,
-        "owned_positions": [
-          1
-        ],
         "operated_positions": [],
         "coverage_score": 1,
-        "voice_score": 0.34141715214740553,
+        "voice_score": 1,
         "is_direct": false,
         "weight": 1
       },
       {
-        "question": "Is thinair secure?",
-        "owned_results": 1,
+        "question": "thinair partnership details",
+        "owned_results": 5,
         "operated_results": 1,
-        "earned_results": 7,
+        "earned_results": 4,
         "owned_positions": [
-          7
-        ],
-        "operated_positions": [
-          3
-        ],
-        "coverage_score": 1,
-        "voice_score": 0.1683265535138168,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "thinair secure AI access",
-        "owned_results": 1,
-        "operated_results": 1,
-        "earned_results": 8,
-        "owned_positions": [
-          1
+          1,
+          2,
+          5,
+          6,
+          9
         ],
         "operated_positions": [
           3
         ],
         "coverage_score": 1.5,
-        "voice_score": 0.455222869529874,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "thinair's Uix platform features",
-        "owned_results": 1,
-        "operated_results": 0,
-        "earned_results": 1,
-        "owned_positions": [
-          2
-        ],
-        "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 0.3333333333333333,
+        "voice_score": 0.7890529738517817,
         "is_direct": false,
         "weight": 1
       },
       {
         "question": "What is thinair?",
-        "owned_results": 0,
-        "operated_results": 0,
-        "earned_results": 9,
-        "owned_positions": [],
-        "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "How does thinair MCP work?",
-        "owned_results": 2,
-        "operated_results": 1,
-        "earned_results": 7,
-        "owned_positions": [
-          1,
-          3
-        ],
-        "operated_positions": [
-          9
-        ],
-        "coverage_score": 1.25,
-        "voice_score": 0.49315810865736354,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "thinair privacy policy details",
-        "owned_results": 9,
-        "operated_results": 0,
-        "earned_results": 0,
-        "owned_positions": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9
-        ],
-        "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 1,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "thinair customer reviews",
         "owned_results": 1,
         "operated_results": 0,
         "earned_results": 9,
         "owned_positions": [
-          1
+          8
         ],
         "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 0.34141715214740553,
+        "coverage_score": 0.5,
+        "voice_score": 0.04267714401842569,
         "is_direct": false,
         "weight": 1
       },
       {
-        "question": "Contact thinair support",
-        "owned_results": 8,
+        "question": "thinair NLQ technology",
+        "owned_results": 5,
         "operated_results": 1,
-        "earned_results": 1,
+        "earned_results": 4,
         "owned_positions": [
           1,
-          2,
-          3,
-          4,
           6,
-          7,
           8,
+          9,
           10
         ],
         "operated_positions": [
-          5
+          3
         ],
-        "coverage_score": 1.68,
-        "voice_score": 1.1544777130470125,
+        "coverage_score": 1.5,
+        "voice_score": 0.6268798265817641,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "thinair MCP explained",
+        "owned_results": 2,
+        "operated_results": 0,
+        "earned_results": 8,
+        "owned_positions": [
+          2,
+          4
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 0.2560628641105541,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "thinair data security",
+        "owned_results": 3,
+        "operated_results": 1,
+        "earned_results": 6,
+        "owned_positions": [
+          1,
+          4,
+          7
+        ],
+        "operated_positions": [
+          3
+        ],
+        "coverage_score": 1.5,
+        "voice_score": 0.5893510364449261,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "thinair vs competitors",
+        "owned_results": 0,
+        "operated_results": 1,
+        "earned_results": 9,
+        "owned_positions": [],
+        "operated_positions": [
+          9
+        ],
+        "coverage_score": 0.3,
+        "voice_score": 0.0455222869529874,
         "is_direct": true,
         "weight": 1.2
       },
       {
-        "question": "thinair's use of NLQ",
-        "owned_results": 1,
-        "operated_results": 0,
-        "earned_results": 8,
-        "owned_positions": [
-          1
-        ],
-        "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 0.3534857623790153,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "thinair data integration methods",
+        "question": "thinair features",
         "owned_results": 5,
-        "operated_results": 1,
+        "operated_results": 0,
         "earned_results": 4,
-        "owned_positions": [
-          2,
-          3,
-          4,
-          6,
-          10
-        ],
-        "operated_positions": [
-          8
-        ],
-        "coverage_score": 1.25,
-        "voice_score": 0.5035902994174232,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "thinair's AI customer stories",
-        "owned_results": 1,
-        "operated_results": 0,
-        "earned_results": 9,
-        "owned_positions": [
-          7
-        ],
-        "operated_positions": [],
-        "coverage_score": 0.5,
-        "voice_score": 0.04877387887820079,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "thinair's data unification process",
-        "owned_results": 4,
-        "operated_results": 0,
-        "earned_results": 6,
-        "owned_positions": [
-          6,
-          7,
-          8,
-          9
-        ],
-        "operated_positions": [],
-        "coverage_score": 0.5,
-        "voice_score": 0.18628912071535025,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "AI solutions for business transformation",
-        "owned_results": 0,
-        "operated_results": 0,
-        "earned_results": 10,
-        "owned_positions": [],
-        "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "enterprise automation tools",
-        "owned_results": 0,
-        "operated_results": 0,
-        "earned_results": 9,
-        "owned_positions": [],
-        "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "thinair platform capabilities",
-        "owned_results": 5,
-        "operated_results": 1,
-        "earned_results": 3,
         "owned_positions": [
           1,
-          2,
-          3,
-          4,
-          8
-        ],
-        "operated_positions": [
-          6
-        ],
-        "coverage_score": 1.25,
-        "voice_score": 0.8395286856501613,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "Why choose thinair?",
-        "owned_results": 2,
-        "operated_results": 0,
-        "earned_results": 7,
-        "owned_positions": [
-          3,
-          6
-        ],
-        "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 0.17674288118950765,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "data privacy in AI services",
-        "owned_results": 0,
-        "operated_results": 0,
-        "earned_results": 9,
-        "owned_positions": [],
-        "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "advanced AI frameworks",
-        "owned_results": 0,
-        "operated_results": 0,
-        "earned_results": 9,
-        "owned_positions": [],
-        "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "custom cloud platforms for AI",
-        "owned_results": 5,
-        "operated_results": 0,
-        "earned_results": 4,
-        "owned_positions": [
-          3,
-          4,
           6,
+          7,
           8,
           9
         ],
         "operated_positions": [],
         "coverage_score": 1,
-        "voice_score": 0.3485762379015289,
+        "voice_score": 0.5463599382802637,
         "is_direct": false,
         "weight": 1
       },
       {
-        "question": "AI platforms for SaaS",
-        "owned_results": 9,
-        "operated_results": 0,
-        "earned_results": 1,
-        "owned_positions": [
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10
-        ],
-        "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 0.6585828478525946,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "how to ensure AI security",
+        "question": "thinair contact support",
         "owned_results": 9,
         "operated_results": 0,
         "earned_results": 0,
@@ -518,103 +329,83 @@
           9
         ],
         "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 1,
-        "is_direct": false,
-        "weight": 1
+        "coverage_score": 1.2,
+        "voice_score": 1.2,
+        "is_direct": true,
+        "weight": 1.2
       },
       {
-        "question": "unified intelligence platforms",
+        "question": "thinair AI solutions",
         "owned_results": 7,
-        "operated_results": 2,
-        "earned_results": 0,
+        "operated_results": 1,
+        "earned_results": 2,
         "owned_positions": [
           1,
           2,
-          5,
-          6,
-          7,
-          8,
-          9
-        ],
-        "operated_positions": [
-          3,
-          4
-        ],
-        "coverage_score": 1.5,
-        "voice_score": 1.0000000000000002,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "accurate natural language query systems",
-        "owned_results": 5,
-        "operated_results": 0,
-        "earned_results": 5,
-        "owned_positions": [
-          2,
           4,
-          6,
-          8,
-          10
-        ],
-        "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 0.38978458203495464,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "seamless front-end experiences in AI",
-        "owned_results": 4,
-        "operated_results": 1,
-        "earned_results": 5,
-        "owned_positions": [
           5,
-          8,
+          7,
           9,
           10
         ],
         "operated_positions": [
           3
         ],
-        "coverage_score": 1.3,
-        "voice_score": 0.2968432461726054,
+        "coverage_score": 1.5,
+        "voice_score": 0.9004199972903403,
         "is_direct": false,
         "weight": 1
       },
       {
-        "question": "custom AI development",
-        "owned_results": 2,
-        "operated_results": 0,
-        "earned_results": 8,
+        "question": "thinair unified data",
+        "owned_results": 5,
+        "operated_results": 2,
+        "earned_results": 3,
         "owned_positions": [
           1,
-          2
+          2,
+          4,
+          6,
+          7
         ],
-        "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 0.5121257282211082,
+        "operated_positions": [
+          3,
+          5
+        ],
+        "coverage_score": 1.5,
+        "voice_score": 0.8852459016393444,
         "is_direct": false,
         "weight": 1
       },
       {
-        "question": "AI customer service solutions",
+        "question": "thinair customer success",
+        "owned_results": 7,
+        "operated_results": 3,
+        "earned_results": 0,
+        "owned_positions": [
+          1,
+          2,
+          3,
+          5,
+          6,
+          7,
+          10
+        ],
+        "operated_positions": [
+          4,
+          8,
+          9
+        ],
+        "coverage_score": 1.4,
+        "voice_score": 1,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "NLQ capabilities comparison",
         "owned_results": 0,
         "operated_results": 0,
         "earned_results": 10,
-        "owned_positions": [],
-        "operated_positions": [],
-        "coverage_score": 0,
-        "voice_score": 0,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "best AI platforms",
-        "owned_results": 0,
-        "operated_results": 0,
-        "earned_results": 9,
         "owned_positions": [],
         "operated_positions": [],
         "coverage_score": 0,
@@ -635,7 +426,7 @@
         "weight": 1
       },
       {
-        "question": "how to automate data integration",
+        "question": "simplifying SaaS onboarding",
         "owned_results": 0,
         "operated_results": 0,
         "earned_results": 10,
@@ -647,26 +438,24 @@
         "weight": 1
       },
       {
-        "question": "thinair for enterprise data",
-        "owned_results": 3,
-        "operated_results": 0,
-        "earned_results": 7,
-        "owned_positions": [
-          2,
-          3,
-          4
+        "question": "thinair SQL automation",
+        "owned_results": 0,
+        "operated_results": 1,
+        "earned_results": 9,
+        "owned_positions": [],
+        "operated_positions": [
+          1
         ],
-        "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 0.36986858149302265,
+        "coverage_score": 0.5,
+        "voice_score": 0.34141715214740553,
         "is_direct": false,
         "weight": 1
       },
       {
-        "question": "how to operationalize AI",
+        "question": "thinair success stories",
         "owned_results": 0,
         "operated_results": 0,
-        "earned_results": 9,
+        "earned_results": 10,
         "owned_positions": [],
         "operated_positions": [],
         "coverage_score": 0,
@@ -675,145 +464,142 @@
         "weight": 1
       },
       {
-        "question": "secure AI solutions",
-        "owned_results": 7,
+        "question": "how to build custom AI agents",
+        "owned_results": 0,
         "operated_results": 0,
-        "earned_results": 3,
-        "owned_positions": [
-          2,
-          3,
-          4,
-          7,
-          8,
-          9,
-          10
-        ],
+        "earned_results": 10,
+        "owned_positions": [],
         "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 0.5333965587318792,
+        "coverage_score": 0,
+        "voice_score": 0,
         "is_direct": false,
         "weight": 1
       },
       {
-        "question": "how to integrate AI with existing systems",
-        "owned_results": 1,
+        "question": "future of AI in business",
+        "owned_results": 0,
         "operated_results": 0,
+        "earned_results": 10,
+        "owned_positions": [],
+        "operated_positions": [],
+        "coverage_score": 0,
+        "voice_score": 0,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "natural language processing tools",
+        "owned_results": 6,
+        "operated_results": 0,
+        "earned_results": 4,
+        "owned_positions": [
+          1,
+          2,
+          3,
+          5,
+          6,
+          7
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 0.7998916136024928,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "AI customer service solutions",
+        "owned_results": 0,
+        "operated_results": 0,
+        "earned_results": 10,
+        "owned_positions": [],
+        "operated_positions": [],
+        "coverage_score": 0,
+        "voice_score": 0,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "thinair API integration",
+        "owned_results": 1,
+        "operated_results": 1,
         "earned_results": 8,
         "owned_positions": [
-          1
-        ],
-        "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 0.3534857623790153,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "future-ready AI frameworks",
-        "owned_results": 9,
-        "operated_results": 0,
-        "earned_results": 1,
-        "owned_positions": [
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10
-        ],
-        "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 0.6585828478525946,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "benefits of data integration",
-        "owned_results": 8,
-        "operated_results": 0,
-        "earned_results": 1,
-        "owned_positions": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          8,
-          9
-        ],
-        "operated_positions": [],
-        "coverage_score": 1,
-        "voice_score": 0.949502033945855,
-        "is_direct": false,
-        "weight": 1
-      },
-      {
-        "question": "thinair tech support services",
-        "owned_results": 7,
-        "operated_results": 1,
-        "earned_results": 1,
-        "owned_positions": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          7,
-          9
+          5
         ],
         "operated_positions": [
-          6
+          10
         ],
-        "coverage_score": 1.5,
-        "voice_score": 1.1469771356431477,
+        "coverage_score": 1.26,
+        "voice_score": 0.122910174773066,
         "is_direct": true,
         "weight": 1.2
       },
       {
-        "question": "top natural language processing tools",
-        "owned_results": 5,
+        "question": "AI platforms for business",
+        "owned_results": 0,
         "operated_results": 0,
-        "earned_results": 5,
-        "owned_positions": [
-          4,
-          5,
-          7,
-          8,
-          10
-        ],
+        "earned_results": 10,
+        "owned_positions": [],
         "operated_positions": [],
-        "coverage_score": 0.8,
-        "voice_score": 0.2792304565776995,
+        "coverage_score": 0,
+        "voice_score": 0,
         "is_direct": false,
         "weight": 1
       },
       {
-        "question": "what are model context protocols?",
-        "owned_results": 8,
+        "question": "thinair's Uix platform",
+        "owned_results": 2,
+        "operated_results": 0,
+        "earned_results": 8,
+        "owned_positions": [
+          1,
+          2
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 0.5121257282211082,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "data integration protocols",
+        "owned_results": 4,
+        "operated_results": 0,
+        "earned_results": 6,
+        "owned_positions": [
+          6,
+          8,
+          9,
+          10
+        ],
+        "operated_positions": [],
+        "coverage_score": 0.5,
+        "voice_score": 0.17165695705189,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "how to choose an AI platform",
+        "owned_results": 7,
         "operated_results": 0,
         "earned_results": 2,
         "owned_positions": [
           1,
           2,
+          3,
           4,
-          5,
           6,
           8,
-          9,
-          10
+          9
         ],
         "operated_positions": [],
         "coverage_score": 1,
-        "voice_score": 0.8374204037393308,
+        "voice_score": 0.8788048814700519,
         "is_direct": false,
         "weight": 1
       },
       {
-        "question": "AI-driven development approaches",
+        "question": "automated data integration tools",
         "owned_results": 9,
         "operated_results": 0,
         "earned_results": 0,
@@ -833,58 +619,292 @@
         "voice_score": 1,
         "is_direct": false,
         "weight": 1
+      },
+      {
+        "question": "thinair enterprise unification",
+        "owned_results": 2,
+        "operated_results": 0,
+        "earned_results": 8,
+        "owned_positions": [
+          5,
+          10
+        ],
+        "operated_positions": [],
+        "coverage_score": 0.8,
+        "voice_score": 0.10242514564422167,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "custom AI solutions for businesses",
+        "owned_results": 9,
+        "operated_results": 0,
+        "earned_results": 1,
+        "owned_positions": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 0.9317165695705188,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "enterprise automation tools",
+        "owned_results": 9,
+        "operated_results": 0,
+        "earned_results": 0,
+        "owned_positions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 1,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "best AI platforms",
+        "owned_results": 2,
+        "operated_results": 0,
+        "earned_results": 8,
+        "owned_positions": [
+          4,
+          5
+        ],
+        "operated_positions": [],
+        "coverage_score": 0.8,
+        "voice_score": 0.15363771846633248,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "AI tools for data analysis",
+        "owned_results": 5,
+        "operated_results": 0,
+        "earned_results": 5,
+        "owned_positions": [
+          1,
+          3,
+          6,
+          7,
+          9
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 0.5988348462267986,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "enterprise AI strategies",
+        "owned_results": 3,
+        "operated_results": 0,
+        "earned_results": 6,
+        "owned_positions": [
+          2,
+          5,
+          8
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 0.29162575396268764,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "secure AI access methods",
+        "owned_results": 10,
+        "operated_results": 0,
+        "earned_results": 0,
+        "owned_positions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 1,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "improving customer service with AI",
+        "owned_results": 4,
+        "operated_results": 0,
+        "earned_results": 6,
+        "owned_positions": [
+          2,
+          5,
+          6,
+          10
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 0.3300365804091586,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "data security in AI solutions",
+        "owned_results": 9,
+        "operated_results": 0,
+        "earned_results": 0,
+        "owned_positions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 1,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "unified data platforms",
+        "owned_results": 0,
+        "operated_results": 0,
+        "earned_results": 9,
+        "owned_positions": [],
+        "operated_positions": [],
+        "coverage_score": 0,
+        "voice_score": 0,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "AI-driven customer success",
+        "owned_results": 0,
+        "operated_results": 0,
+        "earned_results": 10,
+        "owned_positions": [],
+        "operated_positions": [],
+        "coverage_score": 0,
+        "voice_score": 0,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "AI solutions with MCP",
+        "owned_results": 0,
+        "operated_results": 0,
+        "earned_results": 9,
+        "owned_positions": [],
+        "operated_positions": [],
+        "coverage_score": 0,
+        "voice_score": 0,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "automation in AI services",
+        "owned_results": 0,
+        "operated_results": 0,
+        "earned_results": 9,
+        "owned_positions": [],
+        "operated_positions": [],
+        "coverage_score": 0,
+        "voice_score": 0,
+        "is_direct": false,
+        "weight": 1
+      },
+      {
+        "question": "how to secure AI systems",
+        "owned_results": 3,
+        "operated_results": 0,
+        "earned_results": 7,
+        "owned_positions": [
+          1,
+          2,
+          3
+        ],
+        "operated_positions": [],
+        "coverage_score": 1,
+        "voice_score": 0.6259314456035767,
+        "is_direct": false,
+        "weight": 1
       }
     ],
     "by_position": {
       "position_1": {
-        "owned": 19,
-        "operated": 2,
-        "earned": 4.300000000000001
+        "owned": 25,
+        "operated": 1,
+        "earned": 4.000000000000002
       },
       "position_2_3": {
         "owned": 40,
-        "operated": 4,
-        "earned": 21.90000000000001
+        "operated": 6,
+        "earned": 22.200000000000006
       },
       "position_4_10": {
-        "owned": 112,
-        "operated": 13,
-        "earned": 88.2
+        "owned": 123,
+        "operated": 10,
+        "earned": 91.8
       }
     },
     "top_performing_content": [
       {
-        "url": "https://www.quora.com/What-is-the-best-software-for-natural-language-processing-NLP-that-uses-artificial-intelligence",
-        "title": "What is the best software for natural language processing (NLP) that ...",
-        "snippet": "Some widely-used and reputable NLP frameworks include spaCy, NLTK, and Stanford NLP for Python. For deep learning-based approaches, TensorFlow and PyTorch are ...",
+        "url": "https://github.com/Fuzss/thinair",
+        "title": "Fuzss/thinair: The air is not always breathable in the depths ... - GitHub",
+        "snippet": "Thin Air introduces four different levels of air quality you will encounter in your world. Air Quality, Allows Breathing, Allows Refilling Air, Air Loss ...",
+        "bucket": "Owned",
+        "reasoning": "AI classification"
+      },
+      {
+        "url": "https://events.afcea.org/afceacyber22/CUSTOM/pdf/Saviynt_IS.pdf",
+        "title": "[PDF] Accelerate the Mission with Zero Trust Secure AI Access to the Edge",
+        "snippet": "These secure AI access methods provide rapid data access and reduce the cyber threat risk needed to move at the speed of the mission. The key to enabling and.",
+        "bucket": "Owned",
+        "reasoning": "AI classification"
+      },
+      {
+        "url": "https://firsteigen.com/blog/data-integration/",
+        "title": "Data Integration Best Practices, Tools & Challenges You ... - FirstEigen",
+        "snippet": "Learn all about data integration, including what it is, top challenges, best practices, and cloud solutions to streamline your processes.",
         "bucket": "Owned",
         "reasoning": "AI classification"
       },
       {
         "url": "https://thinairgearusa.com/",
         "title": "Thin Air Gear | Military Bags Built for the Long Haul – ThinAirGearUSA",
-        "snippet": "Shop our top-of-the-line selection of deployment bags, military tactical bags, backpacks, duffel bags, gear bags, assault packs & more.",
+        "snippet": "Contact Us · Thin Air Gear USA is proudly a veteran-owned company. All of our products are Military Grade and come with a Limited Lifetime Warranty ...",
         "bucket": "Owned",
         "reasoning": "AI classification"
       },
       {
         "url": "https://www.matillion.com/blog/what-is-data-integration-the-ultimate-guide",
         "title": "What Is Data Integration? Types, Benefits & Best Practices - Matillion",
-        "snippet": "Modern cloud-based solutions offer scalability and flexibility, making it easier to handle large volumes of data from diverse sources. Understand why SQL and ...",
-        "bucket": "Owned",
-        "reasoning": "AI classification"
-      },
-      {
-        "url": "https://dream.engineering.uconn.edu/research/artificial-intelligence-ai-driven-approaches-for-product-development/",
-        "title": "Artificial Intelligence (AI)-driven Approaches for Product Development",
-        "snippet": "Artificial Intelligence (AI)-driven Approaches for Product Development · Modeling and Design of Fluid Infilled Complex Structures for Mechanical Performances.",
-        "bucket": "Owned",
-        "reasoning": "AI classification"
-      },
-      {
-        "url": "https://perception-point.io/guides/ai-security/ai-security-risks-frameworks-and-best-practices/",
-        "title": "AI Security: Risks, Frameworks, and Best Practices - Perception Point",
-        "snippet": "AI security involves technical safeguards, like encryption and secure algorithms, and procedural measures such as regular audits and compliance checks. Another ...",
+        "snippet": "The most common types of data integration include ETL (Extract, Transform, Load), ELT (Extract, Load, Transform), data replication, data virtualization, and ...",
         "bucket": "Owned",
         "reasoning": "AI classification"
       }
@@ -892,7 +912,7 @@
   },
   "metadata": {
     "target_domain": "thinair.dev",
-    "calculated_at": "2025-05-31T20:01:09.982Z",
+    "calculated_at": "2025-05-31T20:07:19.651Z",
     "score_version": "1.0.0"
   }
 }
