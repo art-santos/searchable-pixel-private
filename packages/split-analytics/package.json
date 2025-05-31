@@ -1,6 +1,6 @@
 {
   "name": "@split.dev/analytics",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "AI crawler analytics for Next.js and Node.js applications",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -25,7 +25,9 @@
   ],
   "author": "Split Analytics",
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "@split.dev/analytics": "^0.1.1"
+  },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "tsup": "^8.0.0",
@@ -42,13 +44,21 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     },
     "./middleware": {
       "types": "./dist/middleware.d.ts",
-      "import": "./dist/middleware.js",
-      "require": "./dist/middleware.cjs"
+      "import": "./dist/middleware.mjs",
+      "require": "./dist/middleware.js"
     }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/split-dev/analytics"
+  },
+  "homepage": "https://split.dev",
+  "bugs": {
+    "url": "https://github.com/split-dev/analytics/issues"
   }
-} 
+}

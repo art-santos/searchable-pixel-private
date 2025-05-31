@@ -299,6 +299,12 @@ export default function SettingsPage() {
   }
   
   const handleCopyApiKey = (key: string) => {
+    // Check if this is a masked key (contains asterisks)
+    if (key.includes('*')) {
+      showToast('Cannot copy masked key. Keys are only shown once when created.')
+      return
+    }
+    
     navigator.clipboard.writeText(key)
     setCopied(true)
     showToast('API key copied to clipboard')
@@ -758,6 +764,38 @@ export default function SettingsPage() {
                     </motion.div>
                   )}
 
+                  {/* Newly Created Key Display */}
+                  {newlyCreatedKey && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-[#0a0a0a] border border-green-500/20 rounded-lg p-4"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <code className="text-sm text-white font-mono bg-[#1a1a1a] px-3 py-2 rounded flex-1 overflow-x-auto">
+                          {newlyCreatedKey}
+                        </code>
+                        <Button
+                          onClick={handleCopyNewKey}
+                          variant="outline"
+                          className="border-[#333] hover:border-[#444] text-white hover:text-white h-9 px-4 text-sm flex items-center gap-2"
+                        >
+                          {copiedNewKey ? (
+                            <>
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              Copied
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5" />
+                              Copy
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </motion.div>
+                  )}
+
                   {/* Keys List */}
                   {loadingKeys ? (
                     <div className="flex items-center justify-center py-12">
@@ -792,9 +830,15 @@ export default function SettingsPage() {
                                 </code>
                                 <button
                                   onClick={() => handleCopyApiKey(apiKey.key)}
-                                  className="text-[#666] hover:text-white transition-colors"
+                                  className="text-[#666] hover:text-white transition-colors group relative"
+                                  title={apiKey.key.includes('*') ? "Masked keys cannot be copied" : "Copy API key"}
                                 >
                                   <Copy className="w-3 h-3" />
+                                  {apiKey.key.includes('*') && (
+                                    <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-[#1a1a1a] text-xs text-[#666] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                      Keys are only shown once
+                                    </span>
+                                  )}
                                 </button>
                               </div>
                             </div>
