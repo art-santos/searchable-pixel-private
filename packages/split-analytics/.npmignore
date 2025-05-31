@@ -1,0 +1,25 @@
+# Source files
+src/
+
+# Config files
+tsconfig.json
+tsup.config.ts
+jest.config.js
+
+# Development files
+*.log
+.DS_Store
+node_modules/
+.env*
+
+# Build artifacts not needed
+*.map
+
+# Documentation source
+docs/
+examples/
+
+# Testing
+coverage/
+__tests__/
+*.test.* 

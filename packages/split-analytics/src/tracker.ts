@@ -31,6 +31,18 @@ export interface TrackerConfig {
   onError?: (error: Error) => void
 }
 
+export interface PingResponse {
+  status: 'ok' | 'error'
+  connection?: {
+    authenticated: boolean
+    keyName: string
+    workspace: string
+    domain: string | null
+  }
+  message?: string
+  timestamp?: string
+}
+
 export class CrawlerTracker {
   private config: Required<TrackerConfig>
   private eventQueue: CrawlerEvent[] = []
@@ -189,5 +201,46 @@ export class CrawlerTracker {
     }
     // Try to send remaining events
     this.flush().catch(() => {})
+  }
+
+  /**
+   * Ping the API to verify connection and API key validity
+   */
+  async ping(): Promise<PingResponse> {
+    try {
+      const pingEndpoint = this.config.apiEndpoint.replace(/\/events$/, '/ping')
+      
+      const response = await fetch(pingEndpoint, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.config.apiKey}`,
+          'X-Split-Version': '0.1.0'
+        }
+      })
+
+      const data = await response.json() as PingResponse
+
+      if (!response.ok) {
+        return {
+          status: 'error',
+          message: data.message || `API error: ${response.status}`
+        }
+      }
+
+      if (this.config.debug) {
+        console.log('[Split Analytics] Ping successful:', data)
+      }
+
+      return data
+    } catch (error) {
+      if (this.config.debug) {
+        console.error('[Split Analytics] Ping failed:', error)
+      }
+      
+      return {
+        status: 'error',
+        message: error instanceof Error ? error.message : 'Connection failed'
+      }
+    }
   }
 } 
