@@ -15,8 +15,8 @@ export function PageViewCard() {
   const [timeframe, setTimeframe] = useState<TimeframeType>('Today')
   const [isChartVisible, setIsChartVisible] = useState(false)
   const shouldReduceMotion = useReducedMotion()
-  // Simulate analytics connection state - would come from actual data/context
-  const [isConnected] = useState(true)
+  // TODO: Replace with actual analytics connection state from context/API
+  const [isConnected] = useState(false) // Changed to false for empty state by default
 
   const handleTimeframeChange = (newTimeframe: TimeframeType) => {
     setIsChartVisible(false)
