@@ -459,28 +459,59 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
       aeoDataKeys: data.aeoData ? Object.keys(data.aeoData) : []
     })
     
+    // 🚨 CRITICAL DEBUG: Check if we have the required data for saving
+    console.log('🔍 CRITICAL DEBUG - Required Data Check:')
+    console.log('  - runId exists:', !!runId)
+    console.log('  - runId value:', runId)
+    console.log('  - user exists:', !!user)
+    console.log('  - user.id:', user?.id)
+    console.log('  - data exists:', !!data)
+    console.log('  - Will attempt database save:', !!(runId && user))
+    
     // Save the complete AEO analysis to database if we have the run ID
     if (runId && user) {
       try {
-        console.log('💾 Saving complete AEO analysis to database...')
-        console.log('📊 Run ID:', runId, 'User ID:', user.id)
+        console.log('💾 🚨 ATTEMPTING COMPLETE AEO ANALYSIS SAVE 🚨')
+        console.log('📊 Save parameters:', {
+          runId,
+          userId: user.id,
+          dataType: typeof data,
+          dataKeys: Object.keys(data)
+        })
         
         const analysisResult = await saveCompleteAeoAnalysis(runId, data, user.id)
         
+        console.log('📋 Save result received:', analysisResult)
+        
         if (analysisResult.success) {
-          console.log('✅ Complete AEO analysis saved successfully')
+          console.log('✅ 🎉 Complete AEO analysis saved successfully! 🎉')
         } else {
-          console.error('❌ Failed to save AEO analysis:', analysisResult.error)
+          console.error('❌ 🚨 Failed to save AEO analysis:', analysisResult.error)
+          console.error('🔍 Save failure details:', {
+            success: analysisResult.success,
+            error: analysisResult.error,
+            runId,
+            userId: user.id
+          })
         }
       } catch (error) {
-        console.error('❌ Error saving complete AEO analysis:', error)
+        console.error('❌ 🚨 EXCEPTION during AEO analysis save:', error)
+        console.error('🔍 Exception details:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          runId,
+          userId: user.id
+        })
       }
     } else {
-      console.error('❌ Missing required data for saving AEO analysis:', {
+      console.error('❌ 🚨 MISSING REQUIRED DATA for saving AEO analysis:')
+      console.error('🔍 Missing data analysis:', {
         hasRunId: !!runId,
         hasUser: !!user,
         runId,
-        userId: user?.id
+        userId: user?.id,
+        userEmail: user?.email,
+        reason: !runId ? 'No runId' : !user ? 'No user' : 'Unknown'
       })
     }
     
