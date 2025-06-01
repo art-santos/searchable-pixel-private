@@ -1,2 +1,221 @@
+<<<<<<< HEAD
 "use strict";var u=Object.defineProperty;var S=Object.getOwnPropertyDescriptor;var B=Object.getOwnPropertyNames;var v=Object.prototype.hasOwnProperty;var k=(r,e)=>{for(var t in e)u(r,t,{get:e[t],enumerable:!0})},R=(r,e,t,a)=>{if(e&&typeof e=="object"||typeof e=="function")for(let o of B(e))!v.call(r,o)&&o!==t&&u(r,o,{get:()=>e[o],enumerable:!(a=S(e,o))||a.enumerable});return r};var P=r=>R(u({},"__esModule",{value:!0}),r);var _={};k(_,{createCrawlerMiddleware:()=>M,destroyTracker:()=>D});module.exports=P(_);var l=require("next/server");var h={GPTBot:{company:"OpenAI",bot:"GPTBot",category:"ai-training"},"ChatGPT-User":{company:"OpenAI",bot:"ChatGPT-User",category:"ai-assistant"},"OAI-SearchBot":{company:"OpenAI",bot:"OAI-SearchBot",category:"ai-search"},"Claude-Web":{company:"Anthropic",bot:"Claude-Web",category:"ai-assistant"},ClaudeBot:{company:"Anthropic",bot:"ClaudeBot",category:"ai-training"},"anthropic-ai":{company:"Anthropic",bot:"anthropic-ai",category:"ai-training"},"Google-Extended":{company:"Google",bot:"Google-Extended",category:"ai-training"},Googlebot:{company:"Google",bot:"Googlebot",category:"search-ai"},"Googlebot-Image":{company:"Google",bot:"Googlebot-Image",category:"search-ai"},"Googlebot-News":{company:"Google",bot:"Googlebot-News",category:"search-ai"},"Google-InspectionTool":{company:"Google",bot:"Google-InspectionTool",category:"search-ai"},Bingbot:{company:"Microsoft",bot:"Bingbot",category:"search-ai"},msnbot:{company:"Microsoft",bot:"msnbot",category:"search-ai"},BingPreview:{company:"Microsoft",bot:"BingPreview",category:"search-ai"},PerplexityBot:{company:"Perplexity",bot:"PerplexityBot",category:"ai-search"},FacebookBot:{company:"Meta",bot:"FacebookBot",category:"social-ai"},facebookexternalhit:{company:"Meta",bot:"facebookexternalhit",category:"social-ai"},"Meta-ExternalAgent":{company:"Meta",bot:"Meta-ExternalAgent",category:"ai-training"},YouBot:{company:"You.com",bot:"YouBot",category:"ai-search"},Neeva:{company:"Neeva",bot:"Neeva",category:"ai-search"},Phind:{company:"Phind",bot:"Phind",category:"ai-search"},Bytespider:{company:"ByteDance",bot:"Bytespider",category:"ai-training"},Baiduspider:{company:"Baidu",bot:"Baiduspider",category:"search-ai"},Sogou:{company:"Sogou",bot:"Sogou",category:"search-ai"},Amazonbot:{company:"Amazon",bot:"Amazonbot",category:"ai-assistant"},LinkedInBot:{company:"LinkedIn",bot:"LinkedInBot",category:"social-ai"},Twitterbot:{company:"Twitter",bot:"Twitterbot",category:"social-ai"},Applebot:{company:"Apple",bot:"Applebot",category:"search-ai"},"Applebot-Extended":{company:"Apple",bot:"Applebot-Extended",category:"ai-training"},Diffbot:{company:"Diffbot",bot:"Diffbot",category:"ai-extraction"},DataForSeoBot:{company:"DataForSEO",bot:"DataForSeoBot",category:"ai-extraction"},SemrushBot:{company:"Semrush",bot:"SemrushBot",category:"ai-extraction"},AhrefsBot:{company:"Ahrefs",bot:"AhrefsBot",category:"ai-extraction"},CCBot:{company:"Common Crawl",bot:"CCBot",category:"ai-training"},ia_archiver:{company:"Internet Archive",bot:"ia_archiver",category:"archival"},PetalBot:{company:"Petal Search",bot:"PetalBot",category:"search-ai"},SeznamBot:{company:"Seznam",bot:"SeznamBot",category:"search-ai"},Yandex:{company:"Yandex",bot:"YandexBot",category:"search-ai"},DuckDuckBot:{company:"DuckDuckGo",bot:"DuckDuckBot",category:"search-ai"},Qwantify:{company:"Qwant",bot:"Qwantify",category:"search-ai"}},y="https://split.dev/api/crawler-events",m=10,f=5e3,b=3,w=1e3;function A(r){if(!r)return{isAICrawler:!1,userAgent:""};for(let[a,o]of Object.entries(h))if(r.includes(a))return{isAICrawler:!0,crawler:o,userAgent:r};let e=r.toLowerCase(),t=["ai-crawler","ai-bot","llm-crawler","training-bot","ml-bot"];for(let a of t)if(e.includes(a))return{isAICrawler:!0,crawler:{company:"Unknown",bot:a,category:"unknown"},userAgent:r};return{isAICrawler:!1,userAgent:r}}function C(r){let e={},t=r.headers.referer||r.headers.referrer;t&&(e.referer=Array.isArray(t)?t[0]:t);let a=r.headers.accept;a&&(e.accept=Array.isArray(a)?a.join(", "):a);let o=r.headers["accept-encoding"];o&&(e.acceptEncoding=Array.isArray(o)?o.join(", "):o);let i=r.headers["accept-language"];return i&&(e.acceptLanguage=Array.isArray(i)?i[0]:i),e}var p=class{constructor(e){this.eventQueue=[];this.batchTimer=null;this.isSending=!1;this.config={apiKey:e.apiKey,apiEndpoint:e.apiEndpoint||y,batchSize:e.batchSize||m,batchIntervalMs:e.batchIntervalMs||f,debug:e.debug||!1,onError:e.onError||(t=>console.error("[Split Analytics]",t))}}async track(e){let t={...e,timestamp:new Date().toISOString()};this.eventQueue.push(t),this.config.debug&&console.log("[Split Analytics] Event queued:",t),this.eventQueue.length>=this.config.batchSize?await this.flush():this.scheduleBatch()}createEvent(e,t,a){let o=new URL(t.url);return{domain:o.hostname,path:o.pathname,crawlerName:e.bot,crawlerCompany:e.company,crawlerCategory:e.category,userAgent:this.getHeaderValue(t.headers["user-agent"])||"",statusCode:t.statusCode,responseTimeMs:t.responseTimeMs,metadata:a}}scheduleBatch(){this.batchTimer||(this.batchTimer=setTimeout(async()=>{this.batchTimer=null,this.eventQueue.length>0&&await this.flush()},this.config.batchIntervalMs))}async flush(){if(this.isSending||this.eventQueue.length===0)return;this.isSending=!0;let e=[...this.eventQueue];this.eventQueue=[];try{await this.sendBatch(e)}catch(t){this.eventQueue.unshift(...e),this.config.onError(t)}finally{this.isSending=!1}}async sendBatch(e,t=1){try{let a=await fetch(this.config.apiEndpoint,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${this.config.apiKey}`,"X-Split-Version":"0.1.0"},body:JSON.stringify({events:e})});if(!a.ok)throw new Error(`API error: ${a.status} ${a.statusText}`);this.config.debug&&console.log(`[Split Analytics] Sent ${e.length} events`)}catch(a){if(t<b){let o=w*Math.pow(2,t-1);return this.config.debug&&console.log(`[Split Analytics] Retry attempt ${t} after ${o}ms`),await new Promise(i=>setTimeout(i,o)),this.sendBatch(e,t+1)}throw a}}getHeaderValue(e){if(e)return Array.isArray(e)?e[0]:e}destroy(){this.batchTimer&&(clearTimeout(this.batchTimer),this.batchTimer=null),this.flush().catch(()=>{})}async ping(){try{let e=this.config.apiEndpoint.replace(/\/events$/,"/ping"),t=await fetch(e,{method:"GET",headers:{Authorization:`Bearer ${this.config.apiKey}`,"X-Split-Version":"0.1.0"}}),a=await t.json();return t.ok?(this.config.debug&&console.log("[Split Analytics] Ping successful:",a),a):{status:"error",message:a.message||`API error: ${t.status}`}}catch(e){return this.config.debug&&console.error("[Split Analytics] Ping failed:",e),{status:"error",message:e instanceof Error?e.message:"Connection failed"}}}};var n=null;function M(r){return n||(n=new p(r)),async function(t){let a=Date.now();try{let o=t.nextUrl.pathname;if(r.exclude&&r.exclude.some(s=>s.includes("*")?new RegExp(s.replace(/\*/g,".*")).test(o):o.startsWith(s)))return l.NextResponse.next();if(r.include&&!r.include.some(s=>s.includes("*")?new RegExp(s.replace(/\*/g,".*")).test(o):o.startsWith(s)))return l.NextResponse.next();let i=t.headers.get("user-agent"),c=A(i);if(!c.isAICrawler||!c.crawler)return l.NextResponse.next();r.onCrawlerDetected&&await r.onCrawlerDetected(t,c.crawler);let g=l.NextResponse.next();r.addCrawlerHeaders&&(g.headers.set("X-AI-Crawler-Detected","true"),g.headers.set("X-AI-Crawler-Name",c.crawler.bot),g.headers.set("X-AI-Crawler-Company",c.crawler.company));let x=C({headers:Object.fromEntries(t.headers.entries()),url:t.url,method:t.method}),E=Date.now()-a;n||(n=new p(r));let I=n.createEvent(c.crawler,{url:t.url,headers:Object.fromEntries(t.headers.entries()),statusCode:g.status,responseTimeMs:E},x);return n.track(I).catch(d=>{r.debug&&console.error("[Split Analytics] Failed to track event:",d)}),g}catch(o){return r.debug&&console.error("[Split Analytics] Middleware error:",o),l.NextResponse.next()}}}function D(){n&&(n.destroy(),n=null)}0&&(module.exports={createCrawlerMiddleware,destroyTracker});
 //# sourceMappingURL=middleware.js.map
+=======
+/**
+ * @split.dev/analytics - Next.js Middleware
+ * Simple middleware helper for Next.js applications
+ */
+import { NextResponse } from 'next/server';
+import { SplitAnalytics, isAICrawler, getCrawlerInfo } from './index';
+/**
+ * Create Split Analytics middleware for Next.js
+ *
+ * @example
+ * // Simple usage in middleware.ts
+ * import { createSplitMiddleware } from '@split.dev/analytics/middleware'
+ *
+ * export const middleware = createSplitMiddleware({
+ *   apiKey: process.env.SPLIT_API_KEY!,
+ *   debug: process.env.NODE_ENV === 'development'
+ * })
+ *
+ * export const config = {
+ *   matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)']
+ * }
+ */
+export function createSplitMiddleware(config) {
+    // Validate configuration at startup
+    if (!config.apiKey) {
+        throw new Error('[Split Analytics Middleware] API key is required');
+    }
+    if (!config.apiKey.startsWith('split_live_') && !config.apiKey.startsWith('split_test_')) {
+        throw new Error('[Split Analytics Middleware] Invalid API key format. Keys should start with "split_live_" or "split_test_"');
+    }
+    const analytics = new SplitAnalytics(config);
+    if (config.debug) {
+        console.log('[Split Analytics Middleware] Initialized with:', {
+            keyType: config.apiKey.startsWith('split_test_') ? 'test' : 'live',
+            excludePatterns: config.exclude?.length || 0,
+            includePatterns: config.include?.length || 0,
+            skipTracking: config.skipTracking || false
+        });
+    }
+    return async function splitMiddleware(request) {
+        // Always create a NextResponse first to avoid routing conflicts
+        const response = NextResponse.next();
+        try {
+            const { pathname } = request.nextUrl;
+            const userAgent = request.headers.get('user-agent');
+            if (config.debug) {
+                console.log('[Split Analytics Middleware] Processing request:', {
+                    pathname,
+                    userAgent: userAgent?.substring(0, 50) + '...',
+                    method: request.method
+                });
+            }
+            // Skip tracking if configured to do so (useful for debugging)
+            if (config.skipTracking) {
+                if (config.debug) {
+                    console.log('[Split Analytics Middleware] Skipping tracking (skipTracking=true)');
+                }
+                return response;
+            }
+            // Check if path should be excluded
+            if (config.exclude) {
+                for (const pattern of config.exclude) {
+                    try {
+                        if (pathname.match(pattern)) {
+                            if (config.debug) {
+                                console.log('[Split Analytics Middleware] Path excluded by pattern:', pattern);
+                            }
+                            return response;
+                        }
+                    }
+                    catch (error) {
+                        if (config.debug) {
+                            console.error('[Split Analytics Middleware] Invalid exclude pattern:', pattern, error);
+                        }
+                    }
+                }
+            }
+            // Check if path should be included (if include patterns are specified)
+            if (config.include && config.include.length > 0) {
+                let shouldInclude = false;
+                for (const pattern of config.include) {
+                    try {
+                        if (pathname.match(pattern)) {
+                            shouldInclude = true;
+                            break;
+                        }
+                    }
+                    catch (error) {
+                        if (config.debug) {
+                            console.error('[Split Analytics Middleware] Invalid include pattern:', pattern, error);
+                        }
+                    }
+                }
+                if (!shouldInclude) {
+                    if (config.debug) {
+                        console.log('[Split Analytics Middleware] Path not included by any pattern');
+                    }
+                    return response;
+                }
+            }
+            // Only track if it's an AI crawler
+            if (isAICrawler(userAgent)) {
+                const crawler = getCrawlerInfo(userAgent);
+                if (crawler) {
+                    if (config.debug) {
+                        console.log('[Split Analytics Middleware] AI crawler detected:', {
+                            name: crawler.name,
+                            company: crawler.company,
+                            category: crawler.category
+                        });
+                    }
+                    // Track the crawler visit asynchronously (don't block the response)
+                    // Using setImmediate to ensure this happens after the response is sent
+                    setImmediate(async () => {
+                        const startTime = Date.now();
+                        try {
+                            const success = await analytics.track({
+                                url: request.url,
+                                userAgent: userAgent || '',
+                                crawler,
+                                metadata: {
+                                    method: request.method,
+                                    pathname,
+                                    timestamp: new Date().toISOString(),
+                                    responseTime: Date.now() - startTime
+                                }
+                            });
+                            if (config.debug) {
+                                console.log('[Split Analytics Middleware] Tracking result:', success ? 'success' : 'failed');
+                            }
+                        }
+                        catch (error) {
+                            if (config.debug) {
+                                console.error('[Split Analytics Middleware] Tracking error:', error);
+                            }
+                        }
+                    });
+                }
+            }
+            else if (config.debug) {
+                console.log('[Split Analytics Middleware] Not an AI crawler, skipping');
+            }
+            return response;
+        }
+        catch (error) {
+            // Never let middleware errors break the application
+            if (config.debug) {
+                console.error('[Split Analytics Middleware] Unexpected error:', error);
+            }
+            return response;
+        }
+    };
+}
+/**
+ * Helper for users who already have middleware
+ * Call this function in your existing middleware to add Split Analytics tracking
+ *
+ * @example
+ * // In your existing middleware.ts
+ * import { trackCrawlerVisit } from '@split.dev/analytics/middleware'
+ *
+ * export async function middleware(request: NextRequest) {
+ *   // Your existing middleware logic here
+ *   const response = NextResponse.next()
+ *
+ *   // Add Split Analytics tracking (non-blocking)
+ *   trackCrawlerVisit(request, {
+ *     apiKey: process.env.SPLIT_API_KEY!,
+ *     debug: process.env.NODE_ENV === 'development'
+ *   }).catch(console.error)
+ *
+ *   return response
+ * }
+ */
+export async function trackCrawlerVisit(request, config) {
+    try {
+        const userAgent = request.headers.get('user-agent');
+        if (!isAICrawler(userAgent)) {
+            if (config.debug) {
+                console.log('[Split Analytics] trackCrawlerVisit: Not an AI crawler');
+            }
+            return false;
+        }
+        const analytics = new SplitAnalytics(config);
+        const crawler = getCrawlerInfo(userAgent);
+        if (!crawler) {
+            if (config.debug) {
+                console.log('[Split Analytics] trackCrawlerVisit: No crawler info found');
+            }
+            return false;
+        }
+        if (config.debug) {
+            console.log('[Split Analytics] trackCrawlerVisit: Tracking', crawler.name);
+        }
+        const success = await analytics.track({
+            url: request.url,
+            userAgent: userAgent || '',
+            crawler,
+            metadata: {
+                method: request.method,
+                pathname: request.nextUrl.pathname,
+                timestamp: new Date().toISOString()
+            }
+        });
+        if (config.debug) {
+            console.log('[Split Analytics] trackCrawlerVisit: Result', success ? 'success' : 'failed');
+        }
+        return success;
+    }
+    catch (error) {
+        if (config.debug) {
+            console.error('[Split Analytics] trackCrawlerVisit: Error', error);
+        }
+        return false;
+    }
+}
+>>>>>>> 8236b93 (fixed package)

@@ -53,10 +53,10 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
-    // If user IS logged in and tries to access /login, redirect to /blog
+    // If user IS logged in and tries to access /login, redirect to /dashboard
     if (session && pathname === '/login') {
       const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = '/blog';
+      redirectUrl.pathname = '/dashboard';
       return NextResponse.redirect(redirectUrl);
     }
 
@@ -124,7 +124,6 @@ function isProtectedRoute(pathname: string): boolean {
     '/api-keys',
     '/visibility',
     '/content',
-    '/blog',
     '/domains',
     '/analytics'
   ];

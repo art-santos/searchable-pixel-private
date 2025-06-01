@@ -478,7 +478,7 @@ export const middleware = splitAnalytics({
                   <Button 
                     className="w-full" 
                     variant="outline"
-                    onClick={() => window.open('/docs', '_blank')}
+                    onClick={() => window.open('https://docs.split.dev', '_blank')}
                   >
                     <ExternalLink className="w-4 h-4 mr-2" />
                     View full documentation
@@ -524,7 +524,7 @@ app.use(splitAnalytics({
                     <Button 
                       className="w-full" 
                       variant="outline"
-                      onClick={() => window.open('/docs', '_blank')}
+                      onClick={() => window.open('https://docs.split.dev', '_blank')}
                     >
                       <ExternalLink className="w-4 h-4 mr-2" />
                       View full documentation

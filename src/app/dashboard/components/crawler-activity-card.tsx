@@ -100,7 +100,7 @@ const crawlerLogs: CrawlerLog[] = [
 
 export function CrawlerActivityCard() {
   const shouldReduceMotion = useReducedMotion()
-  const [timeframe, setTimeframe] = useState<TimeframeOption>('Today')
+  const [timeframe, setTimeframe] = useState<TimeframeOption>('Last 24 hours')
 
   const cardVariants = shouldReduceMotion 
     ? { hidden: {}, visible: {} }

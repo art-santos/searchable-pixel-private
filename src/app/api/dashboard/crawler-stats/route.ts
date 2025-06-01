@@ -1,112 +1,190 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
   try {
-    // Get the auth token from Authorization header
-    const authHeader = request.headers.get('authorization')
+    const supabase = await createClient()
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.substring(7) // Remove 'Bearer ' prefix
-    
-    // Initialize Supabase client with the user's token
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      }
-    )
-
-    // Get current user
+    // Get authenticated user (same pattern as other working endpoints)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get timeframe from query params
+    const userId = user.id
+
+    // Get query params
     const url = new URL(request.url)
     const timeframe = url.searchParams.get('timeframe') || 'today'
     
+    console.log(`[Crawler Stats API] Fetching crawler stats for timeframe: ${timeframe}`)
+    
     // Calculate date range based on timeframe
     let startDate = new Date()
+    
     switch (timeframe.toLowerCase()) {
-      case 'today':
-        startDate.setHours(0, 0, 0, 0)
+      case 'last24h':
+        startDate.setHours(startDate.getHours() - 24)
         break
-      case '7d':
-      case '7 days':
+      case 'last7d':
         startDate.setDate(startDate.getDate() - 7)
         break
-      case '30d':
-      case '30 days':
+      case 'last30d':
         startDate.setDate(startDate.getDate() - 30)
         break
-      case '90d':
-      case '90 days':
-        startDate.setDate(startDate.getDate() - 90)
-        break
       default:
-        startDate.setHours(0, 0, 0, 0)
+        startDate.setHours(startDate.getHours() - 24)
     }
 
-    // Query aggregated crawler stats
-    const { data: crawlerStats, error: statsError } = await supabase
-      .from('crawler_stats_daily')
-      .select('crawler_name, crawler_company, visit_count')
-      .eq('user_id', user.id)
-      .gte('date', startDate.toISOString().split('T')[0])
-      .order('visit_count', { ascending: false })
+    console.log(`[Crawler Stats API] Using date range from: ${startDate.toISOString()}`)
 
-    if (statsError) {
-      console.error('Error fetching crawler stats:', statsError)
-      // If table doesn't exist yet, return empty data
-      if (statsError.code === '42P01') {
-        return NextResponse.json({
-          crawlers: [],
-          totalCrawls: 0,
-          timeframe
-        })
-      }
-      return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 })
+    // Fetch crawler visits within the timeframe
+    const { data: visits, error } = await supabase
+      .from('crawler_visits')
+      .select('crawler_name, crawler_company, timestamp')
+      .eq('user_id', userId)
+      .gte('timestamp', startDate.toISOString())
+
+    if (error) {
+      console.error('Error fetching crawler visits:', error)
+      return NextResponse.json({ error: 'Failed to fetch crawler data' }, { status: 500 })
     }
 
-    // Aggregate by crawler company
+    console.log(`[Crawler Stats API] Found ${visits?.length || 0} visits`)
+
+    if (!visits || visits.length === 0) {
+      return NextResponse.json({
+        crawlers: [],
+        totalCrawls: 0
+      })
+    }
+
+    // Group by company first, then handle individual crawlers
     const companyStats = new Map<string, { visits: number, crawlers: Set<string> }>()
     const crawlerDetails = new Map<string, { visits: number, company: string }>()
-    let totalVisits = 0
-
-    crawlerStats?.forEach(stat => {
-      const company = stat.crawler_company
-      const crawlerName = stat.crawler_name
+    
+    visits.forEach(visit => {
+      const company = visit.crawler_company
+      const crawler = visit.crawler_name
+      
+      // Track company stats
+      if (companyStats.has(company)) {
+        const stats = companyStats.get(company)!
+        stats.visits++
+        stats.crawlers.add(crawler)
+      } else {
+        companyStats.set(company, {
+          visits: 1,
+          crawlers: new Set([crawler])
+        })
+      }
       
       // Track individual crawler stats
-      crawlerDetails.set(crawlerName, {
-        visits: stat.visit_count || 0,
-        company: company
-      })
-      
-      // Track company aggregate stats
-      if (!companyStats.has(company)) {
-        companyStats.set(company, { visits: 0, crawlers: new Set() })
+      if (crawlerDetails.has(crawler)) {
+        crawlerDetails.get(crawler)!.visits++
+      } else {
+        crawlerDetails.set(crawler, {
+          visits: 1,
+          company: company
+        })
       }
-      const companyStat = companyStats.get(company)!
-      companyStat.visits += stat.visit_count || 0
-      companyStat.crawlers.add(stat.crawler_name)
-      totalVisits += stat.visit_count || 0
     })
 
-    // For companies with multiple significant crawlers, show them separately
-    // Otherwise, aggregate by company
-    const crawlerData = []
+    const totalVisits = visits.length
+    const crawlerData: Array<{
+      name: string
+      company: string
+      percentage: number
+      crawls: number
+      icon: string
+      color: string
+    }> = []
+
+    // Helper functions for icons and colors
+    const getCrawlerIcon = (company: string): string => {
+      const iconMap: Record<string, string> = {
+        'OpenAI': '/images/chatgpt.svg',
+        'Anthropic': '/images/claude.svg',
+        'Google': '/images/gemini.svg',
+        'Perplexity': '/images/perplexity.svg',
+        'Microsoft': '/images/bing.svg'
+      }
+      
+      // If we have a local icon, use it
+      if (iconMap[company]) {
+        return iconMap[company]
+      }
+      
+      // Otherwise, try to get favicon from company domain
+      const companyDomainMap: Record<string, string> = {
+        'OpenAI': 'openai.com',
+        'Anthropic': 'anthropic.com',
+        'Google': 'google.com',
+        'Perplexity': 'perplexity.ai',
+        'Microsoft': 'microsoft.com',
+        'Meta': 'meta.com',
+        'X': 'x.com',
+        'Twitter': 'twitter.com',
+        'LinkedIn': 'linkedin.com',
+        'Apple': 'apple.com',
+        'Amazon': 'amazon.com',
+        'TikTok': 'tiktok.com',
+        'ByteDance': 'bytedance.com',
+        'Slack': 'slack.com',
+        'Discord': 'discord.com',
+        'Reddit': 'reddit.com',
+        'Pinterest': 'pinterest.com',
+        'Snapchat': 'snapchat.com',
+        'WhatsApp': 'whatsapp.com',
+        'Telegram': 'telegram.org',
+        'Shopify': 'shopify.com',
+        'Salesforce': 'salesforce.com',
+        'Adobe': 'adobe.com',
+        'Atlassian': 'atlassian.com',
+        'Zoom': 'zoom.us',
+        'Dropbox': 'dropbox.com',
+        'Spotify': 'spotify.com',
+        'Netflix': 'netflix.com',
+        'Uber': 'uber.com',
+        'Airbnb': 'airbnb.com',
+        'Stripe': 'stripe.com',
+        'Square': 'squareup.com',
+        'PayPal': 'paypal.com',
+      }
+
+      const domain = companyDomainMap[company]
+      if (domain) {
+        return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`
+      }
+      
+      // Fallback: try to construct domain from company name
+      const constructedDomain = `${company.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`
+      return `https://www.google.com/s2/favicons?domain=${constructedDomain}&sz=128`
+    }
+
+    const getCrawlerColor = (company: string): string => {
+      const colorMap: Record<string, string> = {
+        'OpenAI': '#10a37f',
+        'Anthropic': '#cc785c',
+        'Google': '#4285f4',
+        'Perplexity': '#1fb6ff',
+        'Microsoft': '#00bcf2'
+      }
+      return colorMap[company] || '#888'
+    }
+
+    const getMainCrawlerName = (company: string, crawlerNames: string[]): string => {
+      // Return the most common or representative crawler name for the company
+      const mainCrawlers: Record<string, string> = {
+        'OpenAI': 'GPTBot',
+        'Anthropic': 'ClaudeBot',
+        'Google': 'Google-Extended',
+        'Perplexity': 'PerplexityBot',
+        'Microsoft': 'BingBot'
+      }
+      return mainCrawlers[company] || crawlerNames[0] || company
+    }
     
     // Check each company
     for (const [company, stats] of companyStats.entries()) {
@@ -156,53 +234,19 @@ export async function GET(request: Request) {
         })
       }
     }
-    
-    // Sort by crawls and take top 20
-    const topCrawlers = crawlerData
-      .sort((a, b) => b.crawls - a.crawls)
-      .slice(0, 20) // Top 20 instead of top 5
+
+    // Sort by crawls descending
+    crawlerData.sort((a, b) => b.crawls - a.crawls)
+
+    console.log(`[Crawler Stats API] Returning ${totalVisits} total crawls across ${crawlerData.length} crawlers`)
 
     return NextResponse.json({
-      crawlers: topCrawlers,
-      totalCrawls: totalVisits,
-      timeframe
+      crawlers: crawlerData,
+      totalCrawls: totalVisits
     })
 
   } catch (error) {
     console.error('Error in crawler stats API:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
-}
-
-// Helper function to get the main crawler name for a company
-function getMainCrawlerName(company: string, crawlerNames: string[]): string {
-  // Prefer the most common/recognizable crawler name
-  const preferredNames: Record<string, string> = {
-    'OpenAI': 'GPTBot',
-    'Anthropic': 'Claude-Web',
-    'Google': 'Google-Extended',
-    'Perplexity': 'PerplexityBot',
-    'Microsoft': 'Bingbot'
-  }
-  
-  return preferredNames[company] || crawlerNames[0] || company
-}
-
-// Helper function to get icon path for crawler company
-function getCrawlerIcon(company: string): string {
-  const iconMap: Record<string, string> = {
-    'OpenAI': '/images/chatgpt.svg',
-    'Anthropic': '/images/claude.svg',
-    'Google': '/images/gemini.svg',
-    'Perplexity': '/images/perplexity.svg',
-    'Microsoft': '/images/bing.svg'
-  }
-  
-  return iconMap[company] || ''
-}
-
-// Helper function to get color for crawler company
-function getCrawlerColor(company: string): string {
-  // Using consistent gray shades for now
-  return '#555'
 } 

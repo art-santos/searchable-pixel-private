@@ -157,7 +157,7 @@ export async function getUserSubscription(userId: string) {
   
   const { data, error } = await supabase
     .from('profiles')
-    .select('stripe_customer_id, subscription_status, subscription_plan, subscription_period_end')
+    .select('stripe_customer_id, subscription_status, subscription_plan, subscription_period_end, is_admin')
     .eq('id', userId)
     .single()
   

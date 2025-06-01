@@ -19,11 +19,16 @@ export async function GET(req: NextRequest) {
     // Get user's subscription data
     const subscription = await getUserSubscription(user.id)
     
+    // Admin override: if user is admin, always treat as pro
+    const effectivePlan = subscription?.is_admin ? 'pro' : (subscription?.subscription_plan || 'free')
+    const effectiveStatus = subscription?.is_admin ? 'active' : (subscription?.subscription_status || 'free')
+    
     return NextResponse.json({
       stripeCustomerId: subscription?.stripe_customer_id || null,
-      subscriptionStatus: subscription?.subscription_status || 'free',
-      subscriptionPlan: subscription?.subscription_plan || 'free',
-      subscriptionPeriodEnd: subscription?.subscription_period_end || null
+      subscriptionStatus: effectiveStatus,
+      subscriptionPlan: effectivePlan,
+      subscriptionPeriodEnd: subscription?.subscription_period_end || null,
+      isAdmin: subscription?.is_admin || false
     })
   } catch (error) {
     console.error('Error fetching user subscription:', error)

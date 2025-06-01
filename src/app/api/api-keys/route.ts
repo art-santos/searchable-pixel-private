@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import crypto from 'crypto'
 
 // GET: Fetch all API keys for the authenticated user
 export async function GET() {
@@ -45,21 +46,27 @@ export async function POST(request: Request) {
   }
   
   const body = await request.json()
-  const { name } = body
+  const { name, keyType = 'live' } = body
   
   // Auto-generate name if not provided
-  const keyName = name?.trim() || `API Key ${new Date().toLocaleDateString()}`
+  const keyTypeName = keyType === 'test' ? 'Test' : 'Live'
+  const keyName = name?.trim() || `${keyTypeName} API Key ${new Date().toLocaleDateString()}`
   
-  // Generate a secure API key with timestamp and random string
+  // Generate a secure API key with appropriate prefix
   const timestamp = Date.now().toString(36)
   const randomString = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
-  const apiKey = `split_live_${timestamp}_${randomString}`
+  const prefix = keyType === 'test' ? 'split_test_' : 'split_live_'
+  const apiKey = `${prefix}${timestamp}_${randomString}`
+  
+  // Generate hash for API validation (same as crawler-events endpoint)
+  const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex')
   
   const { data, error } = await supabase
     .from('api_keys')
     .insert({
       name: keyName,
       key: apiKey,
+      key_hash: keyHash, // Add the hashed version for validation
       user_id: user.id
     })
     .select()
@@ -72,7 +79,8 @@ export async function POST(request: Request) {
   return NextResponse.json({ 
     apiKey: {
       ...data,
-      key: apiKey // Return the full key only on creation
+      key: apiKey, // Return the full key only on creation
+      keyType: keyType
     }
   })
 }
