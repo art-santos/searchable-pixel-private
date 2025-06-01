@@ -1,24 +1,18 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
   try {
-    // TEMPORARY: Use admin client to bypass auth issues
-    // TODO: Fix authentication and revert to user session
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_KEY!,
-      {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-        }
-      }
-    )
+    const supabase = await createClient()
+    
+    // Get authenticated user (same pattern as other working endpoints)
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-    // TEMPORARY: Use hardcoded user_id from debug data
-    // TODO: Get this from authenticated session
-    const userId = 'e0390b8d-f121-4c65-8e63-cb60a2414f97'
+    const userId = user.id
 
     // Get query params
     const url = new URL(request.url)
