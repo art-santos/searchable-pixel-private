@@ -8,9 +8,10 @@ interface EnhancedCitationsTabProps {
   hasVisibilityData: boolean
   isRefreshing: boolean
   onRefreshScore: () => void
+  data?: any // Real visibility data from API
 }
 
-export function EnhancedCitationsTab({ hasVisibilityData }: EnhancedCitationsTabProps) {
+export function EnhancedCitationsTab({ hasVisibilityData, data }: EnhancedCitationsTabProps) {
   const { subscription } = useSubscription()
   const hasMaxAccess = subscription?.plan === 'plus' || subscription?.plan === 'pro'
   
@@ -21,64 +22,44 @@ export function EnhancedCitationsTab({ hasVisibilityData }: EnhancedCitationsTab
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
   // Only render if we have data - empty state handled centrally
-  if (!hasVisibilityData) {
+  if (!hasVisibilityData || !data) {
     return null
   }
 
-  const citations = [
-    {
-      id: 1,
-      engine: 'Perplexity',
-      query: 'What is the best AI sales tool for startups?',
-      matchType: 'Direct',
-      snippet: 'Origami Agents is a powerful AI tool that helps sales teams automate prospecting and lead qualification using AI-powered research and personalization.',
-      date: '2025-01-20',
-      url: 'https://origamiagents.com',
-      sentiment: 'positive' as const,
-      confidence: 0.94,
-      sources: ['Reddit', 'Y Combinator'],
-      engagement_score: 0.89
-    },
-    {
-      id: 2,
-      engine: 'ChatGPT',
-      query: 'AI SDR tools comparison 2025',
-      matchType: 'Indirect',
-      snippet: 'Some sales teams use tools like Origami for automated outreach and lead qualification processes...',
-      date: '2025-01-19',
-      url: 'https://origamiagents.com/features',
-      sentiment: 'neutral' as const,
-      confidence: 0.76,
-      sources: ['LinkedIn', 'Product Hunt'],
-      engagement_score: 0.72
-    },
-    {
-      id: 3,
-      engine: 'Claude',
-      query: 'Top cold email automation tools',
-      matchType: 'Direct',
-      snippet: 'Origami Agents stands out for its research-first approach to sales automation and personalized outreach.',
-      date: '2025-01-18',
-      url: 'https://origamiagents.com/blog/ai-sales',
-      sentiment: 'positive' as const,
-      confidence: 0.91,
-      sources: ['TechCrunch', 'Industry Forums'],
-      engagement_score: 0.85
-    },
-    {
-      id: 4,
-      engine: 'Perplexity',
-      query: 'How to automate sales prospecting with AI',
-      matchType: 'Indirect',
-      snippet: 'Modern AI tools help automate the research phase of prospecting, with solutions like Origami providing comprehensive automation.',
-      date: '2025-01-17',
-      url: 'https://origamiagents.com/playbooks',
-      sentiment: 'positive' as const,
-      confidence: 0.83,
-      sources: ['Salesforce Blog', 'HubSpot'],
-      engagement_score: 0.78
+  // Transform real data into citation format
+  const citations = data.citations?.recent_mentions?.map((mention: any, index: number) => {
+    // Find the full question data if available
+    const questionData = data.questions?.find((q: any) => q.question === mention.question)
+    const responseExcerpt = questionData?.ai_response || mention.ai_response || ''
+    
+    // Extract mention context from response
+    const getMentionContext = (response: string, context: string | null) => {
+      if (context) return context
+      // Try to extract a snippet around the company name
+      const companyName = data.company?.name || 'the company'
+      const mentionIndex = response.toLowerCase().indexOf(companyName.toLowerCase())
+      if (mentionIndex > -1) {
+        const start = Math.max(0, mentionIndex - 100)
+        const end = Math.min(response.length, mentionIndex + companyName.length + 100)
+        return '...' + response.substring(start, end) + '...'
+      }
+      return response.substring(0, 200) + '...'
     }
-  ]
+    
+    return {
+      id: index + 1,
+      engine: 'Perplexity', // Default for now - could be enhanced
+      query: mention.question,
+      matchType: mention.position === 'primary' ? 'Direct' : 'Indirect',
+      snippet: getMentionContext(responseExcerpt, mention.context),
+      date: new Date(data.last_updated || Date.now()).toISOString().split('T')[0],
+      url: '#', // Would need citation URLs from the real data
+      sentiment: mention.sentiment || 'neutral',
+      confidence: 0.85, // Default confidence score
+      sources: ['AI Platform'], // Default source
+      engagement_score: 0.75 // Default engagement
+    }
+  }) || []
 
   const filteredCitations = citations.filter(citation => {
     const matchesSearch = citation.query.toLowerCase().includes(searchTerm.toLowerCase()) ||

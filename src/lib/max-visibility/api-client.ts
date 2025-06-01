@@ -103,6 +103,11 @@ export interface VisibilityData {
   }
   last_updated: string
   scan_type: 'lite' | 'max'
+  chartData?: Array<{
+    date: string
+    score: number
+    fullDate: string
+  }>
 }
 
 export interface MaxVisibilityApiResponse<T> {

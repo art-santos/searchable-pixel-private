@@ -393,7 +393,8 @@ Determine:
 4. What is the surrounding context of the mention?
 5. How confident are you in this analysis? (0-1)
 
-Return ONLY a JSON object with this exact structure:
+IMPORTANT: Return ONLY the raw JSON object below. Do not include any markdown formatting, code blocks, or explanatory text. Start your response with { and end with }
+
 {
   "mention_detected": boolean,
   "mention_position": "primary|secondary|passing|none",
@@ -410,15 +411,22 @@ Return ONLY a JSON object with this exact structure:
       // Clean up the response - remove markdown code blocks if present
       let cleanedJson = jsonString.trim()
       
-      // Remove markdown code block markers
-      if (cleanedJson.startsWith('```json')) {
-        cleanedJson = cleanedJson.replace(/^```json\s*/, '').replace(/\s*```$/, '')
-      } else if (cleanedJson.startsWith('```')) {
-        cleanedJson = cleanedJson.replace(/^```\s*/, '').replace(/\s*```$/, '')
+      // Remove markdown code block markers (handle multiple variations)
+      cleanedJson = cleanedJson.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/g, '')
+      
+      // Remove any backticks that might still be present
+      cleanedJson = cleanedJson.replace(/^`+/, '').replace(/`+$/, '')
+      
+      // Find JSON object boundaries
+      const jsonStart = cleanedJson.indexOf('{')
+      const jsonEnd = cleanedJson.lastIndexOf('}')
+      
+      if (jsonStart === -1 || jsonEnd === -1) {
+        throw new Error('No valid JSON object found in response')
       }
       
-      // Remove any leading/trailing whitespace again
-      cleanedJson = cleanedJson.trim()
+      // Extract just the JSON portion
+      cleanedJson = cleanedJson.substring(jsonStart, jsonEnd + 1)
       
       console.log('🔍 Parsing mention analysis JSON:', cleanedJson.substring(0, 100) + '...')
       
@@ -446,7 +454,17 @@ Return ONLY a JSON object with this exact structure:
         originalString: jsonString.substring(0, 200),
         error: (error as Error).message
       })
-      throw new Error(`Failed to parse mention analysis result: ${(error as Error).message}`)
+      
+      // Fallback: try to create a default response
+      console.log('⚠️ Using fallback mention analysis due to parse error')
+      return {
+        mention_detected: false,
+        mention_position: 'none',
+        mention_sentiment: 'neutral',
+        mention_context: null,
+        confidence_score: 0.5,
+        reasoning: `Parse error: ${(error as Error).message}`
+      }
     }
   }
 

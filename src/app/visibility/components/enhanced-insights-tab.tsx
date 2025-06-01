@@ -8,102 +8,92 @@ interface EnhancedInsightsTabProps {
   hasVisibilityData: boolean
   isRefreshing: boolean
   onRefreshScore: () => void
+  data?: any // Real visibility data from API
 }
 
-export function EnhancedInsightsTab({ hasVisibilityData }: EnhancedInsightsTabProps) {
+export function EnhancedInsightsTab({ hasVisibilityData, data }: EnhancedInsightsTabProps) {
   const { subscription } = useSubscription()
   const hasMaxAccess = subscription?.plan === 'plus' || subscription?.plan === 'pro'
 
   // Only render if we have data - empty state handled centrally
-  if (!hasVisibilityData) {
+  if (!hasVisibilityData || !data) {
     return null
   }
 
+  // Generate insights from real data
+  const mentionRate = data.score?.mention_rate || 0
+  const sentimentScore = data.score?.sentiment_score || 0
+  const competitiveScore = data.score?.competitive_score || 0
+  const overallScore = data.score?.overall_score || 0
+  
+  // Generate trends from real data
+  const trendChange = data.score?.trend_change || 0
+  const competitorCount = data.competitive?.total_competitors || 0
+  const currentRank = data.competitive?.current_rank || 0
+  
   const insights = {
     trends: [
       {
         id: 1,
-        title: 'AI SDR Query Volume Rising',
-        description: 'Mentions of "AI SDR" increased 47% this month',
-        trend: 'up' as const,
-        impact: 'high' as const,
-        change: '+47%',
-        period: '30 days'
+        title: 'Visibility Score Trend',
+        description: `Your visibility score ${trendChange >= 0 ? 'improved' : 'decreased'} by ${Math.abs(trendChange)}% recently`,
+        trend: trendChange >= 0 ? 'up' : 'down',
+        impact: Math.abs(trendChange) > 10 ? 'high' : Math.abs(trendChange) > 5 ? 'medium' : 'low',
+        change: `${trendChange >= 0 ? '+' : ''}${trendChange}%`,
+        period: data.score?.trend_period || '30 days'
       },
       {
         id: 2,
-        title: 'Sales Automation Interest Peaks',
-        description: 'Peak search times align with business quarters',
-        trend: 'up' as const,
-        impact: 'medium' as const,
-        change: '+23%',
-        period: '7 days'
+        title: 'Mention Rate Performance',
+        description: `${Math.round(mentionRate * 100)}% of AI queries mention your brand`,
+        trend: mentionRate > 0.5 ? 'up' : 'down',
+        impact: mentionRate > 0.7 ? 'high' : mentionRate > 0.4 ? 'medium' : 'low',
+        change: `${Math.round(mentionRate * 100)}%`,
+        period: 'Current'
       },
       {
         id: 3,
-        title: 'Cold Email Mentions Declining',
-        description: 'Traditional cold email tools losing ground',
-        trend: 'down' as const,
-        impact: 'medium' as const,
-        change: '-15%',
-        period: '14 days'
+        title: 'Competitive Position',
+        description: `Ranking #${currentRank} among ${competitorCount} competitors`,
+        trend: currentRank <= 3 ? 'up' : 'down',
+        impact: currentRank <= 3 ? 'high' : currentRank <= 5 ? 'medium' : 'low',
+        change: `#${currentRank}`,
+        period: 'Current'
       }
     ],
-    recommendations: [
-      {
-        id: 1,
-        category: 'Content',
-        title: 'Create AI SDR Comparison Guide',
-        description: 'Build comprehensive comparison content for high-volume queries',
-        priority: 'high' as const,
-        effort: 'medium' as const,
-        impact: 85,
-        timeframe: '2-3 weeks'
-      },
-      {
-        id: 2,
-        category: 'SEO',
-        title: 'Optimize for Sales Automation',
-        description: 'Target emerging sales automation keywords',
-        priority: 'high' as const,
-        effort: 'low' as const,
-        impact: 72,
-        timeframe: '1 week'
-      },
-      {
-        id: 3,
-        category: 'Product',
-        title: 'Develop ROI Calculator',
-        description: 'Interactive tool for sales automation ROI',
-        priority: 'medium' as const,
-        effort: 'high' as const,
-        impact: 90,
-        timeframe: '4-6 weeks'
-      }
-    ],
+    recommendations: data.topics?.slice(0, 3).map((topic: any, index: number) => ({
+      id: index + 1,
+      category: topic.category,
+      title: `Improve ${topic.name} Content`,
+      description: `${topic.mention_count === 0 ? 'Create new' : 'Enhance existing'} content for "${topic.name}" queries`,
+      priority: topic.mention_count === 0 ? 'high' : 'medium',
+      effort: topic.category === 'Comparison' ? 'high' : 'medium',
+      impact: Math.round((1 - (topic.mention_percentage || 0) / 100) * 90),
+      timeframe: topic.mention_count === 0 ? '2-3 weeks' : '1-2 weeks'
+    })) || [],
     quickWins: [
       {
         id: 1,
-        title: 'Add AI SDR FAQ Section',
-        description: 'Quick content addition for trending queries',
+        title: 'Optimize Meta Tags',
+        description: 'Update meta descriptions with trending keywords',
         effort: 20,
-        impact: 75,
-        timeframe: '2 days'
+        impact: Math.round(60 + (1 - mentionRate) * 20),
+        timeframe: '1-2 days'
       },
       {
         id: 2,
-        title: 'Update Homepage Meta Tags',
-        description: 'Include trending keywords in meta descriptions',
-        effort: 15,
-        impact: 60,
-        timeframe: '1 day'
+        title: 'Add FAQ Section',
+        description: 'Quick content for common AI platform queries',
+        effort: 30,
+        impact: Math.round(70 + (1 - mentionRate) * 15),
+        timeframe: '3-4 days'
       },
       {
         id: 3,
-        title: 'Create Comparison Chart',
-        description: 'Visual comparison with key competitors',
+        title: 'Competitor Comparison',
+        description: 'Visual comparison chart with top competitors',
         effort: 40,
-        impact: 80,
+        impact: Math.round(75 + (1 - competitiveScore) * 15),
         timeframe: '1 week'
       }
     ]

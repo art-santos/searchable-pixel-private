@@ -123,6 +123,55 @@ export async function GET(request: NextRequest) {
       completed: assessment.computed_at
     })
 
+    // Fetch historical scores for the chart
+    console.log('📈 Fetching historical visibility scores...')
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    
+    const { data: historicalScores, error: historicalError } = await supabase
+      .from('max_visibility_runs')
+      .select('total_score, computed_at')
+      .eq('company_id', company.id)
+      .eq('status', 'completed')
+      .gte('computed_at', thirtyDaysAgo.toISOString())
+      .order('computed_at', { ascending: true })
+
+    if (historicalError) {
+      console.error('❌ Failed to fetch historical scores:', historicalError)
+    }
+
+    // Process historical scores - group by date and take the most recent score per day
+    const scoresByDate = new Map<string, number>()
+    
+    if (historicalScores) {
+      historicalScores.forEach((record: any) => {
+        const date = new Date(record.computed_at).toISOString().split('T')[0]
+        const score = record.total_score || 0
+        
+        // Keep the most recent score for each date
+        if (!scoresByDate.has(date) || score > 0) {
+          scoresByDate.set(date, score)
+        }
+      })
+    }
+    
+    // Generate chart data for the last 30 days
+    const chartData = []
+    const today = new Date()
+    
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date(today)
+      date.setDate(today.getDate() - i)
+      const dateStr = date.toISOString().split('T')[0]
+      const displayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()
+      
+      chartData.push({
+        date: displayDate,
+        score: scoresByDate.get(dateStr) || 0,
+        fullDate: dateStr
+      })
+    }
+
     // Fetch detailed data from related tables
     console.log('📊 Fetching detailed visibility data...')
     
@@ -136,9 +185,11 @@ export async function GET(request: NextRequest) {
         position,
         max_visibility_responses!inner(
           id,
+          full_response,
           mention_detected,
           mention_position,
           mention_sentiment,
+          mention_context,
           response_quality_score,
           citation_count
         )
@@ -239,7 +290,9 @@ export async function GET(request: NextRequest) {
           question: q.question,
           type: q.question_type,
           position: q.max_visibility_responses[0]?.mention_position || 'none',
-          sentiment: q.max_visibility_responses[0]?.mention_sentiment || 'neutral'
+          sentiment: q.max_visibility_responses[0]?.mention_sentiment || 'neutral',
+          ai_response: q.max_visibility_responses[0]?.full_response || '',
+          context: q.max_visibility_responses[0]?.mention_context || null
         })) || []
       },
       competitive: {
@@ -271,7 +324,14 @@ export async function GET(request: NextRequest) {
       assessment_id: assessment.id,
       processing_time: assessment.completed_at && assessment.started_at 
         ? new Date(assessment.completed_at).getTime() - new Date(assessment.started_at).getTime()
-        : 0
+        : 0,
+      company: {
+        id: company.id,
+        name: company.company_name,
+        domain: company.root_url
+      },
+      // Historical data for chart
+      chartData: chartData
     }
 
     console.log('📈 Returning visibility data with score:', visibilityData.score.overall_score)

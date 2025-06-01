@@ -26,40 +26,6 @@ import { EnhancedInsightsTab } from './components/enhanced-insights-tab'
 // Import our data management hook
 import { useMaxVisibility } from '@/hooks/useMaxVisibility'
 
-// Mock chart data - 30 days (keep existing chart for now)
-const chartData = [
-  { date: 'APR 1', score: 45.2 },
-  { date: 'APR 2', score: 44.8 },
-  { date: 'APR 3', score: 43.1 },
-  { date: 'APR 4', score: 42.1 },
-  { date: 'APR 5', score: 43.7 },
-  { date: 'APR 6', score: 46.2 },
-  { date: 'APR 7', score: 48.3 },
-  { date: 'APR 8', score: 49.1 },
-  { date: 'APR 9', score: 51.4 },
-  { date: 'APR 10', score: 52.7 },
-  { date: 'APR 11', score: 54.3 },
-  { date: 'APR 12', score: 56.8 },
-  { date: 'APR 13', score: 58.9 },
-  { date: 'APR 14', score: 57.2 },
-  { date: 'APR 15', score: 56.4 },
-  { date: 'APR 16', score: 55.4 },
-  { date: 'APR 17', score: 58.1 },
-  { date: 'APR 18', score: 61.7 },
-  { date: 'APR 19', score: 65.2 },
-  { date: 'APR 20', score: 63.8 },
-  { date: 'APR 21', score: 62.4 },
-  { date: 'APR 22', score: 64.1 },
-  { date: 'APR 23', score: 66.3 },
-  { date: 'APR 24', score: 68.7 },
-  { date: 'APR 25', score: 67.2 },
-  { date: 'APR 26', score: 69.4 },
-  { date: 'APR 27', score: 71.8 },
-  { date: 'APR 28', score: 70.3 },
-  { date: 'APR 29', score: 72.1 },
-  { date: 'APR 30', score: 74.5 },
-]
-
 const tabs = [
   { id: 'overview', label: 'Overview' },
   { id: 'citations', label: 'Citations' },
@@ -77,7 +43,7 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-[#1a1a1a] border border-[#333333] px-3 py-2 rounded">
-        <p className="font-mono text-sm text-white">{payload[0].value}</p>
+        <p className="font-mono text-sm text-white">{Number(payload[0].value).toFixed(1)}</p>
         <p className="font-mono text-xs text-[#666666]">{label}</p>
       </div>
     )
@@ -278,7 +244,13 @@ export default function VisibilityPage() {
   const getDisplayScore = () => {
     if (hoveredScore !== null) return hoveredScore
     if (maxVisibility.data?.score.overall_score) return maxVisibility.data.score.overall_score
-    return chartData[chartData.length - 1].score // Fallback to chart data
+    return 0 // Fallback to 0
+  }
+
+  // Format score for display - truncate to 1 decimal without rounding
+  const formatScore = (score: number): string => {
+    const truncated = Math.floor(score * 10) / 10
+    return truncated.toFixed(1)
   }
 
   const handleMouseMove = (data: any) => {
@@ -441,14 +413,14 @@ export default function VisibilityPage() {
                   selectorColor="text-[#A7A7A7]"
                 />
                 <div className="text-5xl font-bold text-white mt-4">
-                  {getDisplayScore().toFixed(1)}
+                  {formatScore(getDisplayScore())}
                 </div>
               </div>
 
-              <div className="h-[400px]">
+              <div className="h-[500px]">
                         <ResponsiveContainer width="100%" height="100%">
                           <AreaChart
-                            data={chartData}
+                            data={maxVisibility.data?.chartData || []}
                     margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
                             onMouseMove={handleMouseMove}
                             onMouseLeave={handleMouseLeave}
@@ -470,7 +442,8 @@ export default function VisibilityPage() {
                       axisLine={false}
                               tickLine={false}
                       tick={{ fill: '#666', fontSize: 11, fontFamily: 'ui-monospace, monospace' }}
-                      domain={['dataMin - 5', 'dataMax + 5']}
+                      domain={[0, 100]}
+                      ticks={[0, 25, 50, 75, 100]}
                             />
                     <Tooltip content={<CustomTooltip />} />
                             <Area
@@ -517,6 +490,7 @@ export default function VisibilityPage() {
               hasVisibilityData={maxVisibility.hasData}
               isRefreshing={maxVisibility.isRefreshing}
               onRefreshScore={handleRefreshScore}
+              data={maxVisibility.data}
             />
                 </motion.div>
               )}
@@ -531,6 +505,7 @@ export default function VisibilityPage() {
               hasVisibilityData={maxVisibility.hasData}
               isRefreshing={maxVisibility.isRefreshing}
               onRefreshScore={handleRefreshScore}
+              data={maxVisibility.data}
             />
                   </motion.div>
         )}
@@ -553,6 +528,7 @@ export default function VisibilityPage() {
               hasVisibilityData={maxVisibility.hasData}
               isRefreshing={maxVisibility.isRefreshing}
               onRefreshScore={handleRefreshScore}
+              data={maxVisibility.data}
             />
               </motion.div>
         )}

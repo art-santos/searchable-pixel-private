@@ -119,37 +119,36 @@ export function EnhancedOverviewTab({ hasVisibilityData, data }: EnhancedOvervie
         <h4 className="text-white font-medium mb-4">Recent Mentions</h4>
         
         <div className="space-y-3">
-          {overviewData.recentMentions.map((mention) => (
-            <div key={mention.id} className="bg-[#0a0a0a] border border-[#222] rounded p-3">
+          {overviewData.recentMentions.map((mention: any, index: number) => (
+            <div key={index} className="bg-[#0a0a0a] border border-[#222] rounded p-3">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <div className={`px-2 py-1 rounded text-xs font-medium border ${
-                    mention.source === 'ChatGPT' ? 'border-green-500/20 text-green-400 bg-green-500/5' :
-                    mention.source === 'Perplexity' ? 'border-purple-500/20 text-purple-400 bg-purple-500/5' :
-                    'border-orange-500/20 text-orange-400 bg-orange-500/5'
-                  }`}>
-                    {mention.source}
+                  <div className={`px-2 py-1 rounded text-xs font-medium border border-purple-500/20 text-purple-400 bg-purple-500/5`}>
+                    {mention.type || 'AI Platform'}
                   </div>
                   <div className={`px-2 py-1 rounded text-xs border ${
-                    mention.type === 'direct' 
+                    mention.position === 'primary' 
                       ? 'border-white/20 text-white' 
                       : 'border-[#333] text-[#888]'
                   }`}>
-                    {mention.type}
+                    {mention.position || 'mention'}
                   </div>
                   {hasMaxAccess && (
                     <div className={`w-2 h-2 rounded-full ${
-                      mention.sentiment === 'positive' ? 'bg-green-500' :
-                      mention.sentiment === 'neutral' ? 'bg-yellow-500' :
-                      'bg-[#666]'
+                      mention.sentiment === 'positive' || mention.sentiment === 'very_positive' ? 'bg-green-500' :
+                      mention.sentiment === 'negative' || mention.sentiment === 'very_negative' ? 'bg-red-500' :
+                      'bg-yellow-500'
                     }`} />
                   )}
                 </div>
-                <span className="text-xs text-[#666]">{mention.date}</span>
               </div>
-              <p className="text-sm text-[#ccc] leading-relaxed">"{mention.snippet}"</p>
+              <p className="text-sm text-[#ccc] leading-relaxed">"{mention.question}"</p>
             </div>
           ))}
+          
+          {overviewData.recentMentions.length === 0 && (
+            <p className="text-sm text-[#666] text-center py-4">No recent mentions found</p>
+          )}
         </div>
       </div>
     </div>

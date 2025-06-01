@@ -8,9 +8,10 @@ interface EnhancedGapsTabProps {
   hasVisibilityData: boolean
   isRefreshing: boolean
   onRefreshScore: () => void
+  data?: any // Real visibility data from API
 }
 
-export function EnhancedGapsTab({ hasVisibilityData }: EnhancedGapsTabProps) {
+export function EnhancedGapsTab({ hasVisibilityData, data }: EnhancedGapsTabProps) {
   const { subscription } = useSubscription()
   const hasMaxAccess = subscription?.plan === 'plus' || subscription?.plan === 'pro'
   
@@ -19,72 +20,33 @@ export function EnhancedGapsTab({ hasVisibilityData }: EnhancedGapsTabProps) {
   const [searchTerm, setSearchTerm] = useState('')
 
   // Only render if we have data - empty state handled centrally
-  if (!hasVisibilityData) {
+  if (!hasVisibilityData || !data) {
     return null
   }
 
-  const gaps = [
-    {
-      id: 1,
-      prompt: 'Best AI agents for GTM teams',
-      status: 'missing' as const,
-      searchVolume: 'High' as const,
-      difficulty: 'Medium' as const,
-      suggestion: 'Create comprehensive guide',
-      priority: 'high' as const,
-      opportunityScore: 85,
-      estimatedTraffic: 1250,
-      competitorCoverage: ['Salesforce', 'HubSpot']
-    },
-    {
-      id: 2,
-      prompt: 'Alternatives to Clay.com',
-      status: 'weak' as const,
-      searchVolume: 'Medium' as const,
-      difficulty: 'Low' as const,
-      suggestion: 'Strengthen positioning',
-      priority: 'medium' as const,
-      opportunityScore: 72,
-      estimatedTraffic: 890,
-      competitorCoverage: ['Apollo', 'ZoomInfo']
-    },
-    {
-      id: 3,
-      prompt: 'Top cold email automation tools 2025',
-      status: 'missing' as const,
-      searchVolume: 'High' as const,
-      difficulty: 'High' as const,
-      suggestion: 'Develop comparison content',
-      priority: 'high' as const,
-      opportunityScore: 78,
-      estimatedTraffic: 2100,
-      competitorCoverage: ['Outreach', 'Salesloft', 'Apollo']
-    },
-    {
-      id: 4,
-      prompt: 'AI SDR vs human SDR comparison',
-      status: 'weak' as const,
-      searchVolume: 'Medium' as const,
-      difficulty: 'Medium' as const,
-      suggestion: 'Expand content depth',
-      priority: 'medium' as const,
-      opportunityScore: 68,
-      estimatedTraffic: 750,
-      competitorCoverage: ['Gong', 'Chorus']
-    },
-    {
-      id: 5,
-      prompt: 'Sales automation ROI calculator',
-      status: 'missing' as const,
-      searchVolume: 'High' as const,
-      difficulty: 'Medium' as const,
-      suggestion: 'Build interactive tool',
-      priority: 'high' as const,
-      opportunityScore: 92,
-      estimatedTraffic: 1800,
-      competitorCoverage: ['Salesforce', 'Pipedrive']
+  // Generate gaps from real data - questions where we didn't get mentioned
+  const totalQuestions = data.questions_analyzed || 0
+  const mentionedQuestions = data.mentions_found || 0
+  const mentionRate = data.score?.mention_rate || 0
+  
+  // Transform real topics into gap opportunities
+  const gaps = data.topics?.map((topic: any, index: number) => {
+    const hasMention = topic.mention_count > 0
+    const mentionPercent = topic.mention_percentage || 0
+    
+    return {
+      id: index + 1,
+      prompt: topic.name,
+      status: hasMention ? (mentionPercent < 50 ? 'weak' : 'covered') : 'missing',
+      searchVolume: mentionPercent > 30 ? 'High' : mentionPercent > 10 ? 'Medium' : 'Low',
+      difficulty: topic.category === 'Comparison' ? 'High' : topic.category === 'Solution' ? 'Medium' : 'Low',
+      suggestion: hasMention ? `Strengthen ${topic.category} content` : `Create ${topic.category} content`,
+      priority: !hasMention ? 'high' : mentionPercent < 50 ? 'medium' : 'low',
+      opportunityScore: Math.round((1 - mentionPercent / 100) * 100),
+      estimatedTraffic: Math.round((100 - mentionPercent) * 25), // Rough estimate
+      competitorCoverage: data.competitive?.competitors?.slice(0, 3).map((c: any) => c.name) || []
     }
-  ]
+  }).filter((gap: any) => gap.status !== 'covered') || []
 
   const filteredGaps = gaps.filter(gap => {
     const matchesSearch = gap.prompt.toLowerCase().includes(searchTerm.toLowerCase())
