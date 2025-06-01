@@ -31,13 +31,14 @@ import { useSubscription } from '@/hooks/useSubscription'
 import { UsageDisplay } from '@/components/subscription/usage-display'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
+import { AvatarUpload } from '@/components/profile/avatar-upload'
 
 interface AnalyticsProvider {
   id: string
   name: string
   icon: string
-  connected: boolean
-  lastSync?: string
+  status: 'connected' | 'not_connected'
+  description: string
 }
 
 interface PricingPlan {
@@ -57,11 +58,13 @@ interface PricingPlan {
 interface UserProfile {
   id?: string
   first_name?: string | null
+  last_name?: string | null
   workspace_name?: string | null
   domain?: string | null
   email?: string | null
   created_by?: string
   updated_by?: string
+  profile_picture_url?: string | null
 }
 
 const pricingPlans: PricingPlan[] = [
@@ -170,7 +173,7 @@ export default function SettingsPage() {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('*')
+          .select('first_name, workspace_name, domain, profile_picture_url')
           .eq('id', user.id)
           .single()
 
@@ -440,9 +443,9 @@ export default function SettingsPage() {
   
   // Mock data
   const [analytics, setAnalytics] = useState<AnalyticsProvider[]>([
-    { id: 'ga4', name: 'Google Analytics', icon: '📊', connected: true, lastSync: '2 hours ago' },
-    { id: 'vercel', name: 'Vercel Analytics', icon: '▲', connected: false },
-    { id: 'plausible', name: 'Plausible', icon: '📈', connected: false }
+    { id: 'ga4', name: 'Google Analytics', icon: '📊', status: 'connected', description: '2 hours ago' },
+    { id: 'vercel', name: 'Vercel Analytics', icon: '▲', status: 'not_connected', description: '' },
+    { id: 'plausible', name: 'Plausible', icon: '📈', status: 'not_connected', description: '' }
   ])
   
   // Dynamic billing data based on current plan
@@ -614,18 +617,22 @@ export default function SettingsPage() {
                     <h3 className="text-white font-medium">Personal Information</h3>
                     
                     {/* Profile Picture */}
-                    <div className="flex items-center gap-6">
-                      <div className="relative">
-                        <div className="w-20 h-20 bg-[#1a1a1a] rounded-full flex items-center justify-center text-2xl font-medium text-white">
-                          {getDisplayName().charAt(0).toUpperCase()}
-                        </div>
-                        <button className="absolute bottom-0 right-0 w-7 h-7 bg-[#0a0a0a] border border-[#333] rounded-full flex items-center justify-center hover:bg-[#1a1a1a] transition-colors">
-                          <User className="w-3.5 h-3.5 text-[#666]" />
-                        </button>
-                      </div>
-                      <div className="text-sm text-[#666]">
+                    <div className="flex items-start gap-6">
+                      <AvatarUpload
+                        profilePictureUrl={profile?.profile_picture_url}
+                        firstName={profile?.first_name}
+                        lastName={profile?.last_name}
+                        email={user?.email}
+                        onAvatarUpdate={(url: string | null) => setProfile((prev: UserProfile | null) => ({ 
+                          ...prev, 
+                          profile_picture_url: url 
+                        }))}
+                        size="lg"
+                      />
+                      <div className="text-sm text-[#666] mt-1">
                         <p>Upload a profile picture</p>
-                        <p className="text-xs mt-1">JPG, GIF or PNG. Max size 5MB.</p>
+                        <p className="text-xs mt-1">JPG, PNG or GIF. Max size 5MB.</p>
+                        <p className="text-xs mt-1">Drag & drop or click to upload.</p>
                       </div>
                     </div>
 

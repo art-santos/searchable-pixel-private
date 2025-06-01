@@ -4,6 +4,8 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from '@/contexts/AuthContext'
+import { useUser } from '@/hooks/use-user'
+import { getUserInitials } from '@/lib/profile/avatar'
 import {
   LayoutDashboardIcon,
   SearchIcon,
@@ -39,15 +41,21 @@ import {
 export function SplitSidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { setUser, supabase } = useAuth()
+  const { supabase } = useAuth()
+  const { user, profile } = useUser()
+
+  // Generate user initials
+  const initials = getUserInitials(
+    profile?.full_name?.split(' ')[0] || profile?.username,
+    profile?.full_name?.split(' ')[1],
+    user?.email
+  )
 
   const handleLogout = async () => {
-    // Sign out from Supabase (this will clear auth cookies)
-    await supabase?.auth.signOut()
-    // Clear the user state
-    setUser(null)
-    // Redirect to landing page
-    router.push('/')
+    if (supabase) {
+      await supabase.auth.signOut()
+      router.push('/')
+    }
   }
 
   return (
@@ -159,9 +167,14 @@ export function SplitSidebar() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Avatar className="h-10 w-10 border border-[#333333] cursor-pointer hover:border-[#444444] transition-colors">
-            <AvatarImage src="/placeholder-user.jpg" alt="User" />
-            <AvatarFallback className="bg-[#222222] text-gray-400">SH</AvatarFallback>
-          </Avatar>
+                <AvatarImage 
+                  src={profile?.profile_picture_url || undefined} 
+                  alt={`${profile?.username || 'User'}'s profile picture`}
+                />
+                <AvatarFallback className="bg-[#222222] text-gray-400">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 bg-[#161616] border-[#333333]">
               <DropdownMenuItem 

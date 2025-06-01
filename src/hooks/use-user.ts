@@ -7,7 +7,7 @@ interface UserProfile {
   username?: string
   full_name?: string
   email?: string
-  avatar_url?: string
+  profile_picture_url?: string
   company_domain?: string
   company_category?: string
   updated_at?: string

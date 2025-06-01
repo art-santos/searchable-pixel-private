@@ -92,7 +92,8 @@ export async function GET(request: Request) {
       let key: string
       
       if (groupBy === 'hour') {
-        key = `${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:00`
+        // Use 24-hour format for internal key, we'll format for display later
+        key = `${date.getHours()}`
       } else {
         const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
         key = `${monthNames[date.getMonth()]} ${date.getDate()}`
@@ -112,11 +113,109 @@ export async function GET(request: Request) {
       }
     })
 
-    // Convert to chart data format
-    const chartData = Array.from(timeAggregates.entries()).map(([date, crawls]) => ({
-      date,
-      crawls
-    }))
+    // Generate chart data
+    let chartData: { date: string; crawls: number; isCurrentPeriod?: boolean }[] = []
+
+    if (groupBy === 'hour') {
+      // Generate hours only up to current hour for today
+      const now = new Date()
+      const currentHour = now.getHours()
+      
+      for (let hour = 0; hour <= currentHour; hour++) {
+        const hourKey = `${hour}`
+        const crawls = timeAggregates.get(hourKey) || 0
+        
+        // Format hour for display (12-hour format with AM/PM)
+        let displayHour: string
+        if (hour === 0) {
+          displayHour = '12 AM'
+        } else if (hour < 12) {
+          displayHour = `${hour} AM`
+        } else if (hour === 12) {
+          displayHour = '12 PM'
+        } else {
+          displayHour = `${hour - 12} PM`
+        }
+        
+        chartData.push({
+          date: displayHour,
+          crawls,
+          isCurrentPeriod: hour === currentHour // Mark current hour for animation
+        })
+      }
+    } else {
+      // For other timeframes, filter to only show up to current day
+      const now = new Date()
+      const timeEntries = Array.from(timeAggregates.entries())
+      
+      if (timeframe.toLowerCase().includes('week') || timeframe === '7d') {
+        // For week view, only show up to today
+        const currentDayKey = (() => {
+          const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+          return `${monthNames[now.getMonth()]} ${now.getDate()}`
+        })()
+        
+        // Generate all days in the week up to today
+        for (let dayOffset = 6; dayOffset >= 0; dayOffset--) {
+          const date = new Date(now)
+          date.setDate(date.getDate() - dayOffset)
+          const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+          const dayKey = `${monthNames[date.getMonth()]} ${date.getDate()}`
+          const crawls = timeAggregates.get(dayKey) || 0
+          
+          chartData.push({
+            date: dayKey,
+            crawls,
+            isCurrentPeriod: dayKey === currentDayKey
+          })
+        }
+      } else {
+        // For month/longer periods, generate all days up to today with 0s for missing days
+        const now = new Date()
+        const currentDayKey = (() => {
+          const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+          return `${monthNames[now.getMonth()]} ${now.getDate()}`
+        })()
+        
+        if (timeframe.toLowerCase().includes('month') || timeframe === '30d') {
+          // For month view, generate all days in the last 30 days up to today
+          for (let dayOffset = 29; dayOffset >= 0; dayOffset--) {
+            const date = new Date(now)
+            date.setDate(date.getDate() - dayOffset)
+            const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+            const dayKey = `${monthNames[date.getMonth()]} ${date.getDate()}`
+            const crawls = timeAggregates.get(dayKey) || 0
+            
+            chartData.push({
+              date: dayKey,
+              crawls,
+              isCurrentPeriod: dayKey === currentDayKey
+            })
+          }
+        } else {
+          // For longer periods (90d+), use existing aggregated data but sort chronologically
+          chartData = Array.from(timeAggregates.entries())
+            .map(([date, crawls]) => ({
+              date,
+              crawls,
+              isCurrentPeriod: date === currentDayKey
+            }))
+            .sort((a, b) => {
+              // Sort chronologically
+              const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+              const [aMonth, aDay] = a.date.split(' ')
+              const [bMonth, bDay] = b.date.split(' ')
+              const aMonthIndex = monthNames.indexOf(aMonth)
+              const bMonthIndex = monthNames.indexOf(bMonth)
+              
+              if (aMonthIndex !== bMonthIndex) {
+                return aMonthIndex - bMonthIndex
+              }
+              return parseInt(aDay) - parseInt(bDay)
+            })
+        }
+      }
+    }
 
     // Get available crawlers sorted by frequency
     const availableCrawlers = Array.from(crawlerSet.entries())
