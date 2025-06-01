@@ -48,10 +48,23 @@ export function SignupForm({
   // Load onboarding data on mount
   useEffect(() => {
     if (typeof window !== 'undefined' && !lockedEmail) {
+      // Only load onboarding data if user came directly from onboarding flow
+      // Don't load if they're just signing up independently
+      const justFromOnboarding = sessionStorage.getItem('fromOnboarding')
       const onboardingData = localStorage.getItem('onboardingData')
-      if (onboardingData) {
-        const data = JSON.parse(onboardingData)
-        setEmail(data.email || '')
+      
+      if (justFromOnboarding === 'true' && onboardingData) {
+        try {
+          const data = JSON.parse(onboardingData)
+          setEmail(data.email || '')
+        } catch (e) {
+          console.log('Failed to parse onboarding data:', e)
+        }
+      } else {
+        // Clear any existing form data for fresh signup
+        setEmail('')
+        setPassword('')
+        setConfirmPassword('')
       }
     }
   }, [lockedEmail])
@@ -168,7 +181,7 @@ export function SignupForm({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6" autoComplete="off">
           <div className="flex flex-col items-center gap-2 text-center">
             <h1 className="text-2xl font-bold text-white">
               Create your account
@@ -208,6 +221,7 @@ export function SignupForm({
                   type="email" 
                   placeholder="you@example.com" 
                   required 
+                  autoComplete="new-password"
                   className="bg-[#161616] border-[#333333] text-white placeholder:text-gray-500 focus:border-white pr-10"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -228,6 +242,7 @@ export function SignupForm({
                 type="password" 
                 required 
                 placeholder="••••••••"
+                autoComplete="new-password"
                 className="bg-[#161616] border-[#333333] text-white placeholder:text-gray-500 focus:border-white"
                 value={password}
                 onChange={handlePasswordChange}
@@ -274,6 +289,7 @@ export function SignupForm({
                     type="password" 
                     required
                     placeholder="••••••••"
+                    autoComplete="new-password"
                     className={cn(
                       "bg-[#161616] border-[#333333] text-white placeholder:text-gray-500 focus:border-white",
                       confirmPassword && password !== confirmPassword && "border-red-500 focus:border-red-500"
