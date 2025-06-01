@@ -37,16 +37,21 @@ export async function checkLimit(
     return { allowed: false, remaining: 0, limit: 0 }
   }
   
-  // Get user's profile with plan and usage
+  // Get user's profile with plan, usage, and admin status
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('subscription_plan, monthly_scans_used, monthly_articles_used')
+    .select('subscription_plan, monthly_scans_used, monthly_articles_used, is_admin')
     .eq('id', userId)
     .single()
   
   if (error || !profile) {
     console.error('Error fetching user profile:', error)
     return { allowed: false, remaining: 0, limit: 0 }
+  }
+  
+  // Admin override: admins have unlimited access
+  if (profile.is_admin) {
+    return { allowed: true, remaining: -1, limit: -1 }
   }
   
   const plan = (profile.subscription_plan || 'free') as PlanType
@@ -82,10 +87,19 @@ export async function trackUsage(
   const supabase = createServiceClient()
   
   try {
-    // First check if allowed using client
-    const { allowed } = await checkLimit(userId, eventType)
-    if (!allowed) {
-      return { success: false, error: 'Usage limit exceeded' }
+    // Check if user is admin first (admins bypass limits)
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', userId)
+      .single()
+    
+    // If not admin, check limits
+    if (!profile?.is_admin) {
+      const { allowed } = await checkLimit(userId, eventType)
+      if (!allowed) {
+        return { success: false, error: 'Usage limit exceeded' }
+      }
     }
     
     // Record the usage event
@@ -102,7 +116,7 @@ export async function trackUsage(
       console.error('Error recording usage event:', eventError)
     }
     
-    // Increment the counter using the database function
+    // Increment the counter using the database function (track even for admins for analytics)
     const { error: incrementError } = await supabase
       .rpc('increment_usage', {
         p_user_id: userId,
@@ -140,7 +154,8 @@ export async function getUserUsage(userId: string): Promise<UsageData | null> {
       monthly_scans_used,
       monthly_articles_used,
       last_scan_reset_at,
-      last_articles_reset_at
+      last_articles_reset_at,
+      is_admin
     `)
     .eq('id', userId)
     .single()
@@ -148,6 +163,20 @@ export async function getUserUsage(userId: string): Promise<UsageData | null> {
   if (error || !profile) {
     console.error('Error fetching usage data:', error)
     return null
+  }
+  
+  // Admin override: admins have unlimited usage
+  if (profile.is_admin) {
+    return {
+      scansUsed: profile.monthly_scans_used || 0,
+      scansLimit: -1, // Unlimited
+      scansRemaining: -1, // Unlimited
+      articlesUsed: profile.monthly_articles_used || 0,
+      articlesLimit: -1, // Unlimited
+      articlesRemaining: -1, // Unlimited
+      lastScanReset: new Date(profile.last_scan_reset_at),
+      lastArticlesReset: new Date(profile.last_articles_reset_at)
+    }
   }
   
   const plan = (profile.subscription_plan || 'free') as PlanType

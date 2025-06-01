@@ -23,7 +23,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useSubscription } from '@/hooks/useSubscription'
-import { UsageDisplay } from '@/components/subscription/usage-display'
 import { ProtectedFeature } from '@/components/subscription/protected-feature'
 import { PlanType } from '@/lib/subscription/config'
 import { toast } from '@/components/ui/use-toast'
@@ -137,18 +136,73 @@ type NodePositions = {
 }
 
 export default function VisibilityPage() {
-  const { loading } = useAuth()
-  const { subscription, usage, canPerformAction, getRemainingUsage, refresh } = useSubscription()
+  const { loading, user } = useAuth()
+  const { subscription } = useSubscription()
   const shouldReduceMotion = useReducedMotion()
+  const [userProfile, setUserProfile] = useState<{workspace_name: string | null, domain: string | null} | null>(null)
   const [activeTab, setActiveTab] = useState('overview')
   const [isChartVisible, setIsChartVisible] = useState(false)
   const [hoveredScore, setHoveredScore] = useState<number | null>(null)
-  const [timeframe, setTimeframe] = useState<TimeframeOption>('This Month')
+  const [timeframe, setTimeframe] = useState<TimeframeOption>('Last 30 days')
   const [selectedQuery, setSelectedQuery] = useState<string>('AI research agents')
   const [selectedCitation, setSelectedCitation] = useState<any>(null)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [scanType, setScanType] = useState<'basic' | 'max'>('basic')
+  const [hasVisibilityData, setHasVisibilityData] = useState(false) // Track if user has visibility data
+
+  const supabase = createClient()
+
+  // Check if user has visibility data - for now we'll simulate this
+  useEffect(() => {
+    const checkVisibilityData = async () => {
+      // TODO: Replace with actual API call to check if user has visibility data
+      // For now, simulate that user has no data initially
+      setHasVisibilityData(false)
+    }
+    
+    checkVisibilityData()
+  }, [])
+
+  // Development helper: middle mouse button to toggle data state
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'development') return
+
+    const handleMiddleClick = (e: MouseEvent) => {
+      if (e.button === 1) { // Middle mouse button
+        e.preventDefault()
+        setHasVisibilityData(prev => !prev)
+      }
+    }
+
+    document.addEventListener('mousedown', handleMiddleClick)
+    return () => document.removeEventListener('mousedown', handleMiddleClick)
+  }, [])
+
+  // Fetch user profile data
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user || !supabase) return
+
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('workspace_name, domain')
+          .eq('id', user.id)
+          .single()
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching user profile:', error)
+        }
+
+        setUserProfile(data || { workspace_name: null, domain: null })
+      } catch (err) {
+        console.error('Error in profile fetch:', err)
+      }
+    }
+
+    fetchUserProfile()
+  }, [user, supabase])
 
   // Topic Map draggable positions
   const [topicNodePositions, setTopicNodePositions] = useState<NodePositions>({
@@ -167,11 +221,33 @@ export default function VisibilityPage() {
   const directPoints = 32
   const indirectPoints = 58
   const totalCitations = 86
-  const currentCompetitors = competitorsByQuery[selectedQuery as keyof typeof competitorsByQuery]
+  
+  // Update competitors to use real user data
+  const getUserDisplayName = () => {
+    return userProfile?.workspace_name || 'Your Company'
+  }
+  
+  const getUserDomain = () => {
+    return userProfile?.domain || 'your-domain.com'
+  }
+  
+  // Create dynamic competitors with user data - Top 10 list
+  const currentCompetitors = [
+    { name: 'Salesforce', url: 'salesforce.com', score: 89.9, actualRank: 1, isUser: false },
+    { name: 'HubSpot', url: 'hubspot.com', score: 87.2, actualRank: 2, isUser: false },
+    { name: 'Gong', url: 'gong.io', score: 84.8, actualRank: 3, isUser: false },
+    { name: 'Clari', url: 'clari.com', score: 82.1, actualRank: 4, isUser: false },
+    { name: 'Apollo', url: 'apollo.io', score: 79.4, actualRank: 5, isUser: false },
+    { name: 'ZoomInfo', url: 'zoominfo.com', score: 76.8, actualRank: 6, isUser: false },
+    { name: 'Outreach', url: 'outreach.io', score: 74.5, actualRank: 7, isUser: false },
+    { name: 'Pipedrive', url: 'pipedrive.com', score: 73.1, actualRank: 8, isUser: false },
+    { name: 'ActiveCampaign', url: 'activecampaign.com', score: 71.6, actualRank: 9, isUser: false },
+    { name: getUserDisplayName(), url: getUserDomain(), score: 72.2, actualRank: 10, isUser: true }, // User always in top 10, worst case position 10
+  ]
 
   // Mock data for Topic Map
   const topicNodes = [
-    { id: 'center', label: 'Origami Agents', x: 0, y: 0, size: 40, type: 'center', citations: 86 },
+    { id: 'center', label: getUserDisplayName(), x: 0, y: 0, size: 40, type: 'center', citations: 86 },
     { id: 'ai-sales', label: 'AI Sales Tools', x: -120, y: -80, size: 28, type: 'topic', citations: 34 },
     { id: 'cold-outreach', label: 'Cold Outreach', x: 100, y: -60, size: 24, type: 'topic', citations: 28 },
     { id: 'sdrs', label: 'SDR Automation', x: -80, y: 100, size: 20, type: 'topic', citations: 24 },
@@ -186,7 +262,7 @@ export default function VisibilityPage() {
     { id: 2, prompt: 'Alternatives to Clay.com', status: 'weak', searchVolume: 'Medium', difficulty: 'Low', suggestion: 'Strengthen positioning' },
     { id: 3, prompt: 'Top cold email automation tools 2025', status: 'missing', searchVolume: 'High', difficulty: 'High', suggestion: 'Develop comparison content' },
     { id: 4, prompt: 'AI SDR vs human SDR comparison', status: 'weak', searchVolume: 'Medium', difficulty: 'Medium', suggestion: 'Expand content depth' },
-    { id: 5, prompt: 'Origami Agents vs Apollo integration', status: 'missing', searchVolume: 'Low', difficulty: 'Low', suggestion: 'Create integration docs' },
+    { id: 5, prompt: `${getUserDisplayName()} vs Apollo integration`, status: 'missing', searchVolume: 'Low', difficulty: 'Low', suggestion: 'Create integration docs' },
     { id: 6, prompt: 'Sales automation ROI calculator', status: 'missing', searchVolume: 'High', difficulty: 'Medium', suggestion: 'Build interactive tool' },
   ]
 
@@ -238,16 +314,14 @@ export default function VisibilityPage() {
   }, [subscription])
 
   const handleRefreshScore = async () => {
-    if (!subscription || !usage) return
+    if (!subscription) return
     
-    // Check if user has scans remaining
-    const canScan = await canPerformAction('scan')
-    
-    if (!canScan) {
+    // For Pro plan, allow on-demand refreshes
+    // For other plans, this is just a manual trigger of the regular scan process
+    if (subscription.plan !== 'pro') {
       toast({
-        title: "Scan limit reached",
-        description: `You've used all ${usage.scansLimit} of your monthly scans. Upgrade to get more.`,
-        variant: "destructive",
+        title: "Scan scheduled",
+        description: "Your visibility scan has been queued and will be processed shortly.",
       })
       return
     }
@@ -255,35 +329,17 @@ export default function VisibilityPage() {
     setIsRefreshing(true)
     
     try {
-      // Track the scan usage through API
-      const response = await fetch('/api/usage/track', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          eventType: 'scan',
-          eventSubtype: scanType === 'max' ? 'max_scan' : 'basic_scan',
-        }),
-      })
-      
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to track usage')
-      }
-      
+      // For Pro users, trigger immediate scan
       // Simulate scan process
       await new Promise(resolve => setTimeout(resolve, 2000))
       
-      const remaining = getRemainingUsage('scan')
+      // After successful scan, simulate having data
+      setHasVisibilityData(true)
       
       toast({
         title: "Visibility scan complete",
-        description: `${scanType === 'max' ? 'MAX' : 'Basic'} scan completed successfully. ${remaining > 0 ? `${remaining - 1} scans remaining this month.` : 'No scans remaining.'}`,
+        description: `${scanType === 'max' ? 'MAX' : 'Basic'} scan completed successfully.`,
       })
-      
-      // Refresh usage data
-      await refresh()
     } catch (error) {
       toast({
         title: "Scan failed",
@@ -344,19 +400,46 @@ export default function VisibilityPage() {
           </div>
           
           <div className="flex items-center gap-2 md:gap-4">
-            {/* Usage Display */}
-            {usage && (
+            {/* Scan Schedule Display - Moved here */}
+            {subscription && (
               <div className="hidden md:flex items-center gap-2 text-sm">
-                <Zap className="w-4 h-4 text-[#666]" />
-                <span className="text-[#888]">
-                  {usage.scansLimit === -1 ? (
-                    'Unlimited scans'
-                  ) : (
-                    <>
-                      {usage.scansUsed} / {usage.scansLimit} scans
-                    </>
-                  )}
-                </span>
+                <div className="flex flex-col items-end">
+                  <div className="flex items-center gap-1">
+                    <Zap className="w-3 h-3 text-[#666]" />
+                    <span className="text-[#888] text-xs font-medium">
+                      {(() => {
+                        switch (subscription.plan) {
+                          case 'free':
+                            return 'Free Plan'
+                          case 'visibility':
+                            return 'Visibility Plan'
+                          case 'plus':
+                            return 'Plus Plan'
+                          case 'pro':
+                            return 'Pro Plan'
+                          default:
+                            return 'Plan'
+                        }
+                      })()}
+                    </span>
+                  </div>
+                  <span className="text-[#666] text-xs">
+                    {(() => {
+                      switch (subscription.plan) {
+                        case 'free':
+                          return 'Scans every 7 days'
+                        case 'visibility':
+                          return 'Daily scans'
+                        case 'plus':
+                          return 'Daily MAX scans'
+                        case 'pro':
+                          return 'Daily MAX + on-demand'
+                        default:
+                          return 'Scan schedule'
+                      }
+                    })()}
+                  </span>
+                </div>
                 {scanType === 'max' && (
                   <span className="text-xs text-yellow-500 font-medium bg-yellow-500/10 px-2 py-0.5 rounded">MAX</span>
                 )}
@@ -365,9 +448,9 @@ export default function VisibilityPage() {
             
             <button
               onClick={handleRefreshScore}
-              disabled={isRefreshing || !subscription || !usage}
+              disabled={isRefreshing || !subscription}
               className={`px-3 md:px-4 py-1.5 md:py-2 rounded-md text-xs md:text-sm font-medium tracking-tight transition-colors border flex items-center gap-2 ${
-                isRefreshing || !subscription || !usage
+                isRefreshing || !subscription
                   ? 'text-[#444] border-[#333] cursor-not-allowed'
                   : 'text-[#666] hover:text-white hover:bg-[#1a1a1a] border-[#333]'
               }`}
@@ -381,7 +464,7 @@ export default function VisibilityPage() {
 
         {/* Main Content Area */}
         {activeTab === 'overview' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8" style={{ minHeight: '75vh'}}>
             {/* Chart Section */}
             <motion.div variants={itemVariants} className="lg:col-span-7 flex flex-col">
               {/* Score Header */}
@@ -393,296 +476,341 @@ export default function VisibilityPage() {
                   titleColor="text-white"
                   selectorColor="text-[#A7A7A7]"
                 />
-                <div className="text-5xl font-bold text-white transition-all duration-200 mt-4">
-                  {displayScore.toFixed(1)}
+                <div className={`text-5xl font-bold transition-all duration-200 mt-4 ${
+                  hasVisibilityData ? 'text-white' : 'text-[#333]'
+                }`}>
+                  {hasVisibilityData ? displayScore.toFixed(1) : '—'}
                 </div>
+                {!hasVisibilityData && (
+                  <p className="text-[#666] text-sm mt-2">Score will appear after first scan</p>
+                )}
               </div>
 
               {/* Chart Container */}
-              <div className="flex-1 min-h-0">
-                <AnimatePresence mode="wait">
-                  {isChartVisible && (
-                    <motion.div 
-                      className="h-full w-full relative"
-                      initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.98 }}
-                      transition={{ 
-                        duration: 0.3,
-                        ease: [0.16, 1, 0.3, 1],
-                        type: "spring",
-                        stiffness: 300,
-                        damping: 30
-                      }}
-                    >
+              <div className="flex-1" style={{ minHeight: '60vh' }}>
+                {hasVisibilityData ? (
+                  <AnimatePresence mode="wait">
+                    {isChartVisible && (
                       <motion.div 
-                        className="absolute inset-0"
-                        initial={{ clipPath: "polygon(0 0, 0 0, 0 100%, 0 100%)" }}
-                        animate={{ clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)" }}
+                        className="h-full w-full relative"
+                        initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.98 }}
                         transition={{ 
-                          duration: 1.5, 
+                          duration: 0.3,
                           ease: [0.16, 1, 0.3, 1],
-                          delay: 0.4
+                          type: "spring",
+                          stiffness: 300,
+                          damping: 30
                         }}
                       >
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart
-                            data={chartData}
-                            margin={{ top: 20, right: 30, left: -40, bottom: 20 }}
-                            onMouseMove={handleMouseMove}
-                            onMouseLeave={handleMouseLeave}
-                          >
-                            <defs>
-                              <linearGradient id="visibilityGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#fff" stopOpacity={0.15} />
-                                <stop offset="100%" stopColor="#fff" stopOpacity={0} />
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid
-                              vertical={false}
-                              horizontal={true}
-                              strokeDasharray="4 4"
-                              stroke="#333333"
-                              opacity={0.4}
-                            />
-                            <XAxis
-                              dataKey="date"
-                              axisLine={{ stroke: '#333333' }}
-                              tick={{ 
-                                fill: '#666666', 
-                                fontSize: 11,
-                                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
-                              }}
-                              tickLine={false}
-                              interval={2}
-                            />
-                            <YAxis
-                              domain={[0, 100]}
-                              ticks={[0, 20, 40, 60, 80, 100]}
-                              axisLine={{ stroke: '#333333' }}
-                              tick={{ 
-                                fill: '#666666', 
-                                fontSize: 11,
-                                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
-                              }}
-                              tickLine={false}
-                              tickFormatter={(value) => `${value}`}
-                            />
-                            <Tooltip
-                              content={<CustomTooltip />}
-                              cursor={false}
-                            />
-                            <Area
-                              type="linear"
-                              dataKey="score"
-                              stroke="#fff"
-                              strokeWidth={2}
-                              fill="url(#visibilityGradient)"
-                            />
-                          </AreaChart>
-                        </ResponsiveContainer>
+                        <motion.div 
+                          className="absolute inset-0"
+                          initial={{ clipPath: "polygon(0 0, 0 0, 0 100%, 0 100%)" }}
+                          animate={{ clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)" }}
+                          transition={{ 
+                            duration: 1.5, 
+                            ease: [0.16, 1, 0.3, 1],
+                            delay: 0.4
+                          }}
+                        >
+                          <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart
+                              data={chartData}
+                              margin={{ top: 20, right: 30, left: -40, bottom: 20 }}
+                              onMouseMove={handleMouseMove}
+                              onMouseLeave={handleMouseLeave}
+                            >
+                              <defs>
+                                <linearGradient id="visibilityGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#fff" stopOpacity={0.15} />
+                                  <stop offset="100%" stopColor="#fff" stopOpacity={0} />
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid
+                                vertical={false}
+                                horizontal={true}
+                                strokeDasharray="4 4"
+                                stroke="#333333"
+                                opacity={0.4}
+                              />
+                              <XAxis
+                                dataKey="date"
+                                axisLine={{ stroke: '#333333' }}
+                                tick={{ 
+                                  fill: '#666666', 
+                                  fontSize: 11,
+                                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
+                                }}
+                                tickLine={false}
+                                interval={2}
+                              />
+                              <YAxis
+                                domain={[0, 100]}
+                                ticks={[0, 20, 40, 60, 80, 100]}
+                                axisLine={{ stroke: '#333333' }}
+                                tick={{ 
+                                  fill: '#666666', 
+                                  fontSize: 11,
+                                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
+                                }}
+                                tickLine={false}
+                                tickFormatter={(value) => `${value}`}
+                              />
+                              <Tooltip
+                                content={<CustomTooltip />}
+                                cursor={false}
+                              />
+                              <Area
+                                type="linear"
+                                dataKey="score"
+                                stroke="#fff"
+                                strokeWidth={2}
+                                fill="url(#visibilityGradient)"
+                              />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </motion.div>
                       </motion.div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                    )}
+                  </AnimatePresence>
+                ) : (
+                  /* Empty State for Chart */
+                  <div className="relative h-full flex flex-col">
+                    {/* Preview of chart with low opacity and blur */}
+                    <div className="absolute inset-0 opacity-20 blur-sm pointer-events-none">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart
+                          data={chartData}
+                          margin={{ top: 20, right: 30, left: -40, bottom: 20 }}
+                        >
+                          <defs>
+                            <linearGradient id="visibilityGradientEmpty" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#fff" stopOpacity={0.15} />
+                              <stop offset="100%" stopColor="#fff" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid
+                            vertical={false}
+                            horizontal={true}
+                            strokeDasharray="4 4"
+                            stroke="#333333"
+                            opacity={0.4}
+                          />
+                          <XAxis
+                            dataKey="date"
+                            axisLine={{ stroke: '#333333' }}
+                            tick={{ 
+                              fill: '#666666', 
+                              fontSize: 11,
+                              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
+                            }}
+                            tickLine={false}
+                            interval={2}
+                          />
+                          <YAxis
+                            domain={[0, 100]}
+                            ticks={[0, 20, 40, 60, 80, 100]}
+                            axisLine={{ stroke: '#333333' }}
+                            tick={{ 
+                              fill: '#666666', 
+                              fontSize: 11,
+                              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
+                            }}
+                            tickLine={false}
+                            tickFormatter={(value) => `${value}`}
+                          />
+                          <Area
+                            type="linear"
+                            dataKey="score"
+                            stroke="#fff"
+                            strokeWidth={2}
+                            fill="url(#visibilityGradientEmpty)"
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    {/* Empty state message - absolute positioned overlay */}
+                    <div className="absolute inset-0 flex items-center justify-center z-10">
+                      <div className="text-center max-w-sm">
+                        <h4 className="text-white font-medium mb-2">Not enough data</h4>
+                        <p className="text-[#666] text-sm mb-6 leading-relaxed">
+                          Run a visibility scan to begin tracking your AI presence across platforms
+                        </p>
+                        <button 
+                          onClick={handleRefreshScore}
+                          disabled={isRefreshing || !subscription}
+                          className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                            isRefreshing || !subscription
+                              ? 'bg-[#333] text-[#666] cursor-not-allowed'
+                              : 'bg-white text-black hover:bg-gray-100'
+                          }`}
+                        >
+                          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                          {isRefreshing ? 'Scanning...' : 'Run Visibility Scan'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
 
             {/* Right Sidebar */}
-            <div className="lg:col-span-5 flex flex-col justify-end pb-12 px-8 space-y-8">
-              {/* Usage & Plan Info */}
-              {usage && subscription && (
-                <motion.div variants={itemVariants} className="mb-4">
-                  <UsageDisplay 
-                    usage={usage} 
-                    feature="scan"
-                    onUpgrade={() => {
-                      // Redirect to settings billing tab
-                      window.location.href = '/settings?tab=billing'
-                    }}
-                    showUpgradeButton={subscription.plan !== 'pro'}
-                  />
-                  
-                  {/* Plan-specific features */}
-                  {scanType === 'max' && (
-                    <div className="mt-4 p-3 bg-[#111] border border-[#1a1a1a] rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Zap className="w-4 h-4 text-yellow-500" />
-                        <span className="text-sm font-medium text-white">MAX Scan Active</span>
-                      </div>
-                      <p className="text-xs text-[#888]">
-                        Scanning 200+ AI queries for comprehensive visibility tracking
-                      </p>
-                    </div>
-                  )}
-                  
-                  {/* Upgrade prompt when near limit */}
-                  {usage.scansLimit !== -1 && usage.scansRemaining <= 2 && usage.scansRemaining > 0 && (
-                    <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                      <p className="text-xs text-yellow-400 mb-2">
-                        Only {usage.scansRemaining} scans remaining this month
-                      </p>
-                      <Button
-                        onClick={() => window.location.href = '/settings?tab=billing'}
-                        size="sm"
-                        className="w-full h-7 bg-yellow-500 hover:bg-yellow-600 text-black text-xs"
-                      >
-                        Upgrade for more scans
-                      </Button>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-              
-              {/* Citation Breakdown */}
-              <motion.div variants={itemVariants}>
+            <div className="lg:col-span-5 flex flex-col px-8">
+              {/* Competitive Benchmarking - Same height as chart */}
+              <motion.div variants={itemVariants} className="flex flex-col" style={{ minHeight: '60vh' }}>
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-white mb-1">Citation Breakdown</h3>
-                  <p className="text-sm text-[#888]">Last 30 days</p>
+                  <h3 className="text-lg font-semibold text-white mb-1">Competitive Benchmarking</h3>
+                  <p className="text-sm text-[#888]">Share of voice comparison</p>
                 </div>
                 
-                <div className="space-y-4">
-                  <motion.div 
-                    className="flex items-center justify-between py-3 px-0"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-6 h-6 rounded bg-[#1a1a1a] border border-[#2a2a2a]">
-                        <Target className="w-3 h-3 text-[#888]" />
-                      </div>
-                      <div>
-                        <div className="text-white font-medium text-sm">Direct Citations</div>
-                        <div className="text-[#666] text-xs">Direct references to your content</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-white font-semibold">{directPoints}</div>
-                      <div className="text-[#666] text-xs">+12%</div>
-                    </div>
-                  </motion.div>
+                {hasVisibilityData ? (
+                  <div className="flex-1 overflow-y-auto pr-2">
+                    <div className="space-y-2">
+                      <AnimatePresence mode="wait">
+                        {currentCompetitors.map((comp, idx) => {
+                          // Helper to get favicon URL for competitors
+                          const getFaviconForCompetitor = (url: string) => {
+                            // Extract domain from URL
+                            const cleanDomain = url
+                              .replace(/^https?:\/\//, '')
+                              .replace(/^www\./, '')
+                              .split('/')[0]
+                            
+                            return `https://www.google.com/s2/favicons?domain=${cleanDomain}&sz=128`
+                          }
 
-                  <motion.div 
-                    className="flex items-center justify-between py-3 px-0"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-6 h-6 rounded bg-[#1a1a1a] border border-[#2a2a2a]">
-                        <Sparkles className="w-3 h-3 text-[#888]" />
-                      </div>
-                      <div>
-                        <div className="text-white font-medium text-sm">Indirect Citations</div>
-                        <div className="text-[#666] text-xs">Related topic mentions</div>
-                      </div>
+                          return (
+                            <motion.div
+                              key={`${comp.name}-${comp.url}`}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              exit={{ opacity: 0, x: 20 }}
+                              transition={{ delay: idx * 0.05 }}
+                              className={`flex items-center justify-between py-3 px-0 ${
+                                comp.isUser ? 'bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg px-3' : ''
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="text-[#666] font-mono text-sm w-5">
+                                  {comp.isUser ? comp.actualRank : idx + 1}
+                                </span>
+                                <div className="flex items-center justify-center w-6 h-6 rounded bg-[#1a1a1a] border border-[#2a2a2a]">
+                                  <div className="relative">
+                                    <img 
+                                      src={getFaviconForCompetitor(comp.url)}
+                                      alt={comp.name}
+                                      width={14}
+                                      height={14}
+                                      className="w-3.5 h-3.5 object-contain"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement
+                                        target.style.display = 'none'
+                                        // Show fallback dot instead
+                                        const fallback = target.nextElementSibling as HTMLElement
+                                        if (fallback) fallback.style.display = 'block'
+                                      }}
+                                    />
+                                    <div className="w-2 h-2 rounded-full bg-[#666] hidden" />
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-white font-medium text-sm">{comp.name}</div>
+                                  <div className="text-[#666] text-xs">{comp.url}</div>
+                                </div>
+                              </div>
+                              <span className="text-white font-semibold">{comp.score.toFixed(1)}</span>
+                            </motion.div>
+                          )
+                        })}
+                      </AnimatePresence>
                     </div>
-                    <div className="text-right">
-                      <div className="text-white font-semibold">{indirectPoints}</div>
-                      <div className="text-[#666] text-xs">+8%</div>
-                    </div>
-                  </motion.div>
+                  </div>
+                ) : (
+                  /* Empty State for Competitive Benchmarking */
+                  <div className="relative flex-1 flex flex-col">
+                    {/* Preview of competitors with low opacity and blur */}
+                    <div className="absolute inset-0 opacity-20 blur-sm pointer-events-none overflow-y-auto pr-2">
+                      <div className="space-y-2">
+                        {currentCompetitors.map((comp, idx) => {
+                          // Helper to get favicon URL for competitors
+                          const getFaviconForCompetitor = (url: string) => {
+                            // Extract domain from URL
+                            const cleanDomain = url
+                              .replace(/^https?:\/\//, '')
+                              .replace(/^www\./, '')
+                              .split('/')[0]
+                            
+                            return `https://www.google.com/s2/favicons?domain=${cleanDomain}&sz=128`
+                          }
 
-                  <div className="py-3 px-0 border-t border-[#2a2a2a]">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center w-6 h-6 rounded bg-[#1a1a1a] border border-[#2a2a2a]">
-                          <div className="w-2 h-2 rounded-full bg-[#888]" />
-                        </div>
-                        <div>
-                          <span className="text-white text-sm font-medium">Total Citations</span>
-                          <div className="text-[#666] text-xs">Combined visibility score</div>
-                        </div>
+                          return (
+                            <div
+                              key={`empty-${comp.name}-${comp.url}`}
+                              className={`flex items-center justify-between py-3 px-0 ${
+                                comp.isUser ? 'bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg px-3' : ''
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="text-[#666] font-mono text-sm w-5">
+                                  {comp.isUser ? comp.actualRank : idx + 1}
+                                </span>
+                                <div className="flex items-center justify-center w-6 h-6 rounded bg-[#1a1a1a] border border-[#2a2a2a]">
+                                  <div className="relative">
+                                    <img 
+                                      src={getFaviconForCompetitor(comp.url)}
+                                      alt={comp.name}
+                                      width={14}
+                                      height={14}
+                                      className="w-3.5 h-3.5 object-contain"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement
+                                        target.style.display = 'none'
+                                        // Show fallback dot instead
+                                        const fallback = target.nextElementSibling as HTMLElement
+                                        if (fallback) fallback.style.display = 'block'
+                                      }}
+                                    />
+                                    <div className="w-2 h-2 rounded-full bg-[#666] hidden" />
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-white font-medium text-sm">{comp.name}</div>
+                                  <div className="text-[#666] text-xs">{comp.url}</div>
+                                </div>
+                              </div>
+                              <span className="text-white font-semibold">{comp.score.toFixed(1)}</span>
+                            </div>
+                          )
+                        })}
                       </div>
-                      <div className="text-right">
-                        <motion.div 
-                          className="text-white font-semibold"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: 0.6 }}
+                    </div>
+
+                    {/* Empty state message - absolute positioned overlay */}
+                    <div className="absolute inset-0 flex items-center justify-center z-10">
+                      <div className="text-center max-w-sm">
+                        <h4 className="text-white font-medium mb-2">Not enough data</h4>
+                        <p className="text-[#666] text-sm mb-6 leading-relaxed">
+                          Run a visibility scan to see how you compare against competitors
+                        </p>
+                        <button 
+                          onClick={handleRefreshScore}
+                          disabled={isRefreshing || !subscription}
+                          className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                            isRefreshing || !subscription
+                              ? 'bg-[#333] text-[#666] cursor-not-allowed'
+                              : 'bg-white text-black hover:bg-gray-100'
+                          }`}
                         >
-                          {totalCitations}
-                        </motion.div>
-                        <div className="text-[#666] text-xs">+10%</div>
+                          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                          {isRefreshing ? 'Scanning...' : 'Run Visibility Scan'}
+                        </button>
                       </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-
-              {/* Competitive Benchmarking */}
-              <motion.div variants={itemVariants}>
-                <div className="mb-6 flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-white mb-1">Competitive Benchmarking</h3>
-                    <p className="text-sm text-[#888]">{selectedQuery}</p>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        className="w-fit min-w-[160px] border border-[#333333] bg-transparent hover:bg-[#1a1a1a] px-3 py-1.5 h-auto"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-white text-sm truncate">{selectedQuery}</span>
-                          <ChevronDown className="h-3 w-3 text-[#666666] flex-shrink-0" />
-                        </div>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent 
-                      className="bg-[#1a1a1a] border border-[#333333] text-white min-w-[200px]"
-                      align="end"
-                      alignOffset={-1}
-                      sideOffset={4}
-                    >
-                      {queryOptions.map((query) => (
-                        <DropdownMenuItem 
-                          key={query}
-                          className="hover:bg-[#222222] cursor-pointer text-sm"
-                          onClick={() => setSelectedQuery(query)}
-                        >
-                          <span className={selectedQuery === query ? 'text-white font-medium' : 'text-[#ccc]'}>
-                            {query}
-                          </span>
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                
-                <div className="space-y-2">
-                  <AnimatePresence mode="wait">
-                    {currentCompetitors.map((comp, idx) => (
-                      <motion.div
-                        key={`${selectedQuery}-${comp.url}`}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 20 }}
-                        transition={{ delay: idx * 0.05 }}
-                        className={`flex items-center justify-between py-3 px-0 ${
-                          comp.isUser ? 'bg-[#0f0f0f] border border-[#2a2a2a] rounded-lg px-3' : ''
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="text-[#666] font-mono text-sm w-4">{idx + 1}</span>
-                          <div className="flex items-center justify-center w-6 h-6 rounded bg-[#1a1a1a] border border-[#2a2a2a]">
-                            {comp.isUser ? (
-                              <Trophy className="w-3 h-3 text-yellow-400" />
-                            ) : (
-                              <div className="w-2 h-2 rounded-full bg-[#666]" />
-                            )}
-                          </div>
-                          <div>
-                            <div className="text-white font-medium text-sm">{comp.name}</div>
-                            <div className="text-[#666] text-xs">{comp.url}</div>
-                          </div>
-                        </div>
-                        <span className="text-white font-semibold">{comp.score.toFixed(1)}</span>
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                </div>
+                )}
               </motion.div>
             </div>
           </div>

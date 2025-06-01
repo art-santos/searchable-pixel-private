@@ -29,7 +29,7 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
 
   const supabase = createClient()
 
-  // Check if user has completed onboarding
+  // Check if user needs onboarding (first time + missing name/workspace)
   useEffect(() => {
     const checkOnboardingStatus = async () => {
       if (!user || !supabase) {
@@ -40,16 +40,21 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
       try {
         const { data: profile, error } = await supabase
           .from('profiles')
-          .select('onboarding_completed, first_name, workspace_name')
+          .select('first_name, workspace_name')
           .eq('id', user.id)
           .single()
 
         if (error && error.code !== 'PGRST116') {
-          console.error('Error checking onboarding status:', error)
+          console.error('Error checking profile:', error)
+          setCheckingStatus(false)
+          return
         }
 
-        // Show onboarding if user hasn't completed it or no profile exists
-        const shouldShowOnboarding = !profile?.onboarding_completed
+        // Only show onboarding if user is missing name OR workspace name
+        // This ensures it only shows when needed and never again once configured
+        const hasName = profile?.first_name?.trim()
+        const hasWorkspaceName = profile?.workspace_name?.trim()
+        const shouldShowOnboarding = !hasName || !hasWorkspaceName
 
         setShowOnboarding(shouldShowOnboarding)
 
@@ -83,8 +88,6 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
           id: user.id,
           first_name: workspaceData.name,
           workspace_name: workspaceData.workspaceName,
-          onboarding_completed: true,
-          onboarding_completed_at: new Date().toISOString(),
           email: user.email,
           created_by: user.id,
           updated_by: user.id
@@ -103,6 +106,10 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleSkip = () => {
+    setShowOnboarding(false)
   }
 
   const canProceed = () => {
@@ -203,7 +210,7 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
           {/* Skip Option */}
           <div className="text-center mt-4">
             <button
-              onClick={() => setShowOnboarding(false)}
+              onClick={handleSkip}
               className="text-xs text-[#666] hover:text-[#888] transition-colors"
             >
               Skip for now

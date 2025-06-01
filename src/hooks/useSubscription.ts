@@ -22,6 +22,7 @@ interface SubscriptionData {
   status: 'free' | 'active' | 'canceled' | 'incomplete' | 'past_due' | 'trialing' | 'unpaid'
   periodEnd: Date | null
   stripeCustomerId: string | null
+  isAdmin: boolean
 }
 
 interface UseSubscriptionReturn {
@@ -81,7 +82,8 @@ export function useSubscription(): UseSubscriptionReturn {
         plan: (subData.subscriptionPlan || 'free') as PlanType,
         status: subData.subscriptionStatus || 'free',
         periodEnd: subData.subscriptionPeriodEnd ? new Date(subData.subscriptionPeriodEnd) : null,
-        stripeCustomerId: subData.stripeCustomerId
+        stripeCustomerId: subData.stripeCustomerId,
+        isAdmin: subData.isAdmin || false
       }
       
       setSubscription(subscription)
@@ -99,7 +101,8 @@ export function useSubscription(): UseSubscriptionReturn {
         plan: 'free',
         status: 'free',
         periodEnd: null,
-        stripeCustomerId: null
+        stripeCustomerId: null,
+        isAdmin: false
       })
     } finally {
       setLoading(false)
@@ -125,16 +128,23 @@ export function useSubscription(): UseSubscriptionReturn {
   // Helper methods
   const hasFeature = (feature: FeatureType): boolean => {
     if (!subscription) return false
+    // Admin override: admins have access to all features
+    if (subscription.isAdmin) return true
     return hasFeatureAccess(subscription.plan, feature)
   }
   
   const isAtLeast = (plan: PlanType): boolean => {
     if (!subscription) return false
+    // Admin override: admins are treated as having pro plan
+    if (subscription.isAdmin) return isAtLeastPlan('pro', plan)
     return isAtLeastPlan(subscription.plan, plan)
   }
   
   const canPerformAction = async (feature: 'scan' | 'article', count: number = 1): Promise<boolean> => {
     if (!userId) return false
+    
+    // Admin override: admins have unlimited access
+    if (subscription?.isAdmin) return true
     
     const result = await checkLimit(userId, feature, count)
     return result.allowed
@@ -142,6 +152,16 @@ export function useSubscription(): UseSubscriptionReturn {
   
   const getLimit = (feature: 'scan' | 'article'): number => {
     if (!subscription) return 0
+    
+    // Admin override: admins have unlimited limits (represented as -1)
+    if (subscription.isAdmin) {
+      const proLimits = LIMITS['pro']
+      if (feature === 'scan') {
+        return proLimits.scans.max
+      } else {
+        return proLimits.articles.max
+      }
+    }
     
     const limits = LIMITS[subscription.plan]
     if (feature === 'scan') {
@@ -154,6 +174,9 @@ export function useSubscription(): UseSubscriptionReturn {
   const getRemainingUsage = (feature: 'scan' | 'article'): number => {
     if (!usage) return 0
     
+    // Admin override: admins have unlimited remaining usage
+    if (subscription?.isAdmin) return -1 // Unlimited
+    
     if (feature === 'scan') {
       return usage.scansRemaining
     } else {
@@ -163,6 +186,8 @@ export function useSubscription(): UseSubscriptionReturn {
   
   const getUpgradeOptions = (): PlanType[] => {
     if (!subscription) return ['visibility', 'plus', 'pro']
+    // Admin override: admins don't need to upgrade
+    if (subscription.isAdmin) return []
     return getUpgradePath(subscription.plan)
   }
   
