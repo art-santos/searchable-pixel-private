@@ -1,12 +1,7 @@
 {
   "name": "@split.dev/analytics",
-<<<<<<< HEAD
-  "version": "0.1.1",
-  "description": "AI crawler analytics for Next.js and Node.js applications",
-=======
   "version": "2.0.0",
   "description": "Simple AI crawler tracking for any website. Zero dependencies, lightweight, reliable.",
->>>>>>> 8236b93 (fixed package)
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -44,10 +39,6 @@
   ],
   "author": "Split Analytics <hello@split.dev>",
   "license": "MIT",
-<<<<<<< HEAD
-  "dependencies": {
-    "@split.dev/analytics": "^0.1.1"
-=======
   "homepage": "https://split.dev",
   "repository": {
     "type": "git",
@@ -55,7 +46,6 @@
   },
   "bugs": {
     "url": "https://github.com/split-dev/analytics/issues"
->>>>>>> 8236b93 (fixed package)
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
@@ -82,20 +72,8 @@
       "require": "./dist/middleware.js"
     }
   },
-<<<<<<< HEAD
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/split-dev/analytics"
-  },
-  "homepage": "https://split.dev",
-  "bugs": {
-    "url": "https://github.com/split-dev/analytics/issues"
-  }
-}
-=======
   "engines": {
     "node": ">=16.0.0"
   },
   "sideEffects": false
 } 
->>>>>>> 8236b93 (fixed package)

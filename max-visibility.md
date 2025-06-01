@@ -22,6 +22,367 @@
 
 ---
 
+## 📊 **Data Compatibility: Complete Coverage**
+
+### **Core VisibilityData Interface** 
+The MAX system must provide 100% compatibility with existing components:
+
+```typescript
+// Complete interface that ALL components expect
+interface VisibilityData {
+  // PRIMARY METRICS (Required by all score displays)
+  overallScore: number                    // 0-100 main visibility score
+  scoreHistory: { date: string; score: number }[]  // Time series chart data
+  
+  // TOPIC ANALYSIS (TopicVisibilityCard, visibility page topics)
+  topics: { 
+    topic: string; 
+    score: number;
+    mentions?: number;        // NEW: Required for MAX analysis
+    percentage?: number;      // NEW: % of total mentions
+    rank?: number;           // NEW: Topic ranking
+    change?: number;         // Growth/decline indicator
+    positive?: boolean;      // Trend direction
+  }[]
+  
+  // CITATIONS BREAKDOWN (DirectCitationCard, progress bars)
+  citations: { 
+    owned: number; 
+    operated: number; 
+    earned: number;
+    competitor?: number;     // NEW: Competitor citations
+  }
+  
+  // COMPETITIVE ANALYSIS (CompetitorBenchmarkingCard)  
+  competitors: {
+    name: string;
+    url: string;
+    score: number;
+    actualRank: number;
+    isUser?: boolean;
+    icon?: string;
+    favicon?: string;        // NEW: Dynamic favicon loading
+  }[]
+  
+  // ACTIONABLE INSIGHTS (SuggestionsCard)
+  suggestions: { 
+    topic: string; 
+    suggestion: string;
+    priority?: 'high' | 'medium' | 'low';  // NEW: Priority levels
+    actionType?: 'content' | 'optimization' | 'technical'; // NEW: Category
+  }[]
+  
+  // DETAILED ANALYTICS (AEOScoreCard, detailed breakdowns)
+  aeoData?: {
+    aeo_score: number
+    coverage_owned: number
+    coverage_operated: number
+    coverage_total: number
+    share_of_voice: number
+    metrics: {
+      questions_analyzed: number
+      total_results: number
+      owned_appearances: number
+      operated_appearances: number
+      earned_appearances: number
+      avg_owned_position: number
+      avg_operated_position: number
+      top_3_presence: number
+    }
+  }
+  
+  // NEW: MAX-SPECIFIC DATA
+  maxData?: {
+    mention_rate: number              // % of questions where mentioned
+    sentiment_score: number           // Average sentiment (-1 to 1)
+    citation_influence: number        // How much owned content influences AI
+    response_consistency: number      // Factual accuracy score
+    competitive_positioning: number   // Relative to competitors
+    conversation_types: {
+      direct: { mentions: number; sentiment: number }
+      indirect: { mentions: number; sentiment: number }
+      comparison: { mentions: number; sentiment: number }
+    }
+  }
+}
+```
+
+### **Visibility Page Data Requirements**
+
+#### **Chart/Time Series Data**
+```typescript
+// Current implementation expects
+const chartData = [
+  { date: 'APR 1', score: 45.2 },
+  { date: 'APR 2', score: 44.8 },
+  // ... 30 days of data
+]
+
+// MAX system must provide
+interface MaxChartData {
+  lite_scores: { date: string; score: number }[]     // Traditional SERP scores
+  max_scores: { date: string; score: number }[]      // AI conversation scores
+  combined_scores: { date: string; score: number }[] // Blended score
+}
+```
+
+#### **Competitive Benchmarking Data**
+```typescript
+// Current implementation structure
+const currentCompetitors = [
+  { name: 'Salesforce', url: 'salesforce.com', score: 89.9, actualRank: 1, isUser: false },
+  { name: 'HubSpot', url: 'hubspot.com', score: 87.2, actualRank: 2, isUser: false },
+  // ... up to 10 competitors
+  { name: getUserDisplayName(), url: getUserDomain(), score: 72.2, actualRank: 10, isUser: true }
+]
+
+// MAX system must enhance with
+interface MaxCompetitorData {
+  // All existing fields plus:
+  lite_score: number          // Traditional search score
+  max_score: number           // AI conversation score  
+  mention_rate: number        // % mentioned in AI responses
+  sentiment_avg: number       // Average sentiment
+  cite_frequency: number      // How often AI cites them
+}
+```
+
+#### **Topic Visibility Enhancement**
+```typescript
+// Current topic structure
+const topicNodes = [
+  { id: 'center', label: getUserDisplayName(), x: 0, y: 0, size: 40, type: 'center', citations: 86 },
+  { id: 'ai-sales', label: 'AI Sales Tools', x: -120, y: -80, size: 28, type: 'topic', citations: 34 },
+  // ... more topics
+]
+
+// MAX system adds conversational context
+interface MaxTopicData {
+  // All existing fields plus:
+  conversation_mentions: number    // Mentions in AI conversations
+  sentiment_by_topic: number      // Topic-specific sentiment
+  question_types: string[]        // Which question types mention this topic
+  competitive_strength: number    // Relative topic positioning
+}
+```
+
+#### **Gaps & Opportunities Data**
+```typescript
+// Current gaps structure  
+const gapsData = [
+  { 
+    id: 1, 
+    prompt: 'Best AI agents for GTM teams', 
+    status: 'missing', 
+    searchVolume: 'High', 
+    difficulty: 'Medium', 
+    suggestion: 'Create comprehensive guide' 
+  }
+]
+
+// MAX system enhances with AI-specific gaps
+interface MaxGapsData {
+  // All existing fields plus:
+  ai_mention_opportunity: number   // Potential for AI mentions
+  current_ai_coverage: number     // Current AI response coverage
+  competitor_ai_strength: number  // How well competitors cover this
+  conversation_volume: number     // How often AI discusses this topic
+}
+```
+
+### **Dashboard Component Data Requirements**
+
+#### **TopicVisibilityCard Data**
+```typescript
+// Current structure
+const topics = [
+  {
+    rank: 1,
+    label: "AI research agents", 
+    sources: [{ src: "/ycombinator.svg", alt: "YCombinator" }],
+    change: 12,
+    positive: true,
+    link: "#",
+  }
+]
+
+// MAX system provides enhanced data
+interface MaxTopicVisibility {
+  // All existing fields plus:
+  ai_mentions: number           // Mentions in AI responses
+  ai_sentiment: number         // AI-specific sentiment
+  ai_sources: string[]         // Sources that influence AI responses
+  conversation_contexts: string[] // Where this topic appears in AI
+}
+```
+
+#### **WelcomeCard Score Integration**
+```typescript
+// Current welcome message logic
+const getWelcomeMessage = (score: number) => {
+  if (score < 30) return "foundation needs work message"
+  // ... score-based messaging
+}
+
+// MAX system provides dual-score messaging
+interface MaxWelcomeData {
+  lite_score: number
+  max_score: number
+  score_delta: number
+  primary_strength: 'search' | 'ai' | 'balanced'
+  improvement_focus: string[]
+}
+```
+
+### **Data Transformation Functions**
+
+#### **Lite-to-Dashboard Transformer (Existing)**
+```typescript
+const transformLiteToVisibilityData = (aeoData: any): VisibilityData => {
+  return {
+    overallScore: aeoData.aeo_score,
+    scoreHistory: [{ date: new Date().toISOString().split('T')[0], score: aeoData.aeo_score }],
+    topics: [
+      { topic: 'Owned Content', score: Math.round(aeoData.coverage_owned * 100) },
+      { topic: 'Operated Channels', score: Math.round(aeoData.coverage_operated * 100) },
+      { topic: 'Share of Voice', score: Math.round(aeoData.share_of_voice * 100) }
+    ],
+    citations: {
+      owned: aeoData.metrics?.owned_appearances || 0,
+      operated: aeoData.metrics?.operated_appearances || 0,
+      earned: aeoData.metrics?.earned_appearances || 0
+    },
+    competitors: [], // Basic implementation
+    suggestions: generateAEOSuggestions(aeoData),
+    aeoData: aeoData
+  }
+}
+```
+
+#### **MAX-to-Dashboard Transformer (New)**
+```typescript
+const transformMaxToVisibilityData = (maxData: any): VisibilityData => {
+  return {
+    // Core compatibility
+    overallScore: maxData.ai_visibility_score,
+    scoreHistory: maxData.score_history || [],
+    
+    // Enhanced topics with AI context
+    topics: maxData.conversation_topics.map(topic => ({
+      topic: topic.name,
+      score: topic.ai_score,
+      mentions: topic.mention_count,
+      percentage: topic.mention_percentage,
+      rank: topic.rank,
+      change: topic.change_vs_previous,
+      positive: topic.change_vs_previous > 0
+    })),
+    
+    // Enhanced citations with AI sources
+    citations: {
+      owned: maxData.citations.owned_sources_cited,
+      operated: maxData.citations.operated_sources_cited, 
+      earned: maxData.citations.earned_sources_cited,
+      competitor: maxData.citations.competitor_sources_cited
+    },
+    
+    // Enhanced competitors with AI metrics
+    competitors: maxData.competitive_analysis.map(comp => ({
+      name: comp.name,
+      url: comp.domain,
+      score: comp.ai_visibility_score,
+      actualRank: comp.rank,
+      isUser: comp.is_target_company,
+      favicon: `https://www.google.com/s2/favicons?domain=${comp.domain}&sz=128`,
+      lite_score: comp.search_score,
+      max_score: comp.ai_score,
+      mention_rate: comp.mention_rate,
+      sentiment_avg: comp.sentiment_average
+    })),
+    
+    // Enhanced suggestions with AI insights
+    suggestions: maxData.ai_recommendations.map(rec => ({
+      topic: rec.category,
+      suggestion: rec.recommendation,
+      priority: rec.priority_level,
+      actionType: rec.action_type
+    })),
+    
+    // Preserve existing AEO data structure for compatibility
+    aeoData: {
+      aeo_score: maxData.ai_visibility_score,
+      coverage_owned: maxData.mention_rate,
+      coverage_operated: maxData.operated_mention_rate,
+      coverage_total: maxData.total_coverage,
+      share_of_voice: maxData.ai_share_of_voice,
+      metrics: {
+        questions_analyzed: maxData.questions_analyzed,
+        total_results: maxData.total_responses,
+        owned_appearances: maxData.owned_mentions,
+        operated_appearances: maxData.operated_mentions,
+        earned_appearances: maxData.earned_mentions,
+        avg_owned_position: maxData.avg_mention_position,
+        avg_operated_position: maxData.avg_operated_position,
+        top_3_presence: maxData.primary_mentions
+      }
+    },
+    
+    // New MAX-specific data
+    maxData: {
+      mention_rate: maxData.mention_rate,
+      sentiment_score: maxData.sentiment_average,
+      citation_influence: maxData.citation_influence_score,
+      response_consistency: maxData.factual_consistency_score,
+      competitive_positioning: maxData.competitive_positioning_score,
+      conversation_types: {
+        direct: { 
+          mentions: maxData.direct_mentions, 
+          sentiment: maxData.direct_sentiment 
+        },
+        indirect: { 
+          mentions: maxData.indirect_mentions, 
+          sentiment: maxData.indirect_sentiment 
+        },
+        comparison: { 
+          mentions: maxData.comparison_mentions, 
+          sentiment: maxData.comparison_sentiment 
+        }
+      }
+    }
+  }
+}
+```
+
+#### **Unified Data Provider (Both Systems)**
+```typescript
+const getUnifiedVisibilityData = async (companyId: string): Promise<VisibilityData> => {
+  // Get latest data from both systems
+  const liteData = await getLatestLiteAnalysis(companyId)
+  const maxData = await getLatestMaxAnalysis(companyId)
+  
+  if (maxData) {
+    // If MAX data available, use it as primary with Lite as supplementary
+    const baseData = transformMaxToVisibilityData(maxData)
+    
+    // Enhance with Lite data for comparison
+    if (liteData) {
+      baseData.scoreHistory = mergeScoreHistories(liteData.scores, maxData.scores)
+      baseData.topics = enhanceTopicsWithLiteData(baseData.topics, liteData.topics)
+    }
+    
+    return baseData
+  } else if (liteData) {
+    // Fallback to Lite data if MAX not available
+    return transformLiteToVisibilityData(liteData)
+  } else {
+    // Return empty state structure
+    return getEmptyVisibilityData()
+  }
+}
+```
+
+---
+
 ## 🚀 **MAX System Core Architecture**
 
 ### **Why Perplexity Sonar?**
@@ -56,6 +417,11 @@ GET  /api/max-visibility/results/{runId}
 // Perplexity integration
 POST /api/perplexity/query
 GET  /api/perplexity/analyze-response
+
+// Unified data endpoints
+GET  /api/visibility/data/{companyId}           // Combined Lite + MAX data
+GET  /api/visibility/comparison/{companyId}     // Lite vs MAX comparison
+GET  /api/visibility/trends/{companyId}         // Historical trends
 ```
 
 #### **Perplexity Sonar Integration**
@@ -147,6 +513,31 @@ CREATE TABLE max_visibility_metrics (
   metric_name TEXT NOT NULL,
   metric_value DECIMAL(10,4),
   metric_metadata JSONB
+);
+
+-- Competitive analysis results
+CREATE TABLE max_visibility_competitors (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  run_id UUID REFERENCES max_visibility_runs(id),
+  competitor_name TEXT NOT NULL,
+  competitor_domain TEXT NOT NULL,
+  mention_count INTEGER DEFAULT 0,
+  mention_rate DECIMAL(5,4),
+  sentiment_average DECIMAL(5,2),
+  ai_visibility_score DECIMAL(5,2),
+  rank_position INTEGER
+);
+
+-- Topic analysis results  
+CREATE TABLE max_visibility_topics (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  run_id UUID REFERENCES max_visibility_runs(id),
+  topic_name TEXT NOT NULL,
+  mention_count INTEGER DEFAULT 0,
+  mention_percentage DECIMAL(5,2),
+  sentiment_score DECIMAL(5,2),
+  rank_position INTEGER,
+  change_vs_previous DECIMAL(5,2)
 );
 ```
 

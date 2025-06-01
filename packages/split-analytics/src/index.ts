@@ -1,29 +1,3 @@
-<<<<<<< HEAD
-// Main exports
-export { detectAICrawler, extractRequestMetadata } from './detector'
-export { CrawlerTracker } from './tracker'
-export { AI_CRAWLERS } from './constants'
-export type { CrawlerDetectionResult, UnknownCrawlerInfo } from './detector'
-export type { CrawlerEvent, TrackerConfig, PingResponse } from './tracker'
-export type { CrawlerInfo } from './constants'
-
-// For custom Node.js/Express servers
-import { IncomingMessage, ServerResponse } from 'http'
-import { detectAICrawler, extractRequestMetadata } from './detector'
-import { CrawlerTracker, TrackerConfig, PingResponse } from './tracker'
-
-/**
- * Ping the Split Analytics API to verify connection and API key validity
- */
-export async function ping(config: TrackerConfig): Promise<PingResponse> {
-  const tracker = new CrawlerTracker(config)
-  const result = await tracker.ping()
-  tracker.destroy()
-  return result
-}
-
-=======
->>>>>>> 8236b93 (fixed package)
 /**
  * @split.dev/analytics
  * Simple AI crawler tracking for any website
