@@ -5,11 +5,18 @@ const BASE_URL = 'https://www.split.dev';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   // Define static routes
-  const staticRoutes = [
-    '/',
+  const routes = [
+    '',
+    '/pricing',
+    '/privacy',
+    '/terms',
+    '/changelog',
+    '/features',
     '/dashboard',
+    '/login',
+    '/signup',
     '/settings',
-    '/docs',
+    '/support'
   ].map((route) => ({
     url: `${BASE_URL}${route}`,
     lastModified: new Date(),
@@ -17,5 +24,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: route === '/' ? 1.0 : 0.8,
   }));
 
-  return staticRoutes;
+  return routes;
 } 

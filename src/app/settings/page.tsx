@@ -906,7 +906,7 @@ export default function SettingsPage() {
                   {/* Documentation Link */}
                   <div className="text-center pt-4">
                     <a
-                      href="/docs#api-keys"
+                      href="https://docs.split.dev#api-keys"
                       className="inline-flex items-center gap-1.5 text-xs text-[#666] hover:text-white transition-colors"
                     >
                       <FileText className="w-3.5 h-3.5" />

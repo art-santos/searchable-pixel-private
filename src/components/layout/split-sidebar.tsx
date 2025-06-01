@@ -141,14 +141,12 @@ export function SplitSidebar() {
             </SidebarMenuButton>
           </Link>
 
-          <Link href="/docs" className="w-full flex justify-center">
+          <Link href="https://docs.split.dev" className="w-full flex justify-center">
             <SidebarMenuButton 
               tooltip="Documentation"
               className={cn(
                 "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
-                pathname === "/docs" 
-                  ? "bg-[#222222] text-white border border-[#333333] selected-button" 
-                  : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
+                "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
               )}
             >
               <HelpCircleIcon className="h-6 w-6 icon-rotate" />

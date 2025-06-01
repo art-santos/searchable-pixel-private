@@ -95,7 +95,7 @@ export function WelcomeCard() {
     { icon: BarChart3, label: "Visibility Scoring", desc: "Run AEO visibility scans", href: "/visibility" },
     { icon: FileText, label: "Content Pages", desc: "View completed content", href: "/content" },
     { icon: Zap, label: "Content Queue", desc: "Manage content pipeline", href: "/queue" },
-    { icon: BookOpen, label: "Read Documentation", desc: "Learn best practices", href: "/docs" },
+    { icon: BookOpen, label: "Read Documentation", desc: "Learn best practices", href: "https://docs.split.dev" },
     { icon: Rocket, label: "What's New", desc: "Latest features & updates", href: "/changelog" },
     { icon: HelpCircle, label: "Get Support", desc: "Contact our team", href: "/support" },
   ]
