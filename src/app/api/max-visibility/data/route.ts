@@ -267,7 +267,7 @@ export async function GET(request: NextRequest) {
     const visibilityData = {
       score: {
         overall_score: assessment.total_score || 0,
-        lite_score: Math.round(assessment.total_score * 0.8), // Approximation
+        lite_score: assessment.total_score * 0.8, // Remove rounding to keep decimal
         max_score: assessment.total_score,
         trend_change: 0, // Would need historical data
         trend_period: '30 days',
