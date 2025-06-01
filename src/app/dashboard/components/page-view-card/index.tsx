@@ -18,6 +18,7 @@ interface CrawlerOption {
   name: string
   company: string
   count: number
+  icon?: string
 }
 
 interface ChartDataPoint {
@@ -27,7 +28,7 @@ interface ChartDataPoint {
 
 export function PageViewCard() {
   const { supabase } = useAuth()
-  const [timeframe, setTimeframe] = useState<TimeframeType>('Today')
+  const [timeframe, setTimeframe] = useState<TimeframeType>('Last 24 hours')
   const [selectedCrawler, setSelectedCrawler] = useState<string>('all')
   const [isChartVisible, setIsChartVisible] = useState(false)
   const [showConnectDialog, setShowConnectDialog] = useState(false)
@@ -54,7 +55,10 @@ export function PageViewCard() {
       const sessionResult = await supabase?.auth.getSession()
       const session = sessionResult?.data?.session
       
-      const response = await fetch(`/api/dashboard/crawler-visits?timeframe=${encodeURIComponent(timeframe)}&crawler=${selectedCrawler}`, {
+      // Auto-detect user's timezone
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      
+      const response = await fetch(`/api/dashboard/crawler-visits?timeframe=${encodeURIComponent(timeframe)}&crawler=${selectedCrawler}&timezone=${encodeURIComponent(timezone)}`, {
         headers: {
           'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
         }

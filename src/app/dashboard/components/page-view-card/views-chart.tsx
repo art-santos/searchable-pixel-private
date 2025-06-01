@@ -117,9 +117,9 @@ export function ViewsChart({ timeframe, isVisible, setIsVisible, data }: ViewsCh
   }, [setIsVisible])
 
   // Determine if we should show fewer X-axis labels for different timeframes
-  const isHourlyData = timeframe === 'Today'
-  const isWeeklyData = timeframe === 'This Week'
-  const isMonthlyData = timeframe === 'This Month'
+  const isHourlyData = timeframe === 'Last 24 hours'
+  const isWeeklyData = timeframe === 'Last 7 days'
+  const isMonthlyData = timeframe === 'Last 30 days'
   
   let tickInterval = 0
   let labelAngle = 0

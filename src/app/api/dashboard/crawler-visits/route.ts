@@ -18,35 +18,44 @@ export async function GET(request: Request) {
     const url = new URL(request.url)
     const timeframe = url.searchParams.get('timeframe') || 'today'
     const crawler = url.searchParams.get('crawler') || 'all'
+    const timezone = url.searchParams.get('timezone') || 'UTC'
     
-    console.log(`[Dashboard API] Fetching crawler visits for timeframe: ${timeframe}, crawler: ${crawler}`)
+    console.log(`[Dashboard API] Fetching crawler visits for timeframe: ${timeframe}, crawler: ${crawler}, timezone: ${timezone}`)
     
-    // Calculate date range based on timeframe
-    let startDate = new Date()
+    // Helper function to get current time in user's timezone
+    const getCurrentTimeInTimezone = () => {
+      return new Date(new Date().toLocaleString("en-US", { timeZone: timezone }))
+    }
+    
+    // Helper function to convert UTC timestamp to user's timezone
+    const convertToUserTimezone = (utcTimestamp: string) => {
+      return new Date(new Date(utcTimestamp).toLocaleString("en-US", { timeZone: timezone }))
+    }
+    
+    // Calculate date range based on timeframe, in user's timezone
+    const nowInUserTz = getCurrentTimeInTimezone()
+    let startDate = new Date(nowInUserTz)
     let groupBy: 'hour' | 'day' = 'hour'
     
     switch (timeframe.toLowerCase()) {
-      case 'today':
-        startDate.setHours(0, 0, 0, 0)
+      case 'last 24 hours':
+        // Go back 24 hours from current time
+        startDate.setHours(startDate.getHours() - 24)
         groupBy = 'hour'
         break
-      case 'this week':
-      case '7d':
+      case 'last 7 days':
+        // Go back 7 days from current time
         startDate.setDate(startDate.getDate() - 7)
         groupBy = 'day'
         break
-      case 'this month':
-      case '30d':
+      case 'last 30 days':
+        // Go back 30 days from current time
         startDate.setDate(startDate.getDate() - 30)
         groupBy = 'day'
         break
-      case 'custom range':
-      case '90d':
-        startDate.setDate(startDate.getDate() - 90)
-        groupBy = 'day'
-        break
       default:
-        startDate.setHours(0, 0, 0, 0)
+        // Default to last 24 hours
+        startDate.setHours(startDate.getHours() - 24)
         groupBy = 'hour'
     }
 
@@ -88,7 +97,8 @@ export async function GET(request: Request) {
     const crawlerSet = new Map<string, { company: string, count: number }>()
 
     visits?.forEach(visit => {
-      const date = new Date(visit.timestamp)
+      // Convert database timestamp to user's timezone
+      const date = convertToUserTimezone(visit.timestamp)
       let key: string
       
       if (groupBy === 'hour') {
@@ -117,11 +127,11 @@ export async function GET(request: Request) {
     let chartData: { date: string; crawls: number; isCurrentPeriod?: boolean }[] = []
 
     if (groupBy === 'hour') {
-      // Generate hours only up to current hour for today
-      const now = new Date()
-      const currentHour = now.getHours()
-      
-      for (let hour = 0; hour <= currentHour; hour++) {
+      // Generate all 24 hours for "Last 24 hours" timeframe
+      for (let hoursAgo = 23; hoursAgo >= 0; hoursAgo--) {
+        const hourTime = new Date(nowInUserTz)
+        hourTime.setHours(hourTime.getHours() - hoursAgo)
+        const hour = hourTime.getHours()
         const hourKey = `${hour}`
         const crawls = timeAggregates.get(hourKey) || 0
         
@@ -140,80 +150,26 @@ export async function GET(request: Request) {
         chartData.push({
           date: displayHour,
           crawls,
-          isCurrentPeriod: hour === currentHour // Mark current hour for animation
+          isCurrentPeriod: hoursAgo === 0 // Mark current hour for animation
         })
       }
     } else {
-      // For other timeframes, filter to only show up to current day
-      const now = new Date()
-      const timeEntries = Array.from(timeAggregates.entries())
+      // Generate days for "Last 7 days" or "Last 30 days" timeframes
+      const daysToShow = timeframe === 'Last 7 days' ? 7 : 30
       
-      if (timeframe.toLowerCase().includes('week') || timeframe === '7d') {
-        // For week view, only show up to today
-        const currentDayKey = (() => {
-          const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-          return `${monthNames[now.getMonth()]} ${now.getDate()}`
-        })()
+      for (let daysAgo = daysToShow - 1; daysAgo >= 0; daysAgo--) {
+        const dayTime = new Date(nowInUserTz)
+        dayTime.setDate(dayTime.getDate() - daysAgo)
         
-        // Generate all days in the week up to today
-        for (let dayOffset = 6; dayOffset >= 0; dayOffset--) {
-          const date = new Date(now)
-          date.setDate(date.getDate() - dayOffset)
-          const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-          const dayKey = `${monthNames[date.getMonth()]} ${date.getDate()}`
-          const crawls = timeAggregates.get(dayKey) || 0
-          
-          chartData.push({
-            date: dayKey,
-            crawls,
-            isCurrentPeriod: dayKey === currentDayKey
-          })
-        }
-      } else {
-        // For month/longer periods, generate all days up to today with 0s for missing days
-        const now = new Date()
-        const currentDayKey = (() => {
-          const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-          return `${monthNames[now.getMonth()]} ${now.getDate()}`
-        })()
+        const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+        const dayKey = `${monthNames[dayTime.getMonth()]} ${dayTime.getDate()}`
+        const crawls = timeAggregates.get(dayKey) || 0
         
-        if (timeframe.toLowerCase().includes('month') || timeframe === '30d') {
-          // For month view, generate all days in the last 30 days up to today
-          for (let dayOffset = 29; dayOffset >= 0; dayOffset--) {
-            const date = new Date(now)
-            date.setDate(date.getDate() - dayOffset)
-            const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-            const dayKey = `${monthNames[date.getMonth()]} ${date.getDate()}`
-            const crawls = timeAggregates.get(dayKey) || 0
-            
-            chartData.push({
-              date: dayKey,
-              crawls,
-              isCurrentPeriod: dayKey === currentDayKey
-            })
-          }
-        } else {
-          // For longer periods (90d+), use existing aggregated data but sort chronologically
-          chartData = Array.from(timeAggregates.entries())
-            .map(([date, crawls]) => ({
-              date,
-              crawls,
-              isCurrentPeriod: date === currentDayKey
-            }))
-            .sort((a, b) => {
-              // Sort chronologically
-              const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-              const [aMonth, aDay] = a.date.split(' ')
-              const [bMonth, bDay] = b.date.split(' ')
-              const aMonthIndex = monthNames.indexOf(aMonth)
-              const bMonthIndex = monthNames.indexOf(bMonth)
-              
-              if (aMonthIndex !== bMonthIndex) {
-                return aMonthIndex - bMonthIndex
-              }
-              return parseInt(aDay) - parseInt(bDay)
-            })
-        }
+        chartData.push({
+          date: dayKey,
+          crawls,
+          isCurrentPeriod: daysAgo === 0 // Mark current day for animation
+        })
       }
     }
 
@@ -227,13 +183,82 @@ export async function GET(request: Request) {
         count: info.count
       }))
 
+    // Helper to get crawler icon with favicon fallback
+    const getCrawlerIcon = (company: string): string => {
+      const iconMap: Record<string, string> = {
+        'OpenAI': '/images/chatgpt.svg',
+        'Anthropic': '/images/claude.svg',
+        'Google': '/images/gemini.svg',
+        'Perplexity': '/images/perplexity.svg',
+        'Microsoft': '/images/bing.svg'
+      }
+      
+      // If we have a local icon, use it
+      if (iconMap[company]) {
+        return iconMap[company]
+      }
+      
+      // Otherwise, try to get favicon from company domain
+      const companyDomainMap: Record<string, string> = {
+        'OpenAI': 'openai.com',
+        'Anthropic': 'anthropic.com',
+        'Google': 'google.com',
+        'Perplexity': 'perplexity.ai',
+        'Microsoft': 'microsoft.com',
+        'Meta': 'meta.com',
+        'Facebook': 'facebook.com',
+        'X': 'x.com',
+        'Twitter': 'twitter.com',
+        'LinkedIn': 'linkedin.com',
+        'Apple': 'apple.com',
+        'Amazon': 'amazon.com',
+        'TikTok': 'tiktok.com',
+        'ByteDance': 'bytedance.com',
+        'Slack': 'slack.com',
+        'Discord': 'discord.com',
+        'Reddit': 'reddit.com',
+        'Pinterest': 'pinterest.com',
+        'Snapchat': 'snapchat.com',
+        'WhatsApp': 'whatsapp.com',
+        'Telegram': 'telegram.org',
+        'Shopify': 'shopify.com',
+        'Salesforce': 'salesforce.com',
+        'Adobe': 'adobe.com',
+        'Atlassian': 'atlassian.com',
+        'Zoom': 'zoom.us',
+        'Dropbox': 'dropbox.com',
+        'Spotify': 'spotify.com',
+        'Netflix': 'netflix.com',
+        'Uber': 'uber.com',
+        'Airbnb': 'airbnb.com',
+        'Stripe': 'stripe.com',
+        'Square': 'squareup.com',
+        'PayPal': 'paypal.com',
+      }
+
+      const domain = companyDomainMap[company]
+      if (domain) {
+        return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`
+      }
+      
+      // Fallback: try to construct domain from company name
+      const constructedDomain = `${company.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`
+      return `https://www.google.com/s2/favicons?domain=${constructedDomain}&sz=128`
+    }
+
+    // Add icon to available crawlers
+    const availableCrawlersWithIcons = availableCrawlers.map(crawler => ({
+      ...crawler,
+      icon: getCrawlerIcon(crawler.company)
+    }))
+
     const totalCrawls = visits?.length || 0
 
-    console.log(`[Dashboard API] Returning ${totalCrawls} total crawls, ${availableCrawlers.length} unique crawlers`)
+    console.log(`[Dashboard API] Returning ${totalCrawls} total crawls, ${availableCrawlersWithIcons.length} unique crawlers`)
 
     return NextResponse.json({
       chartData,
-      availableCrawlers,
+      availableCrawlers: availableCrawlersWithIcons,
       totalCrawls,
       timeframe
     })

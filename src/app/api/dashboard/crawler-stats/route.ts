@@ -24,20 +24,17 @@ export async function GET(request: Request) {
     let startDate = new Date()
     
     switch (timeframe.toLowerCase()) {
-      case 'today':
-        startDate.setHours(0, 0, 0, 0)
+      case 'last24h':
+        startDate.setHours(startDate.getHours() - 24)
         break
-      case '7d':
+      case 'last7d':
         startDate.setDate(startDate.getDate() - 7)
         break
-      case '30d':
+      case 'last30d':
         startDate.setDate(startDate.getDate() - 30)
         break
-      case '90d':
-        startDate.setDate(startDate.getDate() - 90)
-        break
       default:
-        startDate.setHours(0, 0, 0, 0)
+        startDate.setHours(startDate.getHours() - 24)
     }
 
     console.log(`[Crawler Stats API] Using date range from: ${startDate.toISOString()}`)
@@ -113,7 +110,57 @@ export async function GET(request: Request) {
         'Perplexity': '/images/perplexity.svg',
         'Microsoft': '/images/bing.svg'
       }
-      return iconMap[company] || 'sparkles'
+      
+      // If we have a local icon, use it
+      if (iconMap[company]) {
+        return iconMap[company]
+      }
+      
+      // Otherwise, try to get favicon from company domain
+      const companyDomainMap: Record<string, string> = {
+        'OpenAI': 'openai.com',
+        'Anthropic': 'anthropic.com',
+        'Google': 'google.com',
+        'Perplexity': 'perplexity.ai',
+        'Microsoft': 'microsoft.com',
+        'Meta': 'meta.com',
+        'X': 'x.com',
+        'Twitter': 'twitter.com',
+        'LinkedIn': 'linkedin.com',
+        'Apple': 'apple.com',
+        'Amazon': 'amazon.com',
+        'TikTok': 'tiktok.com',
+        'ByteDance': 'bytedance.com',
+        'Slack': 'slack.com',
+        'Discord': 'discord.com',
+        'Reddit': 'reddit.com',
+        'Pinterest': 'pinterest.com',
+        'Snapchat': 'snapchat.com',
+        'WhatsApp': 'whatsapp.com',
+        'Telegram': 'telegram.org',
+        'Shopify': 'shopify.com',
+        'Salesforce': 'salesforce.com',
+        'Adobe': 'adobe.com',
+        'Atlassian': 'atlassian.com',
+        'Zoom': 'zoom.us',
+        'Dropbox': 'dropbox.com',
+        'Spotify': 'spotify.com',
+        'Netflix': 'netflix.com',
+        'Uber': 'uber.com',
+        'Airbnb': 'airbnb.com',
+        'Stripe': 'stripe.com',
+        'Square': 'squareup.com',
+        'PayPal': 'paypal.com',
+      }
+
+      const domain = companyDomainMap[company]
+      if (domain) {
+        return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`
+      }
+      
+      // Fallback: try to construct domain from company name
+      const constructedDomain = `${company.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`
+      return `https://www.google.com/s2/favicons?domain=${constructedDomain}&sz=128`
     }
 
     const getCrawlerColor = (company: string): string => {

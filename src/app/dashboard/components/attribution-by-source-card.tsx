@@ -23,13 +23,62 @@ interface CrawlerData {
 export function AttributionBySourceCard() {
   const shouldReduceMotion = useReducedMotion()
   const { supabase } = useAuth()
-  const [timeframe, setTimeframe] = useState<TimeframeOption>('Today')
+  const [timeframe, setTimeframe] = useState<TimeframeOption>('Last 24 hours')
   const [isConnected, setIsConnected] = useState(false)
   const [showConnectDialog, setShowConnectDialog] = useState(false)
   const [crawlerData, setCrawlerData] = useState<CrawlerData[]>([])
   const [totalCrawls, setTotalCrawls] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Helper to get favicon URL for unknown crawlers
+  const getFaviconForCrawler = (company: string) => {
+    // Try to extract a domain from the company name
+    const companyDomainMap: Record<string, string> = {
+      'OpenAI': 'openai.com',
+      'Anthropic': 'anthropic.com',
+      'Google': 'google.com',
+      'Perplexity': 'perplexity.ai',
+      'Microsoft': 'microsoft.com',
+      'Meta': 'meta.com',
+      'X': 'x.com',
+      'Twitter': 'twitter.com',
+      'LinkedIn': 'linkedin.com',
+      'Apple': 'apple.com',
+      'Amazon': 'amazon.com',
+      'TikTok': 'tiktok.com',
+      'ByteDance': 'bytedance.com',
+      'Slack': 'slack.com',
+      'Discord': 'discord.com',
+      'Reddit': 'reddit.com',
+      'Pinterest': 'pinterest.com',
+      'Snapchat': 'snapchat.com',
+      'WhatsApp': 'whatsapp.com',
+      'Telegram': 'telegram.org',
+      'Shopify': 'shopify.com',
+      'Salesforce': 'salesforce.com',
+      'Adobe': 'adobe.com',
+      'Atlassian': 'atlassian.com',
+      'Zoom': 'zoom.us',
+      'Dropbox': 'dropbox.com',
+      'Spotify': 'spotify.com',
+      'Netflix': 'netflix.com',
+      'Uber': 'uber.com',
+      'Airbnb': 'airbnb.com',
+      'Stripe': 'stripe.com',
+      'Square': 'squareup.com',
+      'PayPal': 'paypal.com',
+    }
+
+    const domain = companyDomainMap[company]
+    if (domain) {
+      return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`
+    }
+    
+    // Fallback: try to construct domain from company name
+    const constructedDomain = `${company.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`
+    return `https://www.google.com/s2/favicons?domain=${constructedDomain}&sz=128`
+  }
 
   // Fetch crawler data when component mounts or timeframe changes
   useEffect(() => {
@@ -43,10 +92,9 @@ export function AttributionBySourceCard() {
     try {
       // Map timeframe to API parameter
       const timeframeMap: Record<TimeframeOption, string> = {
-        'Today': 'today',
-        'This Week': '7d',
-        'This Month': '30d',
-        'Custom Range': '90d'
+        'Last 24 hours': 'last24h',
+        'Last 7 days': 'last7d',
+        'Last 30 days': 'last30d'
       }
       
       // Get the current session token from Supabase
@@ -238,7 +286,23 @@ export function AttributionBySourceCard() {
                               height={14}
                             />
                           ) : (
-                            <div className="w-2.5 h-2.5 rounded-full bg-[#666]" />
+                            <div className="relative">
+                              <img 
+                                src={getFaviconForCrawler(source.company)}
+                                alt={source.name}
+                                width={14}
+                                height={14}
+                                className="w-3.5 h-3.5 object-contain"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement
+                                  target.style.display = 'none'
+                                  // Show fallback dot instead
+                                  const fallback = target.nextElementSibling as HTMLElement
+                                  if (fallback) fallback.style.display = 'block'
+                                }}
+                              />
+                              <div className="w-2.5 h-2.5 rounded-full bg-[#666] hidden" />
+                            </div>
                           )}
                         </div>
                         <div>
@@ -324,7 +388,23 @@ export function AttributionBySourceCard() {
                                 height={14}
                               />
                             ) : (
-                              <div className="w-2.5 h-2.5 rounded-full bg-[#666]" />
+                              <div className="relative">
+                                <img 
+                                  src={getFaviconForCrawler(source.company)}
+                                  alt={source.name}
+                                  width={14}
+                                  height={14}
+                                  className="w-3.5 h-3.5 object-contain"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement
+                                    target.style.display = 'none'
+                                    // Show fallback dot instead
+                                    const fallback = target.nextElementSibling as HTMLElement
+                                    if (fallback) fallback.style.display = 'block'
+                                  }}
+                                />
+                                <div className="w-2.5 h-2.5 rounded-full bg-[#666] hidden" />
+                              </div>
                             )}
                           </div>
                           <div>

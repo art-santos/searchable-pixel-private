@@ -7,10 +7,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 export type TimeframeOption =
-  | "Today"
-  | "This Week"
-  | "This Month"
-  | "Custom Range"
+  | "Last 24 hours"
+  | "Last 7 days"
+  | "Last 30 days"
 
 interface TimeframeSelectorProps {
   timeframe: TimeframeOption
@@ -49,27 +48,21 @@ export function TimeframeSelector({
         >
           <DropdownMenuItem 
             className="hover:bg-[#222222] rounded-none"
-            onClick={() => onTimeframeChange('Today')}
+            onClick={() => onTimeframeChange('Last 24 hours')}
           >
-            <span className="text-sm">Today</span>
+            <span className="text-sm">Last 24 hours</span>
           </DropdownMenuItem>
           <DropdownMenuItem 
             className="hover:bg-[#222222] rounded-none"
-            onClick={() => onTimeframeChange('This Week')}
+            onClick={() => onTimeframeChange('Last 7 days')}
           >
-            <span className="text-sm">This Week</span>
+            <span className="text-sm">Last 7 days</span>
           </DropdownMenuItem>
           <DropdownMenuItem 
             className="hover:bg-[#222222] rounded-none"
-            onClick={() => onTimeframeChange('This Month')}
+            onClick={() => onTimeframeChange('Last 30 days')}
           >
-            <span className="text-sm">This Month</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem 
-            className="hover:bg-[#222222] rounded-none"
-            onClick={() => onTimeframeChange('Custom Range')}
-          >
-            <span className="text-sm">Custom Range</span>
+            <span className="text-sm">Last 30 days</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
