@@ -93,16 +93,40 @@ export async function saveOnboardingData(
     console.log('🏢 Creating company:', onboardingData.workspaceName)
     const { data: companyResult, error: companyError } = await supabase
       .from('companies')
-      .insert(companyData)
+      .upsert(companyData, {
+        onConflict: 'root_url',
+        ignoreDuplicates: false
+      })
       .select('id')
       .single()
 
     if (companyError) {
       console.error('❌ Error saving company:', companyError)
-      return { success: false, error: `Failed to save company: ${companyError.message}` }
+      
+      // If upsert failed, try to find existing company
+      console.log('🔍 Attempting to find existing company...')
+      const { data: existingCompany, error: findError } = await supabase
+        .from('companies')
+        .select('id')
+        .eq('root_url', domainUrl)
+        .single()
+      
+      if (findError || !existingCompany) {
+        console.error('❌ Could not find or create company:', findError?.message || 'Company not found')
+        return { success: false, error: `Failed to save company: ${companyError.message}` }
+      }
+      
+      console.log('✅ Found existing company with ID:', existingCompany.id)
+      const companyId = existingCompany.id
+      
+      console.log('🎉 Onboarding data save completed successfully (existing company)')
+      return { 
+        success: true, 
+        companyId
+      }
     }
+    
     console.log('✅ Company saved successfully with ID:', companyResult.id)
-
     const companyId = companyResult.id
 
     console.log('🎉 Onboarding data save completed successfully')

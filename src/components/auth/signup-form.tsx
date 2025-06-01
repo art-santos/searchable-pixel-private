@@ -6,7 +6,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { motion, AnimatePresence } from "framer-motion"
-import { CheckCircle2, XCircle, AlertCircle, CheckCircle, Lock } from "lucide-react"
+import { CheckCircle2, XCircle, AlertCircle, CheckCircle, Lock, Eye, EyeOff } from "lucide-react"
 
 type NotificationType = "error" | "success" | "info" | null;
 
@@ -32,9 +32,11 @@ export function SignupForm({
   const [email, setEmail] = useState(lockedEmail || "")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [notificationType, setNotificationType] = useState<NotificationType>(null)
   const [notificationMessage, setNotificationMessage] = useState<string | null>(null)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [showConfirmPasswordField, setShowConfirmPasswordField] = useState(false)
   const [passwordRequirements, setPasswordRequirements] = useState<PasswordRequirement[]>([
     { label: "At least 8 characters", met: false, regex: /^.{8,}$/ },
     { label: "At least one uppercase letter", met: false, regex: /[A-Z]/ },
@@ -83,8 +85,8 @@ export function SignupForm({
     setPassword(value)
     
     // Show confirm password field when user starts typing
-    if (value.length > 0 && !showConfirmPassword) {
-      setShowConfirmPassword(true)
+    if (value.length > 0 && !showConfirmPasswordField) {
+      setShowConfirmPasswordField(true)
     }
   }
 
@@ -237,16 +239,25 @@ export function SignupForm({
               <Label htmlFor="password" className="text-white">
                 Create Password
               </Label>
-              <Input 
-                id="password" 
-                type="password" 
-                required 
-                placeholder="••••••••"
-                autoComplete="new-password"
-                className="bg-[#161616] border-[#333333] text-white placeholder:text-gray-500 focus:border-white"
-                value={password}
-                onChange={handlePasswordChange}
-              />
+              <div className="relative">
+                <Input 
+                  id="password" 
+                  type={showPassword ? "text" : "password"}
+                  required 
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  className="bg-[#161616] border-[#333333] text-white placeholder:text-gray-500 focus:border-white pr-10"
+                  value={password}
+                  onChange={handlePasswordChange}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-white"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
 
               {password.length > 0 && (
                 <motion.div
@@ -275,7 +286,7 @@ export function SignupForm({
             </div>
             
             <AnimatePresence>
-              {showConfirmPassword && (
+              {showConfirmPasswordField && (
                 <motion.div 
                   className="grid gap-2"
                   initial={{ opacity: 0, y: -20, height: 0 }}
@@ -284,19 +295,28 @@ export function SignupForm({
                   transition={{ duration: 0.2 }}
                 >
                   <Label htmlFor="confirmPassword" className="text-white">Confirm Password</Label>
-                  <Input 
-                    id="confirmPassword" 
-                    type="password" 
-                    required
-                    placeholder="••••••••"
-                    autoComplete="new-password"
-                    className={cn(
-                      "bg-[#161616] border-[#333333] text-white placeholder:text-gray-500 focus:border-white",
-                      confirmPassword && password !== confirmPassword && "border-red-500 focus:border-red-500"
-                    )}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                  />
+                  <div className="relative">
+                    <Input 
+                      id="confirmPassword" 
+                      type={showConfirmPassword ? "text" : "password"}
+                      required
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                      className={cn(
+                        "bg-[#161616] border-[#333333] text-white placeholder:text-gray-500 focus:border-white pr-10",
+                        confirmPassword && password !== confirmPassword && "border-red-500 focus:border-red-500"
+                      )}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-white"
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                   {confirmPassword && password !== confirmPassword && (
                     <p className="text-xs text-red-500 mt-1">Passwords don't match</p>
                   )}
@@ -311,7 +331,7 @@ export function SignupForm({
             >
               {isLoading 
                 ? "Creating Account..." 
-                : "Create Account & See Score"}
+                : "Create Account"}
             </Button>
           </div>
           

@@ -5,7 +5,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { AEOPipeline } from '@/app/visibility-test/components/aeo-pipeline'
 import { AEOScoreCard } from '@/app/visibility-test/components/aeo-score-card'
 import { OverallAEOCard } from '@/app/visibility-test/components/overall-aeo-card'
 import { DirectCitationCard } from '@/app/visibility-test/components/direct-citation-card'
@@ -14,6 +13,7 @@ import { saveOnboardingData, saveAeoQuestions, saveAeoResults, updateAeoScore, s
 import type { OnboardingData } from '@/lib/onboarding/database'
 import { debugOnboardingState } from '@/lib/debug/onboarding-debug'
 import '@/lib/debug/aeo-debug' // Import AEO debug utilities
+import type { TablesInsert } from '../../../supabase/supabase'
 import { 
   CheckCircle2, 
   ArrowRight, 
@@ -33,7 +33,7 @@ interface OnboardingOverlayProps {
   onComplete?: () => void
 }
 
-type OnboardingStep = 'workspace' | 'analytics' | 'content' | 'confirm' | 'cms' | 'scanning' | 'results' | 'paywall'
+type OnboardingStep = 'workspace' | 'analytics' | 'content' | 'cms' | 'scanning' | 'results' | 'paywall'
 
 interface WorkspaceData {
   name: string
@@ -93,16 +93,19 @@ const cmsOptions = [
 ]
 
 export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayProps) {
-  const { user } = useAuth()
-  const [showOnboarding, setShowOnboarding] = useState(true)
+  const { user, session } = useAuth()
+  const [showOnboarding, setShowOnboarding] = useState(false)
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('workspace')
   const [progress, setProgress] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [showSkipWarning, setShowSkipWarning] = useState(false)
   const [visibilityScore, setVisibilityScore] = useState(0)
   const [isAnnual, setIsAnnual] = useState(false)
-  const [isPipelineOpen, setIsPipelineOpen] = useState(false)
   const [visibilityData, setVisibilityData] = useState<any | null>(null)
+
+  // Background analysis state
+  const [backgroundAnalysisStarted, setBackgroundAnalysisStarted] = useState(false)
+  const [analysisEventSource, setAnalysisEventSource] = useState<EventSource | null>(null)
 
   // Database tracking
   const [companyId, setCompanyId] = useState<string | null>(null)
@@ -218,6 +221,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
         
         // Clear resumption flag
         sessionStorage.removeItem('onboardingInProgress')
+        setShowOnboarding(true) // Show onboarding for resumption
       } else if (justSignedUp || justVerified) {
         // User just signed up or verified email - start fresh onboarding
         console.log('🚀 Starting fresh onboarding for new user...')
@@ -233,11 +237,15 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
         if (justVerified) {
           document.cookie = 'justVerified=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
         }
-      } else {
-        // Default case - start fresh onboarding
-        console.log('🎯 Starting default onboarding flow...')
+      } else if (user && !hasCompletedOnboarding) {
+        // User is logged in but hasn't completed onboarding - show onboarding
+        console.log('🎯 User logged in but no onboarding completed - starting onboarding...')
         setCurrentStep('workspace')
-        setShowOnboarding(true) // Explicitly show onboarding
+        setShowOnboarding(true)
+      } else {
+        // Default case - don't show onboarding
+        console.log('🎯 Default case - hiding onboarding')
+        setShowOnboarding(false)
       }
       
       console.log('🎬 Final onboarding state:', {
@@ -245,55 +253,31 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
         currentStep
       })
     }
-  }, [])
+  }, [user])
 
   // Progress calculation
   useEffect(() => {
     switch (currentStep) {
       case 'workspace':
-        setProgress(16)
+        setProgress(20)
         break
       case 'analytics':
-        setProgress(32)
+        setProgress(40)
         break
       case 'content':
-        setProgress(48)
-        break
-      case 'confirm':
-        setProgress(64)
+        setProgress(60)
         break
       case 'cms':
         setProgress(80)
         break
       case 'scanning':
+        setProgress(95)
+        break
+      case 'results':
         setProgress(100)
         break
     }
   }, [currentStep])
-
-  // Trigger real AEO pipeline when entering the scanning step
-  useEffect(() => {
-    console.log('📊 SCANNING STEP EFFECT:', {
-      currentStep,
-      isPipelineOpen,
-      shouldTrigger: currentStep === 'scanning'
-    })
-    
-    if (currentStep === 'scanning') {
-      console.log('🚀 SETTING isPipelineOpen to TRUE')
-      setIsPipelineOpen(true)
-    }
-  }, [currentStep])
-
-  // Debug AEO Pipeline props
-  useEffect(() => {
-    console.log('🔍 AEO Pipeline Props Update:', {
-      isOpen: isPipelineOpen,
-      crawlUrl: analyticsData.domain || '',
-      hasCallback: !!handlePipelineComplete,
-      analyticsData: analyticsData.domain
-    })
-  }, [isPipelineOpen, analyticsData.domain])
 
   // Dev mode: Exit onboarding with middle mouse button
   useEffect(() => {
@@ -312,6 +296,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
   }, [showOnboarding, onComplete])
 
   const handleNext = async () => {
+    console.log('🔄 handleNext called with currentStep:', currentStep)
     setIsLoading(true)
     await new Promise(resolve => setTimeout(resolve, 300))
     
@@ -333,65 +318,155 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
     
     switch (currentStep) {
       case 'workspace':
-        // Save progress and move to analytics
+        // Save progress and move to analytics (URL entry)
         localStorage.setItem('onboardingData', JSON.stringify(progressData))
         sessionStorage.setItem('onboardingInProgress', 'true')
         setCurrentStep('analytics')
         break
       case 'analytics':
-        // Save progress and move to content
-        localStorage.setItem('onboardingData', JSON.stringify(progressData))
+        console.log('📊 Analytics case - starting background scanning')
+        console.log('📊 Analytics data:', analyticsData)
+        console.log('📊 User:', !!user, 'Session:', !!session)
+        
+        // Start scanning in background and move to content step
+        console.log('🚀 Starting background scanning and moving to content step')
+        
+        // Start the background analysis (non-blocking)
+        startBackgroundAnalysis(analyticsData.domain).catch(error => {
+          console.error('❌ Failed to start background analysis:', error)
+          // Continue with flow even if background analysis fails
+        })
+        
+        console.log('📊 About to save onboarding data...')
+        
+        // Save data to database and WAIT for companyId
+        if (user) {
+          try {
+            console.log('💾 Saving onboarding data to database...')
+            
+            // Get supabase client
+            const { createClient } = await import('@/lib/supabase/client')
+            const supabase = createClient()
+            
+            if (!supabase) {
+              console.error('❌ Supabase client not available')
+              throw new Error('Database connection failed')
+            }
+            
+            // Try to find existing company first instead of upsert
+            let domainUrl = analyticsData.domain
+            if (!domainUrl.startsWith('http')) {
+              domainUrl = `https://${domainUrl}`
+            }
+            try {
+              const url = new URL(domainUrl)
+              domainUrl = `${url.protocol}//${url.hostname}`
+            } catch (e) {
+              // If URL parsing fails, use as-is
+            }
+
+            console.log('🔍 Checking for existing company with URL:', domainUrl)
+            const { data: existingCompanies, error: findError } = await supabase
+              .from('companies')
+              .select('id')
+              .eq('root_url', domainUrl)
+              .limit(1)
+
+            let companyId: string
+
+            if (findError || !existingCompanies || existingCompanies.length === 0) {
+              // No existing company found, create new one
+              console.log('🆕 No existing company found, creating new one...')
+              const { data: companyResult, error: companyError } = await supabase
+                .from('companies')
+                .insert([{
+                  company_name: workspaceData.workspaceName,
+                  root_url: domainUrl,
+                  submitted_by: user.id,
+                }])
+                .select('id')
+                .single()
+
+              if (companyError) {
+                console.error('❌ Error creating company:', companyError)
+                throw new Error(`Failed to create company: ${companyError.message}`)
+              }
+              
+              companyId = companyResult.id
+              console.log('✅ New company created with ID:', companyId)
+            } else {
+              // Use existing company
+              const company = Array.isArray(existingCompanies) ? existingCompanies[0] : existingCompanies
+              companyId = company.id
+              console.log('✅ Using existing company with ID:', companyId)
+            }
+
+            setCompanyId(companyId)
+            console.log('🎯 CompanyId set in state:', companyId)
+
+            const onboardingData: OnboardingData = {
+              workspaceName: workspaceData.workspaceName,
+              userEmail: user.email || '',
+              analyticsProvider: null, // No analytics provider needed
+              domain: analyticsData.domain,
+              isAnalyticsConnected: false,
+              keywords: [], // Will be filled in content step
+              businessOffering: '', // Will be filled in content step
+              knownFor: '', // Will be filled in content step
+              competitors: [], // Will be filled in content step
+              cms: 'nextjs', // Will be filled in cms step
+            }
+
+            const result = await saveOnboardingData(user, onboardingData)
+            console.log('💾 Database save result:', result)
+            
+            if (result.success && result.companyId) {
+              console.log('✅ Onboarding data saved successfully, companyId:', result.companyId)
+              // Update companyId if it was different from what we found/created
+              if (result.companyId !== companyId) {
+                setCompanyId(result.companyId)
+                console.log('🎯 CompanyId updated from database result:', result.companyId)
+              }
+            } else {
+              console.error('❌ Failed to save onboarding data or missing companyId:', result.error)
+              // Continue with flow even if database save fails, but log the issue
+            }
+          } catch (error) {
+            console.error('❌ Error saving onboarding data:', error)
+            // Continue with flow even if database save fails
+          }
+        } else {
+          console.log('⚠️ No user found, skipping database save')
+        }
+        
+        console.log('📊 About to move to content step...')
+        // Move to content step while scanning happens in background
         setCurrentStep('content')
+        console.log('📊 Moved to content step')
         break
       case 'content':
-        // Save progress and move to confirm
-        localStorage.setItem('onboardingData', JSON.stringify(progressData))
-        setCurrentStep('confirm')
-        break
-      case 'confirm':
-        // Save progress and move to CMS
+        // Save progress and move directly to CMS (skip confirm step)
         localStorage.setItem('onboardingData', JSON.stringify(progressData))
         setCurrentStep('cms')
         break
       case 'cms':
-        // Save data to database before starting the scan
-        if (user) {
-          try {
-            const onboardingData: OnboardingData = {
-              workspaceName: workspaceData.workspaceName,
-              userEmail: user.email || '',
-              analyticsProvider: analyticsData.provider,
-              domain: analyticsData.domain,
-              isAnalyticsConnected: analyticsData.isConnected,
-              keywords: contentData.keywords,
-              businessOffering: contentData.businessOffering,
-              knownFor: contentData.knownFor,
-              competitors: contentData.competitors,
-              cms: cmsData.cms,
-            }
-
-            console.log('💾 Saving onboarding data to database...')
-            const result = await saveOnboardingData(user, onboardingData)
-            
-            if (result.success) {
-              console.log('✅ Onboarding data saved successfully')
-              setCompanyId(result.companyId || null)
-            } else {
-              console.error('❌ Failed to save onboarding data:', result.error)
-              // Continue with scan even if database save fails
-            }
-          } catch (error) {
-            console.error('❌ Error saving onboarding data:', error)
-            // Continue with scan even if database save fails
-          }
+        // Check if we have visibility results yet
+        if (visibilityData) {
+          // Scanning completed, show results
+          console.log('✅ Scanning already completed, showing results')
+          setCurrentStep('results')
+        } else {
+          // Scanning still in progress, show scanning status
+          console.log('⏳ Scanning still in progress, showing status')
+          setCurrentStep('scanning')
         }
         
-        // Mark that we're starting the analysis phase
-        sessionStorage.setItem('onboardingInProgress', 'scanning')
-        setCurrentStep('scanning')
+        // Mark that we're waiting for results
+        sessionStorage.setItem('onboardingInProgress', 'waiting-results')
         break
     }
     
+    console.log('🔄 handleNext completed, setting isLoading to false')
     setIsLoading(false)
   }
 
@@ -403,11 +478,8 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
       case 'content':
         setCurrentStep('analytics')
         break
-      case 'confirm':
-        setCurrentStep('content')
-        break
       case 'cms':
-        setCurrentStep('confirm')
+        setCurrentStep('content')
         break
     }
   }
@@ -470,7 +542,8 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
       companyIdExists: !!companyId,
       userExists: !!user,
       currentCompanyId: companyId,
-      currentUserId: user?.id
+      currentUserId: user?.id,
+      currentStep: currentStep
     })
     
     console.log('🎯 Pipeline completed with data:', data)
@@ -495,14 +568,82 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
     console.log('  - user exists:', !!user)
     console.log('  - user.id:', user?.id)
     console.log('  - data exists:', !!data)
+    console.log('  - currentStep:', currentStep)
     console.log('  - Will attempt database save:', !!(companyId && user))
     
-    // Save the complete AEO analysis to database if we have the company ID
-    if (companyId && user) {
+    // 🚨 EMERGENCY FALLBACK: If companyId is missing, try to get it from the database
+    let workingCompanyId = companyId
+    if (!workingCompanyId && user && analyticsData.domain) {
+      console.log('🚨 EMERGENCY: CompanyId missing, attempting to find existing company...')
       try {
-        console.log('💾 🚨 ATTEMPTING COMPLETE AEO ANALYSIS SAVE 🚨')
+        // Just try to find existing company, don't create new one
+        const { createClient } = await import('@/lib/supabase/client')
+        const supabase = createClient()
+        
+        if (!supabase) {
+          console.error('❌ Emergency: Supabase client not available')
+          return
+        }
+        
+        let domainUrl = analyticsData.domain
+        if (!domainUrl.startsWith('http')) {
+          domainUrl = `https://${domainUrl}`
+        }
+        try {
+          const url = new URL(domainUrl)
+          domainUrl = `${url.protocol}//${url.hostname}`
+        } catch (e) {
+          // If URL parsing fails, use as-is
+        }
+        
+        const companyData: TablesInsert<'companies'> = {
+          company_name: workspaceData.workspaceName,
+          root_url: domainUrl,
+          submitted_by: user.id,
+        }
+
+        console.log('🏢 Creating company:', workspaceData.workspaceName)
+        // Try to find existing company first instead of upsert
+        console.log('🔍 Checking for existing company with URL:', domainUrl)
+        const { data: existingCompanies, error: findError } = await supabase
+          .from('companies')
+          .select('id')
+          .eq('root_url', domainUrl)
+          .limit(1)
+
+        if (findError || !existingCompanies || existingCompanies.length === 0) {
+          // No existing company found, create new one
+          console.log('🆕 No existing company found, creating new one...')
+          const { data: companyResult, error: companyError } = await supabase
+            .from('companies')
+            .insert([companyData])
+            .select('id')
+            .single()
+
+          if (companyError) {
+            console.error('❌ Error creating company:', companyError)
+            throw new Error(`Failed to create company: ${companyError.message}`)
+          }
+          
+          workingCompanyId = companyResult.id
+          console.log('✅ New company created with ID:', workingCompanyId)
+        } else {
+          // Use existing company
+          const company = Array.isArray(existingCompanies) ? existingCompanies[0] : existingCompanies
+          workingCompanyId = company.id
+          console.log('✅ Using existing company with ID:', workingCompanyId)
+        }
+      } catch (error) {
+        console.error('❌ Emergency companyId lookup exception:', error)
+      }
+    }
+    
+    // Save the complete AEO analysis to database if we have the company ID
+    if (workingCompanyId && user) {
+      try {
+        console.log('🚨 ATTEMPTING COMPLETE AEO ANALYSIS SAVE 🚨')
         console.log('📊 Save parameters:', {
-          companyId,
+          companyId: workingCompanyId,
           userId: user.id,
           dataType: typeof data,
           dataKeys: Object.keys(data),
@@ -511,7 +652,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
         
         // Use rawPipelineData if available, otherwise use the transformed data
         const pipelineData = data.rawPipelineData || data
-        const analysisResult = await saveCompleteAeoAnalysis(companyId, pipelineData, user.id)
+        const analysisResult = await saveCompleteAeoAnalysis(workingCompanyId, pipelineData, user.id)
         
         console.log('📋 Save result received:', analysisResult)
         
@@ -522,7 +663,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
           console.error('🔍 Save failure details:', {
             success: analysisResult.success,
             error: analysisResult.error,
-            companyId,
+            companyId: workingCompanyId,
             userId: user.id
           })
         }
@@ -531,19 +672,19 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
         console.error('🔍 Exception details:', {
           message: error instanceof Error ? error.message : 'Unknown error',
           stack: error instanceof Error ? error.stack : undefined,
-          companyId,
+          companyId: workingCompanyId,
           userId: user.id
         })
       }
     } else {
       console.error('❌ 🚨 MISSING REQUIRED DATA for saving AEO analysis:')
       console.error('🔍 Missing data analysis:', {
-        hasCompanyId: !!companyId,
+        hasCompanyId: !!workingCompanyId,
         hasUser: !!user,
-        companyId,
+        companyId: workingCompanyId,
         userId: user?.id,
         userEmail: user?.email,
-        reason: !companyId ? 'No companyId' : !user ? 'No user' : 'Unknown'
+        reason: !workingCompanyId ? 'No companyId' : !user ? 'No user' : 'Unknown'
       })
     }
     
@@ -551,15 +692,31 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
     sessionStorage.removeItem('onboardingInProgress')
     localStorage.removeItem('onboardingData')
     
-    // Set results data and move to results step
+    // Set results data
     setVisibilityData(data)
-    setVisibilityScore(data.overallScore ?? data.aeoData?.aeo_score ?? 0)
-    setIsPipelineOpen(false)
-    setCurrentStep('results')
-  }
-
-  const handlePipelineClose = () => {
-    setIsPipelineOpen(false)
+    setVisibilityScore(data.aeo_score ?? data.overallScore ?? 0)
+    
+    console.log('🎯 TRANSITION LOGIC DEBUG:')
+    console.log('  - Current step before transition:', currentStep)
+    console.log('  - Visibility data will be set to:', !!data)
+    console.log('  - Visibility score will be set to:', data.aeo_score ?? data.overallScore ?? 0)
+    console.log('  - Raw data structure:', {
+      hasAeoScore: !!data.aeo_score,
+      hasOverallScore: !!data.overallScore,
+      aeoScoreValue: data.aeo_score,
+      overallScoreValue: data.overallScore,
+      dataKeys: Object.keys(data)
+    })
+    
+    // Only move to results if user is currently on the scanning screen waiting for results
+    // Don't interrupt them if they're still filling out other onboarding steps
+    if (currentStep === 'scanning') {
+      console.log('🎉 Analysis completed! User was waiting on scanning screen, moving to results')
+      setCurrentStep('results')
+    } else {
+      console.log('🎉 Analysis completed! User is still on step:', currentStep, '- letting them continue')
+      console.log('🎯 Note: Visibility data is now available, useEffect should handle transition if needed')
+    }
   }
 
   const removeCompetitor = (index: number) => {
@@ -574,11 +731,9 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
       case 'workspace':
         return workspaceData.name && workspaceData.workspaceName
       case 'analytics':
-        return (analyticsData.provider && analyticsData.domain && analyticsData.isConnected) || analyticsData.isSkipped
+        return analyticsData.domain.trim().length > 0
       case 'content':
-        return contentData.keywords.length > 0 || contentData.businessOffering || contentData.knownFor
-      case 'confirm':
-        return true // Always can proceed from confirmation
+        return true // Content is optional - user can skip if they want
       case 'cms':
         return cmsData.cms
       case 'results':
@@ -587,6 +742,100 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
         return false
     }
   }
+
+  // Start background analysis without modal
+  const startBackgroundAnalysis = async (domain: string) => {
+    if (!user || !session || backgroundAnalysisStarted) {
+      console.log('⚠️ Cannot start background analysis:', {
+        hasUser: !!user,
+        hasSession: !!session,
+        alreadyStarted: backgroundAnalysisStarted
+      })
+      return
+    }
+    
+    console.log('🚀 Starting background AEO analysis for:', domain)
+    setBackgroundAnalysisStarted(true)
+    
+    try {
+      // Format URL
+      let formattedUrl = domain
+      if (!/^https?:\/\//i.test(formattedUrl)) {
+        formattedUrl = 'https://' + formattedUrl
+      }
+      
+      // Check if we have access token
+      if (!session?.access_token) {
+        console.error('❌ No access token available')
+        setBackgroundAnalysisStarted(false)
+        return
+      }
+      
+      // Create EventSource for SSE with auth token
+      const eventSourceUrl = `/api/aeo/start?token=${encodeURIComponent(session.access_token)}&url=${encodeURIComponent(formattedUrl)}`
+      console.log('🔗 Background analysis EventSource URL created')
+      
+      const eventSource = new EventSource(eventSourceUrl)
+      setAnalysisEventSource(eventSource)
+      
+      // Handle progress events
+      eventSource.onmessage = (event) => {
+        try {
+          const progressData = JSON.parse(event.data)
+          console.log('📨 Background analysis progress:', progressData.step, progressData.message)
+          
+          if (progressData.error) {
+            console.error('❌ Background analysis error:', progressData.error)
+            eventSource.close()
+            setAnalysisEventSource(null)
+            setBackgroundAnalysisStarted(false)
+            return
+          }
+          
+          // Handle completion
+          if (progressData.step === 'complete' && progressData.data) {
+            console.log('🎉 Background analysis completed!')
+            handlePipelineComplete(progressData.data)
+            eventSource.close()
+            setAnalysisEventSource(null)
+          }
+        } catch (error) {
+          console.error('❌ Error parsing background analysis data:', error)
+        }
+      }
+      
+      eventSource.onerror = (error) => {
+        console.error('❌ Background analysis EventSource error:', error)
+        eventSource.close()
+        setAnalysisEventSource(null)
+        setBackgroundAnalysisStarted(false)
+      }
+      
+    } catch (error) {
+      console.error('❌ Error starting background analysis:', error)
+      setBackgroundAnalysisStarted(false)
+    }
+  }
+
+  // Clean up EventSource on unmount
+  useEffect(() => {
+    return () => {
+      if (analysisEventSource) {
+        analysisEventSource.close()
+      }
+    }
+  }, [analysisEventSource])
+
+  // Monitor visibility data changes while on scanning screen
+  useEffect(() => {
+    if (currentStep === 'scanning' && visibilityData) {
+      console.log('🎯 SCANNING SCREEN MONITOR: Visibility data became available!')
+      console.log('🎯 Current step:', currentStep)
+      console.log('🎯 Visibility data:', !!visibilityData)
+      console.log('🎯 Transitioning to results...')
+      setCurrentStep('results')
+    }
+  }, [currentStep, visibilityData])
 
   if (!showOnboarding) {
     return <>{children}</>
@@ -641,7 +890,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                 className="bg-[#0c0c0c] border border-[#1a1a1a] p-6"
               >
                 <div className="mb-6">
-                  <h2 className="text-lg font-medium text-white mb-1">Create workspace</h2>
+                  <h2 className="text-lg font-medium text-white mb-1">Lets get started with some basic info...</h2>
                   <p className="text-sm text-[#666]">Set up your account and workspace</p>
                 </div>
 
@@ -657,7 +906,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                   </div>
                   
                   <div>
-                    <label className="block text-xs text-[#888] mb-2">Workspace name</label>
+                    <label className="block text-xs text-[#888] mb-2">Company name</label>
                     <Input
                       value={workspaceData.workspaceName}
                       onChange={(e) => setWorkspaceData(prev => ({ ...prev, workspaceName: e.target.value }))}
@@ -680,142 +929,21 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                 className="bg-[#0c0c0c] border border-[#1a1a1a] p-6"
               >
                 <div className="mb-6">
-                  <h2 className="text-lg font-medium text-white mb-1">Connect analytics</h2>
-                  <p className="text-sm text-[#666]">Connect your analytics to track visibility</p>
+                  <h2 className="text-lg font-medium text-white mb-1">Enter your website URL</h2>
+                  <p className="text-sm text-[#666]">We'll analyze this website for AI visibility</p>
                 </div>
 
-                {!analyticsData.isSkipped && (
-                  <>
-                    <div className="space-y-2 mb-6">
-                      {providers.map((provider) => (
-                        <button
-                          key={provider.id}
-                          onClick={() => handleAnalyticsConnect(provider.id as any)}
-                          className={`w-full p-3 border text-left text-sm transition-colors ${
-                            analyticsData.provider === provider.id
-                              ? 'border-white bg-[#1a1a1a] text-white'
-                              : 'border-[#333] hover:border-[#444] text-[#ccc]'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="font-medium">{provider.name}</div>
-                              <div className="text-xs text-[#666]">{provider.description}</div>
-                            </div>
-                            {analyticsData.provider === provider.id && analyticsData.isConnected && (
-                              <CheckCircle2 className="w-4 h-4 text-white" />
-                            )}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-
-                    {analyticsData.provider && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        className="space-y-4"
-                      >
-                        <div>
-                          <label className="block text-xs text-[#888] mb-2">Domain</label>
-                          <div className="flex gap-2">
-                            <Input
-                              value={analyticsData.domain}
-                              onChange={(e) => setAnalyticsData(prev => ({ ...prev, domain: e.target.value }))}
-                              placeholder="yoursite.com"
-                              className="bg-[#1a1a1a] border-[#333] text-white h-9 text-sm flex-1"
-                            />
-                            <Button
-                              onClick={handleDomainCheck}
-                              variant="outline"
-                              className="border-[#333] hover:border-[#444] h-9 px-3 text-xs"
-                              disabled={!analyticsData.domain}
-                            >
-                              {analyticsData.isConnected ? (
-                                <CheckCircle2 className="w-3 h-3" />
-                              ) : (
-                                'Verify'
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-
-                        {selectedProvider && (
-                          <div className="bg-[#1a1a1a] border border-[#333] p-3">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-xs text-[#888]">Setup guide</span>
-                              <a 
-                                href={selectedProvider.setupUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-xs text-white hover:text-[#ccc] flex items-center gap-1"
-                              >
-                                Open {selectedProvider.name}
-                                <ExternalLink className="w-2 h-2" />
-                              </a>
-                            </div>
-                            <p className="text-xs text-[#ccc] leading-relaxed">
-                              {selectedProvider.instructions}
-                            </p>
-                          </div>
-                        )}
-                      </motion.div>
-                    )}
-
-                    {/* Skip Warning */}
-                    {showSkipWarning && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        className="bg-[#1a1a1a] border border-[#333] p-3 mb-4"
-                      >
-                        <div className="flex items-start gap-2">
-                          <AlertTriangle className="w-4 h-4 text-[#888] mt-0.5 flex-shrink-0" />
-                          <div>
-                            <div className="text-xs text-white font-medium mb-1">Are you sure?</div>
-                            <div className="text-xs text-[#666] leading-relaxed mb-3">
-                              Without analytics, you'll have limited visibility insights. You can add this later in settings.
-                            </div>
-                            <div className="flex gap-2">
-                              <Button
-                                onClick={handleSkipAnalytics}
-                                className="bg-[#333] hover:bg-[#444] text-white h-7 px-2 text-xs"
-                              >
-                                Skip anyway
-                              </Button>
-                              <Button
-                                onClick={() => setShowSkipWarning(false)}
-                                variant="ghost"
-                                className="text-[#666] hover:text-white h-7 px-2 text-xs"
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </>
-                )}
-
-                {analyticsData.isSkipped && (
-                  <div className="bg-[#1a1a1a] border border-[#333] p-4 text-center">
-                    <div className="text-sm text-[#888] mb-1">Analytics skipped</div>
-                    <div className="text-xs text-[#666]">You can connect analytics later in settings</div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs text-[#888] mb-2">Website URL</label>
+                    <Input
+                      value={analyticsData.domain}
+                      onChange={(e) => setAnalyticsData(prev => ({ ...prev, domain: e.target.value }))}
+                      placeholder="yoursite.com"
+                      className="bg-[#1a1a1a] border-[#333] text-white h-9 text-sm"
+                    />
                   </div>
-                )}
-
-                {/* Skip Button */}
-                {!analyticsData.isSkipped && !showSkipWarning && (
-                  <div className="mt-6 pt-4 border-t border-[#1a1a1a]">
-                    <button 
-                      onClick={handleSkipAnalytics}
-                      className="text-[#666] text-xs hover:text-white transition-colors"
-                    >
-                      Skip for now
-                    </button>
-                  </div>
-                )}
+                </div>
               </motion.div>
             )}
 
@@ -830,8 +958,8 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                 className="bg-[#0c0c0c] border border-[#1a1a1a] p-8"
               >
                 <div className="mb-8">
-                  <h2 className="text-xl font-medium text-white mb-2">Describe your content strategy</h2>
-                  <p className="text-sm text-[#666]">Help our AI understand your business and content goals</p>
+                  <h2 className="text-xl font-medium text-white mb-2">Help us get to know you better while your free visibility score is calculated</h2>
+                  <p className="text-sm text-[#666]">This helps our AI understand your business and improve your results</p>
                 </div>
 
                 <div className="space-y-6">
@@ -902,56 +1030,6 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                       placeholder="The most intuitive AI sales platform that actually works for small teams..."
                       className="bg-[#1a1a1a] border-[#333] text-white text-sm min-h-[60px] resize-none"
                     />
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Step 3.5: Confirm & Launch Visibility Scan */}
-            {currentStep === 'confirm' && (
-              <motion.div
-                key="confirm"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="bg-[#0c0c0c] border border-[#1a1a1a] p-6"
-              >
-                <div className="mb-6">
-                  <h2 className="text-lg font-medium text-white mb-1">Launch Visibility Scan</h2>
-                  <p className="text-sm text-[#666]">Confirm your details before we analyze your AI visibility</p>
-                </div>
-
-                <div className="space-y-6">
-                  {/* Primary URL */}
-                  <div>
-                    <label className="block text-sm font-medium text-white mb-2">Primary URL</label>
-                    <Input
-                      value={analyticsData.domain || 'yoursite.com'}
-                      onChange={(e) => setAnalyticsData(prev => ({ ...prev, domain: e.target.value }))}
-                      className="bg-[#1a1a1a] border-[#333] text-white h-9 text-sm"
-                      placeholder="yoursite.com"
-                    />
-                  </div>
-
-                  {/* Content Focus */}
-                  <div>
-                    <label className="block text-sm font-medium text-white mb-2">Content Focus</label>
-                    <div className="bg-[#1a1a1a] border border-[#333] p-3 text-sm text-[#ccc]">
-                      {contentData.keywords.length > 0 && (
-                        <div className="mb-2">
-                          <span className="text-white">Keywords: </span>
-                          {contentData.keywords.slice(0, 3).join(', ')}
-                          {contentData.keywords.length > 3 && ` +${contentData.keywords.length - 3} more`}
-                        </div>
-                      )}
-                      {contentData.businessOffering && (
-                        <div className="text-[#888] text-xs">
-                          {contentData.businessOffering.slice(0, 100)}
-                          {contentData.businessOffering.length > 100 && '...'}
-                        </div>
-                      )}
-                    </div>
                   </div>
 
                   {/* Competitors */}
@@ -1041,8 +1119,21 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                 transition={{ duration: 0.2 }}
                 className="bg-[#0c0c0c] border border-[#1a1a1a] p-6 text-center"
               >
-                <h2 className="text-lg font-medium text-white mb-2">Launching Visibility Scan...</h2>
-                <p className="text-sm text-[#666]">Connecting to analysis pipeline</p>
+                <div className="mb-6">
+                  <div className="w-12 h-12 mx-auto mb-4 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
+                  <h2 className="text-lg font-medium text-white mb-2">Calculating your AI visibility score...</h2>
+                  <p className="text-sm text-[#666]">This usually takes 2-3 minutes. We're analyzing your website across 100+ AI queries.</p>
+                </div>
+                
+                <div className="bg-[#1a1a1a] border border-[#333] rounded p-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-[#888]">Progress</span>
+                    <span className="text-white">Analyzing...</span>
+                  </div>
+                  <div className="w-full bg-[#333] rounded-full h-2 mt-2">
+                    <div className="bg-white h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+                  </div>
+                </div>
               </motion.div>
             )}
 
@@ -1061,7 +1152,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                 </div>
 
                 <div className="mb-8">
-                  <AEOScoreCard data={visibilityData.aeoData} />
+                  <AEOScoreCard data={visibilityData} />
                 </div>
 
                 <div className="text-center mb-6">
@@ -1285,36 +1376,30 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                 Back
               </Button>
 
-                              <Button
-                  onClick={currentStep === 'results' ? () => {
-                    setIsLoading(true)
-                    setTimeout(() => {
-                      setCurrentStep('paywall')
-                      setIsLoading(false)
-                    }, 300)
-                  } : handleNext}
-                  disabled={!canProceed() || isLoading}
-                  className="bg-white text-black hover:bg-[#f5f5f5] h-8 px-3 text-xs font-medium"
-                >
-                  {isLoading ? (
-                    <div className="w-3 h-3 animate-spin rounded-full border border-current border-t-transparent mr-1" />
-                  ) : (
-                    <>
-                      {currentStep === 'confirm' ? 'Run Scan' : currentStep === 'cms' ? 'Start scan' : 'Continue'}
-                      <ArrowRight className="w-3 h-3 ml-1" />
-                    </>
-                  )}
-                </Button>
+              <Button
+                onClick={currentStep === 'results' ? () => {
+                  setIsLoading(true)
+                  setTimeout(() => {
+                    setCurrentStep('paywall')
+                    setIsLoading(false)
+                  }, 300)
+                } : handleNext}
+                disabled={!canProceed() || isLoading}
+                className="bg-white text-black hover:bg-[#f5f5f5] h-8 px-3 text-xs font-medium"
+              >
+                {isLoading ? (
+                  <div className="w-3 h-3 animate-spin rounded-full border border-current border-t-transparent mr-1" />
+                ) : (
+                  <>
+                    {currentStep === 'cms' ? 'Complete Setup' : currentStep === 'analytics' ? 'Start Analysis' : 'Continue'}
+                    <ArrowRight className="w-3 h-3 ml-1" />
+                  </>
+                )}
+              </Button>
             </div>
           )}
         </div>
       </div>
-      <AEOPipeline
-        isOpen={isPipelineOpen}
-        crawlUrl={analyticsData.domain || ''}
-        onClose={handlePipelineClose}
-        onAnalysisComplete={handlePipelineComplete}
-      />
     </div>
   )
 }

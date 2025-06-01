@@ -236,7 +236,7 @@ async function runAEOPipeline(
     })
     
     const crawlSnapshot = await executeCrawlStep(targetUrl, sendProgress)
-    await saveJSON(storage, 'crawl_snapshot.json', crawlSnapshot)
+    // await saveJSON(storage, 'crawl_snapshot.json', crawlSnapshot) // Disabled: Don't save temp files
     
     console.log('✅ STEP 1 COMPLETE: Firecrawl finished')
     console.log(`📊 Crawl results: ${crawlSnapshot.results.length} pages`)
@@ -258,7 +258,7 @@ async function runAEOPipeline(
     })
     
     const questions = await generateQuestions(crawlSnapshot)
-    await saveJSON(storage, 'questions.json', questions)
+    // await saveJSON(storage, 'questions.json', questions) // Disabled: Don't save temp files
     
     console.log('✅ STEP 2 COMPLETE: Question generation finished')
     console.log(`❓ Generated ${questions.questions.length} questions`)
@@ -292,7 +292,7 @@ async function runAEOPipeline(
       }
     )
     
-    await saveJSON(storage, 'serp_results.json', serpResults)
+    // await saveJSON(storage, 'serp_results.json', serpResults) // Disabled: Don't save temp files
     
     console.log('✅ STEP 3 COMPLETE: SERP search finished')
     console.log(`🔍 Search results: ${Object.keys(serpResults).length} questions searched`)
@@ -330,7 +330,7 @@ async function runAEOPipeline(
       }
     )
     
-    await saveJSON(storage, 'classified_results.json', classifiedResults)
+    // await saveJSON(storage, 'classified_results.json', classifiedResults) // Disabled: Don't save temp files
     
     console.log('✅ STEP 4 COMPLETE: URL classification finished')
     console.log(`🏷️ Classification results: ${classifiedResults.metadata.total_urls} URLs classified`)
@@ -357,7 +357,7 @@ async function runAEOPipeline(
       targetDomain
     )
     
-    await saveJSON(storage, 'visibility_score.json', visibilityScore)
+    // await saveJSON(storage, 'visibility_score.json', visibilityScore) // Disabled: Don't save temp files
     
     console.log('✅ STEP 5 COMPLETE: Score calculation finished')
     console.log(`📊 Final AEO Score: ${visibilityScore.aeo_score}/100`)
@@ -376,7 +376,6 @@ async function runAEOPipeline(
         share_of_voice: visibilityScore.share_of_voice,
         metrics: visibilityScore.metrics,
         breakdown: visibilityScore.breakdown,
-        storage_path: storage.basePath,
         questions: questions.questions,
         serpResults: serpResults,
         classifiedResults: classifiedResults,
@@ -396,7 +395,7 @@ async function runAEOPipeline(
     console.log(`📢 Share of Voice: ${(visibilityScore.share_of_voice * 100).toFixed(1)}%`)
     console.log(`❓ Questions Analyzed: ${visibilityScore.metrics.questions_analyzed}`)
     console.log(`🔗 Total Results: ${visibilityScore.metrics.total_results}`)
-    console.log(`📁 Data saved to: ${storage.basePath}`)
+    // console.log(`📁 Data saved to: ${storage.basePath}`) // Disabled: No longer saving files
     console.log('='.repeat(80))
     
     // 🎯 All data is now sent to client via the completion event

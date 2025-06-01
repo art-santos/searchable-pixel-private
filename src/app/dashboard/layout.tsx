@@ -4,7 +4,7 @@ import { SplitSidebar } from '@/components/layout/split-sidebar'
 import { SplitTopbar } from '@/components/layout/split-topbar'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { SimpleWorkspaceOnboarding } from '@/components/onboarding/simple-workspace-onboarding'
+import { OnboardingOverlay } from '@/components/onboarding/onboarding-overlay'
 import { useEffect } from 'react'
 
 export default function DashboardLayout({
@@ -22,7 +22,7 @@ export default function DashboardLayout({
   
   return (
     <AuthenticatedLayout>
-      <SimpleWorkspaceOnboarding>
+      <OnboardingOverlay>
         <SidebarProvider className="dark">
           <SplitSidebar />
           <SidebarInset className="flex flex-col h-screen">
@@ -32,7 +32,7 @@ export default function DashboardLayout({
             </div>
           </SidebarInset>
         </SidebarProvider>
-      </SimpleWorkspaceOnboarding>
+      </OnboardingOverlay>
     </AuthenticatedLayout>
   )
 } 
