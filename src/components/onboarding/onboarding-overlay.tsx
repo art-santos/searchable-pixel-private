@@ -106,6 +106,11 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
   // Background analysis state
   const [backgroundAnalysisStarted, setBackgroundAnalysisStarted] = useState(false)
   const [analysisEventSource, setAnalysisEventSource] = useState<EventSource | null>(null)
+  
+  // Real-time progress tracking
+  const [analysisProgress, setAnalysisProgress] = useState(0)
+  const [analysisMessage, setAnalysisMessage] = useState('Starting analysis...')
+  const [analysisStep, setAnalysisStep] = useState('')
 
   // Database tracking
   const [companyId, setCompanyId] = useState<string | null>(null)
@@ -152,17 +157,25 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
         // Check if this is from the simple onboarding by seeing if there's no onboarding data
         // If there's no proper onboarding data, they likely only did the simple workspace setup
         const hasProperOnboardingData = localStorage.getItem('onboardingData')
-        if (!hasProperOnboardingData) {
-          console.log('🔄 Clearing simple onboarding flag - user needs full onboarding experience')
-          localStorage.removeItem('onboardingCompleted')
+        const onboardingInProgress = sessionStorage.getItem('onboardingInProgress')
+        
+        // Only clear if user is in the middle of onboarding or has incomplete data
+        // Don't clear if onboarding is genuinely completed (no data = completion cleanup)
+        if (!hasProperOnboardingData && !onboardingInProgress) {
+          // This could be either:
+          // 1. A completed onboarding (data was cleaned up) - DON'T clear
+          // 2. A simple onboarding that needs full experience - we can't distinguish
+          // To be safe, we'll only clear for new signups or if explicitly in progress
+          console.log('🔍 Onboarding completion flag exists but no data - assuming completed onboarding')
         }
       }
       
       const justSignedUp = sessionStorage.getItem('justSignedUp')
       const justVerified = document.cookie.includes('justVerified=true')
       const onboardingData = localStorage.getItem('onboardingData')
-      const hasCompletedOnboarding = localStorage.getItem('onboardingCompleted') // Check again after potential clearing
+      const hasCompletedOnboarding = localStorage.getItem('onboardingCompleted')
       const onboardingInProgress = sessionStorage.getItem('onboardingInProgress')
+      const analysisComplete = localStorage.getItem('onboardingAnalysisComplete')
       
       console.log('🎯 Onboarding Flow Decision Variables:', {
         justSignedUp,
@@ -170,13 +183,32 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
         hasOnboardingData: !!onboardingData,
         hasCompletedOnboarding,
         onboardingInProgress,
+        analysisComplete,
         user: !!user
       })
       
-      // If user has already completed onboarding, don't show overlay
-      if (hasCompletedOnboarding) {
-        console.log('✅ User has completed onboarding - hiding overlay')
+      // If user has completed full onboarding (not just analysis), don't show overlay
+      if (hasCompletedOnboarding && !analysisComplete) {
+        console.log('✅ User has completed full onboarding - hiding overlay')
         setShowOnboarding(false)
+        return
+      }
+      
+      // If analysis is complete, show results screen
+      if (analysisComplete && user) {
+        console.log('📊 Analysis complete - showing results screen')
+        setCurrentStep('results')
+        setShowOnboarding(true)
+        
+        // Try to restore visibility data from localStorage if available
+        const savedVisibilityData = localStorage.getItem('visibilityData')
+        const savedVisibilityScore = localStorage.getItem('visibilityScore')
+        if (savedVisibilityData && savedVisibilityScore) {
+          console.log('📊 Restoring visibility data from localStorage')
+          setVisibilityData(JSON.parse(savedVisibilityData))
+          setVisibilityScore(parseInt(savedVisibilityScore))
+        }
+        
         return
       }
       
@@ -692,9 +724,18 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
     sessionStorage.removeItem('onboardingInProgress')
     localStorage.removeItem('onboardingData')
     
+    // Mark onboarding analysis as completed (for refresh protection)
+    // But use a special flag to indicate we're still in the flow
+    localStorage.setItem('onboardingAnalysisComplete', 'true')
+    console.log('✅ Onboarding analysis marked as completed (but continuing flow)')
+    
     // Set results data
     setVisibilityData(data)
     setVisibilityScore(data.aeo_score ?? data.overallScore ?? 0)
+    
+    // Save visibility data to localStorage for refresh recovery
+    localStorage.setItem('visibilityData', JSON.stringify(data))
+    localStorage.setItem('visibilityScore', String(data.aeo_score ?? data.overallScore ?? 0))
     
     console.log('🎯 TRANSITION LOGIC DEBUG:')
     console.log('  - Current step before transition:', currentStep)
@@ -757,6 +798,11 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
     console.log('🚀 Starting background AEO analysis for:', domain)
     setBackgroundAnalysisStarted(true)
     
+    // Initialize progress tracking
+    setAnalysisProgress(0)
+    setAnalysisMessage('Starting analysis...')
+    setAnalysisStep('')
+
     try {
       // Format URL
       let formattedUrl = domain
@@ -783,6 +829,11 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
         try {
           const progressData = JSON.parse(event.data)
           console.log('📨 Background analysis progress:', progressData.step, progressData.message)
+          
+          // Update progress state
+          setAnalysisStep(progressData.step)
+          setAnalysisMessage(progressData.message)
+          setAnalysisProgress((progressData.progress / progressData.total) * 100)
           
           if (progressData.error) {
             console.error('❌ Background analysis error:', progressData.error)
@@ -1126,12 +1177,53 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                 </div>
                 
                 <div className="bg-[#1a1a1a] border border-[#333] rounded p-4">
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-sm mb-2">
                     <span className="text-[#888]">Progress</span>
-                    <span className="text-white">Analyzing...</span>
+                    <span className="text-white">{Math.round(analysisProgress)}%</span>
                   </div>
-                  <div className="w-full bg-[#333] rounded-full h-2 mt-2">
-                    <div className="bg-white h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+                  <div className="w-full bg-[#333] rounded-full h-2 mt-2 mb-3">
+                    <div 
+                      className="bg-white h-2 rounded-full transition-all duration-500 ease-out"
+                      style={{ width: `${analysisProgress}%` }}
+                    ></div>
+                  </div>
+                  
+                  {/* Step indicator */}
+                  <div className="flex justify-between text-xs mb-3">
+                    {[
+                      { key: 'crawl', label: 'Crawl' },
+                      { key: 'questions', label: 'Questions' },
+                      { key: 'search', label: 'Search' },
+                      { key: 'classify', label: 'Classify' },
+                      { key: 'score', label: 'Score' }
+                    ].map((step, index) => (
+                      <div key={step.key} className="flex flex-col items-center">
+                        <div className={`w-2 h-2 rounded-full mb-1 transition-colors duration-300 ${
+                          analysisStep === step.key 
+                            ? 'bg-white' 
+                            : analysisProgress > (index / 5) * 100 
+                              ? 'bg-[#666]' 
+                              : 'bg-[#333]'
+                        }`} />
+                        <span className={`text-xs transition-colors duration-300 ${
+                          analysisStep === step.key ? 'text-white' : 'text-[#666]'
+                        }`}>
+                          {step.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="text-xs text-[#888] text-left">
+                    {analysisStep && (
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="capitalize font-medium text-[#ccc]">{analysisStep}:</span>
+                        <span>{analysisMessage}</span>
+                      </div>
+                    )}
+                    {!analysisStep && (
+                      <span>{analysisMessage}</span>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -1238,6 +1330,9 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                     <Button
                       onClick={() => {
                         localStorage.setItem('onboardingCompleted', 'true')
+                        localStorage.removeItem('onboardingAnalysisComplete') // Clear analysis flag
+                        localStorage.removeItem('visibilityData') // Clean up visibility data
+                        localStorage.removeItem('visibilityScore') // Clean up visibility score
                         setShowOnboarding(false)
                         onComplete?.()
                       }}
@@ -1290,6 +1385,9 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                     <Button
                       onClick={() => {
                         localStorage.setItem('onboardingCompleted', 'true')
+                        localStorage.removeItem('onboardingAnalysisComplete') // Clear analysis flag
+                        localStorage.removeItem('visibilityData') // Clean up visibility data
+                        localStorage.removeItem('visibilityScore') // Clean up visibility score
                         setShowOnboarding(false)
                         onComplete?.()
                       }}
@@ -1336,6 +1434,9 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                     <Button
                       onClick={() => {
                         localStorage.setItem('onboardingCompleted', 'true')
+                        localStorage.removeItem('onboardingAnalysisComplete') // Clear analysis flag
+                        localStorage.removeItem('visibilityData') // Clean up visibility data
+                        localStorage.removeItem('visibilityScore') // Clean up visibility score
                         setShowOnboarding(false)
                         onComplete?.()
                       }}
@@ -1351,6 +1452,9 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                   <button
                     onClick={() => {
                       localStorage.setItem('onboardingCompleted', 'true')
+                      localStorage.removeItem('onboardingAnalysisComplete') // Clear analysis flag
+                      localStorage.removeItem('visibilityData') // Clean up visibility data
+                      localStorage.removeItem('visibilityScore') // Clean up visibility score
                       setShowOnboarding(false)
                       onComplete?.()
                     }}
