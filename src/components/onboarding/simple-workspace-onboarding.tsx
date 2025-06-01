@@ -29,6 +29,22 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
 
   const supabase = createClient()
 
+  // Clean up any complex onboarding state that might interfere
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Clear any existing complex onboarding flags
+      localStorage.removeItem('onboardingCompleted')
+      localStorage.removeItem('onboardingData')
+      sessionStorage.removeItem('onboardingInProgress')
+      sessionStorage.removeItem('justSignedUp')
+      
+      // Clear any verification cookies
+      if (document.cookie.includes('justVerified=true')) {
+        document.cookie = 'justVerified=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+      }
+    }
+  }, [])
+
   // Check if user needs onboarding (first time + missing name/workspace)
   useEffect(() => {
     const checkOnboardingStatus = async () => {
