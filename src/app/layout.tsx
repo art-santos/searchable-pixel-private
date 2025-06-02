@@ -22,15 +22,16 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/favicon.svg', sizes: 'any' },
-      { url: '/favicon.svg', type: 'image/svg+xml' }
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/images/split-icon-white.svg', type: 'image/svg+xml' }
     ],
-    shortcut: '/favicon.svg',
-    apple: '/favicon.svg',
+    shortcut: '/favicon.ico',
+    apple: '/images/split-icon-white.svg',
     other: {
       rel: 'mask-icon',
-      url: '/favicon.svg',
-      color: '#6366F1',
+      url: '/images/split-icon-white.svg',
+      color: '#ffffff',
     },
   },
   openGraph: {

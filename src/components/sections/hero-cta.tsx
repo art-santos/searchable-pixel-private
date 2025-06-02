@@ -14,7 +14,7 @@ const LOGOS = [
 
 export default function HeroCTA() {
   const router = useRouter()
-  const [url, setUrl] = useState('')
+  const [email, setEmail] = useState('')
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [currentLogo, setCurrentLogo] = useState(0)
@@ -28,19 +28,15 @@ export default function HeroCTA() {
     return () => clearInterval(interval)
   }, [currentLogo])
 
-  const validateUrl = (url: string): boolean => {
-    // Basic URL validation regex
-    const urlRegex = /^(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
-    return urlRegex.test(url)
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
   }
 
   const handleSubmit = async () => {
-    if (!url || isLoading) return
+    if (!email || isLoading) return
 
-    // Clean and validate URL
-    const cleanUrl = url.replace(/^https?:\/\//, '').replace(/\/$/, '').toLowerCase()
-    
-    if (!validateUrl(cleanUrl)) {
+    if (!validateEmail(email)) {
       // Could add error state here
       return
     }
@@ -48,14 +44,14 @@ export default function HeroCTA() {
     setIsLoading(true)
     setIsSubmitted(true)
 
-    // Store URL in sessionStorage
+    // Store email in sessionStorage
     if (typeof window !== 'undefined') {
-      sessionStorage.setItem('siteUrl', cleanUrl)
+      sessionStorage.setItem('waitlistEmail', email)
     }
 
     // Simulate loading animation
     setTimeout(() => {
-      router.push('/start')
+      router.push('/waitlist')
     }, 800)
   }
 
@@ -68,28 +64,28 @@ export default function HeroCTA() {
   return (
     <div className="text-center">
       <h1 className="blur-in-up text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-3 md:mb-6 md:max-w-[90%] mx-auto">
-        Get your free<span className="font-serif font-light italic tracking-tight"> AI visibility </span>score
+        The first <span className="font-serif font-light italic tracking-tight"> autonomous AEO Engineer. </span>
       </h1>
       <p className="blur-in-up-delay-1 text-sm md:text-lg lg:text-xl text-gray-200 md:max-w-[85%] mx-auto mb-6 md:mb-8 px-2 md:px-0">
-        See how often your site gets cited by ChatGPT, Perplexity, and Google AI. Enter your URL to get started.
+        See how often your site gets cited by ChatGPT, Perplexity, and Google AI. Join our early access.
       </p>
       
       <div className="blur-in-up-delay-2 flex flex-col md:flex-row gap-4 justify-center items-center">
         <div className="relative w-[80%] md:w-[400px] group">
           <input
-            type="url"
-            placeholder="Enter your website URL"
+            type="email"
+            placeholder="Enter your email for early access"
             className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-[#0c0c0c]/80 border border-[#2f2f2f] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[#3f3f3f] pr-12 transition-all duration-200 text-sm md:text-base"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isLoading}
           />
           <button 
             onClick={handleSubmit}
-            disabled={!url || isLoading}
+            disabled={!email || isLoading}
             className="absolute right-[5px] top-1/2 -translate-y-1/2 bg-[#222222] border border-[#333333] text-white w-[34px] h-[34px] md:w-[40px] md:h-[40px] flex items-center justify-center rounded-md hover:bg-[#282828] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-            aria-label="Get visibility score"
+            aria-label="Join early access"
           >
             {isLoading ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
