@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "@/fonts/cal-sans.css"; // Changed the import to use a local CSS file
 import "./globals.css";
 // import Announcements from "@/components/announcements"; // Removed import again
@@ -56,13 +56,14 @@ export const metadata: Metadata = {
     creator: '@Split.dev',
     site: '@Split.dev',
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
   themeColor: '#6366F1',
-}
+};
 
 export default function RootLayout({
   children,

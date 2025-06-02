@@ -754,7 +754,7 @@ export default function ContentPage() {
 
           {/* Expanded Content */}
           <div 
-            className={`overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            className={`overflow-hidden transition-all duration-500 ease-out ${
               isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
             }`}
           >
@@ -1474,7 +1474,7 @@ export default function ContentPage() {
 
                           {/* Expanded Content */}
                           <div 
-                            className={`overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                            className={`overflow-hidden transition-all duration-500 ease-out ${
                               expandedSuggestion === suggestion.id ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
                             }`}
                           >

@@ -4,23 +4,18 @@ import { createBrowserClient } from '@supabase/ssr'
 // createBrowserClient handles initialization correctly for client components.
 
 export function createClient() {
-  // Note: Ensure these environment variables are correctly exposed 
-  // to the client-side (prefixed with NEXT_PUBLIC_)
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('[client.ts] ERROR: Missing Supabase environment variables!');
-    // Return null or throw an error, depending on desired handling
-    // throw new Error('Missing Supabase environment variables');
-    // Or return a non-functional client / null to handle gracefully in components
-    return null; // Or handle error more robustly
+    console.error('[Supabase] Missing environment variables');
+    return null;
   }
-
-  // createBrowserClient is designed to be called directly in components 
-  // or hooks where it's needed, ensuring it runs client-side.
-  // This function now just returns a new instance when called.
-  // If you need a true singleton across multiple hook calls, 
-  // consider using React Context or a Zustand/Jotai store.
-  return createBrowserClient(supabaseUrl, supabaseAnonKey);
+  
+  try {
+    return createBrowserClient(supabaseUrl, supabaseAnonKey);
+  } catch (error) {
+    console.error('[Supabase] Error creating client:', error)
+    return null
+  }
 } 

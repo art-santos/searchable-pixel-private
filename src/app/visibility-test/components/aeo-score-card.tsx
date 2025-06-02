@@ -22,9 +22,10 @@ interface AEOData {
 
 interface AEOScoreCardProps {
   data: AEOData
+  compact?: boolean
 }
 
-export function AEOScoreCard({ data }: AEOScoreCardProps) {
+export function AEOScoreCard({ data, compact = false }: AEOScoreCardProps & { compact?: boolean }) {
   const getScoreGrade = (score: number) => {
     if (score >= 80) return { grade: 'A', label: 'Excellent', color: 'text-green-400' }
     if (score >= 65) return { grade: 'B', label: 'Strong', color: 'text-blue-400' }
@@ -42,6 +43,81 @@ export function AEOScoreCard({ data }: AEOScoreCardProps) {
     if (score >= 50) return "You're building solid visibility. Focus on owned content to accelerate growth."
     if (score >= 35) return "You're on the right track. Consistent optimization will improve your score."
     return "This is where most brands start. You have significant opportunity to improve visibility."
+  }
+
+  if (compact) {
+    return (
+      <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-3">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div>
+            <h3 className="text-white font-medium text-sm mb-1">AI Visibility Score</h3>
+            <p className="text-[#666] text-xs">
+              How visible your brand is across AI search engines
+            </p>
+          </div>
+          <div className="text-right">
+            <div className={`text-xl font-bold ${scoreInfo.color}`}>
+              {scoreInfo.grade}
+            </div>
+            <div className="text-[#666] text-xs">{scoreInfo.label}</div>
+          </div>
+        </div>
+
+        {/* Main Score */}
+        <div className="text-center py-4 border-y border-[#1a1a1a]">
+          <div className="text-4xl font-bold text-white mb-1">
+            {data.aeo_score}
+          </div>
+          <div className="text-[#666] text-xs mb-2">out of 100</div>
+          <p className="text-[#888] text-xs max-w-sm mx-auto px-2">
+            {getInsight(data.aeo_score)}
+          </p>
+        </div>
+
+        {/* Key Metrics Grid */}
+        <div className="grid grid-cols-2 gap-2 mt-3">
+          <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded p-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[#666] text-xs">Owned Coverage</span>
+              <span className="text-white font-medium text-xs">
+                {Math.round(data.coverage_owned * 100)}%
+              </span>
+            </div>
+            <div className="w-full h-1 bg-[#1a1a1a] rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-white/60 rounded-full transition-all duration-300"
+                style={{ width: `${data.coverage_owned * 100}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="bg-[#0f0f0f] border border-[#1a1a1a] rounded p-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[#666] text-xs">Share of Voice</span>
+              <span className="text-white font-medium text-xs">
+                {Math.round(data.share_of_voice * 100)}%
+              </span>
+            </div>
+            <div className="w-full h-1 bg-[#1a1a1a] rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-white/60 rounded-full transition-all duration-300"
+                style={{ width: `${data.share_of_voice * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Analysis Stats */}
+        {data.metrics && (
+          <div className="mt-3 pt-2 border-t border-[#1a1a1a] flex justify-between text-xs text-[#444]">
+            <span>{data.metrics.questions_analyzed} questions</span>
+            <span>{data.metrics.total_results} results</span>
+            <span>{data.metrics.owned_appearances} citations</span>
+          </div>
+        )}
+      </div>
+    )
   }
 
   return (

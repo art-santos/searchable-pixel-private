@@ -178,7 +178,7 @@ export function PageViewCard() {
                 />
               </div>
               
-              <div className="flex-1 relative" style={{ minHeight: '355px' }}>
+              <div className="flex-1 relative" style={{ minHeight: '405px' }}>
                 <div className="absolute inset-0">
                   <ViewsChart 
                     timeframe={timeframe}

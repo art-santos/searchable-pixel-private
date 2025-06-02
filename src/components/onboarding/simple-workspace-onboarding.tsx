@@ -32,8 +32,8 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
   // Clean up any complex onboarding state that might interfere
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Clear any existing complex onboarding flags
-      localStorage.removeItem('onboardingCompleted')
+      // Clear any existing complex onboarding flags EXCEPT the completion flag
+      // Do NOT clear onboardingCompleted - that would cause onboarding to show again!
       localStorage.removeItem('onboardingData')
       sessionStorage.removeItem('onboardingInProgress')
       sessionStorage.removeItem('justSignedUp')

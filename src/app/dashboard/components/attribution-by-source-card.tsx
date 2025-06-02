@@ -336,20 +336,6 @@ export function AttributionBySourceCard() {
                     </div>
                   </motion.div>
                 ))}
-
-                {totalCrawls > 5 && (
-                  <motion.div
-                    initial="hidden"
-                    animate="visible"
-                    variants={itemVariants}
-                    custom={5}
-                    className="mt-4 flex-shrink-0"
-                  >
-                    <button className="text-sm text-[#666] hover:text-white transition-colors w-full text-center py-2">
-                      View all sources →
-                    </button>
-                  </motion.div>
-                )}
               </div>
 
               {/* Total */}

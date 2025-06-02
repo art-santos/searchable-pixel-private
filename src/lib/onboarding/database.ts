@@ -3,6 +3,9 @@ import { User } from '@supabase/supabase-js'
 import { Tables, TablesInsert } from '../../../supabase/supabase'
 
 export interface OnboardingData {
+  // User data
+  userName?: string  // Add the user's actual name from onboarding
+  
   // Workspace data
   workspaceName: string
   userEmail: string
@@ -44,7 +47,7 @@ export async function saveOnboardingData(
     const profileData: TablesInsert<'profiles'> = {
       id: user.id,
       email: onboardingData.userEmail,
-      first_name: onboardingData.userEmail.split('@')[0], // Extract name from email
+      first_name: onboardingData.userName || onboardingData.userEmail.split('@')[0], // Use actual name if provided, fallback to email stem
       workspace_name: onboardingData.workspaceName,
       created_by: user.id,
       updated_by: user.id,

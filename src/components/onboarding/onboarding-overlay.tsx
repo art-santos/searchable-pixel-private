@@ -150,70 +150,62 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
       console.log('🔍 Onboarding Overlay useEffect triggered')
       debugOnboardingState()
       
-      // MIGRATION: Clear old simple onboarding completion flag
-      // This ensures users who completed the simple onboarding get the full experience
-      const hasSimpleOnboardingFlag = localStorage.getItem('onboardingCompleted')
-      if (hasSimpleOnboardingFlag) {
-        // Check if this is from the simple onboarding by seeing if there's no onboarding data
-        // If there's no proper onboarding data, they likely only did the simple workspace setup
-        const hasProperOnboardingData = localStorage.getItem('onboardingData')
-        const onboardingInProgress = sessionStorage.getItem('onboardingInProgress')
-        
-        // Only clear if user is in the middle of onboarding or has incomplete data
-        // Don't clear if onboarding is genuinely completed (no data = completion cleanup)
-        if (!hasProperOnboardingData && !onboardingInProgress) {
-          // This could be either:
-          // 1. A completed onboarding (data was cleaned up) - DON'T clear
-          // 2. A simple onboarding that needs full experience - we can't distinguish
-          // To be safe, we'll only clear for new signups or if explicitly in progress
-          console.log('🔍 Onboarding completion flag exists but no data - assuming completed onboarding')
-        }
-      }
-      
       const justSignedUp = sessionStorage.getItem('justSignedUp')
       const justVerified = document.cookie.includes('justVerified=true')
-      const onboardingData = localStorage.getItem('onboardingData')
       const hasCompletedOnboarding = localStorage.getItem('onboardingCompleted')
-      const onboardingInProgress = sessionStorage.getItem('onboardingInProgress')
-      const analysisComplete = localStorage.getItem('onboardingAnalysisComplete')
       
       console.log('🎯 Onboarding Flow Decision Variables:', {
         justSignedUp,
         justVerified,
-        hasOnboardingData: !!onboardingData,
         hasCompletedOnboarding,
-        onboardingInProgress,
-        analysisComplete,
         user: !!user
       })
       
-      // If user has completed full onboarding (not just analysis), don't show overlay
-      if (hasCompletedOnboarding && !analysisComplete) {
-        console.log('✅ User has completed full onboarding - hiding overlay')
+      // ✅ PRIMARY CHECK: If user has completed onboarding, NEVER show it again
+      if (hasCompletedOnboarding) {
+        console.log('✅ User has completed onboarding - permanently hiding overlay')
         setShowOnboarding(false)
+        
+        // Clean up any residual onboarding data
+        localStorage.removeItem('onboardingAnalysisComplete')
+        localStorage.removeItem('visibilityData')
+        localStorage.removeItem('visibilityScore')
+        localStorage.removeItem('onboardingData')
+        sessionStorage.removeItem('onboardingInProgress')
+        
         return
       }
       
-      // If analysis is complete, show results screen
-      if (analysisComplete && user) {
-        console.log('📊 Analysis complete - showing results screen')
-        setCurrentStep('results')
+      // ✅ SECONDARY CHECK: Only show onboarding for NEW users or users explicitly resuming
+      const onboardingData = localStorage.getItem('onboardingData')
+      const onboardingInProgress = sessionStorage.getItem('onboardingInProgress')
+      const analysisComplete = localStorage.getItem('onboardingAnalysisComplete')
+      
+      // Show onboarding if:
+      // 1. User just signed up or verified email (new user flow)
+      // 2. User is resuming an interrupted onboarding session
+      // 3. Analysis is complete and we need to show results (but not if onboarding is fully done)
+      
+      if (justSignedUp || justVerified) {
+        // User just signed up or verified email - start fresh onboarding
+        console.log('🚀 Starting fresh onboarding for new user...')
+        setCurrentStep('workspace')
         setShowOnboarding(true)
         
-        // Try to restore visibility data from localStorage if available
-        const savedVisibilityData = localStorage.getItem('visibilityData')
-        const savedVisibilityScore = localStorage.getItem('visibilityScore')
-        if (savedVisibilityData && savedVisibilityScore) {
-          console.log('📊 Restoring visibility data from localStorage')
-          setVisibilityData(JSON.parse(savedVisibilityData))
-          setVisibilityScore(parseInt(savedVisibilityScore))
-        }
+        // Clear any existing onboarding data for fresh start
+        localStorage.removeItem('onboardingData')
+        localStorage.removeItem('onboardingAnalysisComplete')
+        localStorage.removeItem('visibilityData')
+        localStorage.removeItem('visibilityScore')
+        sessionStorage.removeItem('onboardingInProgress')
         
-        return
-      }
-      
-      // If user is resuming an interrupted onboarding session and has data
-      if (onboardingInProgress && onboardingData) {
+        // Clear the signup flags
+        sessionStorage.removeItem('justSignedUp')
+        if (justVerified) {
+          document.cookie = 'justVerified=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+        }
+      } else if (onboardingInProgress && onboardingData && user) {
+        // User is resuming an interrupted onboarding session
         console.log('🔄 Resuming interrupted onboarding session...')
         const data = JSON.parse(onboardingData)
         
@@ -241,42 +233,33 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
           cms: data.cms || 'nextjs'
         })
         
-        // Resume at scanning step only if all required data is present
+        // Resume at appropriate step
         if (data.workspaceName && data.siteUrl && (data.keywords?.length > 0 || data.businessOffering)) {
           console.log('📊 Resuming at scanning step with complete data')
           setCurrentStep('scanning')
         } else {
-          // Start from beginning if data is incomplete
           console.log('⚠️ Incomplete data - starting from workspace step')
           setCurrentStep('workspace')
         }
         
-        // Clear resumption flag
-        sessionStorage.removeItem('onboardingInProgress')
-        setShowOnboarding(true) // Show onboarding for resumption
-      } else if (justSignedUp || justVerified) {
-        // User just signed up or verified email - start fresh onboarding
-        console.log('🚀 Starting fresh onboarding for new user...')
-        setCurrentStep('workspace')
-        setShowOnboarding(true) // Explicitly show onboarding
-        
-        // Clear any existing onboarding data for fresh start
-        localStorage.removeItem('onboardingData')
-        sessionStorage.removeItem('onboardingInProgress')
-        
-        // Clear the signup flags
-        sessionStorage.removeItem('justSignedUp')
-        if (justVerified) {
-          document.cookie = 'justVerified=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
-        }
-      } else if (user && !hasCompletedOnboarding) {
-        // User is logged in but hasn't completed onboarding - show onboarding
-        console.log('🎯 User logged in but no onboarding completed - starting onboarding...')
-        setCurrentStep('workspace')
         setShowOnboarding(true)
+      } else if (analysisComplete && user) {
+        // Analysis is complete, show results screen (but only if not fully completed)
+        console.log('📊 Analysis complete - showing results screen')
+        setCurrentStep('results')
+        setShowOnboarding(true)
+        
+        // Try to restore visibility data from localStorage if available
+        const savedVisibilityData = localStorage.getItem('visibilityData')
+        const savedVisibilityScore = localStorage.getItem('visibilityScore')
+        if (savedVisibilityData && savedVisibilityScore) {
+          console.log('📊 Restoring visibility data from localStorage')
+          setVisibilityData(JSON.parse(savedVisibilityData))
+          setVisibilityScore(parseInt(savedVisibilityScore))
+        }
       } else {
         // Default case - don't show onboarding
-        console.log('🎯 Default case - hiding onboarding')
+        console.log('🎯 Default case - user has account but no active onboarding needed')
         setShowOnboarding(false)
       }
       
@@ -313,19 +296,40 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
 
   // Dev mode: Exit onboarding with middle mouse button
   useEffect(() => {
+    // Add global dev helper function
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+      (window as any).resetOnboarding = () => {
+        console.log('🔧 DEV: Resetting onboarding state...')
+        localStorage.removeItem('onboardingCompleted')
+        localStorage.removeItem('onboardingAnalysisComplete')
+        localStorage.removeItem('visibilityData')
+        localStorage.removeItem('visibilityScore')
+        localStorage.removeItem('onboardingData')
+        sessionStorage.removeItem('onboardingInProgress')
+        sessionStorage.removeItem('justSignedUp')
+        document.cookie = 'justVerified=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+        window.location.reload()
+      }
+      
+      (window as any).completeOnboarding = () => {
+        console.log('🔧 DEV: Force completing onboarding...')
+        completeOnboarding()
+      }
+    }
+    
     const handleMouseDown = (e: MouseEvent) => {
       if (e.button === 1) { // Middle mouse button
         e.preventDefault()
-        setShowOnboarding(false)
-        onComplete?.()
+        console.log('🔧 DEV: Middle mouse - force completing onboarding')
+        completeOnboarding()
       }
     }
 
-    if (showOnboarding) {
+    if (showOnboarding && process.env.NODE_ENV === 'development') {
       document.addEventListener('mousedown', handleMouseDown)
       return () => document.removeEventListener('mousedown', handleMouseDown)
     }
-  }, [showOnboarding, onComplete])
+  }, [showOnboarding])
 
   const handleNext = async () => {
     console.log('🔄 handleNext called with currentStep:', currentStep)
@@ -437,16 +441,17 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
             console.log('🎯 CompanyId set in state:', companyId)
 
             const onboardingData: OnboardingData = {
+              userName: workspaceData.name,
               workspaceName: workspaceData.workspaceName,
               userEmail: user.email || '',
-              analyticsProvider: null, // No analytics provider needed
+              analyticsProvider: null,
               domain: analyticsData.domain,
               isAnalyticsConnected: false,
-              keywords: [], // Will be filled in content step
-              businessOffering: '', // Will be filled in content step
-              knownFor: '', // Will be filled in content step
-              competitors: [], // Will be filled in content step
-              cms: 'nextjs', // Will be filled in cms step
+              keywords: [],
+              businessOffering: '',
+              knownFor: '',
+              competitors: [],
+              cms: 'nextjs',
             }
 
             const result = await saveOnboardingData(user, onboardingData)
@@ -765,6 +770,29 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
       ...prev,
       competitors: prev.competitors.filter((_, i) => i !== index)
     }))
+  }
+
+  // Helper function to properly complete onboarding
+  const completeOnboarding = () => {
+    console.log('🎉 Completing onboarding and cleaning up all data...')
+    
+    // Mark onboarding as completed
+    localStorage.setItem('onboardingCompleted', 'true')
+    
+    // Clean up ALL onboarding-related data
+    localStorage.removeItem('onboardingAnalysisComplete')
+    localStorage.removeItem('visibilityData')
+    localStorage.removeItem('visibilityScore')
+    localStorage.removeItem('onboardingData')
+    sessionStorage.removeItem('onboardingInProgress')
+    sessionStorage.removeItem('justSignedUp')
+    
+    // Clear verification cookie if it exists
+    document.cookie = 'justVerified=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+    
+    // Hide onboarding and call completion callback
+    setShowOnboarding(false)
+    onComplete?.()
   }
 
   const canProceed = () => {
@@ -1236,19 +1264,19 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2 }}
-                className="bg-[#0c0c0c] border border-[#1a1a1a] p-6"
+                className="bg-[#0c0c0c] border border-[#1a1a1a] p-4"
               >
-                <div className="mb-8 text-center">
-                  <h2 className="text-xl font-medium text-white mb-2">Your AI Visibility Score</h2>
-                  <p className="text-sm text-[#666]">Based on analysis across 100+ AI queries</p>
+                <div className="mb-4 text-center">
+                  <h2 className="text-lg font-medium text-white mb-1">Your AI Visibility Score</h2>
+                  <p className="text-xs text-[#666]">Based on analysis across 100+ AI queries</p>
                 </div>
 
-                <div className="mb-8">
-                  <AEOScoreCard data={visibilityData} />
+                <div className="mb-4 max-h-[60vh] overflow-y-auto">
+                  <AEOScoreCard data={visibilityData} compact={true} />
                 </div>
 
-                <div className="text-center mb-6">
-                  <p className="text-sm text-[#ccc] mb-4">
+                <div className="text-center">
+                  <p className="text-xs text-[#ccc] leading-relaxed">
                     Upgrade to <span className="text-white">Visibility</span>, <span className="text-white">Plus</span>, or <span className="text-white">Pro</span> to unlock your full breakdown, see your citations, view competitive benchmarking and autonomously raise your site visibility in LLMs.
                   </p>
                 </div>
@@ -1329,12 +1357,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
 
                     <Button
                       onClick={() => {
-                        localStorage.setItem('onboardingCompleted', 'true')
-                        localStorage.removeItem('onboardingAnalysisComplete') // Clear analysis flag
-                        localStorage.removeItem('visibilityData') // Clean up visibility data
-                        localStorage.removeItem('visibilityScore') // Clean up visibility score
-                        setShowOnboarding(false)
-                        onComplete?.()
+                        completeOnboarding()
                       }}
                       className="w-full bg-[#333] hover:bg-[#444] text-white h-10 text-sm"
                     >
@@ -1384,12 +1407,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
 
                     <Button
                       onClick={() => {
-                        localStorage.setItem('onboardingCompleted', 'true')
-                        localStorage.removeItem('onboardingAnalysisComplete') // Clear analysis flag
-                        localStorage.removeItem('visibilityData') // Clean up visibility data
-                        localStorage.removeItem('visibilityScore') // Clean up visibility score
-                        setShowOnboarding(false)
-                        onComplete?.()
+                        completeOnboarding()
                       }}
                       className="w-full bg-white text-black hover:bg-[#f5f5f5] h-10 text-sm font-medium"
                     >
@@ -1433,12 +1451,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
 
                     <Button
                       onClick={() => {
-                        localStorage.setItem('onboardingCompleted', 'true')
-                        localStorage.removeItem('onboardingAnalysisComplete') // Clear analysis flag
-                        localStorage.removeItem('visibilityData') // Clean up visibility data
-                        localStorage.removeItem('visibilityScore') // Clean up visibility score
-                        setShowOnboarding(false)
-                        onComplete?.()
+                        completeOnboarding()
                       }}
                       className="w-full bg-[#333] hover:bg-[#444] text-white h-10 text-sm"
                     >
@@ -1451,12 +1464,7 @@ export function OnboardingOverlay({ children, onComplete }: OnboardingOverlayPro
                 <div className="text-center">
                   <button
                     onClick={() => {
-                      localStorage.setItem('onboardingCompleted', 'true')
-                      localStorage.removeItem('onboardingAnalysisComplete') // Clear analysis flag
-                      localStorage.removeItem('visibilityData') // Clean up visibility data
-                      localStorage.removeItem('visibilityScore') // Clean up visibility score
-                      setShowOnboarding(false)
-                      onComplete?.()
+                      completeOnboarding()
                     }}
                     className="text-[#666] text-sm hover:text-white transition-colors"
                   >

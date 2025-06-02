@@ -69,13 +69,13 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6 lg:gap-8 pb-8 md:pb-12">
             <motion.div 
               variants={cardVariants}
-              className="h-[400px] md:h-[450px] lg:h-[500px]"
+              className="h-[440px] md:h-[495px] lg:h-[550px]"
             >
               <PageViewCard />
             </motion.div>
             <motion.div 
               variants={cardVariants}
-              className="h-[400px] md:h-[450px] lg:h-[500px]"
+              className="h-[440px] md:h-[495px] lg:h-[550px]"
             >
               <AttributionBySourceCard />
             </motion.div>

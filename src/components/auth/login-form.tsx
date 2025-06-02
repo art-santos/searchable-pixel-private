@@ -62,17 +62,45 @@ export function LoginForm({
     setIsLoading(true)
 
     try {
+      console.log('🔍 LOGIN FORM DEBUG')
+      console.log('='.repeat(50))
+      console.log('📧 Email:', email)
+      console.log('🔒 Password length:', password.length)
+      
       if (!supabase) {
+        console.error('❌ Supabase client is null')
         showNotification("error", "Authentication client not available")
         return
       }
-
+      
+      console.log('✅ Supabase client exists')
+      
+      // Check if we can access the auth methods
+      console.log('🔧 Auth object:', !!supabase.auth)
+      console.log('🔧 SignInWithPassword method:', typeof supabase.auth.signInWithPassword)
+      
+      // Log the actual request details
+      console.log('📡 Making signInWithPassword request...')
+      console.log('📡 URL should be: https://xeclltopgmpwjpvwdnxu.supabase.co/auth/v1/token?grant_type=password')
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
+      console.log('📋 Auth Response:')
+      console.log('- Data exists:', !!data)
+      console.log('- User exists:', !!data?.user)
+      console.log('- Session exists:', !!data?.session)
+      console.log('- Error exists:', !!error)
+      
       if (error) {
+        console.error('❌ Auth Error Details:')
+        console.error('- Message:', error.message)
+        console.error('- Status:', error.status)
+        console.error('- Code:', error.code)
+        console.error('- Full error object:', error)
+        
         if (error.message.includes('Invalid login credentials')) {
           showNotification("error", "Invalid email or password. Please try again.")
         } else {
@@ -82,6 +110,10 @@ export function LoginForm({
       }
 
       if (data.user) {
+        console.log('✅ Login successful!')
+        console.log('👤 User ID:', data.user.id)
+        console.log('📧 User email:', data.user.email)
+        
         showNotification("success", "Welcome back! Redirecting to your dashboard...")
         
         // Call success callback
@@ -94,6 +126,12 @@ export function LoginForm({
       }
 
     } catch (err: any) {
+      console.error('💥 Catch block error:')
+      console.error('- Error type:', typeof err)
+      console.error('- Error message:', err.message)
+      console.error('- Error stack:', err.stack)
+      console.error('- Full error:', err)
+      
       showNotification("error", err.message || "An error occurred")
     } finally {
       setIsLoading(false)
