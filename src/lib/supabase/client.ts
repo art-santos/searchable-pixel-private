@@ -13,7 +13,7 @@ export function createClient() {
   }
   
   try {
-    return createBrowserClient(supabaseUrl, supabaseAnonKey);
+  return createBrowserClient(supabaseUrl, supabaseAnonKey);
   } catch (error) {
     console.error('[Supabase] Error creating client:', error)
     return null

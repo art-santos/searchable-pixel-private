@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase/client'
+import { saveOnboardingData } from '@/lib/onboarding/database'
 import { 
   ArrowRight
 } from 'lucide-react'
@@ -24,7 +25,8 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
   // Workspace form data
   const [workspaceData, setWorkspaceData] = useState({
     name: '',
-    workspaceName: ''
+    workspaceName: '',
+    domain: ''
   })
 
   const supabase = createClient()
@@ -54,23 +56,35 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
       }
 
       try {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('first_name, workspace_name')
-          .eq('id', user.id)
-          .single()
+        // Check both profile and company existence
+        const [profileResult, companyResult] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('first_name, workspace_name')
+            .eq('id', user.id)
+            .single(),
+          supabase
+            .from('companies')
+            .select('id, company_name, root_url')
+            .eq('submitted_by', user.id)
+            .single()
+        ])
 
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error checking profile:', error)
-          setCheckingStatus(false)
-          return
-        }
+        const { data: profile, error: profileError } = profileResult
+        const { data: company, error: companyError } = companyResult
 
-        // Only show onboarding if user is missing name OR workspace name
-        // This ensures it only shows when needed and never again once configured
+        console.log('Onboarding status check:', {
+          profile: profile,
+          company: company,
+          profileError: profileError?.code,
+          companyError: companyError?.code
+        })
+
+        // Only show onboarding if user is missing name OR workspace name OR company
         const hasName = profile?.first_name?.trim()
         const hasWorkspaceName = profile?.workspace_name?.trim()
-        const shouldShowOnboarding = !hasName || !hasWorkspaceName
+        const hasCompany = company?.id
+        const shouldShowOnboarding = !hasName || !hasWorkspaceName || !hasCompany
 
         setShowOnboarding(shouldShowOnboarding)
 
@@ -78,7 +92,8 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
         if (profile) {
           setWorkspaceData({
             name: profile.first_name || '',
-            workspaceName: profile.workspace_name || ''
+            workspaceName: profile.workspace_name || '',
+            domain: company?.root_url ? new URL(company.root_url).hostname : ''
           })
         }
       } catch (err) {
@@ -97,28 +112,35 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
     setIsLoading(true)
 
     try {
-      // Update or create profile with workspace data
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user.id,
-          first_name: workspaceData.name,
-          workspace_name: workspaceData.workspaceName,
-          email: user.email,
-          created_by: user.id,
-          updated_by: user.id
-        })
+      // Use the proper onboarding data save function
+      const result = await saveOnboardingData(user, {
+        userName: workspaceData.name,
+        workspaceName: workspaceData.workspaceName,
+        userEmail: user.email || '',
+        domain: workspaceData.domain || 'example.com',
+        isAnalyticsConnected: false,
+        keywords: [],
+        businessOffering: '',
+        knownFor: '',
+        competitors: []
+      })
 
-      if (error) {
-        console.error('Error saving workspace data:', error)
+      if (!result.success) {
+        console.error('Failed to save onboarding data:', result.error)
+        // Still try to hide onboarding to avoid being stuck
+        setShowOnboarding(false)
         return
       }
 
+      console.log('Onboarding completed successfully:', result)
+      
       // Hide onboarding and call completion callback
       setShowOnboarding(false)
       onComplete?.()
     } catch (err) {
       console.error('Error completing onboarding:', err)
+      // Still hide onboarding to avoid being stuck
+      setShowOnboarding(false)
     } finally {
       setIsLoading(false)
     }
@@ -203,6 +225,24 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
                 />
                 <p className="text-xs text-[#666] mt-1">
                   This will be the name of your workspace
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs text-[#888] mb-2">
+                  Company website
+                </label>
+                <Input
+                  value={workspaceData.domain}
+                  onChange={(e) => setWorkspaceData(prev => ({ 
+                    ...prev, 
+                    domain: e.target.value 
+                  }))}
+                  placeholder="yourcompany.com"
+                  className="bg-[#1a1a1a] border-[#333] text-white h-10 focus:border-[#444] transition-colors"
+                />
+                <p className="text-xs text-[#666] mt-1">
+                  Your main website domain (optional)
                 </p>
               </div>
             </div>

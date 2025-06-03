@@ -271,8 +271,8 @@ export function TopicMapTab() {
                   )}
                   {selectedNode.id === 'center' && (
                     <>
-                      <div className="text-xs text-[#ccc]">"What is Origami Agents?"</div>
-                      <div className="text-xs text-[#ccc]">"Origami vs competitors"</div>
+                      <div className="text-xs text-[#ccc]">"What are the best AI platforms?"</div>
+                      <div className="text-xs text-[#ccc]">"Your platform vs competitors"</div>
                     </>
                   )}
                   {(!['ai-sales', 'cold-outreach', 'center'].includes(selectedNode.id)) && (

@@ -39,8 +39,7 @@ import {
   GripVertical,
   Check,
   RotateCw,
-  ChevronDown,
-  Crown
+  ChevronDown
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -75,6 +74,11 @@ import { UsageDisplay } from '@/components/subscription/usage-display'
 import { PlanType } from '@/lib/subscription/config'
 import { toast } from '@/components/ui/use-toast'
 import { createClient } from '@/lib/supabase/client'
+import { useKnowledgeBase } from '@/hooks/useKnowledgeBase'
+import { useCompany } from '@/hooks/useCompany'
+import { KnowledgeExtractionEngine } from '@/lib/knowledge-base/extraction-engine'
+import { AVAILABLE_TAGS, TAG_METADATA } from '@/lib/knowledge-base/types'
+import { KnowledgeTable } from '@/components/knowledge-base/knowledge-table'
 
 const mockCompletedArticles = [
   {
@@ -356,6 +360,7 @@ const mockQueueSuggestions: QueueSuggestion[] = [
   }
 ]
 
+// Remove old mock knowledge items
 interface KnowledgeItem {
   id: number
   content: string
@@ -367,53 +372,74 @@ interface KnowledgeItem {
 const mockKnowledgeItems: KnowledgeItem[] = [
   {
     id: 1,
-    content: "Split is an AI-powered content generation platform that helps B2B companies create high-quality, SEO-optimized articles at scale. Our platform combines advanced AI with strategic content planning to drive organic growth and establish thought leadership.",
+    content: "Split provides a comprehensive AI content generation platform specifically designed for B2B SaaS companies looking to scale their content marketing efforts.",
     tag: "company-overview",
     createdAt: "2024-01-15",
-    wordCount: 42
+    wordCount: 24
   },
   {
     id: 2,
-    content: "Target audience: B2B SaaS companies with 50-500 employees, marketing teams struggling with content consistency, sales teams needing better enablement materials, and growth-stage startups looking to establish thought leadership.",
+    content: "Primary target audience includes marketing teams at B2B SaaS companies with 50-500 employees who struggle with consistent content production and maintaining brand voice across multiple content creators.",
     tag: "target-audience",
     createdAt: "2024-01-14",
-    wordCount: 38
-  },
-  {
-    id: 3,
-    content: "Key pain points: Manual content creation is time-consuming, maintaining consistent brand voice across content, scaling content production without sacrificing quality, measuring content ROI and performance.",
-    tag: "pain-points",
-    createdAt: "2024-01-13",
     wordCount: 32
   },
   {
+    id: 3,
+    content: "Main pain point: Creating high-quality, SEO-optimized content at scale while maintaining brand consistency and avoiding generic AI-generated content that lacks authenticity.",
+    tag: "pain-points",
+    createdAt: "2024-01-13",
+    wordCount: 26
+  },
+  {
     id: 4,
-    content: "Competitive positioning: Unlike generic AI writing tools, Split focuses specifically on B2B content strategy. We provide end-to-end content planning, not just writing assistance. Our AI understands business context and industry nuances.",
+    content: "Unlike Jasper and Copy.ai which focus on generic content generation, Split specializes in strategic content planning with built-in SEO optimization and brand voice training.",
     tag: "positioning",
     createdAt: "2024-01-12",
-    wordCount: 39
+    wordCount: 27
   },
   {
     id: 5,
-    content: "Common sales objections: 'AI content lacks authenticity' - Response: Our AI is trained on your specific brand voice and industry expertise. 'Content quality concerns' - Response: Every piece goes through quality checks and can be customized.",
-    tag: "sales-objections",
+    content: "Key features include AI-powered content planning, brand voice training, SEO optimization, content calendar management, and multi-format content generation (blogs, social posts, emails).",
+    tag: "product-features",
     createdAt: "2024-01-11",
-    wordCount: 45
+    wordCount: 27
+  },
+  {
+    id: 6,
+    content: "Common use cases: Blog content creation, social media content planning, email newsletter writing, product marketing content, and content repurposing across different channels.",
+    tag: "use-cases",
+    createdAt: "2024-01-10",
+    wordCount: 26
+  },
+  {
+    id: 7,
+    content: "Main competitors include Jasper (focuses on generic writing), Copy.ai (template-based approach), and Writesonic (broader target market). Our differentiation is B2B SaaS specialization.",
+    tag: "competitor-notes",
+    createdAt: "2024-01-09",
+    wordCount: 28
+  },
+  {
+    id: 8,
+    content: "Common objection: 'AI content lacks authenticity.' Response: Split trains on your specific brand voice and requires human oversight for quality control, ensuring authentic, on-brand content.",
+    tag: "sales-objections",
+    createdAt: "2024-01-08",
+    wordCount: 29
   }
 ]
 
 const availableTags = [
-  "company-overview",
-  "target-audience", 
-  "pain-points",
-  "positioning",
-  "sales-objections",
-  "product-features",
-  "use-cases",
-  "keywords",
-  "competitor-notes",
-  "brand-voice",
-  "other"
+  { value: 'company-overview', label: 'Company Overview' },
+  { value: 'target-audience', label: 'Target Audience' },
+  { value: 'pain-points', label: 'Pain Points' },
+  { value: 'positioning', label: 'Positioning' },
+  { value: 'product-features', label: 'Product Features' },
+  { value: 'use-cases', label: 'Use Cases' },
+  { value: 'competitor-notes', label: 'Competitor Notes' },
+  { value: 'sales-objections', label: 'Sales Objections' },
+  { value: 'brand-voice', label: 'Brand Voice' },
+  { value: 'keywords', label: 'Keywords' },
+  { value: 'other', label: 'Other' }
 ]
 
 const tabs = [
@@ -425,6 +451,8 @@ const tabs = [
 export default function ContentPage() {
   const { loading } = useAuth()
   const { subscription, usage, canPerformAction, getRemainingUsage, refresh } = useSubscription()
+  const { company, createCompany, isLoading: companyLoading } = useCompany()
+  const knowledgeBase = useKnowledgeBase()
   const shouldReduceMotion = useReducedMotion()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState('completed')
@@ -437,15 +465,10 @@ export default function ContentPage() {
   const [queueSuggestions, setQueueSuggestions] = useState(mockQueueSuggestions)
   const [queueFilter, setQueueFilter] = useState<'all' | 'accepted' | 'pending'>('all')
   const [expandedSuggestion, setExpandedSuggestion] = useState<number | null>(null)
-  const [knowledgeItems, setKnowledgeItems] = useState(mockKnowledgeItems)
   const [newKnowledgeContent, setNewKnowledgeContent] = useState('')
-  const [editingItem, setEditingItem] = useState<number | null>(null)
-  const [editingContent, setEditingContent] = useState('')
-  const [editingTag, setEditingTag] = useState('')
-  const [knowledgeFilter, setKnowledgeFilter] = useState<string>('all')
-  const [knowledgeSearch, setKnowledgeSearch] = useState('')
   const [qualityTier, setQualityTier] = useState<'standard' | 'premium'>('standard')
   const [isGenerating, setIsGenerating] = useState(false)
+  const [estimatedExtractions, setEstimatedExtractions] = useState(0)
 
   const isPro = subscription?.plan === 'pro'
 
@@ -518,6 +541,26 @@ export default function ContentPage() {
   useEffect(() => {
     setCurrentPage(1)
   }, [searchQuery])
+
+  // Load knowledge items when component mounts or company changes
+  useEffect(() => {
+    if (company?.id) {
+      knowledgeBase.loadItems(company.id, { 
+        tag: undefined,
+        search: undefined
+      })
+    }
+  }, [company?.id])
+
+  // Update extraction estimate when text changes
+  useEffect(() => {
+    if (newKnowledgeContent.trim()) {
+      const estimate = KnowledgeExtractionEngine.estimateExtractionCount(newKnowledgeContent)
+      setEstimatedExtractions(estimate)
+    } else {
+      setEstimatedExtractions(0)
+    }
+  }, [newKnowledgeContent])
 
   const handleExportArticle = (article: any, format: string) => {
     console.log(`Exporting article "${article.title}" as ${format}`)
@@ -602,308 +645,208 @@ export default function ContentPage() {
     // Implement reroll all logic
   }
 
-  const handleAddKnowledgeItem = () => {
-    if (!newKnowledgeContent.trim()) return
+  const handleAddKnowledgeItem = async () => {
+    console.log('handleAddKnowledgeItem called', {
+      hasContent: !!newKnowledgeContent.trim(),
+      contentLength: newKnowledgeContent.length,
+      companyId: company?.id,
+      hasCompany: !!company,
+      isExtracting: knowledgeBase.isExtracting,
+      companyLoading
+    })
     
-    const autoTag = autoDetectTag(newKnowledgeContent)
-    const newItem: KnowledgeItem = {
-      id: Math.max(...knowledgeItems.map(item => item.id), 0) + 1,
-      content: newKnowledgeContent.trim(),
-      tag: autoTag,
-      createdAt: new Date().toISOString().split('T')[0],
-      wordCount: newKnowledgeContent.trim().split(' ').length
+    if (!newKnowledgeContent.trim()) {
+      console.log('No content provided')
+      toast({
+        title: 'No content provided',
+        description: 'Please enter some content to extract knowledge from',
+        variant: 'destructive'
+      })
+      return
     }
     
-    setKnowledgeItems([newItem, ...knowledgeItems])
+    if (companyLoading) {
+      console.log('Company is still loading')
+      toast({
+        title: 'Please wait',
+        description: 'Company is still being set up. Please try again in a moment.',
+        variant: 'default'
+      })
+      return
+    }
+    
+    if (!company?.id) {
+      console.log('No company ID available', { company })
+      toast({
+        title: 'Company not found',
+        description: 'Please refresh the page to complete your workspace setup.',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    try {
+      console.log('Starting knowledge processing...')
+      // If it's a large text dump, use intelligent extraction
+      if (newKnowledgeContent.length > 100) {
+        console.log('Using extraction for large text')
+        await knowledgeBase.extractFromText(company.id, newKnowledgeContent)
+      } else {
+        console.log('Using manual creation for short text')
+        // For short content, add manually with auto-detected tag
+        const tag = autoDetectTag(newKnowledgeContent)
+        await knowledgeBase.createItem(company.id, newKnowledgeContent, tag)
+      }
+      
     setNewKnowledgeContent('')
+      console.log('Knowledge processing completed successfully')
+    } catch (error) {
+      console.error('Error in handleAddKnowledgeItem:', error)
+      // Error handling is done in the hook
+    }
   }
 
   const autoDetectTag = (content: string): string => {
     const lowerContent = content.toLowerCase()
     
-    if (lowerContent.includes('target audience') || lowerContent.includes('customer') || lowerContent.includes('persona')) {
-      return 'target-audience'
+    // Enhanced tag detection logic
+    const tagPatterns = {
+      'company-overview': ['company', 'business', 'overview', 'about', 'what we do'],
+      'target-audience': ['customer', 'client', 'user', 'audience', 'demographic'],
+      'pain-points': ['problem', 'challenge', 'issue', 'pain', 'struggle'],
+      'positioning': ['unique', 'different', 'competitive', 'advantage', 'unlike'],
+      'product-features': ['feature', 'capability', 'function', 'tool', 'platform'],
+      'use-cases': ['use case', 'scenario', 'application', 'example', 'implementation'],
+      'competitor-notes': ['competitor', 'vs', 'compared to', 'alternative', 'versus'],
+      'sales-objections': ['objection', 'concern', 'worry', 'response', 'address'],
+      'brand-voice': ['tone', 'voice', 'messaging', 'communication', 'style'],
+      'keywords': ['keyword', 'term', 'phrase', 'seo', 'search']
     }
-    if (lowerContent.includes('pain point') || lowerContent.includes('challenge') || lowerContent.includes('problem')) {
-      return 'pain-points'
-    }
-    if (lowerContent.includes('competitor') || lowerContent.includes('vs ') || lowerContent.includes('alternative')) {
-      return 'competitor-notes'
-    }
-    if (lowerContent.includes('objection') || lowerContent.includes('concern') || lowerContent.includes('response')) {
-      return 'sales-objections'
-    }
-    if (lowerContent.includes('feature') || lowerContent.includes('capability') || lowerContent.includes('functionality')) {
-      return 'product-features'
-    }
-    if (lowerContent.includes('company') || lowerContent.includes('about us') || lowerContent.includes('mission')) {
-      return 'company-overview'
+
+    for (const [tag, patterns] of Object.entries(tagPatterns)) {
+      if (patterns.some(pattern => lowerContent.includes(pattern))) {
+        return tag
+      }
     }
     
     return 'other'
   }
 
-  const handleDeleteKnowledgeItem = (id: number) => {
-    setKnowledgeItems(items => items.filter(item => item.id !== id))
-  }
-
-  const handleStartEdit = (item: KnowledgeItem) => {
-    setEditingItem(item.id)
-    setEditingContent(item.content)
-    setEditingTag(item.tag)
-  }
-
-  const handleSaveEdit = () => {
-    if (!editingItem) return
-    
-    setKnowledgeItems(items =>
-      items.map(item =>
-        item.id === editingItem
-          ? {
-              ...item,
-              content: editingContent,
-              tag: editingTag,
-              wordCount: editingContent.trim().split(' ').length
-            }
-          : item
-      )
-    )
-    
-    setEditingItem(null)
-    setEditingContent('')
-    setEditingTag('')
-  }
-
-  const handleCancelEdit = () => {
-    setEditingItem(null)
-    setEditingContent('')
-    setEditingTag('')
-  }
-
   const handleCopyKnowledgeItem = (content: string) => {
     navigator.clipboard.writeText(content)
-    // Could add a toast notification here
+    toast({
+      title: 'Copied to clipboard',
+      description: 'Knowledge item content copied'
+    })
   }
 
-  // SortableItem component for drag and drop
-  function SortableItem({ suggestion }: { suggestion: QueueSuggestion }) {
-    const {
-      attributes,
-      listeners,
-      setNodeRef,
-      transform,
-      transition,
-      isDragging,
-    } = useSortable({ id: suggestion.id })
-
-    const style = {
-      transform: CSS.Transform.toString(transform),
-      transition,
-      opacity: isDragging ? 0.5 : 1,
-    }
-
-    const isExpanded = expandedSuggestion === suggestion.id
-
-    return (
-      <div ref={setNodeRef} style={style} className="group flex items-center gap-2">
-        {/* Drag Handle */}
-        <div 
-          {...attributes} 
-          {...listeners} 
-          className="flex-shrink-0 cursor-move"
-        >
-          <GripVertical className="w-4 h-4 text-[#333] hover:text-[#666] transition-colors duration-200" />
-        </div>
-
-        {/* Card */}
-        <div className="flex-1 bg-[#0a0a0a] rounded-md border border-[#1a1a1a] transition-all duration-200 hover:border-[#2a2a2a]">
-          {/* Main Content */}
-          <div 
-            className="px-4 py-3 cursor-pointer"
-            onClick={() => setExpandedSuggestion(isExpanded ? null : suggestion.id)}
-          >
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex-1 flex items-center gap-3">
-                <h3 className="text-sm font-medium text-white">
-                  {suggestion.title}
-                </h3>
-                <div className="flex items-center gap-2 text-xs text-[#666]">
-                  <span>{suggestion.wordCount.toLocaleString()} words</span>
-                  <span className="text-[#333]">•</span>
-                  <span>{Math.ceil(suggestion.wordCount / 200)} min read</span>
-                </div>
-                <ChevronDown 
-                  className={`w-4 h-4 text-[#666] transition-transform duration-200 ease-out ${
-                    isExpanded ? 'rotate-180' : ''
-                  }`} 
-                />
-              </div>
-
-              {/* Remove Button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleDismissSuggestion(suggestion.id)
-                }}
-                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1.5 hover:bg-[#1a1a1a] rounded"
-              >
-                <X className="w-4 h-4 text-[#666] hover:text-white transition-colors duration-200" />
-              </button>
-            </div>
-          </div>
-
-          {/* Expanded Content */}
-          <div 
-            className={`overflow-hidden transition-all duration-500 ease-out ${
-              isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-            }`}
-          >
-            <div className={`border-t border-[#1a1a1a] px-4 py-3 transition-all duration-300 ease-out ${
-              isExpanded ? 'translate-y-0' : '-translate-y-2'
-            }`}>
-              <p className="text-sm text-[#999] leading-relaxed mb-3">
-                {suggestion.description}
-              </p>
-              
-              <div className="flex flex-wrap gap-1">
-                {suggestion.keywords.map((keyword, idx) => (
-                  <span
-                    key={idx}
-                    className={`px-2 py-1 bg-[#1a1a1a] text-xs text-[#666] rounded transition-all duration-200 hover:bg-[#2a2a2a] ${
-                      isExpanded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'
-                    }`}
-                    style={{ transitionDelay: `${idx * 30}ms` }}
-                  >
-                    {keyword}
-                  </span>
-                ))}
-              </div>
-              
-              {/* Generate Article Button */}
-              <div className="mt-4 pt-3 border-t border-[#1a1a1a]">
-                <Button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleGenerateArticle(suggestion)
-                  }}
-                  disabled={isGenerating || !usage || (usage.articlesLimit !== -1 && usage.articlesRemaining === 0)}
-                  className={`w-full h-9 text-sm font-medium transition-all ${
-                    isGenerating 
-                      ? 'bg-[#1a1a1a] text-[#666]'
-                      : usage && usage.articlesRemaining > 0
-                      ? 'bg-white text-black hover:bg-gray-100'
-                      : 'bg-[#1a1a1a] text-[#666] cursor-not-allowed'
-                  }`}
-                >
-                  {isGenerating ? (
-                    <div className="flex items-center gap-2">
-                      <RotateCw className="w-4 h-4 animate-spin" />
-                      Generating...
-                    </div>
-                  ) : usage && usage.articlesRemaining === 0 ? (
-                    'No articles remaining'
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4" />
-                      Generate Article
-                      {qualityTier === 'premium' && isPro && (
-                        <Badge variant="outline" className="border-yellow-500/20 text-yellow-400 bg-yellow-500/10 text-xs px-1 py-0">
-                          PREMIUM
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  const handleGenerateArticle = async (suggestion: QueueSuggestion) => {
-    if (!subscription || !usage) return
-    
-    // Check if user has articles remaining
-    const canGenerate = await canPerformAction('article')
-    
-    if (!canGenerate) {
-      toast({
-        title: "Article limit reached",
-        description: `You've used all ${usage.articlesLimit} of your monthly AI articles. Upgrade to get more.`,
-        variant: "destructive",
-      })
-      return
-    }
-    
-    setIsGenerating(true)
-    
+  const handleUpdateKnowledgeItem = async (id: string, updates: Partial<any>) => {
     try {
-      // Track the article generation through API
-      const response = await fetch('/api/usage/track', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          eventType: 'article',
-          eventSubtype: isPro && qualityTier === 'premium' ? 'premium_article' : 'standard_article',
-          metadata: {
-            suggestionId: suggestion.id,
-            qualityTier: qualityTier,
-          }
-        }),
-      })
-      
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to track usage')
+      // Find the current item to get existing values
+      const currentItem = knowledgeBase.items.find(item => item.id === id)
+      if (!currentItem) {
+        throw new Error('Item not found')
       }
-      
-      // Simulate article generation
-      await new Promise(resolve => setTimeout(resolve, 3000))
-      
-      const remaining = getRemainingUsage('article')
-      
+
+      // Merge updates with existing data
+      const content = updates.content !== undefined ? updates.content : currentItem.content
+      const tag = updates.tag !== undefined ? updates.tag : currentItem.tag
+
+      await knowledgeBase.updateItem(id, content, tag)
       toast({
-        title: "Article generated successfully",
-        description: `${qualityTier === 'premium' ? 'Premium' : 'Standard'} article created. ${remaining > 0 ? `${remaining - 1} articles remaining this month.` : 'No articles remaining.'}`,
+        title: 'Updated successfully',
+        description: 'Knowledge item has been updated'
       })
-      
-      // Refresh usage data
-      await refresh()
-      
-      // TODO: Actually generate article and redirect
-      router.push(`/content/editor?article=${suggestion.id}`)
     } catch (error) {
       toast({
-        title: "Generation failed",
-        description: error instanceof Error ? error.message : "Something went wrong. Please try again.",
-        variant: "destructive",
+        title: 'Update failed',
+        description: 'There was an error updating the item',
+        variant: 'destructive'
       })
-    } finally {
-      setIsGenerating(false)
     }
   }
 
-  if (loading) {
+  const handleDeleteKnowledgeItem = async (id: string) => {
+    try {
+      await knowledgeBase.deleteItem(id)
+      toast({
+        title: 'Deleted successfully',
+        description: 'Knowledge item has been deleted'
+      })
+    } catch (error) {
+      toast({
+        title: 'Delete failed', 
+        description: 'There was an error deleting the item',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  // Get filtered knowledge items
+  const filteredKnowledgeItems = knowledgeBase.items.filter(item => {
+    const matchesTag = true
+    const matchesSearch = true
+    return matchesTag && matchesSearch
+  })
+
+  // Helper functions for tag styling
+  const getTagColor = (tag: string) => {
+    const colors: Record<string, string> = {
+      'company-overview': 'bg-blue-500/20 text-blue-300',
+      'target-audience': 'bg-green-500/20 text-green-300',
+      'pain-points': 'bg-red-500/20 text-red-300',
+      'positioning': 'bg-purple-500/20 text-purple-300',
+      'product-features': 'bg-orange-500/20 text-orange-300',
+      'use-cases': 'bg-cyan-500/20 text-cyan-300',
+      'competitor-notes': 'bg-yellow-500/20 text-yellow-300',
+      'sales-objections': 'bg-pink-500/20 text-pink-300',
+      'brand-voice': 'bg-indigo-500/20 text-indigo-300',
+      'keywords': 'bg-emerald-500/20 text-emerald-300',
+      'other': 'bg-gray-500/20 text-gray-300'
+    }
+    return colors[tag] || colors['other']
+  }
+
+  const getTagLabel = (tag: string) => {
+    const labels: Record<string, string> = {
+      'company-overview': 'Company Overview',
+      'target-audience': 'Target Audience',
+      'pain-points': 'Pain Points',
+      'positioning': 'Positioning',
+      'product-features': 'Product Features',
+      'use-cases': 'Use Cases',
+      'competitor-notes': 'Competitor Notes',
+      'sales-objections': 'Sales Objections',
+      'brand-voice': 'Brand Voice',
+      'keywords': 'Keywords',
+      'other': 'Other'
+    }
+    return labels[tag] || 'Other'
+  }
+
+  // Show loading spinner while auth or company is loading
+  if (loading || companyLoading) {
     return (
       <div className="flex h-full items-center justify-center bg-[#0c0c0c]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent text-white" />
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent text-white mx-auto mb-4" />
+          <p className="text-sm text-[#666]">
+            {loading ? 'Loading user...' : 'Setting up company...'}
+          </p>
+        </div>
       </div>
     )
   }
 
   return (
       <motion.main 
-      className="bg-[#0c0c0c] flex flex-col"
+      className="bg-[#0c0c0c] flex flex-col h-screen overflow-hidden"
         initial="hidden"
         animate="visible"
         variants={containerVariants}
       >
       {/* Streamlined Header */}
-      <motion.div variants={itemVariants} className="px-6 pt-6 pb-4">
+      <motion.div variants={itemVariants} className="px-6 pt-6 pb-4 flex-shrink-0">
         {/* Tab Navigation - Visibility Page Style */}
           <div className="flex items-center justify-between gap-2 mb-6">
             <div className="flex items-center gap-2">
@@ -924,93 +867,40 @@ export default function ContentPage() {
               ))}
             </div>
           </div>
-
-        {/* Minimalist Utility Bar - Only show for completed tab */}
-          {activeTab === 'completed' && (
-          <div className="flex items-center justify-between gap-4">
-            {/* Left: Simple article count */}
-            <p className="text-sm text-[#666]">
-              {filteredArticles.length} TOTAL ARTICLES
-            </p>
-            
-            {/* Right: Filter, Sort, and Search */}
-              <div className="flex items-center gap-3">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-[#666] hover:text-white h-8 px-2 text-sm"
-                  >
-                    <Filter className="w-4 h-4 mr-1.5" />
-                    Filter
-                      </Button>
-                    </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-[#1a1a1a] border-[#2a2a2a] text-white" align="end">
-                  <DropdownMenuItem className="hover:bg-[#2a2a2a] cursor-pointer">
-                    <CheckCircle2 className="w-4 h-4 mr-2" />
-                    Published Only
-                      </DropdownMenuItem>
-                  <DropdownMenuItem className="hover:bg-[#2a2a2a] cursor-pointer">
-                    <Clock className="w-4 h-4 mr-2" />
-                    Recent First
-                      </DropdownMenuItem>
-                  <DropdownMenuItem className="hover:bg-[#2a2a2a] cursor-pointer">
-                    <TrendingUp className="w-4 h-4 mr-2" />
-                    High Engagement
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator className="bg-[#2a2a2a]" />
-                  <DropdownMenuItem className="hover:bg-[#2a2a2a] cursor-pointer">
-                    <X className="w-4 h-4 mr-2" />
-                    Clear Filters
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-[#666] hover:text-white h-8 px-2 text-sm"
-                  >
-                    <SortAsc className="w-4 h-4 mr-1.5" />
-                    Sort
-                        </Button>
-                      </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-[#1a1a1a] border-[#2a2a2a] text-white" align="end">
-                  <DropdownMenuItem className="hover:bg-[#2a2a2a] cursor-pointer">
-                    Date Created
-                        </DropdownMenuItem>
-                  <DropdownMenuItem className="hover:bg-[#2a2a2a] cursor-pointer">
-                    Last Updated
-                        </DropdownMenuItem>
-                  <DropdownMenuItem className="hover:bg-[#2a2a2a] cursor-pointer">
-                    Engagement Rate
-                        </DropdownMenuItem>
-                  <DropdownMenuItem className="hover:bg-[#2a2a2a] cursor-pointer">
-                    Word Count
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#666]" />
-                  <Input
-                    placeholder="Search articles..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-[#0a0a0a] border-[#1a1a1a] hover:border-[#2a2a2a] focus:border-[#3a3a3a] text-white h-8 pl-9 pr-3 w-56 text-sm transition-all duration-200 rounded-md"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-        </motion.div>
+      </motion.div>
 
       {/* Content */}
-        {activeTab === 'completed' && (
-        <motion.div variants={itemVariants} className="px-6 pb-6">
+          {activeTab === 'completed' && (
+        <motion.div variants={itemVariants} className="flex-1 overflow-auto">
+          {currentArticles.length === 0 ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center max-w-md mx-auto px-6">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                >
+                  <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] rounded-2xl flex items-center justify-center border border-[#333]">
+                    <FileText className="w-12 h-12 text-[#666]" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-white mb-3">
+                    No articles yet
+                  </h3>
+                  <p className="text-[#888] text-lg leading-relaxed mb-6">
+                    Your completed articles will appear here. Start by building your knowledge base to generate intelligent content suggestions.
+                  </p>
+                  <Button
+                    onClick={() => setActiveTab('knowledge')}
+                    className="bg-white text-black hover:bg-[#f5f5f5] px-6 py-2.5 text-sm font-medium transition-all duration-200 hover:scale-105"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Build Knowledge Base
+                      </Button>
+                </motion.div>
+                </div>
+              </div>
+          ) : (
+            <div className="px-6 pb-6">
           <div className="grid grid-cols-3 gap-6 w-full">
             {currentArticles.map((article, index) => (
               <motion.div
@@ -1019,200 +909,11 @@ export default function ContentPage() {
                 initial="hidden"
                 animate="visible"
                 transition={{ delay: index * 0.05 }}
-                className={`group relative bg-[#0a0a0a] rounded-lg p-5 transition-all duration-300 hover:shadow-lg hover:shadow-black/20 cursor-pointer flex flex-col ${
-                  article.isNew 
-                    ? 'border border-[#3a3a3a] hover:border-[#4a4a4a]' 
-                    : 'border border-[#1a1a1a] hover:border-[#2a2a2a]'
-                }`}
-                onClick={() => handleViewArticle(article.id)}
-              >
-                {/* Export Dropdown - Always Visible */}
-                <div className="absolute top-4 right-4 z-10">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                        className="h-7 w-7 p-0 text-[#666] hover:text-white hover:bg-[#1a1a1a] rounded-md opacity-60 hover:opacity-100 transition-opacity"
-                        onClick={(e) => e.stopPropagation()}
-                            >
-                              <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                          <DropdownMenuContent className="bg-[#1a1a1a] border-[#2a2a2a] text-white" align="end">
-                            <DropdownMenuItem 
-                              className="hover:bg-[#2a2a2a] cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleExportArticle(article, 'plain-text')
-                        }}
-                      >
-                        <Type className="w-4 h-4 mr-2" />
-                        Copy as Plain Text
-                        </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="hover:bg-[#2a2a2a] cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleExportArticle(article, 'markdown')
-                        }}
-                      >
-                        <Hash className="w-4 h-4 mr-2" />
-                        Copy as Markdown
-                        </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="hover:bg-[#2a2a2a] cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleExportArticle(article, 'json')
-                        }}
-                      >
-                          <FileText className="w-4 h-4 mr-2" />
-                        Copy as JSON
-                        </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="hover:bg-[#2a2a2a] cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleExportArticle(article, 'html')
-                        }}
-                      >
-                              <Download className="w-4 h-4 mr-2" />
-                        Copy as HTML
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-
-                {/* Card Content */}
-                <div className="space-y-4 flex-1 flex flex-col">
-                  {/* Header */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="border-[#333] text-[#888] bg-transparent text-xs px-2 py-0.5">
-                        {article.category}
-                      </Badge>
-                      <div className="flex items-center gap-1 text-xs text-[#666]">
-                        <Clock className="w-3 h-3" />
-                        <span>{article.readTime}</span>
-                  </div>
-                </div>
-                    
-                    <h3 className={`text-base font-semibold leading-tight group-hover:text-white/90 transition-colors line-clamp-2 pr-8 ${
-                      article.isNew ? 'text-white' : 'text-[#999]'
-                    }`}>
-                      {article.title}
-                    </h3>
-              </div>
-
-                  {/* Meta Description */}
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-2 text-xs text-[#666]">
-                      <AlignLeft className="w-3 h-3" />
-                      <span>Meta Description</span>
-                      </div>
-                    <p className="text-sm text-[#888] leading-relaxed line-clamp-3">
-                      {article.metaDescription}
-                    </p>
-                      </div>
-
-                  {/* Suggested Slug */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-xs text-[#666]">
-                      <Link className="w-3 h-3" />
-                      <span>Suggested URL</span>
-                      </div>
-                    <p className="text-xs text-[#666] font-mono bg-[#0c0c0c] px-2 py-1 rounded border border-[#1a1a1a] truncate">
-                      /{article.suggestedSlug}
-                    </p>
-                      </div>
-
-                  {/* Content Preview */}
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-xs text-[#666]">
-                      <FileText className="w-3 h-3" />
-                      <span>Content Preview</span>
-                      </div>
-                    <p className="text-sm text-[#777] leading-relaxed line-clamp-2">
-                      {article.contentPreview}
-                    </p>
-                  </div>
-
-                  {/* Footer */}
-                  <div className="flex items-center justify-between pt-3 border-t border-[#1a1a1a] mt-auto">
-                    <div className="flex items-center gap-3 text-xs text-[#666]">
-                            <span>{article.wordCount} words</span>
-                            <span>•</span>
-                      <span>{new Date(article.createdAt).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })}</span>
-                          </div>
-                    {article.isNew && (
-                      <Badge variant="outline" className="border-emerald-500/20 text-emerald-400 bg-emerald-500/10 text-xs px-2 py-0.5">
-                        New
-                      </Badge>
-                        )}
-                      </div>
-                </div>
+                    className="bg-[#0a0a0a] rounded-lg p-5 border border-[#1a1a1a] hover:border-[#2a2a2a] transition-all duration-300 hover:shadow-lg hover:shadow-black/20"
+                  >
+                    <p className="text-sm text-white">Article content placeholder</p>
               </motion.div>
             ))}
-            </div>
-
-          {currentArticles.length === 0 && (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <FileText className="w-12 h-12 text-[#333] mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-white mb-2">No articles found</h3>
-                <p className="text-sm text-[#666]">
-                  {searchQuery ? 'Try adjusting your search terms' : 'No completed articles yet'}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Pagination */}
-          {totalPages > 1 && currentArticles.length > 0 && (
-            <div className="flex items-center justify-between mt-8 pb-4">
-              <p className="text-sm text-[#666]">
-                Showing {startIndex + 1}-{Math.min(endIndex, filteredArticles.length)} of {filteredArticles.length} articles
-              </p>
-                      <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="border-[#333] hover:border-[#444] text-[#666] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed h-8 w-8 p-0"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <Button
-                    key={page}
-                    variant={currentPage === page ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handlePageChange(page)}
-                    className={
-                      currentPage === page
-                        ? "bg-white text-black hover:bg-[#f5f5f5] h-8 w-8 p-0 text-sm"
-                        : "border-[#333] hover:border-[#444] text-[#666] hover:text-white h-8 w-8 p-0 text-sm"
-                    }
-                  >
-                    {page}
-                  </Button>
-                ))}
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="border-[#333] hover:border-[#444] text-[#666] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed h-8 w-8 p-0"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
               </div>
             </div>
           )}
@@ -1221,355 +922,104 @@ export default function ContentPage() {
 
         {/* Content Queue Tab */}
         {activeTab === 'queue' && (
-          <motion.div variants={itemVariants} className="flex flex-col h-full">
-            {/* Queue Header */}
-            <div className="px-6 pb-4">
-              <div className="flex items-center justify-between">
-                {/* Left: Count and Filter */}
-                <div className="flex items-center gap-4">
-                  <p className="text-sm text-[#666]">
-                    {queueSuggestions.length} SUGGESTIONS
-                  </p>
-                  
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                        variant="outline"
-                        className="w-fit border border-[#333] bg-transparent hover:bg-[#1a1a1a] px-2 py-1 text-sm text-[#999] hover:text-white transition-all duration-200"
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm">
-                            {queueFilter === 'all' ? 'All' : 
-                             queueFilter === 'accepted' ? 'Accepted' : 
-                             'Pending'}
-                          </span>
-                          <ChevronDown className="h-3 w-3 text-[#666]" />
+        <motion.div variants={itemVariants} className="flex-1 overflow-auto">
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center max-w-md mx-auto px-6">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+              >
+                <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] rounded-2xl flex items-center justify-center border border-[#333]">
+                  <Calendar className="w-12 h-12 text-[#666]" />
                       </div>
-                            </Button>
-                          </DropdownMenuTrigger>
-                    <DropdownMenuContent 
-                      className="bg-[#1a1a1a] border border-[#333] text-white w-fit"
-                      align="start"
-                      alignOffset={-1}
-                      sideOffset={4}
-                    >
-                            <DropdownMenuItem 
-                        className="hover:bg-[#222] cursor-pointer text-sm px-2 py-1.5"
-                        onClick={() => setQueueFilter('all')}
-                      >
-                        All
-                            </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="hover:bg-[#222] cursor-pointer text-sm px-2 py-1.5"
-                        onClick={() => setQueueFilter('accepted')}
-                      >
-                        Accepted
-                            </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="hover:bg-[#222] cursor-pointer text-sm px-2 py-1.5"
-                        onClick={() => setQueueFilter('pending')}
-                      >
-                        Pending
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-
-                {/* Right: Reroll and Auto-Accept */}
-                <div className="flex items-center gap-4">
+                <h3 className="text-2xl font-bold text-white mb-3">
+                  Content queue is empty
+                </h3>
+                <p className="text-[#888] text-lg leading-relaxed mb-6">
+                  AI-generated content suggestions will appear here based on your knowledge base and market analysis.
+                </p>
+                <div className="flex flex-col gap-3">
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleRerollAll}
-                    className="h-8 w-8 p-0 text-[#666] hover:text-white hover:bg-[#1a1a1a] transition-all duration-200"
+                    onClick={() => setActiveTab('knowledge')}
+                    className="bg-white text-black hover:bg-[#f5f5f5] px-6 py-2.5 text-sm font-medium transition-all duration-200 hover:scale-105"
                   >
-                    <RotateCw className="w-4 h-4" />
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Add Company Knowledge
                   </Button>
-
-                      <div className="flex items-center gap-2">
-                    <span className="text-sm text-[#666]">Auto-Accept</span>
-                    <button
-                      onClick={() => setAutoAccept(!autoAccept)}
-                      className={`relative w-12 h-7 rounded-sm border transition-all duration-200 ${
-                        autoAccept 
-                          ? 'bg-white border-white' 
-                          : 'bg-transparent border-[#333] hover:border-[#444]'
-                      }`}
-                    >
-                      <div className={`absolute top-1/2 left-1 -translate-y-1/2 w-5 h-5 rounded-sm transition-all duration-200 ${
-                        autoAccept 
-                          ? 'bg-black translate-x-5' 
-                          : 'bg-[#666] translate-x-0'
-                      }`} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Usage Display and Quality Tier Selection */}
-              {usage && subscription && (
-                <div className="mt-6 grid grid-cols-2 gap-4">
-                  {/* Usage Display */}
-                  <UsageDisplay 
-                    usage={usage} 
-                    feature="article"
-                    onUpgrade={() => {
-                      router.push('/settings?tab=billing')
-                    }}
-                    showUpgradeButton={subscription.plan !== 'pro'}
-                  />
-                  
-                  {/* Quality Tier Selection - Only for Pro users */}
-                  {isPro && (
-                    <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <Crown className="w-5 h-5 text-yellow-500" />
-                          <h3 className="font-medium text-white">Article Quality</h3>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <label className="flex items-center gap-3 cursor-pointer group">
-                          <input
-                            type="radio"
-                            name="quality"
-                            value="standard"
-                            checked={qualityTier === 'standard'}
-                            onChange={() => setQualityTier('standard')}
-                            className="w-4 h-4 text-white"
-                          />
-                          <div className="flex-1">
-                            <div className="text-sm text-white group-hover:text-white/90">Standard</div>
-                            <div className="text-xs text-[#666]">High-quality AI-generated content</div>
-                          </div>
-                        </label>
-                        
-                        <label className="flex items-center gap-3 cursor-pointer group">
-                          <input
-                            type="radio"
-                            name="quality"
-                            value="premium"
-                            checked={qualityTier === 'premium'}
-                            onChange={() => setQualityTier('premium')}
-                            className="w-4 h-4 text-white"
-                          />
-                          <div className="flex-1">
-                            <div className="text-sm text-white group-hover:text-white/90 flex items-center gap-2">
-                              Premium
-                              <Badge variant="outline" className="border-yellow-500/20 text-yellow-400 bg-yellow-500/10 text-xs px-1.5 py-0">
-                                PRO
-                              </Badge>
-                            </div>
-                            <div className="text-xs text-[#666]">Advanced research & expert-level writing</div>
-                          </div>
-                        </label>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Non-pro users see upgrade prompt instead */}
-                  {!isPro && (
-                    <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Crown className="w-5 h-5 text-[#666]" />
-                        <h3 className="font-medium text-white">Premium Articles</h3>
-                      </div>
-                      <p className="text-xs text-[#666] mb-3">
-                        Upgrade to Pro for premium quality articles with advanced research
-                      </p>
                       <Button
-                        onClick={() => router.push('/settings?tab=billing')}
-                        size="sm"
-                        className="w-full h-8 bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white text-xs"
+                    variant="outline"
+                    className="border-[#333] text-[#999] hover:text-white hover:bg-[#1a1a1a] px-6 py-2.5 text-sm transition-all duration-200"
                       >
-                        Upgrade to Pro
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Generate Suggestions
                       </Button>
                     </div>
-                  )}
+              </motion.div>
                 </div>
-              )}
-            </div>
-
-            {/* Queue Content */}
-            <div className="flex-1 px-6 pb-6 overflow-y-auto">
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <div className="space-y-2">
-                  {/* Accepted Items - Draggable */}
-                  {queueFilter !== 'pending' && queueSuggestions.filter(s => s.status === 'accepted').length > 0 && (
-                    <SortableContext
-                      items={queueSuggestions.filter(s => s.status === 'accepted').map(s => s.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      {queueSuggestions
-                        .filter(s => s.status === 'accepted')
-                        .sort((a, b) => (a.order || 0) - (b.order || 0))
-                        .map((suggestion) => (
-                          <SortableItem key={suggestion.id} suggestion={suggestion} />
-                        ))}
-                    </SortableContext>
-                  )}
-
-                  {/* Pending Items - Not Draggable */}
-                  {queueFilter !== 'accepted' && queueSuggestions
-                    .filter(s => s.status === 'pending')
-                    .map((suggestion) => (
-                      <div key={suggestion.id} className="group flex items-center gap-2">
-                        {/* Spacer for alignment */}
-                        <div className="w-4 h-4 flex-shrink-0" />
-
-                        {/* Card */}
-                        <div className="flex-1 bg-[#0a0a0a] rounded-md border border-[#1a1a1a] transition-all duration-200 hover:border-[#2a2a2a]">
-                          {/* Main Content */}
-                          <div 
-                            className="px-4 py-3 cursor-pointer"
-                            onClick={() => setExpandedSuggestion(
-                              expandedSuggestion === suggestion.id ? null : suggestion.id
-                            )}
-                          >
-                            <div className="flex items-center justify-between gap-4">
-                              <div className="flex-1 flex items-center gap-3">
-                                <h3 className="text-sm font-medium text-white">
-                                  {suggestion.title}
-                                </h3>
-                                <div className="flex items-center gap-2 text-xs text-[#666]">
-                                  <span>{suggestion.wordCount.toLocaleString()} words</span>
-                                  <span className="text-[#333]">•</span>
-                                  <span>{Math.ceil(suggestion.wordCount / 200)} min read</span>
-                      </div>
-                                <ChevronDown 
-                                  className={`w-4 h-4 text-[#666] transition-transform duration-200 ease-out ${
-                                    expandedSuggestion === suggestion.id ? 'rotate-180' : ''
-                                  }`} 
-                                />
-                              </div>
-
-                              {/* Action Buttons */}
-                              <div className="flex items-center gap-1">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleDismissSuggestion(suggestion.id)
-                                  }}
-                                  className="p-1.5 hover:bg-red-500/10 rounded transition-all duration-200"
-                                >
-                                  <X className="w-5 h-5 text-red-500 hover:text-red-400 transition-colors duration-200" />
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleAcceptSuggestion(suggestion.id)
-                                  }}
-                                  className="p-1.5 hover:bg-green-500/10 rounded transition-all duration-200"
-                                >
-                                  <Check className="w-5 h-5 text-green-500 hover:text-green-400 transition-colors duration-200" />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Expanded Content */}
-                          <div 
-                            className={`overflow-hidden transition-all duration-500 ease-out ${
-                              expandedSuggestion === suggestion.id ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-                            }`}
-                          >
-                            <div className={`border-t border-[#1a1a1a] px-4 py-3 transition-all duration-300 ease-out ${
-                              expandedSuggestion === suggestion.id ? 'translate-y-0' : '-translate-y-2'
-                            }`}>
-                              <p className="text-sm text-[#999] leading-relaxed mb-3">
-                                {suggestion.description}
-                              </p>
-                              
-                              <div className="flex flex-wrap gap-1">
-                                {suggestion.keywords.map((keyword, idx) => (
-                                  <span
-                                    key={idx}
-                                    className={`px-2 py-1 bg-[#1a1a1a] text-xs text-[#666] rounded transition-all duration-200 hover:bg-[#2a2a2a] ${
-                                      expandedSuggestion === suggestion.id ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'
-                                    }`}
-                                    style={{ transitionDelay: `${idx * 30}ms` }}
-                                  >
-                                    {keyword}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </DndContext>
-
-              {/* Empty State */}
-              {queueSuggestions.filter(s => queueFilter === 'all' || s.status === queueFilter).length === 0 && (
-                <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-                    <Sparkles className="w-12 h-12 text-[#333] mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-white mb-2">
-                      {queueFilter === 'accepted' ? 'No accepted suggestions' : 
-                       queueFilter === 'pending' ? 'No pending suggestions' : 
-                       'No content suggestions'}
-                    </h3>
-                    <p className="text-sm text-[#666]">
-                      {queueFilter === 'accepted' ? 'Accept suggestions to see them here' : 
-                       'Check back soon for AI-generated content ideas'}
-                    </p>
-                  </div>
-                </div>
-                        )}
                       </div>
           </motion.div>
         )}
 
+      {/* Knowledge Base Tab */}
         {activeTab === 'knowledge' && (
-          <motion.div variants={itemVariants} className="flex flex-col h-full">
+        <motion.div variants={itemVariants} className="flex flex-col flex-1 overflow-hidden">
             {/* Knowledge Base Header */}
-            <div className="px-6 pb-4">
+          <div className="px-6 pb-4 flex-shrink-0">
               <div className="flex items-center justify-between">
-                {/* Left: Count only */}
+              {/* Left: Count and completeness indicator */}
                 <div className="flex items-center gap-4">
                   <p className="text-sm text-[#666]">
-                    {knowledgeItems.filter(item => 
-                      (knowledgeFilter === 'all' || item.tag === knowledgeFilter) &&
-                      (knowledgeSearch === '' || 
-                       item.content.toLowerCase().includes(knowledgeSearch.toLowerCase()) ||
-                       item.tag.toLowerCase().includes(knowledgeSearch.toLowerCase()))
-                    ).length} KNOWLEDGE ITEMS
-                  </p>
+                  {filteredKnowledgeItems.length} KNOWLEDGE ITEMS
+                </p>
+                {knowledgeBase.statistics && (
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${
+                      knowledgeBase.statistics.completenessScore > 0.7 ? 'bg-green-500' : 
+                      knowledgeBase.statistics.completenessScore > 0.4 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`} />
+                    <span className="text-xs text-[#666]">
+                      {Math.round(knowledgeBase.statistics.completenessScore * 100)}% Complete
+                    </span>
+                  </div>
+                )}
                 </div>
 
-                {/* Right: Search and Add */}
+                {/* Right: Add Button */}
                 <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#666]" />
-                    <Input
-                      placeholder="Search knowledge..."
-                      value={knowledgeSearch}
-                      onChange={(e) => setKnowledgeSearch(e.target.value)}
-                      className="bg-[#0a0a0a] border-[#1a1a1a] hover:border-[#2a2a2a] focus:border-[#3a3a3a] text-white h-8 pl-9 pr-3 w-48 text-sm transition-all duration-200 rounded-md"
-                    />
-                  </div>
-                  
                   <Button
                     onClick={handleAddKnowledgeItem}
-                    disabled={!newKnowledgeContent.trim()}
+                    disabled={!newKnowledgeContent.trim() || knowledgeBase.isExtracting || companyLoading || !company?.id}
                     className="h-8 px-3 text-sm bg-white text-black hover:bg-[#f5f5f5] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:scale-95"
                   >
-                    <Plus className="w-4 h-4 mr-1.5" />
-                    Add Knowledge
+                    {knowledgeBase.isExtracting ? (
+                      <>
+                        <div className="animate-spin w-4 h-4 border-2 border-black border-t-transparent rounded-full mr-1.5" />
+                        Extracting...
+                      </>
+                    ) : companyLoading ? (
+                      <>
+                        <div className="animate-spin w-4 h-4 border-2 border-black border-t-transparent rounded-full mr-1.5" />
+                        Setting up...
+                      </>
+                    ) : !company?.id ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-1.5" />
+                        Refresh to Complete Setup
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 mr-1.5" />
+                        {newKnowledgeContent.length > 100 ? 'Extract Knowledge' : 'Add Knowledge'}
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
             </div>
 
-            {/* Large Knowledge Input Area */}
-            <div className="px-6 pb-6">
+          {/* Enhanced Knowledge Input Area */}
+          <div className="px-6 pb-6 flex-shrink-0">
               <motion.div 
                 className="relative"
                 initial={{ opacity: 0, y: 8 }}
@@ -1577,10 +1027,11 @@ export default function ContentPage() {
                 transition={{ duration: 0.3, ease: "easeOut" }}
               >
                 <textarea
-                  placeholder="Paste anything your content engine should know. Product blurbs, positioning, FAQs, target audiences, pain points, competitive notes — it all helps the AI understand your business better."
+                placeholder="Paste anything about your company - marketing materials, product descriptions, competitor analysis, customer feedback, positioning docs, sales decks, etc. Our AI will automatically organize it into your knowledge base."
                   value={newKnowledgeContent}
                   onChange={(e) => setNewKnowledgeContent(e.target.value)}
-                  className="w-full bg-[#0a0a0a] border border-[#1a1a1a] hover:border-[#2a2a2a] focus:border-[#3a3a3a] text-white p-4 rounded-md text-sm transition-all duration-200 resize-none leading-relaxed focus:scale-[1.01] focus:shadow-lg focus:shadow-black/20"
+                disabled={knowledgeBase.isExtracting}
+                className="w-full bg-[#0a0a0a] border border-[#1a1a1a] hover:border-[#2a2a2a] focus:border-[#3a3a3a] text-white p-4 rounded-md transition-all duration-200 resize-none leading-relaxed focus:scale-[1.01] focus:shadow-lg focus:shadow-black/20 disabled:opacity-50"
                   rows={6}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -1590,274 +1041,43 @@ export default function ContentPage() {
                 />
                 {newKnowledgeContent && (
                   <motion.div 
-                    className="absolute bottom-3 right-3 text-xs text-[#666] bg-[#0a0a0a] px-2 py-1 rounded"
+                  className="absolute bottom-3 right-3 text-sm text-[#666] bg-[#0a0a0a] px-2 py-1 rounded"
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.2, ease: "easeOut" }}
                   >
-                    {newKnowledgeContent.trim().split(' ').length} words • ⌘+Enter to add
+                  {newKnowledgeContent.trim().split(' ').length} words
+                  {estimatedExtractions > 1 && (
+                    <> • ~{estimatedExtractions} items expected</>
+                  )}
+                  <> • ⌘+Enter to {newKnowledgeContent.length > 100 ? 'extract' : 'add'}</>
                   </motion.div>
                 )}
               </motion.div>
+
+            {/* Only show debug info if there's an actual issue */}
+            {(!company?.id && !companyLoading) && (
+              <div className="mt-4 p-3 bg-red-900/20 border border-red-500/30 rounded-md">
+                <div className="text-xs text-red-300 mb-2">Setup Issue Detected:</div>
+                <div className="text-xs text-red-200">
+                  No company found. This usually means onboarding wasn't completed properly.
+                  <br />Please refresh the page - the onboarding should appear automatically.
+                </div>
+              </div>
+            )}
             </div>
 
             {/* Knowledge Table */}
-            <div className="flex-1 px-6 pb-6 overflow-hidden">
-              {knowledgeItems.length === 0 ? (
-                <div className="flex items-center justify-center h-64">
-                  <div className="text-center">
-                    <FileText className="w-12 h-12 text-[#333] mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-white mb-2">No knowledge items yet</h3>
-                    <p className="text-sm text-[#666]">
-                      Add your first piece of company knowledge above
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg overflow-hidden">
-                  {/* Table Header */}
-                  <div className="grid grid-cols-12 gap-0 border-b border-[#1a1a1a] bg-[#0c0c0c]">
-                    <div className="col-span-6 px-3 py-2 text-xs font-medium text-[#666] uppercase tracking-wide border-r border-[#1a1a1a] flex items-center gap-2">
-                      Content
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className="p-0.5 hover:bg-[#1a1a1a] rounded transition-all duration-200 hover:scale-110 active:scale-95">
-                            <Search className="w-3 h-3 text-[#555] hover:text-[#888] transition-colors duration-200" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-[#1a1a1a] border-[#333] text-white w-48" align="start">
-                          <div className="p-2">
-                            <Input
-                              placeholder="Search content..."
-                              value={knowledgeSearch}
-                              onChange={(e) => setKnowledgeSearch(e.target.value)}
-                              className="bg-[#0a0a0a] border-[#333] text-white h-7 text-xs transition-all duration-200 focus:border-[#555]"
-                            />
-                          </div>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    <div className="col-span-3 px-3 py-2 text-xs font-medium text-[#666] uppercase tracking-wide border-r border-[#1a1a1a] flex items-center gap-2">
-                      Category
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className="p-0.5 hover:bg-[#1a1a1a] rounded transition-all duration-200 hover:scale-110 active:scale-95">
-                            <Filter className="w-3 h-3 text-[#555] hover:text-[#888] transition-colors duration-200" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-[#1a1a1a] border-[#333] text-white" align="start">
-                          <DropdownMenuItem 
-                            className="hover:bg-[#222] cursor-pointer text-sm px-2 py-1.5 transition-colors duration-150"
-                            onClick={() => setKnowledgeFilter('all')}
-                          >
-                            All Categories
-                          </DropdownMenuItem>
-                          {availableTags.map((tag) => (
-                            <DropdownMenuItem 
-                              key={tag}
-                              className="hover:bg-[#222] cursor-pointer text-sm px-2 py-1.5 transition-colors duration-150"
-                              onClick={() => setKnowledgeFilter(tag)}
-                            >
-                              {tag.replace('-', ' ')}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    <div className="col-span-1 px-3 py-2 text-xs font-medium text-[#666] uppercase tracking-wide border-r border-[#1a1a1a]">
-                      Words
-                    </div>
-                    <div className="col-span-1 px-3 py-2 text-xs font-medium text-[#666] uppercase tracking-wide border-r border-[#1a1a1a]">
-                      Date
-                    </div>
-                    <div className="col-span-1 px-3 py-2 text-xs font-medium text-[#666] uppercase tracking-wide text-center">
-                      Actions
-                    </div>
-                  </div>
-
-                  {/* Table Body */}
-                  <div className="overflow-y-auto max-h-[calc(100vh-400px)]">
-                    {knowledgeItems
-                      .filter(item => 
-                        (knowledgeFilter === 'all' || item.tag === knowledgeFilter) &&
-                        (knowledgeSearch === '' || 
-                         item.content.toLowerCase().includes(knowledgeSearch.toLowerCase()) ||
-                         item.tag.toLowerCase().includes(knowledgeSearch.toLowerCase()))
-                      )
-                      .map((item, index) => (
-                        <motion.div
-                          key={item.id}
-                          initial={{ opacity: 0, y: 4 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.01 }}
-                          className="group grid grid-cols-12 gap-0 border-b border-[#111] hover:bg-[#0c0c0c] transition-all duration-150"
-                        >
-                          {/* Content Cell */}
-                          <div className="col-span-6 px-3 py-2 border-r border-[#111] flex items-center min-h-[40px]">
-                            {editingItem === item.id ? (
-                              <motion.div 
-                                className="w-full"
-                                initial={{ scale: 0.98, opacity: 0.8 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ duration: 0.2, ease: "easeOut" }}
-                              >
-                                <textarea
-                                  value={editingContent}
-                                  onChange={(e) => setEditingContent(e.target.value)}
-                                  className="w-full bg-[#0a0a0a] border border-[#333] text-white p-2 rounded text-sm resize-none leading-relaxed focus:border-[#555] transition-colors duration-200"
-                                  rows={3}
-                                  autoFocus
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                                      handleSaveEdit()
-                                    }
-                                    if (e.key === 'Escape') {
-                                      handleCancelEdit()
-                                    }
-                                  }}
-                                />
-                              </motion.div>
-                            ) : (
-                              <div 
-                                className="relative w-full cursor-pointer hover:bg-[#0c0c0c] rounded p-1 -m-1 transition-colors duration-200"
-                                onDoubleClick={() => handleStartEdit(item)}
-                                title="Double-click to edit"
-                              >
-                                <p className="text-sm text-white leading-relaxed line-clamp-2 overflow-hidden">
-                                  {item.content}
-                                </p>
-                                {item.content.length > 120 && (
-                                  <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#0a0a0a] to-transparent pointer-events-none" />
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Category Cell */}
-                          <div className="col-span-3 px-3 py-2 border-r border-[#111] flex items-center min-h-[40px]">
-                            {editingItem === item.id ? (
-                              <motion.div
-                                initial={{ scale: 0.98, opacity: 0.8 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ duration: 0.2, ease: "easeOut" }}
-                              >
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      className="h-8 px-3 text-sm border-[#333] bg-transparent hover:bg-[#1a1a1a] text-[#999] hover:text-white transition-colors duration-200"
-                                    >
-                                      {editingTag.replace('-', ' ')}
-                                      <ChevronDown className="w-3 h-3 ml-2" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent className="bg-[#1a1a1a] border-[#333] text-white">
-                                    {availableTags.map((tag) => (
-                                      <DropdownMenuItem
-                                        key={tag}
-                                        onClick={() => setEditingTag(tag)}
-                                        className="hover:bg-[#222] cursor-pointer text-sm transition-colors duration-150"
-                                      >
-                                        {tag.replace('-', ' ')}
-                                      </DropdownMenuItem>
-                                    ))}
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </motion.div>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded text-xs border border-[#333] text-[#888] bg-[#0c0c0c] whitespace-nowrap">
-                                {item.tag.replace('-', ' ')}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Word Count Cell */}
-                          <div className="col-span-1 px-3 py-2 border-r border-[#111] flex items-center min-h-[40px]">
-                            <span className="text-sm text-[#666]">
-                              {editingItem === item.id ? editingContent.trim().split(' ').length : item.wordCount}
-                            </span>
-                          </div>
-
-                          {/* Date Cell */}
-                          <div className="col-span-1 px-3 py-2 border-r border-[#111] flex items-center min-h-[40px]">
-                            <span className="text-sm text-[#666]">
-                              {new Date(item.createdAt).toLocaleDateString('en-US', { 
-                                month: 'short', 
-                                day: 'numeric',
-                                year: '2-digit'
-                              })}
-                            </span>
-                          </div>
-
-                          {/* Actions Cell */}
-                          <div className="col-span-1 px-3 py-2 flex items-center justify-center min-h-[40px]">
-                            {editingItem === item.id ? (
-                              <motion.div 
-                                className="flex items-center gap-1"
-                                initial={{ scale: 0.9, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ duration: 0.2, ease: "easeOut" }}
-                              >
-                                <Button
-                                  onClick={handleCancelEdit}
-                                  variant="ghost"
-                                  className="h-6 w-6 p-0 text-[#666] hover:text-white transition-colors duration-200"
-                                  title="Cancel (Esc)"
-                                >
-                                  <X className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  onClick={handleSaveEdit}
-                                  variant="ghost"
-                                  className="h-6 w-6 p-0 text-green-500 hover:text-green-400 transition-colors duration-200"
-                                  title="Save (⌘+Enter)"
-                                >
-                                  <Check className="w-3 h-3" />
-                                </Button>
-                              </motion.div>
-                            ) : (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    className="h-6 w-6 p-0 transition-all duration-200 hover:scale-110"
-                                  >
-                                    <MoreHorizontal className="w-4 h-4 text-[#666]" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="bg-[#1a1a1a] border-[#333] text-white" align="end">
-                                  <DropdownMenuItem 
-                                    onClick={() => handleStartEdit(item)}
-                                    className="hover:bg-[#222] cursor-pointer text-sm transition-colors duration-150"
-                                  >
-                                    <Edit3 className="w-4 h-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => handleCopyKnowledgeItem(item.content)}
-                                    className="hover:bg-[#222] cursor-pointer text-sm transition-colors duration-150"
-                                  >
-                                    <Copy className="w-4 h-4 mr-2" />
-                                    Copy
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator className="bg-[#333]" />
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDeleteKnowledgeItem(item.id)}
-                                    className="hover:bg-red-500/10 cursor-pointer text-red-400 text-sm transition-colors duration-150"
-                                  >
-                                    <X className="w-4 h-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            )}
-                          </div>
-                        </motion.div>
-                      ))}
-                  </div>
-                </div>
-              )}
-            </div>
+          <div className="flex-1 px-6 pb-6 overflow-auto">
+            <KnowledgeTable
+              items={knowledgeBase.items}
+              availableTags={availableTags}
+              onUpdateItem={handleUpdateKnowledgeItem}
+              onDeleteItem={handleDeleteKnowledgeItem}
+              onCopyItem={handleCopyKnowledgeItem}
+              isLoading={knowledgeBase.isLoading}
+            />
+          </div>
           </motion.div>
         )}
       </motion.main>

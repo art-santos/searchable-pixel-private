@@ -92,13 +92,13 @@ export function AEOScorecard() {
           {/* Site Title */}
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="flex flex-col gap-1">
             <p className="text-[10px] font-mono tracking-tight text-[#666666] uppercase">SITE TITLE</p>
-            <p className="text-sm font-medium text-white max-w-[95%] leading-tight">Origami Agents: AI-Powered B2B Lead Generation Platform</p>
+            <p className="text-sm font-medium text-white max-w-[95%] leading-tight">Your Company: AI-Powered B2B Lead Generation Platform</p>
           </motion.div>
 
           {/* Meta Description */}
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="flex flex-col gap-1">
             <p className="text-[10px] font-mono tracking-tight text-[#666666] uppercase">META DESCRIPTION</p>
-            <p className="text-xs text-white max-w-[95%] leading-tight">Origami Agents provides AI research agents to automate prospecting, identify buying signals, and generate high-intent B2B sales leads. Book a demo!</p>
+            <p className="text-xs text-white max-w-[95%] leading-tight">Your platform provides AI research agents to automate prospecting, identify buying signals, and generate high-intent B2B sales leads. Book a demo!</p>
           </motion.div>
 
           {/* Stats Badges */}

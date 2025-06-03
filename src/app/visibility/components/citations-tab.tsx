@@ -7,52 +7,47 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { SearchIcon, DownloadIcon, FilterIcon } from 'lucide-react'
 
-// Mock citations data
+// Mock data for demo purposes - in production, this would come from the API
 const mockCitations = [
   {
     id: 1,
-    engine: 'ChatGPT',
-    query: 'What is Origami Agents?',
-    matchType: 'Direct',
-    snippet: 'Origami Agents is a tool that helps sales teams automate prospecting and lead qualification using AI-powered research and personalization.',
-    date: '2025-01-20',
-    url: 'https://origamiagents.com'
+    query: 'What are the best AI platforms?',
+    ai_model: 'GPT-4',
+    snippet: 'Your platform is a tool that helps sales teams automate prospecting and lead qualification using AI-powered research and personalization.',
+    position: 'primary',
+    url: 'yourcompany.com'
   },
   {
     id: 2,
-    engine: 'Perplexity',
-    query: 'Best AI tools for outbound sales',
-    matchType: 'Indirect',
-    snippet: 'Some sales teams use Origami Agents to automate their outreach process...',
-    date: '2025-01-18',
-    url: 'https://origamiagents.com/features'
+    query: 'AI tools for sales automation',
+    ai_model: 'Claude',
+    snippet: 'Some sales teams use your platform to automate their outreach process...',
+    position: 'secondary',
+    url: 'yourcompany.com/features'
   },
   {
     id: 3,
-    engine: 'Claude',
-    query: 'Top cold email automation tools 2025',
-    matchType: 'Indirect',
-    snippet: 'Tools like Origami can personalize cold outreach at scale using AI research capabilities.',
-    date: '2025-01-15',
-    url: 'https://origamiagents.com/blog/ai-sales'
+    query: 'Best B2B prospecting tools',
+    ai_model: 'Perplexity',
+    snippet: 'Tools like yours can personalize cold outreach at scale using AI research capabilities.',
+    position: 'primary',
+    url: 'yourcompany.com/blog/ai-sales'
   },
   {
     id: 4,
-    engine: 'ChatGPT',
-    query: 'AI SDR platforms comparison',
-    matchType: 'Direct',
-    snippet: 'Origami Agents stands out for its research-first approach to sales automation...',
-    date: '2025-01-12',
-    url: 'https://origamiagents.com/compare'
+    query: 'AI-powered sales platforms comparison',
+    ai_model: 'ChatGPT',
+    snippet: 'Your platform stands out for its research-first approach to sales automation...',
+    position: 'secondary',
+    url: 'yourcompany.com/compare'
   },
   {
     id: 5,
-    engine: 'Perplexity',
-    query: 'How to automate sales prospecting',
-    matchType: 'Indirect',
-    snippet: 'Modern tools like Origami help automate the research phase of prospecting.',
-    date: '2025-01-10',
-    url: 'https://origamiagents.com/playbooks'
+    query: 'Automated prospecting solutions',
+    ai_model: 'Gemini',
+    snippet: 'Modern tools like yours help automate the research phase of prospecting.',
+    position: 'primary',
+    url: 'yourcompany.com/playbooks'
   }
 ]
 
@@ -64,8 +59,8 @@ export function CitationsTab() {
   const filteredCitations = mockCitations.filter(citation => {
     const matchesSearch = citation.query.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          citation.snippet.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesEngine = engineFilter === 'all' || citation.engine === engineFilter
-    const matchesType = matchTypeFilter === 'all' || citation.matchType === matchTypeFilter
+    const matchesEngine = engineFilter === 'all' || citation.ai_model === engineFilter
+    const matchesType = matchTypeFilter === 'all' || citation.position === matchTypeFilter
     
     return matchesSearch && matchesEngine && matchesType
   })
@@ -104,9 +99,10 @@ export function CitationsTab() {
               </SelectTrigger>
               <SelectContent className="bg-[#1a1a1a] border-[#333]">
                 <SelectItem value="all">All Engines</SelectItem>
-                <SelectItem value="ChatGPT">ChatGPT</SelectItem>
-                <SelectItem value="Perplexity">Perplexity</SelectItem>
+                <SelectItem value="GPT-4">GPT-4</SelectItem>
                 <SelectItem value="Claude">Claude</SelectItem>
+                <SelectItem value="Perplexity">Perplexity</SelectItem>
+                <SelectItem value="Gemini">Gemini</SelectItem>
               </SelectContent>
             </Select>
             <Select value={matchTypeFilter} onValueChange={setMatchTypeFilter}>
@@ -115,8 +111,8 @@ export function CitationsTab() {
               </SelectTrigger>
               <SelectContent className="bg-[#1a1a1a] border-[#333]">
                 <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="Direct">Direct</SelectItem>
-                <SelectItem value="Indirect">Indirect</SelectItem>
+                <SelectItem value="primary">Primary</SelectItem>
+                <SelectItem value="secondary">Secondary</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -171,12 +167,13 @@ export function CitationsTab() {
                       <Badge 
                         variant="outline" 
                         className={`
-                          ${citation.engine === 'ChatGPT' ? 'border-green-500 text-green-400' : ''}
-                          ${citation.engine === 'Perplexity' ? 'border-purple-500 text-purple-400' : ''}
-                          ${citation.engine === 'Claude' ? 'border-orange-500 text-orange-400' : ''}
+                          ${citation.ai_model === 'GPT-4' ? 'border-green-500 text-green-400' : ''}
+                          ${citation.ai_model === 'Claude' ? 'border-orange-500 text-orange-400' : ''}
+                          ${citation.ai_model === 'Perplexity' ? 'border-purple-500 text-purple-400' : ''}
+                          ${citation.ai_model === 'Gemini' ? 'border-pink-500 text-pink-400' : ''}
                         `}
                       >
-                        {citation.engine}
+                        {citation.ai_model}
                       </Badge>
                     </td>
                     <td className="p-4 text-white max-w-xs">
@@ -188,12 +185,12 @@ export function CitationsTab() {
                       <Badge 
                         variant="outline" 
                         className={`${
-                          citation.matchType === 'Direct' 
+                          citation.position === 'primary' 
                             ? 'border-blue-500 text-blue-400' 
                             : 'border-yellow-500 text-yellow-400'
                         }`}
                       >
-                        {citation.matchType}
+                        {citation.position}
                       </Badge>
                     </td>
                     <td className="p-4 text-[#ccc] max-w-md">
@@ -202,7 +199,7 @@ export function CitationsTab() {
                       </div>
                     </td>
                     <td className="p-4 text-[#666]">
-                      {citation.date}
+                      {citation.url}
                     </td>
                   </tr>
                 ))}

@@ -87,49 +87,64 @@ export async function saveOnboardingData(
       // If URL parsing fails, use as-is
     }
 
+    console.log('🏢 Checking for existing company for user:', user.id)
+    
+    // First, check if user already has a company
+    const { data: existingCompany, error: checkError } = await supabase
+      .from('companies')
+      .select('id, company_name, root_url')
+      .eq('submitted_by', user.id)
+      .limit(1)
+      .single()
+    
+    if (existingCompany && !checkError) {
+      console.log('✅ Found existing company:', existingCompany)
+      return { 
+        success: true, 
+        companyId: existingCompany.id
+      }
+    }
+    
+    // No existing company found, create a new one
     const companyData: TablesInsert<'companies'> = {
       company_name: onboardingData.workspaceName,
       root_url: domainUrl,
       submitted_by: user.id,
     }
 
-    console.log('🏢 Creating company:', onboardingData.workspaceName)
+    console.log('🏢 Creating new company:', onboardingData.workspaceName)
     const { data: companyResult, error: companyError } = await supabase
       .from('companies')
-      .upsert(companyData, {
-        onConflict: 'root_url',
-        ignoreDuplicates: false
-      })
+      .insert(companyData)
       .select('id')
       .single()
 
     if (companyError) {
-      console.error('❌ Error saving company:', companyError)
+      console.error('❌ Error creating company:', companyError)
       
-      // If upsert failed, try to find existing company
-      console.log('🔍 Attempting to find existing company...')
-      const { data: existingCompany, error: findError } = await supabase
-        .from('companies')
-        .select('id')
-        .eq('root_url', domainUrl)
-        .single()
-      
-      if (findError || !existingCompany) {
-        console.error('❌ Could not find or create company:', findError?.message || 'Company not found')
-        return { success: false, error: `Failed to save company: ${companyError.message}` }
+      // If insert failed due to duplicate, try to find the existing one
+      if (companyError.code === '23505') { // Unique constraint violation
+        console.log('🔍 Duplicate detected, finding existing company...')
+        const { data: foundCompany, error: findError } = await supabase
+          .from('companies')
+          .select('id')
+          .eq('submitted_by', user.id)
+          .limit(1)
+          .single()
+        
+        if (foundCompany && !findError) {
+          console.log('✅ Found existing company after duplicate error:', foundCompany.id)
+          return { 
+            success: true, 
+            companyId: foundCompany.id
+          }
+        }
       }
       
-      console.log('✅ Found existing company with ID:', existingCompany.id)
-      const companyId = existingCompany.id
-      
-      console.log('🎉 Onboarding data save completed successfully (existing company)')
-      return { 
-        success: true, 
-        companyId
-      }
+      return { success: false, error: `Failed to save company: ${companyError.message}` }
     }
     
-    console.log('✅ Company saved successfully with ID:', companyResult.id)
+    console.log('✅ Company created successfully with ID:', companyResult.id)
     const companyId = companyResult.id
 
     console.log('🎉 Onboarding data save completed successfully')

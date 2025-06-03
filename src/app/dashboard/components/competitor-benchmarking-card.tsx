@@ -43,12 +43,14 @@ const competitors = [
     url: "apollo.io",
     score: 79.4,
   },
-  // The user's company is always shown as #5, regardless of actual rank. See note below.
   {
-    logo: "/origami-favicon.svg",
-    url: "origamiagents.com",
-    score: 72.2,
-    isUser: true, // <-- This is the user's company, always shown as #5
+    name: "Your Company",
+    score: 67.2,
+    change: 5.4,
+    rank: 4,
+    logo: "/company-placeholder.svg",
+    url: "yourcompany.com",
+    isUser: true
   },
 ];
 

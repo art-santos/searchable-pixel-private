@@ -12,24 +12,49 @@ interface OverviewTabProps {
 const topMentions = [
   {
     source: 'ChatGPT',
-    query: 'What is Origami Agents?',
-    snippet: 'Origami Agents helps sales teams automate prospecting...',
+    query: 'What are the top AI platforms?',
+    snippet: 'Your platform helps sales teams automate prospecting...',
     type: 'direct' as const,
     date: '2025-01-20'
   },
   {
     source: 'Perplexity',
     query: 'Best AI SDR Tools',
-    snippet: 'Some use Origami Agents for automated outreach...',
+    snippet: 'Some teams use your platform for automated outreach...',
     type: 'indirect' as const,
     date: '2025-01-18'
   },
   {
     source: 'Claude',
     query: 'Top AI tools for cold outreach',
-    snippet: 'Tools like Origami can personalize at scale...',
+    snippet: 'Platforms like yours can personalize at scale...',
     type: 'indirect' as const,
     date: '2025-01-15'
+  }
+]
+
+// Mock data for demo purposes - in production, this would come from the API
+const mockCitations = [
+  {
+    id: 1,
+    query: 'What are the best AI agent platforms?',
+    snippet: 'Your platform helps sales teams automate prospecting...',
+    position: 'primary',
+    url: 'yourcompany.com'
+  },
+  {
+    id: 2,
+    query: 'AI agents for B2B sales automation',
+    snippet: 'Some use your platform for automated outreach...',
+    position: 'secondary',
+    url: 'yourcompany.com/features'
+  },
+  {
+    id: 3,
+    query: 'Sales automation tools comparison',
+    snippet: 'Tools like yours can personalize at scale...',
+    position: 'primary',
+    url: 'yourcompany.com/blog'
   }
 ]
 

@@ -82,7 +82,7 @@ export function LoginForm({
       // Log the actual request details
       console.log('📡 Making signInWithPassword request...')
       console.log('📡 URL should be: https://xeclltopgmpwjpvwdnxu.supabase.co/auth/v1/token?grant_type=password')
-      
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -93,7 +93,7 @@ export function LoginForm({
       console.log('- User exists:', !!data?.user)
       console.log('- Session exists:', !!data?.session)
       console.log('- Error exists:', !!error)
-      
+
       if (error) {
         console.error('❌ Auth Error Details:')
         console.error('- Message:', error.message)
