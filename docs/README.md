@@ -1,114 +1,124 @@
-# AI Visibility Infrastructure
+# Split Documentation
 
-## Overview
+Welcome to the Split documentation! This guide will help you understand, set up, and work with the Split platform.
 
-This project is a full-stack platform that enables companies to measure, improve, and automate their visibility across AI-powered search engines like ChatGPT, Perplexity, and Gemini.
+## 📁 Documentation Structure
 
-It consists of three tightly integrated systems:
+### 🏗️ Architecture
+- **[MAX Visibility Pipeline Architecture](./architecture/max-visibility-pipeline-architecture.md)** - Complete technical architecture of the MAX Visibility assessment system
+- **[MAX Visibility Overview](./architecture/max-visibility.md)** - High-level overview of the MAX Visibility feature
 
-1. LLM Visibility Intelligence  
-2. Technical Site Auditing & AEO Optimization  
-3. Automated Content Publishing via `split` npm package
+### ✨ Features
+- **[Knowledge Base Integration](./features/knowledge-base-integration-feature-map.md)** - How the knowledge base enhances company analysis
+- **[Visibility Testing](./features/visibility-test.md)** - Testing and validation of visibility features
+
+### ⚙️ Setup & Configuration
+- **[Analytics Implementation](./setup/analytics-implementation-guide.md)** - Setting up analytics tracking
+- **[Visibility Integration](./setup/VISIBILITY_INTEGRATION.md)** - Integrating visibility features
+- **[Crawler Build](./setup/crawler-build.md)** - Building and configuring the web crawler
+- **[NPM Package Setup](./setup/npm-package.md)** - Setting up the Split Analytics NPM package
+- **[Stripe Setup](./stripe-setup.md)** - Payment processing configuration
+- **[Cron Setup](./cron-setup.md)** - Scheduled task configuration
+
+### 📖 Guides
+- **[User Journey](./guides/userpath.md)** - Complete user experience flow
+- **[Content Strategy](./guides/content.md)** - Content creation and management
+- **[Animation System](./guides/animations.md)** - Using the animation system
+- **[Anime.js Integration](./guides/animejs.md)** - Advanced animations with Anime.js
+- **[Keywords Guide](./guides/keywords.md)** - Keyword research and optimization
+
+### 🔧 Troubleshooting
+- **[Authentication Debug](./troubleshooting/auth-debug-guide.md)** - Debugging authentication issues
+- **[Voting System Issues](./troubleshooting/)** - Voting-related troubleshooting
+  - [Voting Auth Requirements](./troubleshooting/voting-auth-requirement.md)
+  - [Voting Fixes Summary](./troubleshooting/voting-fixes-summary.md)
+  - [Voting Troubleshooting](./troubleshooting/voting-troubleshooting.md)
+  - [Voting System Summary](./troubleshooting/voting-system-summary.md)
+  - [Test Voting](./troubleshooting/test-voting.md)
+- **[Database Issues](./troubleshooting/)** - Database-related fixes
+  - [Database Fix](./troubleshooting/database_fix.md)
+  - [Database Migration](./troubleshooting/db_migration.md)
+
+### 🎨 UI Components
+- **[ShadCN Components](./shadcn.md)** - Complete ShadCN UI component library
+- **[SBAC System](./sbac.md)** - Smart Button Action Component system
+- **[SBAC Implementation](./sbac-implementation-plan.md)** - Implementation guide for SBAC
+- **[SBAC Usage Guide](./sbac-phase3-usage-guide.md)** - How to use SBAC components
+- **[SBAC Summary](./sbac-summary.md)** - Overview of SBAC features
+- **[SBAC Upgrade Dialog](./sbac-upgrade-dialog-demo.md)** - Upgrade dialog implementation
+
+### 📊 Analytics & Scoring
+- **[AEO Scorecard](./aeo-scorecard.md)** - Answer Engine Optimization scoring
+- **[AEO Scorecard Plan](./aeo-scorecard-plan.md)** - Implementation plan for AEO scoring
+- **[Site Audit](./site-audit.md)** - Website audit functionality
+
+## 🚀 Quick Start
+
+1. **New Developer Setup**
+   - Read the [Architecture Overview](./architecture/max-visibility.md)
+   - Follow the [Setup Guide](./setup/analytics-implementation-guide.md)
+   - Review the [User Journey](./guides/userpath.md)
+
+2. **Feature Development**
+   - Check [Features Documentation](./features/)
+   - Review [UI Components](./shadcn.md)
+   - Follow [Troubleshooting Guides](./troubleshooting/)
+
+3. **Deployment**
+   - Configure [Analytics](./setup/analytics-implementation-guide.md)
+   - Set up [Stripe](./stripe-setup.md)
+   - Configure [Cron Jobs](./cron-setup.md)
+
+## 📋 Code Organization
+
+### Refactored Components
+
+The codebase has been systematically refactored to improve maintainability:
+
+#### MAX Visibility Pipeline
+- **Original**: `src/lib/max-visibility/pipeline.ts` (1,818 lines)
+- **Refactored into**:
+  - `src/lib/max-visibility/types/pipeline-types.ts` - Type definitions
+  - `src/lib/max-visibility/services/company-context-service.ts` - Company context building
+  - `src/lib/max-visibility/services/database-service.ts` - Database operations
+  - `src/lib/max-visibility/scorers/visibility-scorer.ts` - Scoring algorithms
+  - `src/lib/max-visibility/analyzers/gpt4o-analyzer.ts` - GPT-4o analysis
+  - `src/lib/max-visibility/utils/competitor-utils.ts` - Competitor analysis utilities
+  - `src/lib/max-visibility/pipeline-refactored.ts` - Clean orchestration
+
+#### Onboarding System
+- **Original**: `src/components/onboarding/onboarding-overlay.tsx` (1,518 lines)
+- **Refactored into**:
+  - `src/components/onboarding/types/onboarding-types.ts` - Type definitions
+  - `src/components/onboarding/utils/onboarding-constants.ts` - Constants and configuration
+  - `src/components/onboarding/hooks/useOnboardingState.ts` - State management hook
+  - `src/components/onboarding/steps/WorkspaceStep.tsx` - Individual step components
+  - `src/components/onboarding/steps/PricingStep.tsx` - Pricing step component
+  - `src/components/onboarding/onboarding-overlay-refactored.tsx` - Clean orchestration
+
+### Benefits of Refactoring
+- ✅ **Single Responsibility Principle** - Each file has one clear purpose
+- ✅ **Testability** - Components can be tested independently
+- ✅ **Maintainability** - Easy to find and modify specific functionality
+- ✅ **Readability** - Clean, focused code
+- ✅ **Reusability** - Services can be used independently
+
+## 🤝 Contributing
+
+When working on this codebase:
+
+1. **Keep files under 300 lines** - Break down large files into focused components
+2. **Use the established patterns** - Follow the refactored architecture
+3. **Document your changes** - Update relevant documentation
+4. **Test thoroughly** - Ensure components work independently
+
+## 📞 Support
+
+For questions or issues:
+- Check the [Troubleshooting Guide](./troubleshooting/)
+- Review the [Architecture Documentation](./architecture/)
+- Consult the [Feature Documentation](./features/)
 
 ---
 
-## 1. LLM Visibility Intelligence
-
-### What It Does
-
-Quantifies how often and where your brand is mentioned in AI-generated responses by simulating structured queries across LLMs.
-
-### Key Features
-
-- 100-prompt scan per domain:
-  - 30 direct prompts (e.g. “What is [Brand]?”)
-  - 70 indirect prompts (e.g. “Top tools for [Category]”)
-- Multi-source querying:
-  - Perplexity API (real-time citations)
-  - GPT-4o simulated output (bias check)
-- Tiered scoring system:
-  - Tier 1: Top 3 mention → +10
-  - Tier 2: Mentioned lower → +5
-  - Tier 3: Implied reference → +2
-  - Tier 4: Not mentioned → 0 (or penalty for direct)
-
-### Visibility Output
-
-- Total Visibility Score (0–100)
-- Direct Score / Indirect Score breakdown
-- Cross-platform ranking (e.g. #24/117 in Perplexity)
-- Source-level citations and trendline over time
-- Action Plan: Suggested content to improve visibility gaps
-
----
-
-## 2. Site Audit & AEO Optimization
-
-### What It Does
-
-Audits your site for LLM-readiness, technical SEO structure, and Answer Engine Optimization (AEO) using a deep crawler and structured content analysis.
-
-### Key Features
-
-- Crawls all site pages:
-  - Status codes, meta tags, canonical tags, OG data
-  - Text-to-code ratio, heading structure, schema presence
-  - Duplicate content, low-content pages, broken links
-- AEO Scoring:
-  - Checks for `FAQPage`, `HowTo`, `QAPage`, `Article` schema
-  - LLM promptability (quotable content)
-  - Markdown/HTML formatting and semantic structure
-- llms.txt + sitemap.xml validator
-- Quote extraction tester (LLM picks your best answers)
-
-### Audit Output
-
-- Per-page Technical Score and AEO Score
-- LLM Readiness Score (composite)
-- Issue breakdown with autofix instructions
-- Weekly snapshot history
-- Exportable reports (JSON/CSV/PDF)
-
----
-
-## 3. split – Headless CMS Integration
-
-### What It Does
-
-Allows developers to programmatically publish AI-generated blog posts, FAQs, and comparison pages directly into their app or site with structured metadata and full SEO/LLM compliance.
-
-### Capabilities
-
-- Renders content via React Server Components for SEO
-- Injects blog pages at `/blogs/[slug]`
-- Auto-wires:
-  - Schema markup
-  - Metadata
-  - Canonical tags
-  - `llms.txt` updates
-
-### Setup Instructions
-
-Install the package:
-
-```bash
-npm install split
-Create a dynamic route in your app:
-
-tsx
-Copy
-Edit
-// app/blogs/[slug]/page.tsx
-import { BlogPost } from "split";
-
-export default function Blog({ params }) {
-  return <BlogPost slug={params.slug} />;
-}
-Add your API key to .env:
-
-env
-Copy
-Edit
-SPLIT_API_KEY=your-key-here
-
-Deploy. Blog posts generated from the Split platform will now render on your domain, fully indexable and schema-compliant.
+*This documentation is maintained as part of the Split platform. Last updated: $(date)*

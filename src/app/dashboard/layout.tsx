@@ -4,7 +4,7 @@ import { SplitSidebar } from '@/components/layout/split-sidebar'
 import { SplitTopbar } from '@/components/layout/split-topbar'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { OnboardingOverlay } from '@/components/onboarding/onboarding-overlay'
+import { OnboardingOverlay } from '@/components/onboarding/onboarding-overlay-refactored'
 import { useEffect } from 'react'
 
 export default function DashboardLayout({

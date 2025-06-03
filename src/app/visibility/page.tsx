@@ -11,7 +11,6 @@ import { createClient } from '@/lib/supabase/client'
 import { EnhancedOverviewTab } from './components/enhanced-overview-tab'
 import { EnhancedCitationsTab } from './components/enhanced-citations-tab'
 import { EnhancedGapsTab } from './components/enhanced-gaps-tab'
-import { EnhancedInsightsTab } from './components/enhanced-insights-tab'
 
 // Import our new components
 import { VisibilityChart } from './components/visibility-chart'
@@ -24,8 +23,7 @@ import { useMaxVisibility } from '@/hooks/useMaxVisibility'
 const tabs = [
   { id: 'overview', label: 'Overview' },
   { id: 'citations', label: 'Citations' },
-  { id: 'gaps', label: 'Gaps & Opportunities' },
-  { id: 'insights', label: 'AI Insights' },
+  { id: 'gaps', label: 'Gaps & Opportunities' }
 ]
 
 export default function VisibilityPage() {
@@ -272,29 +270,6 @@ export default function VisibilityPage() {
               <p className="text-[#666] text-sm">High-value queries to prioritize for content creation</p>
             </div>
             <EnhancedGapsTab 
-              hasVisibilityData={maxVisibility.hasData}
-              isRefreshing={maxVisibility.isRefreshing}
-              onRefreshScore={handleRunNewScan}
-              data={maxVisibility.data}
-            />
-          </motion.div>
-        )}
-
-        {activeTab === 'insights' && (
-          <motion.div variants={itemVariants}>
-            <div className="mb-6 flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-white mb-2">AI Insights</h2>
-                <p className="text-[#666] text-sm">AI-powered recommendations and competitive intelligence</p>
-              </div>
-              {hasMaxAccess && (
-                <div className="flex items-center gap-2 px-3 py-1 bg-[#111] border border-[#333] rounded text-xs text-[#666]">
-                  <Sparkles className="w-3 h-3" />
-                  <span>MAX Analytics</span>
-                </div>
-              )}
-            </div>
-            <EnhancedInsightsTab 
               hasVisibilityData={maxVisibility.hasData}
               isRefreshing={maxVisibility.isRefreshing}
               onRefreshScore={handleRunNewScan}
