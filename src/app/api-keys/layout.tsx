@@ -15,8 +15,8 @@ export default function ApiKeysLayout({
       <SidebarProvider>
         <SplitSidebar />
         <SidebarInset className="flex flex-col h-screen bg-[#0c0c0c]">
-          <SplitTopbar />
           <div className="flex-1 min-h-0 overflow-auto">
+            <SplitTopbar />
             {children}
           </div>
         </SidebarInset>

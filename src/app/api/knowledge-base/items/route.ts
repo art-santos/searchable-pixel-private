@@ -116,7 +116,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const knowledgeService = new KnowledgeBaseService()
+    const knowledgeService = new KnowledgeBaseService(true)
     const item = await knowledgeService.updateItem(id, content, tag)
 
     return NextResponse.json({
@@ -150,7 +150,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    const knowledgeService = new KnowledgeBaseService()
+    const knowledgeService = new KnowledgeBaseService(true)
     await knowledgeService.deleteItem(id)
 
     return NextResponse.json({

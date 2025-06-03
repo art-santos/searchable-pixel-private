@@ -10,29 +10,49 @@ Zero dependencies, lightweight, reliable tracking of AI crawlers like ChatGPT, C
 npm install @split.dev/analytics
 ```
 
-```typescript
-// middleware.ts (Next.js)
-import { trackCrawlerVisit } from '@split.dev/analytics/middleware'
+## Configuration
 
-export async function middleware(request: NextRequest) {
-  // Your existing middleware code here...
-  
-  // Add Split Analytics tracking (takes ~30ms, non-blocking)
-  if (process.env.SPLIT_API_KEY) {
-    trackCrawlerVisit(request, {
-      apiKey: process.env.SPLIT_API_KEY,
-      debug: process.env.NODE_ENV === 'development'
-    }).catch(console.error) // Never let tracking break your app
-  }
-  
-  return NextResponse.next()
+**IMPORTANT:** Set your API endpoint to your own domain:
+
+```javascript
+import { createSplitMiddleware } from '@split.dev/analytics/middleware'
+
+export const middleware = createSplitMiddleware({
+  apiKey: process.env.SPLIT_API_KEY!,
+  apiEndpoint: process.env.NEXT_PUBLIC_URL + '/api', // YOUR domain, not split.dev
+  debug: process.env.NODE_ENV === 'development'
+})
+```
+
+## Environment Variables
+
+```bash
+# Your API key from Split Analytics dashboard
+SPLIT_API_KEY=split_live_your_key_here
+
+# Your website's URL (important!)
+NEXT_PUBLIC_URL=https://yourdomain.com
+```
+
+## Next.js Setup
+
+1. Create `middleware.ts` in your project root:
+
+```typescript
+import { createSplitMiddleware } from '@split.dev/analytics/middleware'
+
+export const middleware = createSplitMiddleware({
+  apiKey: process.env.SPLIT_API_KEY!,
+  apiEndpoint: process.env.NEXT_PUBLIC_URL + '/api',
+  debug: process.env.NODE_ENV === 'development'
+})
+
+export const config = {
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)']
 }
 ```
 
-```bash
-# .env.local
-SPLIT_API_KEY=split_live_your_key_here
-```
+2. The package will automatically track AI crawlers visiting your site!
 
 **That's it!** AI crawler visits will appear in your [Split Dashboard](https://split.dev/dashboard) within 5-10 seconds.
 

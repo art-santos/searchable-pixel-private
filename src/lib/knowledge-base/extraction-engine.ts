@@ -24,6 +24,7 @@ export class KnowledgeExtractionEngine {
   async extractFromTextDump(textDump: string): Promise<ExtractionResult> {
     const startTime = Date.now()
     const batchId = this.generateBatchId()
+    const uploadTimestamp = new Date().toISOString()
     
     try {
       // Pre-process the text
@@ -34,18 +35,18 @@ export class KnowledgeExtractionEngine {
       // Try GPT-4o extraction if API key is available, otherwise use fallback
       if (this.openaiApiKey) {
         try {
-          extractedItems = await this.callGPT4oExtraction(processedText)
+          extractedItems = await this.callGPT4oExtraction(processedText, uploadTimestamp)
         } catch (error) {
           console.warn('GPT-4o extraction failed, falling back to rule-based extraction:', error)
-          extractedItems = this.fallbackExtraction(processedText)
+          extractedItems = this.fallbackExtraction(processedText, uploadTimestamp)
         }
       } else {
         console.info('No OpenAI API key found, using rule-based extraction')
-        extractedItems = this.fallbackExtraction(processedText)
+        extractedItems = this.fallbackExtraction(processedText, uploadTimestamp)
       }
       
       // Post-process and validate
-      const validatedItems = this.validateExtractions(extractedItems, processedText)
+      const validatedItems = this.validateExtractions(extractedItems, processedText, uploadTimestamp)
       
       const processingTime = Date.now() - startTime
       
@@ -64,7 +65,7 @@ export class KnowledgeExtractionEngine {
   /**
    * Call GPT-4o for intelligent extraction
    */
-  private async callGPT4oExtraction(text: string): Promise<ExtractedKnowledge[]> {
+  private async callGPT4oExtraction(text: string, uploadTimestamp: string): Promise<ExtractedKnowledge[]> {
     const prompt = this.buildExtractionPrompt(text)
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -110,7 +111,9 @@ export class KnowledgeExtractionEngine {
         tag: this.validateTag(item.tag),
         confidence: Math.max(0, Math.min(1, item.confidence)),
         reasoning: item.reasoning,
-        sourceContext: this.extractSourceContext(item.content, text)
+        sourceContext: this.extractSourceContext(item.content, text),
+        created_at: uploadTimestamp,
+        updated_at: uploadTimestamp
       }))
     } catch (error) {
       throw new Error(`Failed to parse GPT-4o response: ${content}`)
@@ -122,36 +125,37 @@ export class KnowledgeExtractionEngine {
    */
   private buildExtractionPrompt(text: string): string {
     return `
-Analyze this company information and extract discrete, actionable knowledge items. Break down the text into specific insights and categorize each one.
+Analyze this company information and extract knowledge items while preserving as much detail and context as possible. The goal is to maintain comprehensive information for future AI analysis.
 
 TEXT TO ANALYZE:
 "${text}"
 
 EXTRACTION INSTRUCTIONS:
-1. Break the text into distinct pieces of information
-2. Each piece should be self-contained and 1-3 sentences maximum
-3. Assign each piece to the most appropriate category:
-   - company-overview: Core business description, what the company does
-   - target-audience: Who the customers/users are, demographics, company types
-   - pain-points: Problems customers face, challenges addressed
-   - positioning: How company differentiates, unique value props
-   - product-features: Specific capabilities, features, functionalities
-   - use-cases: How customers use the product, scenarios, applications
-   - competitor-notes: Mentions of competitors, competitive positioning
-   - sales-objections: Common objections and responses
-   - brand-voice: Tone, messaging style, communication guidelines
-   - keywords: Important terms, phrases, industry jargon
+1. Extract meaningful sections/paragraphs of information as complete knowledge items
+2. Preserve full context, details, and nuance - DO NOT summarize or condense
+3. Keep natural paragraph length - can be multiple sentences when the information belongs together
+4. Assign each section to the most appropriate category:
+   - company-overview: Core business description, what the company does, company story
+   - target-audience: Who the customers/users are, demographics, company types, market segments
+   - pain-points: Problems customers face, challenges addressed, market gaps
+   - positioning: How company differentiates, unique value props, competitive advantages
+   - product-features: Specific capabilities, features, functionalities, technical details
+   - use-cases: How customers use the product, scenarios, applications, case studies
+   - competitor-notes: Mentions of competitors, competitive positioning, market analysis
+   - sales-objections: Common objections and responses, pricing concerns, feature comparisons
+   - brand-voice: Tone, messaging style, communication guidelines, copy examples
+   - keywords: Important terms, phrases, industry jargon, technical terminology (SEPARATE WITH COMMA)
    - other: Information that doesn't fit other categories
 
-4. Only extract meaningful, actionable insights
-5. Avoid redundant or overly generic statements
-6. Provide confidence score (0-1) for each categorization
+5. Maintain full detail and context - this is a knowledge base for AI context, not human summaries
+6. Split only when topics clearly change, not to artificially create more items
+7. Provide confidence score (0-1) for each categorization
 
 RESPOND IN THIS EXACT JSON FORMAT:
 {
   "extracted_items": [
     {
-      "content": "Specific piece of information",
+      "content": "Full detailed section with complete context preserved",
       "tag": "appropriate-category",
       "confidence": 0.95,
       "reasoning": "Why this categorization makes sense"
@@ -175,7 +179,7 @@ RESPOND IN THIS EXACT JSON FORMAT:
   /**
    * Validate and clean extracted items
    */
-  private validateExtractions(items: ExtractedKnowledge[], originalText: string): ExtractedKnowledge[] {
+  private validateExtractions(items: ExtractedKnowledge[], originalText: string, uploadTimestamp: string): ExtractedKnowledge[] {
     return items
       .filter(item => {
         // Must have content
@@ -192,7 +196,9 @@ RESPOND IN THIS EXACT JSON FORMAT:
       .map(item => ({
         ...item,
         content: this.cleanContent(item.content),
-        sourceContext: item.sourceContext || this.extractSourceContext(item.content, originalText)
+        sourceContext: item.sourceContext || this.extractSourceContext(item.content, originalText),
+        created_at: item.created_at || uploadTimestamp,
+        updated_at: item.updated_at || uploadTimestamp
       }))
       .slice(0, 20) // Limit to 20 items per extraction
   }
@@ -262,7 +268,7 @@ RESPOND IN THIS EXACT JSON FORMAT:
   /**
    * Fallback extraction method using rule-based approach
    */
-  private fallbackExtraction(text: string): ExtractedKnowledge[] {
+  private fallbackExtraction(text: string, uploadTimestamp: string): ExtractedKnowledge[] {
     const items: ExtractedKnowledge[] = []
     
     // Split text into sentences
@@ -280,7 +286,9 @@ RESPOND IN THIS EXACT JSON FORMAT:
         tag,
         confidence: 0.7, // Medium confidence for rule-based extraction
         reasoning: 'Rule-based categorization',
-        sourceContext: this.extractSourceContext(cleanSentence, text)
+        sourceContext: this.extractSourceContext(cleanSentence, text),
+        created_at: uploadTimestamp,
+        updated_at: uploadTimestamp
       })
       
       // Limit to 15 items
@@ -302,7 +310,9 @@ RESPOND IN THIS EXACT JSON FORMAT:
           tag,
           confidence: 0.6,
           reasoning: 'Paragraph-based categorization',
-          sourceContext: cleanParagraph.substring(0, 100)
+          sourceContext: cleanParagraph.substring(0, 100),
+          created_at: uploadTimestamp,
+          updated_at: uploadTimestamp
         })
         
         if (items.length >= 10) break

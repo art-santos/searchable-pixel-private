@@ -207,7 +207,7 @@ export class PerplexityClient {
     const url = `${this.baseUrl}/chat/completions`
     
     const body = {
-      model: 'sonar',
+      model: 'sonar-pro',
       messages: [
         {
           role: 'user',

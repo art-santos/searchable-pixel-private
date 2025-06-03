@@ -1,33 +1,10 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  ChevronDown, 
-  Filter, 
-  Search, 
-  MoreHorizontal,
-  Copy,
-  Edit3,
-  Trash2,
-  Calendar,
-  Tag,
-  FileText,
-  Check,
-  X
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Copy, Trash2, Tag as TagIcon, MoreHorizontal } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuCheckboxItem,
-} from "@/components/ui/dropdown-menu"
-import { toast } from '@/components/ui/use-toast'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button'
 
 interface KnowledgeItem {
   id: string
@@ -56,8 +33,8 @@ interface ContextMenu {
 
 interface EditingCell {
   itemId: string
-  field: 'content' | 'tag'
-  value: string
+  content: string
+  originalContent: string
 }
 
 export function KnowledgeTable({
@@ -68,14 +45,136 @@ export function KnowledgeTable({
   onCopyItem,
   isLoading = false
 }: KnowledgeTableProps) {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [sortBy, setSortBy] = useState<'created_at' | 'updated_at' | 'content' | 'tag'>('created_at')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null)
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set())
   const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deletingProgress, setDeletingProgress] = useState({ current: 0, total: 0 })
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null)
+  const [expandedCell, setExpandedCell] = useState<string | null>(null)
   const contextMenuRef = useRef<HTMLDivElement>(null)
-  const editInputRef = useRef<HTMLInputElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const getTagLabel = (tag: string) => {
+    return availableTags.find(t => t.value === tag)?.label || tag
+  }
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Recent'
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return 'Recent'
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+    })
+  }
+
+  const truncateContent = (content: string, maxLength: number = 120) => {
+    if (content.length <= maxLength) return content
+    return content.slice(0, maxLength) + '...'
+  }
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedRows(new Set(items.map(item => item.id)))
+    } else {
+      setSelectedRows(new Set())
+    }
+  }
+
+  const handleSelectRow = (itemId: string, checked: boolean) => {
+    const newSelected = new Set(selectedRows)
+    if (checked) {
+      newSelected.add(itemId)
+    } else {
+      newSelected.delete(itemId)
+    }
+    setSelectedRows(newSelected)
+  }
+
+  const handleBulkDelete = async () => {
+    if (isDeleting) return
+    
+    const itemsToDelete = Array.from(selectedRows)
+    setIsDeleting(true)
+    setDeletingProgress({ current: 0, total: itemsToDelete.length })
+
+    try {
+      for (let i = 0; i < itemsToDelete.length; i++) {
+        setDeletingProgress({ current: i + 1, total: itemsToDelete.length })
+        await onDeleteItem(itemsToDelete[i])
+        // Small delay to show progress
+        if (i < itemsToDelete.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100))
+        }
+      }
+      setSelectedRows(new Set())
+    } catch (error) {
+      console.error('Error during bulk delete:', error)
+    } finally {
+      setIsDeleting(false)
+      setDeletingProgress({ current: 0, total: 0 })
+    }
+  }
+
+  const handleContextMenu = (event: React.MouseEvent, itemId: string) => {
+    event.preventDefault()
+    setContextMenu({
+      x: event.clientX,
+      y: event.clientY,
+      itemId
+    })
+  }
+
+  const handleContentDoubleClick = (item: KnowledgeItem) => {
+    setExpandedCell(item.id)
+    setEditingCell({ 
+      itemId: item.id, 
+      content: item.content,
+      originalContent: item.content
+    })
+  }
+
+  const handleContentChange = (newContent: string) => {
+    if (editingCell) {
+      setEditingCell({ ...editingCell, content: newContent })
+    }
+  }
+
+  const handleBlur = async () => {
+    if (!editingCell) return
+    
+    // Auto-save if content changed
+    if (editingCell.content !== editingCell.originalContent) {
+      try {
+        await onUpdateItem(editingCell.itemId, { content: editingCell.content })
+      } catch (error) {
+        console.error('Failed to save edit:', error)
+        // Revert on error
+        setEditingCell({ ...editingCell, content: editingCell.originalContent })
+        return
+      }
+    }
+    
+    // Close editing
+    setEditingCell(null)
+    setExpandedCell(null)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      // Revert and close
+      if (editingCell) {
+        setEditingCell({ ...editingCell, content: editingCell.originalContent })
+      }
+      setEditingCell(null)
+      setExpandedCell(null)
+    } else if (e.key === 'Enter' && e.metaKey) {
+      // Save and close
+      textareaRef.current?.blur()
+    }
+  }
 
   // Handle click outside to close context menu
   useEffect(() => {
@@ -88,463 +187,276 @@ export function KnowledgeTable({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Focus edit input when editing starts
+  // Auto-focus textarea when editing starts
   useEffect(() => {
-    if (editingCell && editInputRef.current) {
-      editInputRef.current.focus()
-      editInputRef.current.select()
+    if (editingCell && textareaRef.current) {
+      const textarea = textareaRef.current
+      textarea.focus()
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length)
     }
   }, [editingCell])
 
-  // Filter and sort items
-  const filteredItems = items
-    .filter(item => {
-      const matchesSearch = !searchQuery || 
-        item.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        getTagLabel(item.tag).toLowerCase().includes(searchQuery.toLowerCase())
-      
-      const matchesTags = selectedTags.length === 0 || selectedTags.includes(item.tag)
-      
-      return matchesSearch && matchesTags
-    })
-    .sort((a, b) => {
-      let aValue: string | number | Date
-      let bValue: string | number | Date
-      
-      switch (sortBy) {
-        case 'created_at':
-          aValue = new Date(a.created_at || '')
-          bValue = new Date(b.created_at || '')
-          break
-        case 'updated_at':
-          aValue = new Date(a.updated_at || '')
-          bValue = new Date(b.updated_at || '')
-          break
-        case 'content':
-          aValue = a.content.toLowerCase()
-          bValue = b.content.toLowerCase()
-          break
-        case 'tag':
-          aValue = getTagLabel(a.tag).toLowerCase()
-          bValue = getTagLabel(b.tag).toLowerCase()
-          break
-        default:
-          return 0
-      }
-      
-      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1
-      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1
-      return 0
-    })
+  const contextMenuItem = items.find(item => item.id === contextMenu?.itemId)
 
-  const getTagLabel = (tag: string) => {
-    return availableTags.find(t => t.value === tag)?.label || tag
-  }
+  const isAllSelected = items.length > 0 && selectedRows.size === items.length
+  const isIndeterminate = selectedRows.size > 0 && selectedRows.size < items.length
 
-  const getTagColor = (tag: string) => {
-    const colors: Record<string, string> = {
-      'company-overview': 'bg-blue-500/20 text-blue-300',
-      'target-audience': 'bg-green-500/20 text-green-300',
-      'pain-points': 'bg-red-500/20 text-red-300',
-      'positioning': 'bg-purple-500/20 text-purple-300',
-      'product-features': 'bg-orange-500/20 text-orange-300',
-      'use-cases': 'bg-cyan-500/20 text-cyan-300',
-      'competitor-notes': 'bg-yellow-500/20 text-yellow-300',
-      'sales-objections': 'bg-pink-500/20 text-pink-300',
-      'brand-voice': 'bg-indigo-500/20 text-indigo-300',
-      'keywords': 'bg-emerald-500/20 text-emerald-300',
-      'other': 'bg-gray-500/20 text-gray-300'
-    }
-    return colors[tag] || colors['other']
-  }
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '-'
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
-    })
-  }
-
-  const handleSort = (field: typeof sortBy) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
-    } else {
-      setSortBy(field)
-      setSortOrder('desc')
-    }
-  }
-
-  const handleTagFilter = (tag: string) => {
-    setSelectedTags(prev => 
-      prev.includes(tag) 
-        ? prev.filter(t => t !== tag)
-        : [...prev, tag]
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin w-5 h-5 border border-[#333] border-t-white rounded-full" />
+      </div>
     )
   }
 
-  const handleContextMenu = (event: React.MouseEvent, itemId: string) => {
-    event.preventDefault()
-    setContextMenu({
-      x: event.clientX,
-      y: event.clientY,
-      itemId
-    })
+  if (items.length === 0) {
+    return null
   }
-
-  const handleDoubleClick = (itemId: string, field: 'content' | 'tag', currentValue: string) => {
-    setEditingCell({ itemId, field, value: currentValue })
-    setContextMenu(null)
-  }
-
-  const handleEditSave = async () => {
-    if (!editingCell) return
-    
-    try {
-      await onUpdateItem(editingCell.itemId, {
-        [editingCell.field]: editingCell.value
-      })
-      setEditingCell(null)
-      toast({
-        title: 'Updated successfully',
-        description: `${editingCell.field === 'content' ? 'Content' : 'Tag'} has been updated`
-      })
-    } catch (error) {
-      toast({
-        title: 'Update failed',
-        description: 'There was an error updating the item',
-        variant: 'destructive'
-      })
-    }
-  }
-
-  const handleEditCancel = () => {
-    setEditingCell(null)
-  }
-
-  const handleEditKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter') {
-      handleEditSave()
-    } else if (event.key === 'Escape') {
-      handleEditCancel()
-    }
-  }
-
-  const contextMenuItem = items.find(item => item.id === contextMenu?.itemId)
 
   return (
-    <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg overflow-hidden">
-      {/* Table Header with Filters */}
-      <div className="bg-[#111] border-b border-[#1a1a1a] p-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <h3 className="text-sm font-medium text-white">Knowledge Base</h3>
-            <span className="text-xs text-[#666]">
-              {filteredItems.length} of {items.length} items
-            </span>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#666]" />
-              <Input
-                placeholder="Search content..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-[#0a0a0a] border-[#1a1a1a] hover:border-[#2a2a2a] focus:border-[#3a3a3a] text-white h-8 pl-9 pr-3 w-64"
-              />
-            </div>
-
-            {/* Tag Filter */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+    <div className="w-full">
+      {/* Elegant Bulk Actions Bar */}
+      {selectedRows.size > 0 && (
+        <div 
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50"
+          style={{
+            animation: 'slideUp 0.2s ease-out'
+          }}
+        >
+          <div className="bg-[#111]/95 border border-[#333] shadow-2xl backdrop-blur-xl px-6 py-4 min-w-[320px]">
+            <div className="flex items-center justify-between">
+              {isDeleting ? (
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 animate-spin border-2 border-red-500 border-t-transparent rounded-full" />
+                  <span className="text-white text-sm font-medium">
+                    Deleting {deletingProgress.current} of {deletingProgress.total}...
+                  </span>
+                </div>
+              ) : (
+                <span className="text-white text-sm font-medium">
+                  {selectedRows.size} item{selectedRows.size !== 1 ? 's' : ''} selected
+                </span>
+              )}
+              
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedRows(new Set())}
+                  disabled={isDeleting}
+                  className="h-8 px-3 text-[#888] hover:text-white hover:bg-[#1a1a1a] border-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Clear
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 border-[#1a1a1a] hover:border-[#2a2a2a] bg-[#0a0a0a] text-white"
+                  onClick={handleBulkDelete}
+                  disabled={isDeleting}
+                  className="h-8 px-4 border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:border-red-500/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Tag className="w-4 h-4 mr-2" />
-                  Tags
-                  {selectedTags.length > 0 && (
-                    <Badge variant="secondary" className="ml-2 h-5 text-xs">
-                      {selectedTags.length}
-                    </Badge>
+                  {isDeleting ? (
+                    <>
+                      <div className="w-3.5 h-3.5 animate-spin border border-current border-t-transparent rounded-full mr-2" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-3.5 h-3.5 mr-2" />
+                      Delete
+                    </>
                   )}
-                  <ChevronDown className="w-4 h-4 ml-2" />
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                {availableTags.map((tag) => (
-                  <DropdownMenuCheckboxItem
-                    key={tag.value}
-                    checked={selectedTags.includes(tag.value)}
-                    onCheckedChange={() => handleTagFilter(tag.value)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${getTagColor(tag.value).split(' ')[0]}`} />
-                      {tag.label}
-                    </div>
-                  </DropdownMenuCheckboxItem>
-                ))}
-                {selectedTags.length > 0 && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setSelectedTags([])}>
-                      Clear filters
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="overflow-auto max-h-[60vh]">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-32">
-            <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full" />
-          </div>
-        ) : filteredItems.length === 0 ? (
-          <div className="flex items-center justify-center h-32">
-            <div className="text-center">
-              <FileText className="w-8 h-8 text-[#333] mx-auto mb-2" />
-              <p className="text-sm text-[#666]">
-                {items.length === 0 ? 'No knowledge items yet' : 'No items match your filters'}
-              </p>
+              </div>
             </div>
           </div>
-        ) : (
-          <table className="w-full">
-            {/* Table Headers */}
-            <thead className="bg-[#0f0f0f] border-b border-[#1a1a1a] sticky top-0">
-              <tr>
-                <th className="text-left p-3 text-xs font-medium text-[#888] uppercase tracking-wider">
-                  <button
-                    onClick={() => handleSort('content')}
-                    className="flex items-center gap-1 hover:text-white transition-colors"
-                  >
-                    Content
-                    {sortBy === 'content' && (
-                      <ChevronDown className={`w-3 h-3 transition-transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`} />
-                    )}
-                  </button>
-                </th>
-                <th className="text-left p-3 text-xs font-medium text-[#888] uppercase tracking-wider w-48">
-                  <button
-                    onClick={() => handleSort('tag')}
-                    className="flex items-center gap-1 hover:text-white transition-colors"
-                  >
-                    Tag
-                    {sortBy === 'tag' && (
-                      <ChevronDown className={`w-3 h-3 transition-transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`} />
-                    )}
-                  </button>
-                </th>
-                <th className="text-left p-3 text-xs font-medium text-[#888] uppercase tracking-wider w-32">
-                  <button
-                    onClick={() => handleSort('created_at')}
-                    className="flex items-center gap-1 hover:text-white transition-colors"
-                  >
-                    Date Added
-                    {sortBy === 'created_at' && (
-                      <ChevronDown className={`w-3 h-3 transition-transform ${sortOrder === 'asc' ? 'rotate-180' : ''}`} />
-                    )}
-                  </button>
-                </th>
-                <th className="text-left p-3 text-xs font-medium text-[#888] uppercase tracking-wider w-20">
-                  Words
-                </th>
-                <th className="w-8"></th>
-              </tr>
-            </thead>
+        </div>
+      )}
 
-            {/* Table Body */}
-            <tbody className="divide-y divide-[#1a1a1a]">
-              {filteredItems.map((item) => (
-                <tr
-                  key={item.id}
-                  className="hover:bg-[#111] transition-colors group"
-                  onContextMenu={(e) => handleContextMenu(e, item.id)}
-                >
-                  {/* Content Cell */}
-                  <td className="p-3">
-                    {editingCell?.itemId === item.id && editingCell.field === 'content' ? (
-                      <div className="flex items-center gap-2">
-                        <Input
-                          ref={editInputRef}
-                          value={editingCell.value}
-                          onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
-                          onKeyDown={handleEditKeyDown}
-                          className="bg-[#0a0a0a] border-[#333] text-white text-sm"
-                        />
-                        <Button
-                          size="sm"
-                          onClick={handleEditSave}
-                          className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700"
-                        >
-                          <Check className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleEditCancel}
-                          className="h-8 w-8 p-0 border-[#333]"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <div
-                        className="text-white text-sm leading-relaxed cursor-text hover:bg-[#1a1a1a] p-2 -m-2 rounded"
-                        onDoubleClick={() => handleDoubleClick(item.id, 'content', item.content)}
-                      >
-                        {item.content}
-                      </div>
-                    )}
-                  </td>
+      {/* Table with smooth content expansion */}
+      <div className="border border-[#1a1a1a] rounded-lg overflow-hidden">
+        <table className="w-full table-fixed">
+          <colgroup>
+            <col className="w-12" />
+            <col className="w-auto" />
+            <col className="w-48" />
+            <col className="w-28" />
+            <col className="w-20" />
+          </colgroup>
+          <thead>
+            <tr className="border-b border-[#1a1a1a] bg-[#0a0a0a]">
+              <th className="text-left py-3 px-4 border-r border-[#1a1a1a]">
+                <Checkbox
+                  checked={isAllSelected || isIndeterminate}
+                  onCheckedChange={handleSelectAll}
+                  className={`border-[#333] data-[state=checked]:bg-white data-[state=checked]:border-white ${
+                    isIndeterminate ? 'data-[state=checked]:bg-gray-400' : ''
+                  }`}
+                />
+              </th>
+              <th className="text-left py-3 px-4 border-r border-[#1a1a1a] text-[#888] text-xs font-medium uppercase tracking-wide">
+                Content
+              </th>
+              <th className="text-left py-3 px-4 border-r border-[#1a1a1a] text-[#888] text-xs font-medium uppercase tracking-wide">
+                Category
+              </th>
+              <th className="text-left py-3 px-4 border-r border-[#1a1a1a] text-[#888] text-xs font-medium uppercase tracking-wide">
+                Added
+              </th>
+              <th className="text-left py-3 px-4 text-[#888] text-xs font-medium uppercase tracking-wide">
+                Words
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item, index) => (
+              <tr
+                key={item.id}
+                className={`border-b border-[#1a1a1a] hover:bg-[#0a0a0a] transition-colors ${
+                  selectedRows.has(item.id) ? 'bg-[#0a0a0a]' : 'bg-transparent'
+                }`}
+                onMouseEnter={() => setHoveredRow(item.id)}
+                onMouseLeave={() => setHoveredRow(null)}
+                onContextMenu={(e) => handleContextMenu(e, item.id)}
+              >
+                {/* Checkbox */}
+                <td className="py-4 px-4 border-r border-[#1a1a1a] align-top">
+                  <Checkbox
+                    checked={selectedRows.has(item.id)}
+                    onCheckedChange={(checked) => handleSelectRow(item.id, checked as boolean)}
+                    className="border-[#333] data-[state=checked]:bg-white data-[state=checked]:border-white"
+                  />
+                </td>
 
-                  {/* Tag Cell */}
-                  <td className="p-3">
-                    {editingCell?.itemId === item.id && editingCell.field === 'tag' ? (
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={editingCell.value}
-                          onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
-                          onKeyDown={handleEditKeyDown}
-                          className="bg-[#0a0a0a] border border-[#333] text-white text-sm rounded px-2 py-1"
-                        >
-                          {availableTags.map((tag) => (
-                            <option key={tag.value} value={tag.value}>
-                              {tag.label}
-                            </option>
-                          ))}
-                        </select>
-                        <Button
-                          size="sm"
-                          onClick={handleEditSave}
-                          className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700"
-                        >
-                          <Check className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleEditCancel}
-                          className="h-8 w-8 p-0 border-[#333]"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <Badge
-                        className={`${getTagColor(item.tag)} cursor-pointer hover:scale-105 transition-transform`}
-                        onDoubleClick={() => handleDoubleClick(item.id, 'tag', item.tag)}
-                      >
-                        {getTagLabel(item.tag)}
-                      </Badge>
-                    )}
-                  </td>
-
-                  {/* Date Cell */}
-                  <td className="p-3 text-[#666] text-sm">
-                    {formatDate(item.created_at)}
-                  </td>
-
-                  {/* Word Count Cell */}
-                  <td className="p-3 text-[#666] text-sm">
-                    {item.wordCount || item.content.split(' ').length}
-                  </td>
-
-                  {/* Actions Cell */}
-                  <td className="p-3">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => handleContextMenu(e, item.id)}
+                {/* Content - Smooth expansion */}
+                <td className="py-4 px-4 border-r border-[#1a1a1a]">
+                  {editingCell?.itemId === item.id ? (
+                    <textarea
+                      ref={textareaRef}
+                      value={editingCell.content}
+                      onChange={(e) => handleContentChange(e.target.value)}
+                      onBlur={handleBlur}
+                      onKeyDown={handleKeyDown}
+                      className="w-full bg-transparent border-0 text-white text-sm leading-relaxed resize-none focus:outline-none p-0 transition-all duration-200"
+                      rows={Math.min(Math.max(3, Math.ceil(editingCell.content.length / 80)), 8)}
+                      style={{
+                        animation: 'expandCell 0.2s ease-out'
+                      }}
+                    />
+                  ) : (
+                    <div 
+                      className={`text-white text-sm leading-relaxed cursor-pointer transition-all duration-200 ${
+                        expandedCell === item.id ? 'opacity-75' : 'hover:bg-[#111] -m-1 p-1 rounded'
+                      }`}
+                      onDoubleClick={() => handleContentDoubleClick(item)}
+                      title="Double-click to edit"
                     >
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+                      {expandedCell === item.id ? item.content : truncateContent(item.content)}
+                    </div>
+                  )}
+                </td>
+
+                {/* Category */}
+                <td className="py-4 px-4 border-r border-[#1a1a1a] align-top">
+                  <span className="text-[#888] text-sm">
+                    {getTagLabel(item.tag)}
+                  </span>
+                </td>
+
+                {/* Date */}
+                <td className="py-4 px-4 border-r border-[#1a1a1a] align-top">
+                  <span className="text-[#666] text-sm">
+                    {formatDate(item.created_at)}
+                  </span>
+                </td>
+
+                {/* Word count */}
+                <td className="py-4 px-4 align-top">
+                  <span className="text-[#666] text-sm">
+                    {item.content.split(' ').length}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {/* Context Menu */}
-      <AnimatePresence>
-        {contextMenu && contextMenuItem && (
-          <motion.div
-            ref={contextMenuRef}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.1 }}
-            className="fixed z-50 bg-[#1a1a1a] border border-[#333] rounded-lg shadow-xl py-1 min-w-[160px]"
-            style={{
-              left: contextMenu.x,
-              top: contextMenu.y,
+      {contextMenu && contextMenuItem && (
+        <div
+          ref={contextMenuRef}
+          className="fixed z-50 bg-[#1a1a1a] border border-[#333] rounded-lg shadow-xl py-2 min-w-[180px]"
+          style={{
+            left: contextMenu.x,
+            top: contextMenu.y,
+            animation: 'fadeIn 0.1s ease-out, scaleIn 0.1s ease-out'
+          }}
+        >
+          <button
+            onClick={() => {
+              onCopyItem(contextMenuItem.content)
+              setContextMenu(null)
             }}
+            className="w-full px-4 py-2 text-left text-white hover:bg-[#2a2a2a] transition-colors flex items-center gap-3 text-sm"
           >
-            <button
-              onClick={() => {
-                onCopyItem(contextMenuItem.content)
-                setContextMenu(null)
-                toast({
-                  title: 'Copied to clipboard',
-                  description: 'Content has been copied'
-                })
-              }}
-              className="w-full px-3 py-2 text-left text-white hover:bg-[#2a2a2a] transition-colors flex items-center gap-2 text-sm"
-            >
-              <Copy className="w-4 h-4" />
-              Copy content
-            </button>
-            
-            <button
-              onClick={() => {
-                handleDoubleClick(contextMenuItem.id, 'content', contextMenuItem.content)
-                setContextMenu(null)
-              }}
-              className="w-full px-3 py-2 text-left text-white hover:bg-[#2a2a2a] transition-colors flex items-center gap-2 text-sm"
-            >
-              <Edit3 className="w-4 h-4" />
-              Edit content
-            </button>
-            
-            <button
-              onClick={() => {
-                handleDoubleClick(contextMenuItem.id, 'tag', contextMenuItem.tag)
-                setContextMenu(null)
-              }}
-              className="w-full px-3 py-2 text-left text-white hover:bg-[#2a2a2a] transition-colors flex items-center gap-2 text-sm"
-            >
-              <Tag className="w-4 h-4" />
-              Change tag
-            </button>
-            
-            <div className="border-t border-[#333] my-1"></div>
-            
-            <button
-              onClick={() => {
-                onDeleteItem(contextMenuItem.id)
-                setContextMenu(null)
-              }}
-              className="w-full px-3 py-2 text-left text-red-400 hover:bg-[#2a2a2a] transition-colors flex items-center gap-2 text-sm"
-            >
-              <Trash2 className="w-4 h-4" />
-              Delete item
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <Copy className="w-4 h-4" />
+            Copy content
+          </button>
+          
+          <button
+            onClick={() => {
+              handleSelectRow(contextMenuItem.id, !selectedRows.has(contextMenuItem.id))
+              setContextMenu(null)
+            }}
+            className="w-full px-4 py-2 text-left text-white hover:bg-[#2a2a2a] transition-colors flex items-center gap-3 text-sm"
+          >
+            <Checkbox className="w-4 h-4" />
+            {selectedRows.has(contextMenuItem.id) ? 'Deselect' : 'Select'}
+          </button>
+          
+          <div className="border-t border-[#333] my-1"></div>
+          
+          <button
+            onClick={() => {
+              onDeleteItem(contextMenuItem.id)
+              setContextMenu(null)
+            }}
+            className="w-full px-4 py-2 text-left text-red-400 hover:bg-[#2a2a2a] transition-colors flex items-center gap-3 text-sm"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete item
+          </button>
+        </div>
+      )}
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes scaleIn {
+          from { transform: scale(0.95); }
+          to { transform: scale(1); }
+        }
+        
+        @keyframes slideUp {
+          from { transform: translateY(20px); }
+          to { transform: translateY(0); }
+        }
+        
+        @keyframes expandCell {
+          from { 
+            opacity: 0;
+            transform: scale(0.98);
+          }
+          to { 
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+      `}</style>
     </div>
   )
 } 

@@ -49,40 +49,38 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-full bg-[#0c0c0c]">
-      <motion.main 
-        className="p-4 md:p-6 lg:p-8"
-        initial="hidden"
-        animate="visible"
-        variants={containerVariants}
-      >
-        <div className="mx-auto max-w-[1600px] flex flex-col gap-4 md:gap-6 lg:gap-8">
-          {/* Welcome Card - Responsive height */}
+    <motion.main 
+      className="bg-[#0c0c0c] pl-6 pr-4 md:pr-6 lg:pr-8 pb-8 md:pb-12"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
+      <div className="mx-auto max-w-[1600px] flex flex-col gap-4 md:gap-6 lg:gap-8">
+        {/* Welcome Card - Responsive height */}
+        <motion.div 
+          variants={cardVariants}
+          className="min-h-[300px] md:min-h-[350px] lg:min-h-[400px]"
+        >
+          <WelcomeCard />
+        </motion.div>
+
+        {/* Analytics Cards - Responsive grid */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6 lg:gap-8">
           <motion.div 
             variants={cardVariants}
-            className="min-h-[300px] md:min-h-[350px] lg:min-h-[400px]"
+            className="h-[440px] md:h-[495px] lg:h-[550px]"
           >
-            <WelcomeCard />
+            <PageViewCard />
           </motion.div>
-
-          {/* Analytics Cards - Responsive grid */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6 lg:gap-8 pb-8 md:pb-12">
-            <motion.div 
-              variants={cardVariants}
-              className="h-[440px] md:h-[495px] lg:h-[550px]"
-            >
-              <PageViewCard />
-            </motion.div>
-            <motion.div 
-              variants={cardVariants}
-              className="h-[440px] md:h-[495px] lg:h-[550px]"
-            >
-              <AttributionBySourceCard />
-            </motion.div>
-          </div>
+          <motion.div 
+            variants={cardVariants}
+            className="h-[440px] md:h-[495px] lg:h-[550px]"
+          >
+            <AttributionBySourceCard />
+          </motion.div>
         </div>
-      </motion.main>
-    </div>
+      </div>
+    </motion.main>
   )
 }
  

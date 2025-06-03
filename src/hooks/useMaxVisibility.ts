@@ -48,6 +48,10 @@ interface UseMaxVisibilityState {
     id: string | null
     status: 'pending' | 'running' | 'completed' | 'failed' | null
     progress: number
+    stage?: string
+    message?: string
+    error?: string
+    company?: string
   }
 }
 
@@ -72,6 +76,8 @@ export interface UseMaxVisibilityReturn extends UseMaxVisibilityState, UseMaxVis
 export function useMaxVisibility(): UseMaxVisibilityReturn {
   const { subscription } = useSubscription()
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const pollCountRef = useRef<number>(0)
+  const maxPollAttempts = 150 // 5 minutes at 2-second intervals
   
   // State management
   const [state, setState] = useState<UseMaxVisibilityState>({
@@ -99,7 +105,11 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
     currentAssessment: {
       id: null,
       status: null,
-      progress: 0
+      progress: 0,
+      stage: undefined,
+      message: undefined,
+      error: undefined,
+      company: undefined
     }
   })
 
@@ -269,19 +279,64 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
   // Poll assessment status
   const pollAssessmentStatus = useCallback(async (assessmentId: string) => {
     try {
+      pollCountRef.current += 1
+      console.log(`🔄 Polling status for assessment: ${assessmentId.slice(-8)} (attempt ${pollCountRef.current}/${maxPollAttempts})`)
+      
+      // Safety timeout - stop polling after max attempts
+      if (pollCountRef.current > maxPollAttempts) {
+        console.warn('⏰ Polling timeout reached, stopping polling')
+        
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current)
+          pollIntervalRef.current = null
+        }
+        
+        setState(prev => ({
+          ...prev,
+          isRefreshing: false,
+          currentAssessment: { 
+            id: null, 
+            status: null, 
+            progress: 0,
+            stage: undefined,
+            message: undefined,
+            error: undefined,
+            company: undefined
+          },
+          error: 'Scan timed out - please try refreshing the page'
+        }))
+        
+        toast({
+          title: "Scan timed out",
+          description: "Please refresh the page and try again.",
+          variant: "destructive",
+        })
+        return
+      }
+      
       const response = await maxVisibilityApi.getAssessmentStatus(assessmentId)
       
       if (response.success && response.data) {
-        const { status, progress, error } = response.data
+        const { status, progress, stage, message, error, company } = response.data
         
-        console.log('🔄 Poll status update:', { assessmentId: assessmentId.slice(-8), status, progress })
+        console.log('🔄 Poll status update:', { 
+          assessmentId: assessmentId.slice(-8), 
+          status, 
+          progress, 
+          stage, 
+          message: message?.substring(0, 50) 
+        })
         
         setState(prev => ({
           ...prev,
           currentAssessment: {
             id: assessmentId,
             status,
-            progress: progress || prev.currentAssessment.progress
+            progress: progress || prev.currentAssessment.progress,
+            stage,
+            message,
+            error,
+            company
           }
         }))
 
@@ -297,7 +352,15 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
           setState(prev => ({
             ...prev,
             isRefreshing: false,
-            currentAssessment: { id: null, status: null, progress: 0 }
+            currentAssessment: { 
+              id: null, 
+              status: null, 
+              progress: 0,
+              stage: undefined,
+              message: undefined,
+              error: undefined,
+              company: undefined
+            }
           }))
           
           console.log('🧹 Clearing API cache to ensure fresh data...')
@@ -322,7 +385,15 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
           setState(prev => ({
             ...prev,
             isRefreshing: false,
-            currentAssessment: { id: null, status: null, progress: 0 },
+            currentAssessment: { 
+              id: null, 
+              status: null, 
+              progress: 0,
+              stage: undefined,
+              message: undefined,
+              error: undefined,
+              company: undefined
+            },
             error: error || 'Scan failed'
           }))
           
@@ -332,9 +403,13 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
             variant: "destructive",
           })
         }
+      } else {
+        console.warn('❌ Failed to poll assessment status:', response.error)
+        // Don't stop polling on API errors, might be temporary
       }
     } catch (error) {
-      console.error('Failed to poll assessment status:', error)
+      console.error('❌ Failed to poll assessment status:', error)
+      // Don't stop polling on network errors, might be temporary
     }
   }, [loadVisibilityData])
 
@@ -362,9 +437,16 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
           currentAssessment: {
             id: assessmentId,
             status: 'pending',
-            progress: 0
+            progress: 0,
+            stage: undefined,
+            message: undefined,
+            error: undefined,
+            company: undefined
           }
         }))
+
+        // Reset poll counter for new assessment
+        pollCountRef.current = 0
 
         // Start polling for status updates
         pollIntervalRef.current = setInterval(() => {

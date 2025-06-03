@@ -220,7 +220,10 @@ class MaxVisibilityApiClient {
   async getAssessmentStatus(assessmentId: string): Promise<MaxVisibilityApiResponse<{ 
     status: 'pending' | 'running' | 'completed' | 'failed'
     progress?: number
+    stage?: string
+    message?: string
     error?: string
+    company?: string
   }>> {
     return this.makeRequest(`/assessments/${assessmentId}/status`)
   }

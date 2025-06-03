@@ -16,6 +16,8 @@ export interface ExtractedKnowledge {
   confidence: number
   reasoning: string
   sourceContext: string
+  created_at?: string
+  updated_at?: string
 }
 
 export interface KnowledgeFilters {

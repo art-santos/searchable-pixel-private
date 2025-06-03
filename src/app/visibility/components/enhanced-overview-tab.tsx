@@ -28,9 +28,10 @@ export function EnhancedOverviewTab({ hasVisibilityData, data }: EnhancedOvervie
     competitiveRank: data.competitive?.current_rank || 1,
     totalCompetitors: data.competitive?.total_competitors || 0,
     percentile: data.competitive?.percentile || 0,
+    shareOfVoice: data.competitive?.share_of_voice || 0,
     recentMentions: data.citations?.recent_mentions || [],
-    // Enhanced competitive data
-    competitors: data.competitive?.competitors || [],
+    // Enhanced competitive data - use smart top 5 if available, fallback to regular competitors
+    competitors: data.competitive?.top5_competitors || data.competitive?.competitors || [],
     userCompany: {
       name: data.company?.name || 'Your Company',
       domain: data.company?.domain || '',
@@ -39,45 +40,11 @@ export function EnhancedOverviewTab({ hasVisibilityData, data }: EnhancedOvervie
     }
   }
 
-  // Create top 5 ranking ensuring user company appears
-  const createTop5Ranking = () => {
-    const allCompetitors = [...overviewData.competitors]
-    
-    // Add user company if not already in competitors list
-    const userInList = allCompetitors.find(c => c.rank === overviewData.userCompany.rank)
-    if (!userInList) {
-      allCompetitors.push({
-        name: overviewData.userCompany.name,
-        domain: overviewData.userCompany.domain,
-        visibility_score: overviewData.userCompany.score,
-        rank: overviewData.userCompany.rank,
-        isUser: true
-      })
-    } else {
-      // Mark the user's company
-      userInList.isUser = true
-    }
-    
-    // Sort by rank and take top 5, but ensure user appears even if ranked lower
-    const sortedCompetitors = allCompetitors.sort((a, b) => (a.rank || 999) - (b.rank || 999))
-    let top5 = sortedCompetitors.slice(0, 5)
-    
-    // If user isn't in top 5, replace #5 with user (but show correct rank)
-    const userInTop5 = top5.find(c => c.isUser)
-    if (!userInTop5) {
-      const userCompetitor = sortedCompetitors.find(c => c.isUser)
-      if (userCompetitor) {
-        top5[4] = userCompetitor // Replace 5th position with user
-      }
-    }
-    
-    return top5.map(competitor => ({
-      ...competitor,
-      favicon: `https://www.google.com/s2/favicons?domain=${competitor.domain}&sz=128`
-    }))
-  }
-
-  const top5Competitors = createTop5Ranking()
+  // The competitors data is already the smart top 5 from the API
+  const top5Competitors = overviewData.competitors.slice(0, 5).map((competitor: any) => ({
+    ...competitor,
+    favicon: competitor.favicon || `https://www.google.com/s2/favicons?domain=${competitor.domain}&sz=128`
+  }))
 
   return (
     <div className="space-y-6">
@@ -89,9 +56,9 @@ export function EnhancedOverviewTab({ hasVisibilityData, data }: EnhancedOvervie
         </div>
         
         <div className="space-y-3">
-          {top5Competitors.map((competitor, index) => (
+          {top5Competitors.map((competitor: any, index: number) => (
             <div 
-              key={competitor.domain} 
+              key={`competitor-${competitor.domain}-${index}`} 
               className={`flex items-center gap-3 py-2 px-3 rounded-lg transition-colors ${
                 competitor.isUser 
                   ? 'bg-white/5 border border-white/10' 
@@ -107,7 +74,7 @@ export function EnhancedOverviewTab({ hasVisibilityData, data }: EnhancedOvervie
                     : 'bg-[#333] text-[#888]'
               }`}>
                 {competitor.rank || index + 1}
-          </div>
+              </div>
           
               {/* Favicon */}
               <div className="flex-shrink-0">
@@ -139,17 +106,20 @@ export function EnhancedOverviewTab({ hasVisibilityData, data }: EnhancedOvervie
                 <div className="text-xs text-[#666] truncate">{competitor.domain}</div>
               </div>
               
-              {/* Score */}
+              {/* Share of Voice instead of Score */}
               <div className="text-right flex-shrink-0">
                 <div className={`text-sm font-medium ${
                   competitor.isUser ? 'text-white' : 'text-white'
                 }`}>
-                  {competitor.visibility_score?.toFixed(1) || '0.0'}
-            </div>
+                  {competitor.isUser 
+                    ? `${overviewData.shareOfVoice.toFixed(1)}%` 
+                    : `${((competitor.mention_rate || 0) * 100).toFixed(1)}%`
+                  }
+                </div>
                 <div className="text-xs text-[#666]">
-                  {Math.round((competitor.mention_rate || 0) * 100)}% mention
-        </div>
-      </div>
+                  share of voice
+                </div>
+              </div>
             </div>
           ))}
           
@@ -161,7 +131,7 @@ export function EnhancedOverviewTab({ hasVisibilityData, data }: EnhancedOvervie
         </div>
       </div>
 
-      {/* Recent Mentions - Minimal Teaser Design */}
+      {/* Recent Mentions - Enhanced with Favicons and URLs */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h4 className="text-white font-medium">Recent Mentions</h4>
@@ -170,14 +140,30 @@ export function EnhancedOverviewTab({ hasVisibilityData, data }: EnhancedOvervie
         
         <div className="space-y-3">
           {overviewData.recentMentions.slice(0, 3).map((mention: any, index: number) => (
-            <div key={index} className="group">
-              <div className="flex items-start gap-3 py-2">
+            <div key={mention.id || `mention-${index}-${mention.question?.substring(0, 20) || 'unknown'}`} className="group">
+              <div className="flex items-start gap-3 py-3">
+                {/* Favicon instead of status badges */}
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <div className={`w-1.5 h-1.5 rounded-full ${
-                    mention.sentiment === 'positive' || mention.sentiment === 'very_positive' ? 'bg-green-500' :
-                    mention.sentiment === 'negative' || mention.sentiment === 'very_negative' ? 'bg-red-500' :
-                    'bg-yellow-500'
-                  }`} />
+                  {mention.favicon ? (
+                    <img 
+                      src={mention.favicon} 
+                      alt={`${mention.domain} favicon`}
+                      className="w-4 h-4 rounded"
+                      onError={(e) => {
+                        // Fallback to sentiment dot if favicon fails
+                        e.currentTarget.style.display = 'none'
+                        const dot = e.currentTarget.nextElementSibling as HTMLElement
+                        if (dot) dot.style.display = 'block'
+                      }}
+                    />
+                  ) : null}
+                  <div 
+                    className={`w-1.5 h-1.5 rounded-full ${mention.favicon ? 'hidden' : 'block'} ${
+                      mention.sentiment === 'positive' || mention.sentiment === 'very_positive' ? 'bg-green-500' :
+                      mention.sentiment === 'negative' || mention.sentiment === 'very_negative' ? 'bg-red-500' :
+                      'bg-yellow-500'
+                    }`} 
+                  />
                   <span className={`text-xs px-2 py-0.5 rounded border ${
                     mention.position === 'primary' 
                       ? 'border-white/20 text-white bg-white/5' 
@@ -185,11 +171,24 @@ export function EnhancedOverviewTab({ hasVisibilityData, data }: EnhancedOvervie
                   }`}>
                     {mention.position || 'mentioned'}
                   </span>
-                  </div>
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-[#ccc] leading-relaxed line-clamp-2">
-                    {mention.context || mention.ai_response?.substring(0, 120) + '...' || `"${mention.question}"`}
+                  {/* Show actual mention quote */}
+                  <p className="text-sm text-[#ccc] leading-relaxed line-clamp-2 mb-1">
+                    "{mention.mention_quote || mention.context || mention.ai_response?.substring(0, 120) + '...' || `"${mention.question}"`}"
                   </p>
+                  {/* Show source URL if available */}
+                  {mention.citation_url && mention.citation_url !== '#' && (
+                    <a 
+                      href={mention.citation_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-400 hover:text-blue-300 underline truncate block"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Source: {mention.domain || mention.citation_url}
+                    </a>
+                  )}
                 </div>
               </div>
               <div className="border-b border-[#222] mt-2"></div>

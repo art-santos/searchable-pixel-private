@@ -373,6 +373,26 @@ export interface QuestionGenerationRequest {
   }
   question_count: number
   question_types?: MaxQuestionType[] // Filter to specific types
+  enhancedContext?: {
+    // Rich context from knowledge base
+    overview: string[]
+    targetAudience: string[]
+    painPoints: string[]
+    positioning: string[]
+    productFeatures: string[]
+    useCases: string[]
+    competitors: string[]
+    brandVoice: string[]
+    keywords: string[]
+    
+    // GPT-4o enhanced insights
+    industryCategory: string
+    companySize: string
+    businessModel: string
+    aliases: string[]
+    uniqueValueProps: string[]
+    targetPersonas: string[]
+  }
 }
 
 export interface GeneratedQuestion {

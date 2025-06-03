@@ -102,8 +102,12 @@ export async function GET(request: Request) {
       let key: string
       
       if (groupBy === 'hour') {
-        // Use 24-hour format for internal key, we'll format for display later
-        key = `${date.getHours()}`
+        // Use YYYY-MM-DD-HH format to avoid hour number conflicts across days
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        const hour = String(date.getHours()).padStart(2, '0')
+        key = `${year}-${month}-${day}-${hour}`
       } else {
         const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
         key = `${monthNames[date.getMonth()]} ${date.getDate()}`
@@ -131,20 +135,27 @@ export async function GET(request: Request) {
       for (let hoursAgo = 23; hoursAgo >= 0; hoursAgo--) {
         const hourTime = new Date(nowInUserTz)
         hourTime.setHours(hourTime.getHours() - hoursAgo)
-        const hour = hourTime.getHours()
-        const hourKey = `${hour}`
+        
+        // Create the same key format as used in data grouping
+        const year = hourTime.getFullYear()
+        const month = String(hourTime.getMonth() + 1).padStart(2, '0')
+        const day = String(hourTime.getDate()).padStart(2, '0')
+        const hour = String(hourTime.getHours()).padStart(2, '0')
+        const hourKey = `${year}-${month}-${day}-${hour}`
+        
         const crawls = timeAggregates.get(hourKey) || 0
         
         // Format hour for display (12-hour format with AM/PM)
         let displayHour: string
-        if (hour === 0) {
+        const displayHourNum = hourTime.getHours()
+        if (displayHourNum === 0) {
           displayHour = '12 AM'
-        } else if (hour < 12) {
-          displayHour = `${hour} AM`
-        } else if (hour === 12) {
+        } else if (displayHourNum < 12) {
+          displayHour = `${displayHourNum} AM`
+        } else if (displayHourNum === 12) {
           displayHour = '12 PM'
         } else {
-          displayHour = `${hour - 12} PM`
+          displayHour = `${displayHourNum - 12} PM`
         }
         
         chartData.push({

@@ -21,19 +21,378 @@ interface PipelineProgress {
   message: string
 }
 
+interface KnowledgeBaseTags {
+  'company-overview': string[]
+  'target-audience': string[]
+  'pain-points': string[]
+  'positioning': string[]
+  'product-features': string[]
+  'use-cases': string[]
+  'competitor-notes': string[]
+  'sales-objections': string[]
+  'brand-voice': string[]
+  'keywords': string[]
+  'other': string[]
+}
+
+interface EnhancedCompanyContext {
+  // Basic info (existing)
+  id: string
+  name: string
+  domain: string
+  
+  // Rich context from knowledge base
+  overview: string[]
+  targetAudience: string[]
+  painPoints: string[]
+  positioning: string[]
+  productFeatures: string[]
+  useCases: string[]
+  competitors: string[]
+  brandVoice: string[]
+  keywords: string[]
+  
+  // GPT-4o enhanced insights
+  industryCategory: string
+  companySize: string
+  businessModel: string
+  aliases: string[]
+  uniqueValueProps: string[]
+  targetPersonas: string[]
+  
+  // Domains
+  owned_domains: string[]
+  operated_domains: string[]
+}
+
 export class MaxVisibilityPipeline {
   private questionGenerator: ConversationalQuestionGenerator
   private perplexityClient: PerplexityClient
   private supabase: ReturnType<typeof createServiceRoleClient>
+  private gpt4oAnalysisCache: Map<string, any>
 
   constructor() {
     this.questionGenerator = new ConversationalQuestionGenerator()
     this.perplexityClient = new PerplexityClient(process.env.PERPLEXITY_API_KEY!)
     this.supabase = createServiceRoleClient()
+    this.gpt4oAnalysisCache = new Map()
   }
 
   /**
-   * Run complete MAX Visibility assessment with GPT-4o analysis
+   * STEP 1: Knowledge Base-Driven Company Context Builder
+   * This is the foundation for intelligent MAX Visibility analysis
+   */
+  async buildEnhancedCompanyContext(companyId: string): Promise<EnhancedCompanyContext> {
+    try {
+      console.log(`🧠 Building enhanced company context for ${companyId}`)
+      
+      // 1. Get basic company info
+      const basicInfo = await this.getCompanyBasicInfo(companyId)
+      
+      // 2. Fetch all knowledge base entries for this company
+      const { data: knowledgeEntries, error } = await this.supabase
+        .from('knowledge_base_items')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false })
+      
+      if (error) {
+        console.warn('❌ Failed to fetch knowledge base entries:', error)
+        return this.createMinimalContext(basicInfo)
+      }
+      
+      if (!knowledgeEntries || knowledgeEntries.length === 0) {
+        console.log('📝 No knowledge base entries found, using minimal context')
+        return this.createMinimalContext(basicInfo)
+      }
+      
+      console.log(`📚 Found ${knowledgeEntries.length} knowledge base entries`)
+      
+      // 3. Group by tags
+      const groupedKnowledge = this.groupKnowledgeByTags(knowledgeEntries)
+      
+      // 4. Use GPT-4o to extract structured insights
+      const structuredInsights = await this.analyzeKnowledgeWithGPT4o(groupedKnowledge, basicInfo)
+      
+      // 5. Build enhanced context
+      const enhancedContext: EnhancedCompanyContext = {
+        // Basic info
+        id: basicInfo.id,
+        name: basicInfo.name,
+        domain: basicInfo.domain,
+        
+        // Rich context from knowledge base
+        overview: groupedKnowledge['company-overview'] || [],
+        targetAudience: groupedKnowledge['target-audience'] || [],
+        painPoints: groupedKnowledge['pain-points'] || [],
+        positioning: groupedKnowledge['positioning'] || [],
+        productFeatures: groupedKnowledge['product-features'] || [],
+        useCases: groupedKnowledge['use-cases'] || [],
+        competitors: this.extractCompetitors(groupedKnowledge['competitor-notes']),
+        brandVoice: groupedKnowledge['brand-voice'] || [],
+        keywords: groupedKnowledge['keywords'] || [],
+        
+        // GPT-4o enhanced insights
+        industryCategory: structuredInsights.industryCategory,
+        companySize: structuredInsights.companySize,
+        businessModel: structuredInsights.businessModel,
+        aliases: structuredInsights.aliases,
+        uniqueValueProps: structuredInsights.uniqueValueProps,
+        targetPersonas: structuredInsights.targetPersonas,
+        
+        // Domains
+        owned_domains: [basicInfo.domain],
+        operated_domains: this.inferOperatedDomains(basicInfo.domain)
+      }
+      
+      console.log(`✅ Enhanced company context built successfully`)
+      console.log(`📊 Context includes: ${enhancedContext.overview.length} overview items, ${enhancedContext.competitors.length} competitors, ${enhancedContext.keywords.length} keywords`)
+      
+      return enhancedContext
+      
+    } catch (error) {
+      console.error('❌ Failed to build enhanced company context:', error)
+      const basicInfo = await this.getCompanyBasicInfo(companyId)
+      return this.createMinimalContext(basicInfo)
+    }
+  }
+
+  /**
+   * Get basic company info from database
+   */
+  private async getCompanyBasicInfo(companyId: string) {
+    const { data: company, error } = await this.supabase
+      .from('companies')
+      .select('id, company_name, root_url')
+      .eq('id', companyId)
+      .single()
+    
+    if (error || !company) {
+      throw new Error(`Company not found: ${companyId}`)
+    }
+    
+    return {
+      id: company.id,
+      name: company.company_name,
+      domain: company.root_url
+    }
+  }
+
+  /**
+   * Group knowledge base entries by their tags
+   */
+  private groupKnowledgeByTags(entries: any[]): KnowledgeBaseTags {
+    const grouped: KnowledgeBaseTags = {
+      'company-overview': [],
+      'target-audience': [],
+      'pain-points': [],
+      'positioning': [],
+      'product-features': [],
+      'use-cases': [],
+      'competitor-notes': [],
+      'sales-objections': [],
+      'brand-voice': [],
+      'keywords': [],
+      'other': []
+    }
+    
+    entries.forEach(entry => {
+      const tag = entry.tag as keyof KnowledgeBaseTags
+      if (grouped[tag]) {
+        grouped[tag].push(entry.content)
+      } else {
+        grouped['other'].push(entry.content)
+      }
+    })
+    
+    return grouped
+  }
+
+  /**
+   * Use GPT-4o to analyze knowledge base and extract structured insights
+   */
+  private async analyzeKnowledgeWithGPT4o(
+    groupedKnowledge: KnowledgeBaseTags, 
+    basicInfo: { name: string; domain: string }
+  ) {
+    const prompt = `
+Analyze this company's knowledge base and extract structured insights:
+
+COMPANY: ${basicInfo.name}
+DOMAIN: ${basicInfo.domain}
+
+KNOWLEDGE BASE:
+${Object.entries(groupedKnowledge)
+  .filter(([_, items]) => items.length > 0)
+  .map(([tag, items]) => 
+    `${tag.toUpperCase().replace('-', ' ')}:\n${items.join('\n\n')}`
+  ).join('\n\n---\n\n')}
+
+Extract and infer the following insights (respond with JSON only):
+
+{
+  "industryCategory": "Specific category based on what this company actually does (e.g. 'sales research', 'lead generation', 'content creation', 'customer support', etc.) - be specific about their function 2-5 words, not generic like 'AI' or 'SaaS'",
+  "companySize": "startup | small | medium | enterprise (based on context clues)",
+  "businessModel": "B2B SaaS | marketplace | services | etc.",
+  "aliases": ["Alternative names/terms people might use to refer to this company"],
+  "uniqueValueProps": ["Key differentiators that set this company apart"],
+  "targetPersonas": ["Primary buyer personas or customer types"],
+  "specificCategory": "The most specific category for question generation - what type of tools/solutions do they compete with? (e.g. 'sales research tools', 'email marketing platforms', 'project management software')"
+}
+
+Important: Pay close attention to the specific language and terminology used in the company's knowledge base—use their own verbiage and phrasing, as this often reflects their SEO/AEO targeting and positioning. Avoid broad or generic categories; instead, identify the precise business function and solution as described in their materials (e.g., 'sales prospecting automation', 'cloud-based web services', 'ai sales research agents', etc.), not just high-level terms like 'AI company' or 'SaaS platform'.
+`
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert business analyst who extracts structured insights from company information. Always respond with valid JSON. Focus on determining the specific business function, not generic categories.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.2,
+          max_tokens: 1000,
+          response_format: { type: 'json_object' }
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`)
+      }
+
+      const data = await response.json()
+      const content = data.choices[0]?.message?.content
+
+      if (!content) {
+        throw new Error('No content received from GPT-4o')
+      }
+
+      const insights = JSON.parse(content)
+      console.log('🤖 GPT-4o insights extracted:', insights)
+      
+      return {
+        industryCategory: insights.industryCategory || insights.specificCategory || this.inferCategoryFromDomain(basicInfo.domain),
+        companySize: insights.companySize || 'startup',
+        businessModel: insights.businessModel || 'B2B SaaS',
+        aliases: insights.aliases || [basicInfo.name, basicInfo.domain.replace(/^https?:\/\//, '').replace(/^www\./, '').split('.')[0]],
+        uniqueValueProps: insights.uniqueValueProps || [],
+        targetPersonas: insights.targetPersonas || [],
+        specificCategory: insights.specificCategory || insights.industryCategory || 'business software'
+      }
+      
+    } catch (error) {
+      console.error('❌ GPT-4o knowledge analysis failed:', error)
+      return {
+        industryCategory: this.inferCategoryFromDomain(basicInfo.domain),
+        companySize: 'startup',
+        businessModel: 'B2B SaaS',
+        aliases: [basicInfo.name],
+        uniqueValueProps: [],
+        targetPersonas: [],
+        specificCategory: 'business software'
+      }
+    }
+  }
+
+  /**
+   * Extract competitor names from competitor notes
+   */
+  private extractCompetitors(competitorNotes: string[]): string[] {
+    const competitors = new Set<string>()
+    
+    competitorNotes.forEach(note => {
+      // Simple extraction - look for common patterns
+      const matches = note.match(/\b[A-Z][a-zA-Z0-9]*(?:\.[a-zA-Z]{2,4})?\b/g) || []
+      matches.forEach(match => {
+        if (match.length > 2 && match.length < 20) {
+          competitors.add(match)
+        }
+      })
+    })
+    
+    return Array.from(competitors).slice(0, 10) // Limit to 10 competitors
+  }
+
+  /**
+   * Create minimal context when knowledge base is empty
+   */
+  private createMinimalContext(basicInfo: { id: string; name: string; domain: string }): EnhancedCompanyContext {
+    const domain = basicInfo.domain.replace(/^https?:\/\//, '').replace(/^www\./, '')
+    const inferredCategory = this.inferCategoryFromDomain(domain)
+    
+    return {
+      id: basicInfo.id,
+      name: basicInfo.name,
+      domain: basicInfo.domain,
+      overview: [`${basicInfo.name} is a ${inferredCategory} company`],
+      targetAudience: [],
+      painPoints: [],
+      positioning: [],
+      productFeatures: [],
+      useCases: [],
+      competitors: [],
+      brandVoice: [],
+      keywords: [],
+      industryCategory: inferredCategory,
+      companySize: 'startup',
+      businessModel: 'B2B SaaS',
+      aliases: [basicInfo.name, domain.split('.')[0]],
+      uniqueValueProps: [],
+      targetPersonas: [],
+      owned_domains: [basicInfo.domain],
+      operated_domains: this.inferOperatedDomains(basicInfo.domain)
+    }
+  }
+
+  /**
+   * Simple fallback category inference from domain (only used when knowledge base is empty)
+   */
+  private inferCategoryFromDomain(domain: string): string {
+    domain = domain.toLowerCase()
+    
+    // Simple broad categories as fallback only
+    if (domain.includes('sales') || domain.includes('lead')) return 'Sales Technology'
+    if (domain.includes('marketing')) return 'Marketing Technology'  
+    if (domain.includes('fintech') || domain.includes('finance')) return 'FinTech'
+    if (domain.includes('health') || domain.includes('medical')) return 'HealthTech'
+    if (domain.includes('edu') || domain.includes('learn')) return 'EdTech'
+    if (domain.includes('data') || domain.includes('analytics')) return 'Data & Analytics'
+    
+    // Generic fallbacks
+    if (domain.includes('saas') || domain.includes('software')) return 'SaaS'
+    if (domain.includes('ai') || domain.includes('ml')) return 'AI Technology'
+    
+    return 'Technology'
+  }
+
+  /**
+   * Infer operated domains (social profiles, etc.)
+   */
+  private inferOperatedDomains(mainDomain: string): string[] {
+    const companyName = mainDomain.replace(/^https?:\/\//, '').replace(/^www\./, '').split('.')[0]
+    
+    return [
+      `twitter.com/${companyName}`,
+      `linkedin.com/company/${companyName}`,
+      `github.com/${companyName}`,
+      `${companyName}.substack.com`
+    ]
+  }
+
+  /**
+   * Run complete MAX Visibility assessment with enhanced company context
    */
   async runAssessment(
     request: MaxAssessmentRequest,
@@ -42,57 +401,57 @@ export class MaxVisibilityPipeline {
   ): Promise<MaxAssessmentResult> {
     const startTime = Date.now()
     
+    // Create or use existing assessment record
+    const assessmentId = existingAssessmentId || await this.createAssessmentRecord(request)
+    
+    // Create enhanced progress callback that saves to database
+    const enhancedProgress = this.createProgressCallback(assessmentId, onProgress)
+    
     try {
       // Validate request
       await this.validateRequest(request)
       
-      // Create or use existing assessment record
-      const assessmentId = existingAssessmentId || await this.createAssessmentRecord(request)
-      
-      // Stage 1: Generate questions
-      onProgress?.({
+      // STEP 1: Build enhanced company context from knowledge base
+      enhancedProgress({
         stage: 'setup',
-        completed: 0,
+        completed: 5,
         total: 100,
-        message: 'Generating conversational questions...'
+        message: 'Building enhanced company context from knowledge base...'
       })
       
-      const questions = await this.generateQuestions(request, assessmentId)
+      const enhancedContext = await this.buildEnhancedCompanyContext(request.company.id)
       
-      // Stage 2: Get AI responses from Perplexity
-      onProgress?.({
-        stage: 'questions',
-        completed: 20,
-        total: 100,
-        message: `Processing ${questions.length} questions...`
-      })
+      // Update request with enhanced context
+      const enhancedRequest = {
+        ...request,
+        company: {
+          ...request.company,
+          description: enhancedContext.overview.join(' '),
+          industry: enhancedContext.industryCategory,
+          aliases: enhancedContext.aliases,
+          owned_domains: enhancedContext.owned_domains,
+          operated_domains: enhancedContext.operated_domains
+        }
+      }
       
-      const responses = await this.getAIResponses(questions, onProgress)
-      
-      // Stage 3: Analyze with GPT-4o (THIS IS THE MAGIC)
-          onProgress?.({
-            stage: 'analysis',
-        completed: 60,
+      // Stage 2: Generate questions using enhanced context
+      enhancedProgress({
+        stage: 'setup',
+        completed: 15,
             total: 100,
-        message: 'Analyzing responses with GPT-4o...'
-          })
-      
-      const analyses = await this.analyzeWithGPT4o(responses, request, assessmentId)
-      
-      // Stage 4: Calculate final scores
-      onProgress?.({
-        stage: 'scoring',
-        completed: 85,
-        total: 100,
-        message: 'Calculating visibility scores...'
+        message: 'Generating intelligent questions from company context...'
       })
       
+      const questions = await this.generateQuestions(enhancedRequest, assessmentId, enhancedContext)
+      
+      // Continue with rest of pipeline...
+      const responses = await this.getAIResponses(questions, enhancedProgress)
+      const analyses = await this.analyzeWithGPT4o(responses, enhancedRequest, assessmentId)
       const scores = this.calculateFinalScores(analyses)
       
-      // Stage 5: Save results
       await this.saveResults(assessmentId, analyses, scores)
       
-      onProgress?.({
+      enhancedProgress({
         stage: 'complete',
         completed: 100,
         total: 100,
@@ -103,7 +462,7 @@ export class MaxVisibilityPipeline {
       
       return {
         assessment_id: assessmentId,
-        company: request.company,
+        company: enhancedRequest.company,
         question_analyses: analyses,
         visibility_scores: scores,
         processing_time_ms: processingTime,
@@ -112,6 +471,24 @@ export class MaxVisibilityPipeline {
       
     } catch (error) {
       console.error('MAX Visibility assessment failed:', error)
+      
+      // Save error to database
+      try {
+        await this.supabase
+          .from('max_visibility_runs')
+          .update({
+            status: 'failed',
+            error_message: (error as Error).message,
+            progress_percentage: 0,
+            progress_stage: 'error',
+            progress_message: `Failed: ${(error as Error).message}`,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', assessmentId)
+      } catch (updateError) {
+        console.error('Failed to save error to database:', updateError)
+      }
+      
       throw this.createMaxVisibilityError(
         'ASSESSMENT_FAILED',
         `Assessment failed: ${(error as Error).message}`,
@@ -121,16 +498,18 @@ export class MaxVisibilityPipeline {
   }
 
   /**
-   * Generate questions using simplified generator
+   * Generate questions using enhanced context and simplified generator
    */
   private async generateQuestions(
     request: MaxAssessmentRequest,
-    assessmentId: string
+    assessmentId: string,
+    enhancedContext?: EnhancedCompanyContext
   ): Promise<Array<{ id: string; question: string; type: MaxQuestionType }>> {
     const questionCount = request.question_count || 50
     
     const generatedQuestions = await this.questionGenerator.generateQuestions({
       company: request.company,
+      enhancedContext, // Pass enhanced context to question generator
       question_count: questionCount,
       question_types: request.question_types || [
         'direct_conversational',
@@ -141,7 +520,7 @@ export class MaxVisibilityPipeline {
       ]
     })
     
-    console.log(`✅ Generated ${generatedQuestions.length} questions`)
+    console.log(`✅ Generated ${generatedQuestions.length} questions using enhanced context`)
     
     // Save questions to database
     const savedQuestions: Array<{ id: string; question: string; type: MaxQuestionType }> = []
@@ -162,7 +541,6 @@ export class MaxVisibilityPipeline {
         
         if (error) {
           console.error(`❌ Failed to save question ${i + 1}:`, error)
-        // Use fallback ID
         savedQuestions.push({
           id: `${assessmentId}-q${i + 1}`,
           question: q.question,
@@ -246,11 +624,13 @@ export class MaxVisibilityPipeline {
     request: MaxAssessmentRequest,
     assessmentId: string
   ): Promise<MaxQuestionAnalysis[]> {
-    const analyses: MaxQuestionAnalysis[] = []
+    console.log(`🧠 Starting GPT-4o analysis of ${responses.length} responses (PARALLEL)`)
     
-    console.log(`🧠 Starting GPT-4o analysis of ${responses.length} responses`)
+    // Store GPT-4o raw analysis for scoring algorithm
+    this.gpt4oAnalysisCache = new Map()
     
-    for (const responseData of responses) {
+    // Run all GPT-4o analyses in parallel for speed
+    const analysisPromises = responses.map(async (responseData) => {
       try {
         // Call GPT-4o with the analysis prompt from architecture
         const gpt4oAnalysis = await this.callGPT4oAnalyzer({
@@ -276,24 +656,37 @@ export class MaxVisibilityPipeline {
           question_score: gpt4oAnalysis.insights.visibility_score,
       processed_at: new Date().toISOString()
     }
+        
+        // Cache GPT-4o analysis for scoring algorithm
+        this.gpt4oAnalysisCache.set(responseData.question.id, gpt4oAnalysis)
     
         // Save individual analysis
-    await this.saveQuestionAnalysis(assessmentId, analysis)
-    
-        analyses.push(analysis)
+        const responseId = await this.saveQuestionAnalysis(assessmentId, analysis)
+        
+        if (!responseId) {
+          console.warn(`⚠️ Failed to save response for question ${responseData.question.id}`)
+        }
+        
+        return analysis
         
       } catch (error) {
         console.error(`GPT-4o analysis failed for question ${responseData.question.id}:`, error)
         // Create error analysis
-        analyses.push(this.createErrorAnalysis(responseData.question, error as Error))
+        return this.createErrorAnalysis(responseData.question, error as Error)
       }
-    }
+    })
+    
+    // Wait for all analyses to complete in parallel
+    const analyses = await Promise.all(analysisPromises)
+    
+    console.log(`✅ GPT-4o parallel analysis completed: ${analyses.length} responses processed`)
     
     return analyses
   }
 
   /**
-   * Call GPT-4o for intelligent analysis (placeholder for actual implementation)
+   * Call GPT-4o for intelligent analysis - THE CORE INTELLIGENCE
+   * This implements the comprehensive analysis prompt from the architecture
    */
   private async callGPT4oAnalyzer(data: {
     company: MaxAssessmentRequest['company'],
@@ -301,60 +694,499 @@ export class MaxVisibilityPipeline {
     aiResponse: string,
     citations: string[]
   }): Promise<any> {
-    // TODO: Implement actual GPT-4o API call with the prompt from architecture
-    // For now, return mock data to maintain structure
+    // Extract real competitor domains from citations and AI response
+    const competitorDomains = this.extractCompetitorDomainsFromCitations(
+      data.aiResponse, 
+      data.citations
+    )
     
+    // Build domain hints for GPT-4o
+    const domainHints = Array.from(competitorDomains.entries())
+      .map(([company, domain]) => `${company}: ${domain}`)
+      .join('\n')
+    
+    // Log domain extraction results
+    if (competitorDomains.size > 0) {
+      console.log(`🎯 Found ${competitorDomains.size} real competitor domains from citations:`)
+      competitorDomains.forEach((domain, company) => {
+        console.log(`   ${company} → ${domain}`)
+      })
+    } else {
+      console.log(`⚠️ No competitor domains found in citations, GPT-4o will need to infer`)
+    }
+    
+    const prompt = `
+You are an expert AI visibility analyst. Analyze this conversational AI response for brand mentions, competitive positioning, and citation influence.
+
+COMPANY CONTEXT:
+- Target Company: ${data.company.name}
+- Domain: ${data.company.domain}
+- Industry: ${data.company.industry || 'Technology'}
+- Description: ${data.company.description || 'Technology company'}
+
+QUESTION ASKED:
+"${data.question}"
+
+AI RESPONSE TO ANALYZE:
+"${data.aiResponse}"
+
+CITATIONS PROVIDED:
+${data.citations.length > 0 ? data.citations.map((url, i) => `${i + 1}. ${url}`).join('\n') : 'No citations provided'}
+
+COMPETITOR DOMAIN MAPPING (USE THESE EXACT DOMAINS):
+${domainHints || 'No competitor domains identified from citations'}
+
+ANALYZE AND PROVIDE:
+
+1. MENTION ANALYSIS:
+   - mention_detected: boolean (Is ${data.company.name} explicitly mentioned?)
+   - mention_position: "primary" | "secondary" | "passing" | "none" (How prominently featured?)
+   - mention_sentiment: "very_positive" | "positive" | "neutral" | "negative" | "very_negative"
+   - mention_context: string (exact quote mentioning the company, or empty if none)
+   - confidence_score: number (0-1, how confident are you in this analysis?)
+
+2. COMPETITOR ANALYSIS:
+   - Extract ALL company/product mentions in the response
+   - For each competitor found:
+     * company_name: string (exact name mentioned in response)
+     * domain: string (USE the domain from COMPETITOR DOMAIN MAPPING above if available, otherwise infer from company name like "jasper.ai" for "Jasper", or "unknown.com" if cannot determine)
+     * mention_position: "primary" | "secondary" | "passing"
+     * sentiment: "very_positive" | "positive" | "neutral" | "negative" | "very_negative"
+     * context: string (quote mentioning this competitor)
+   
+   CRITICAL: For domain extraction:
+   - FIRST check the COMPETITOR DOMAIN MAPPING above for exact matches
+   - IF found in mapping, use that exact domain
+   - IF not in mapping but company name is clear (like "Jasper", "OpenAI", "Salesforce"), infer likely domain
+   - ONLY use "unknown.com" if you cannot determine or infer the domain
+   - NEVER use "placeholder.com" or generic placeholders
+
+3. CITATION ANALYSIS:
+   - For each citation URL, classify into:
+     * "owned": Target company's own content (matches ${data.company.domain})
+     * "operated": Target company's social/platform profiles (LinkedIn, Twitter, etc.)
+     * "earned": Third-party content mentioning target company
+     * "competitor": Competitor's content
+   - influence_score: number (0-1) - how much this source influenced the response
+
+4. TOPIC EXTRACTION:
+   - Primary topics discussed in the response
+   - Relevance to target company (0-1)
+   - Sentiment for each topic
+
+5. INSIGHTS:
+   - Overall competitive positioning in this response
+   - Content gaps or opportunities identified
+   - Recommendations for improving visibility
+
+RESPOND IN VALID JSON FORMAT ONLY:
+
+{
+  "mention_analysis": {
+    "mention_detected": boolean,
+    "mention_position": "primary" | "secondary" | "passing" | "none",
+    "mention_sentiment": "very_positive" | "positive" | "neutral" | "negative" | "very_negative",
+    "mention_context": "exact quote or empty string",
+    "confidence_score": number
+  },
+  "competitor_analysis": [
+    {
+      "company_name": "string",
+      "domain": "string",
+      "mention_position": "primary" | "secondary" | "passing",
+      "sentiment": "very_positive" | "positive" | "neutral" | "negative" | "very_negative",
+      "context": "string"
+    }
+  ],
+  "citation_analysis": [
+    {
+      "citation_url": "string",
+      "bucket": "owned" | "operated" | "earned" | "competitor",
+      "influence_score": number,
+      "relevance_score": number
+    }
+  ],
+  "topic_analysis": [
+    {
+      "topic": "string",
+      "relevance": number,
+      "sentiment": "very_positive" | "positive" | "neutral" | "negative" | "very_negative",
+      "company_strength": number
+    }
+  ],
+  "insights": {
+    "competitive_position": "string",
+    "content_opportunities": ["string"],
+    "visibility_score": number
+  }
+}
+`
+
+    try {
     console.log(`🤖 Analyzing with GPT-4o: "${data.question.substring(0, 50)}..."`)
     
-    // Mock analysis (replace with actual GPT-4o call)
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert AI visibility analyst specialized in detecting and analyzing company mentions in AI responses. Always respond with valid JSON only.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.1,
+          max_tokens: 2000,
+          response_format: { type: 'json_object' }
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`)
+      }
+
+      const result = await response.json()
+      const content = result.choices[0]?.message?.content
+
+      if (!content) {
+        throw new Error('No content received from GPT-4o')
+      }
+
+      const analysis = JSON.parse(content)
+      
+      // Validate the response structure
+      this.validateGPT4oAnalysis(analysis)
+      
+      console.log(`✅ GPT-4o analysis completed - Mention: ${analysis.mention_analysis.mention_detected}, Competitors: ${analysis.competitor_analysis.length}`)
+      
+      return analysis
+      
+    } catch (error) {
+      console.error('❌ GPT-4o analysis failed:', error)
+      
+      // Return structured fallback analysis
+      return this.createFallbackAnalysis(data)
+    }
+  }
+
+  /**
+   * Validate GPT-4o analysis response structure
+   */
+  private validateGPT4oAnalysis(analysis: any): void {
+    const required = ['mention_analysis', 'competitor_analysis', 'citation_analysis', 'topic_analysis', 'insights']
+    
+    for (const field of required) {
+      if (!analysis[field]) {
+        throw new Error(`Missing required field: ${field}`)
+      }
+    }
+    
+    if (typeof analysis.mention_analysis.mention_detected !== 'boolean') {
+      throw new Error('Invalid mention_analysis structure: mention_detected must be boolean')
+    }
+  }
+
+  /**
+   * Create fallback analysis when GPT-4o fails
+   */
+  private createFallbackAnalysis(data: {
+    company: MaxAssessmentRequest['company'],
+    question: string,
+    aiResponse: string,
+    citations: string[]
+  }): any {
+    const companyMentioned = data.aiResponse.toLowerCase().includes(data.company.name.toLowerCase())
+    
     return {
       mention_analysis: {
-        mention_detected: data.aiResponse.toLowerCase().includes(data.company.name.toLowerCase()),
-        mention_position: 'secondary',
-        mention_sentiment: 'positive',
-        mention_context: `Mock context for ${data.company.name}`,
-        confidence_score: 0.8
+        mention_detected: companyMentioned,
+        mention_position: companyMentioned ? 'secondary' : 'none',
+        mention_sentiment: 'neutral',
+        mention_context: companyMentioned ? `Fallback detection for ${data.company.name}` : '',
+        confidence_score: companyMentioned ? 0.5 : 0.8
       },
+      competitor_analysis: [],
       citation_analysis: data.citations.map(url => ({
         citation_url: url,
-        bucket: 'earned',
-        influence_score: 0.7
+        bucket: url.includes(data.company.domain) ? 'owned' : 'earned',
+        influence_score: 0.5,
+        relevance_score: 0.5
       })),
+      topic_analysis: [],
       insights: {
-        visibility_score: 0.65
+        competitive_position: 'Analysis failed - using fallback detection',
+        content_opportunities: ['Improve AI visibility through content optimization'],
+        visibility_score: 0.3
       }
     }
   }
 
   /**
-   * Calculate final scores from GPT-4o analyses
+   * Calculate final scores using tough-but-fair "Domain Authority" style algorithm
+   * Creates right-skewed distribution where most companies score 10-30
    */
   private calculateFinalScores(analyses: MaxQuestionAnalysis[]): MaxVisibilityScore {
+    console.log(`🎯 Calculating tough-but-fair MAX Visibility score for ${analyses.length} analyses`)
+    
     const totalQuestions = analyses.length
     const mentionedQuestions = analyses.filter(a => a.mention_analysis.mention_detected).length
     
-    const mentionRate = totalQuestions > 0 ? mentionedQuestions / totalQuestions : 0
-    const avgQuality = this.calculateAverageQuality(analyses)
-    const avgInfluence = this.calculateAverageInfluence(analyses)
+    // 1. Calculate Difficulty-Weighted Mention Score
+    const weightedScore = this.calculateDifficultyWeightedScore(analyses)
     
-    const overallScore = (
-      mentionRate * 0.40 +      // 40% weight on mention frequency
-      avgQuality * 0.30 +       // 30% weight on mention quality  
-      avgInfluence * 0.30       // 30% weight on source influence
+    // 2. Calculate Competitive Landscape & Share of Voice
+    const competitiveMetrics = this.calculateCompetitiveMetrics(analyses)
+    
+    // 3. Calculate Citation Quality Score
+    const citationScore = this.calculateCitationQualityScore(analyses)
+    
+    // 4. Apply tough scoring curve (right-skewed like Domain Authority)
+    const toughScore = this.applyToughScoringCurve(
+      weightedScore,
+      competitiveMetrics,
+      citationScore
     )
     
+    console.log(`📊 Score breakdown: Weighted=${(weightedScore*100).toFixed(1)}, Competitive=${(competitiveMetrics.shareOfVoice*100).toFixed(1)}%, Citation=${(citationScore*100).toFixed(1)}, Final=${toughScore.toFixed(1)}`)
+    
     return {
-      overall_score: Number(overallScore.toFixed(4)),
-      mention_rate: Number(mentionRate.toFixed(4)),
-      mention_quality: Number(avgQuality.toFixed(4)),
-      source_influence: Number(avgInfluence.toFixed(4)),
-      competitive_positioning: 0.5, // Simplified
-      response_consistency: 0.8,    // Simplified
+      overall_score: Number((toughScore / 100).toFixed(4)),           // Convert back to 0-1 scale for API compatibility
+      mention_rate: Number((mentionedQuestions / totalQuestions).toFixed(4)),
+      mention_quality: Number(this.calculateAdvancedQualityScore(analyses).toFixed(4)),
+      source_influence: Number(citationScore.toFixed(4)),
+      competitive_positioning: Number(competitiveMetrics.shareOfVoice.toFixed(4)),
+      response_consistency: Number(this.calculateConsistencyScore(analyses).toFixed(4)),
       total_questions: totalQuestions,
       mentioned_questions: mentionedQuestions,
       citation_breakdown: this.getCitationBreakdown(analyses),
       calculated_at: new Date().toISOString()
     }
+  }
+
+  /**
+   * Calculate difficulty-weighted mention score based on question types
+   * Indirect questions worth much more than direct mentions
+   */
+  private calculateDifficultyWeightedScore(analyses: MaxQuestionAnalysis[]): number {
+    // Question difficulty weights (harder questions = more value)
+    const difficultyWeights = {
+      'direct_conversational': 0.2,      // Easy - company mentioned in question
+      'comparison_query': 0.5,           // Medium - competitive landscape  
+      'indirect_conversational': 1.0,    // Hard - AI suggests you organically
+      'recommendation_request': 1.5,     // Very hard - buying decision influence
+      'explanatory_query': 2.0           // Hardest - thought leadership mentions
+    }
+    
+    let totalWeight = 0
+    let achievedWeight = 0
+    
+    analyses.forEach(analysis => {
+      const questionWeight = difficultyWeights[analysis.question_type] || 1.0
+      totalWeight += questionWeight
+      
+      if (analysis.mention_analysis.mention_detected) {
+        // Position multiplier (where you're mentioned matters)
+        const positionMultiplier = {
+          'primary': 1.0,    // First/main mention
+          'secondary': 0.7,  // Supporting mention
+          'passing': 0.3,    // Brief mention
+          'none': 0
+        }[analysis.mention_analysis.mention_position] || 0
+        
+        // Light sentiment adjustment (not too harsh)
+        const sentimentMultiplier = {
+          'very_positive': 1.2,
+          'positive': 1.0,
+          'neutral': 0.9,
+          'negative': 0.8,
+          'very_negative': 0.5
+        }[analysis.mention_analysis.mention_sentiment] || 0.9
+        
+        achievedWeight += questionWeight * positionMultiplier * sentimentMultiplier
+      }
+    })
+    
+    const rawScore = totalWeight > 0 ? achievedWeight / totalWeight : 0
+    console.log(`⚖️ Difficulty-weighted score: ${achievedWeight.toFixed(2)} / ${totalWeight.toFixed(2)} = ${(rawScore*100).toFixed(1)}%`)
+    
+    return rawScore
+  }
+
+  /**
+   * Calculate competitive metrics including share of voice
+   * Based on competitor count from GPT-4o analysis (niche size indicator)
+   */
+  private calculateCompetitiveMetrics(analyses: MaxQuestionAnalysis[]): {
+    competitorCount: number,
+    shareOfVoice: number,
+    nicheSize: 'micro' | 'niche' | 'broad',
+    competitiveBonus: number
+  } {
+    // Extract all unique competitors mentioned across analyses
+    const allCompetitors = new Set<string>()
+    let totalMentions = 0
+    let yourMentions = 0
+    
+    analyses.forEach(analysis => {
+      // Count your mentions
+      if (analysis.mention_analysis.mention_detected) {
+        yourMentions++
+        totalMentions++
+      }
+      
+      // Count competitor mentions from cached GPT-4o data
+      const cachedAnalysis = this.gpt4oAnalysisCache.get(analysis.question_id)
+      if (cachedAnalysis?.competitor_analysis) {
+        cachedAnalysis.competitor_analysis.forEach((comp: any) => {
+          allCompetitors.add(comp.company_name.toLowerCase())
+          totalMentions++
+        })
+      }
+    })
+    
+    const competitorCount = allCompetitors.size
+    const shareOfVoice = totalMentions > 0 ? yourMentions / totalMentions : 0
+    
+    // Determine niche size based on competitor count
+    let nicheSize: 'micro' | 'niche' | 'broad'
+    let competitiveBonus = 1.0
+    
+    if (competitorCount <= 3) {
+      nicheSize = 'micro'
+      competitiveBonus = 0.8  // Micro niche gets less credit
+    } else if (competitorCount <= 10) {
+      nicheSize = 'niche'
+      competitiveBonus = 1.0  // Normal scoring
+    } else {
+      nicheSize = 'broad'
+      competitiveBonus = 1.3  // Broad market gets bonus for any mention
+    }
+    
+    // Share of voice bonus (dominating your space)
+    if (shareOfVoice > 0.6) competitiveBonus *= 1.3      // 60%+ = niche leader
+    else if (shareOfVoice > 0.4) competitiveBonus *= 1.15 // 40%+ = strong player
+    
+    console.log(`🏆 Competitive metrics: ${competitorCount} competitors (${nicheSize}), ${(shareOfVoice*100).toFixed(1)}% voice, ${competitiveBonus.toFixed(2)}x bonus`)
+    
+    return {
+      competitorCount,
+      shareOfVoice,
+      nicheSize,
+      competitiveBonus
+    }
+  }
+
+  /**
+   * Calculate citation quality score
+   * Owned content citations are most valuable
+   */
+  private calculateCitationQualityScore(analyses: MaxQuestionAnalysis[]): number {
+    const citationBreakdown = this.getCitationBreakdown(analyses)
+    const totalCitations = Object.values(citationBreakdown).reduce((sum, count) => sum + count, 0)
+    
+    if (totalCitations === 0) return 0
+    
+    // Weight different citation types
+    const citationScore = (
+      citationBreakdown.owned * 1.0 +       // Owned content = full value
+      citationBreakdown.operated * 0.7 +    // Social/operated = good value  
+      citationBreakdown.earned * 0.9 +      // Third-party earned = excellent value
+      citationBreakdown.competitor * -0.2   // Competitor citations hurt slightly
+    ) / totalCitations
+    
+    return Math.max(0, citationScore)
+  }
+
+  /**
+   * Apply tough scoring curve to create right-skewed distribution
+   * Most companies score 10-30, only exceptional brands hit 60-80+
+   */
+  private applyToughScoringCurve(
+    weightedScore: number,
+    competitiveMetrics: any,
+    citationScore: number
+  ): number {
+    // Base score from difficulty-weighted mentions (0-1)
+    let baseScore = weightedScore * 100
+    
+    // Apply competitive bonus/penalty
+    baseScore *= competitiveMetrics.competitiveBonus
+    
+    // Citation bonus (up to +20 points)
+    const citationBonus = citationScore * 20
+    baseScore += citationBonus
+    
+    // Apply tough curve transformation (creates right-skewed distribution)
+    // f(x) = 100 * (x^2 * (3 - 2x)) for smoother curve
+    // This makes it much harder to get high scores
+    const normalizedInput = Math.min(1, baseScore / 100)
+    const curvedScore = 100 * (normalizedInput * normalizedInput * (3 - 2 * normalizedInput))
+    
+    // Apply final caps and floors
+    let finalScore = curvedScore
+    
+    // Minimum score for any mentions (prevents 0 scores for companies getting some mentions)
+    if (weightedScore > 0) {
+      finalScore = Math.max(5, finalScore)
+    }
+    
+    // Cap at realistic maximum (only true category leaders should hit 80+)
+    finalScore = Math.min(95, finalScore)
+    
+    // Return with one decimal place precision instead of rounding to whole numbers
+    return Math.round(finalScore * 10) / 10
+  }
+
+  /**
+   * Calculate advanced quality score with sentiment and position weighting
+   */
+  private calculateAdvancedQualityScore(analyses: MaxQuestionAnalysis[]): number {
+    const mentionedAnalyses = analyses.filter(a => a.mention_analysis.mention_detected)
+    
+    if (mentionedAnalyses.length === 0) return 0
+    
+    const qualityScores = mentionedAnalyses.map(analysis => {
+      const positionScore = {
+        'primary': 1.0,
+        'secondary': 0.7, 
+        'passing': 0.3,
+        'none': 0
+      }[analysis.mention_analysis.mention_position] || 0
+      
+      const sentimentScore = {
+        'very_positive': 1.0,
+        'positive': 0.8,
+        'neutral': 0.6,
+        'negative': 0.3,
+        'very_negative': 0.1
+      }[analysis.mention_analysis.mention_sentiment] || 0.6
+      
+      return positionScore * sentimentScore
+    })
+    
+    return qualityScores.reduce((sum, score) => sum + score, 0) / qualityScores.length
+  }
+
+  /**
+   * Calculate response consistency score
+   */
+  private calculateConsistencyScore(analyses: MaxQuestionAnalysis[]): number {
+    // Simple consistency based on fact accuracy and confidence
+    const confidenceScores = analyses
+      .filter(a => a.mention_analysis.confidence_score)
+      .map(a => a.mention_analysis.confidence_score)
+    
+    return confidenceScores.length > 0
+      ? confidenceScores.reduce((sum, score) => sum + score, 0) / confidenceScores.length
+      : 0.8 // Default reasonable consistency
   }
 
   // Helper methods (simplified)
@@ -377,7 +1209,7 @@ export class MaxVisibilityPipeline {
   }
 
   private getQualityScore(mentionAnalysis: any): number {
-    const positionScores = { 'primary': 1.0, 'secondary': 0.7, 'passing': 0.3, 'none': 0 }
+    const positionScores = { 'primary': 1.0, 'secondary': 0.7, 'passing': 0.3 }
     const sentimentBonus = { 'very_positive': 0.3, 'positive': 0.2, 'neutral': 0.1, 'negative': -0.1, 'very_negative': -0.2 }
     
     const baseScore = positionScores[mentionAnalysis.mention_position as keyof typeof positionScores] || 0
@@ -417,8 +1249,9 @@ export class MaxVisibilityPipeline {
     return data.id
   }
 
-  private async saveQuestionAnalysis(assessmentId: string, analysis: MaxQuestionAnalysis): Promise<void> {
-    await this.supabase
+  private async saveQuestionAnalysis(assessmentId: string, analysis: MaxQuestionAnalysis): Promise<string | null> {
+    try {
+      const { data, error } = await this.supabase
         .from('max_visibility_responses')
         .insert({
           question_id: analysis.question_id,
@@ -426,8 +1259,21 @@ export class MaxVisibilityPipeline {
           mention_detected: analysis.mention_analysis.mention_detected,
           mention_position: analysis.mention_analysis.mention_position,
           mention_sentiment: analysis.mention_analysis.mention_sentiment,
-        mention_context: analysis.mention_analysis.mention_context
-      })
+          mention_context: analysis.mention_analysis.mention_context || ''
+        })
+        .select('id')
+        .single()
+
+      if (error) {
+        console.error('❌ Failed to save response:', error)
+        return null
+      }
+
+      return data.id // Return the response ID for citations
+    } catch (error) {
+      console.error('❌ Error saving question analysis:', error)
+      return null
+    }
   }
 
   private async saveResults(
@@ -448,7 +1294,179 @@ export class MaxVisibilityPipeline {
         })
         .eq('id', assessmentId)
 
-    console.log(`✅ Saved results for assessment ${assessmentId}`)
+    // First, get the mapping of question IDs to response IDs
+    const questionIds = analyses.map(a => a.question_id)
+    const { data: responseRecords, error: responseError } = await this.supabase
+      .from('max_visibility_responses')
+      .select('id, question_id')
+      .in('question_id', questionIds)
+
+    if (responseError) {
+      console.error('❌ Failed to fetch response IDs:', responseError)
+      return
+    }
+
+    // Create mapping of question_id -> response_id
+    const questionToResponseMap = new Map<string, string>()
+    responseRecords?.forEach(record => {
+      questionToResponseMap.set(record.question_id, record.id)
+    })
+
+    console.log(`📋 Mapped ${questionToResponseMap.size} questions to response IDs`)
+
+    // Extract and save competitors from all analyses
+    const allCompetitors = new Map<string, any>()
+    const allCitations: any[] = []
+
+    for (const analysis of analyses) {
+      // Get cached GPT-4o analysis for competitor data
+      const gpt4oAnalysis = this.gpt4oAnalysisCache?.get(analysis.question_id)
+      
+      // Collect competitors from GPT-4o analysis
+      if (gpt4oAnalysis?.competitor_analysis) {
+        for (const competitor of gpt4oAnalysis.competitor_analysis) {
+          const key = competitor.company_name?.toLowerCase() || 'unknown'
+          if (!allCompetitors.has(key) && competitor.company_name) {
+            // Skip entries with placeholder or missing domains
+            const domain = competitor.domain || ''
+            if (domain === 'placeholder.com' || domain === 'unknown.com' || !domain) {
+              console.warn(`⚠️ Skipping competitor "${competitor.company_name}" with invalid domain: "${domain}"`)
+              continue
+            }
+            
+            allCompetitors.set(key, {
+              run_id: assessmentId,
+              competitor_name: competitor.company_name,
+              competitor_domain: domain,
+              competitor_description: competitor.context || '',
+              mention_count: 1,
+              sentiment_average: this.convertSentimentToScore(competitor.sentiment),
+              created_at: new Date().toISOString()
+            })
+            
+            console.log(`✅ Valid competitor found: "${competitor.company_name}" → ${domain}`)
+          }
+        }
+      }
+
+      // Collect citations from structured analysis - use correct response ID
+      const responseId = questionToResponseMap.get(analysis.question_id)
+      if (responseId && analysis.citation_analysis && analysis.citation_analysis.length > 0) {
+        for (const citation of analysis.citation_analysis) {
+          if (citation.citation_url) {
+            allCitations.push({
+              response_id: responseId, // Use the actual response ID from database
+              citation_url: citation.citation_url,
+              citation_title: '',
+              citation_domain: this.extractDomainFromUrl(citation.citation_url),
+              citation_excerpt: '',
+              bucket: citation.bucket || 'earned',
+              influence_score: citation.influence_score || 0,
+              relevance_score: citation.relevance_score || 0,
+              position_in_citations: 1,
+              created_at: new Date().toISOString()
+            })
+          }
+        }
+      } else if (!responseId) {
+        console.warn(`⚠️ No response ID found for question ${analysis.question_id}, skipping citations`)
+      }
+    }
+
+    // Save competitors to database
+    if (allCompetitors.size > 0) {
+      const competitorRecords = Array.from(allCompetitors.values())
+      console.log(`💾 Attempting to save ${competitorRecords.length} competitors to database`)
+      console.log(`📋 Sample competitor record:`, JSON.stringify(competitorRecords[0], null, 2))
+      
+      const { error: competitorError } = await this.supabase
+        .from('max_visibility_competitors')
+        .insert(competitorRecords)
+
+      if (competitorError) {
+        console.error('❌ Failed to save competitors:', competitorError)
+        console.error('❌ Competitor error details:', JSON.stringify(competitorError, null, 2))
+      } else {
+        console.log(`✅ Saved ${competitorRecords.length} competitors`)
+        
+        // Verify the save by counting records
+        const { data: verifyCompetitors, error: verifyError } = await this.supabase
+          .from('max_visibility_competitors')
+          .select('id')
+          .eq('run_id', assessmentId)
+        
+        if (verifyError) {
+          console.error('❌ Failed to verify competitor save:', verifyError)
+        } else {
+          console.log(`✅ Verification: ${verifyCompetitors?.length || 0} competitors saved for assessment ${assessmentId}`)
+        }
+      }
+    } else {
+      console.log('⚠️ No competitors to save')
+    }
+
+    // Save citations to database
+    if (allCitations.length > 0) {
+      console.log(`💾 Attempting to save ${allCitations.length} citations to database`)
+      console.log(`📋 Sample citation record:`, JSON.stringify(allCitations[0], null, 2))
+      
+      const { error: citationError } = await this.supabase
+        .from('max_visibility_citations')
+        .insert(allCitations)
+
+      if (citationError) {
+        console.error('❌ Failed to save citations:', citationError)
+        console.error('❌ Citation error details:', JSON.stringify(citationError, null, 2))
+      } else {
+        console.log(`✅ Saved ${allCitations.length} citations`)
+        
+        // Verify the save by counting records
+        const { data: verifyCitations, error: verifyError } = await this.supabase
+          .from('max_visibility_citations')
+          .select('id')
+          .in('response_id', Array.from(questionToResponseMap.values()))
+        
+        if (verifyError) {
+          console.error('❌ Failed to verify citation save:', verifyError)
+        } else {
+          console.log(`✅ Verification: ${verifyCitations?.length || 0} citations saved`)
+        }
+      }
+    } else {
+      console.log('⚠️ No citations to save')
+    }
+
+    console.log(`✅ Saved results for assessment ${assessmentId} - ${allCompetitors.size} competitors, ${allCitations.length} citations`)
+  }
+
+  // Helper method to convert sentiment string to numeric score
+  private convertSentimentToScore(sentiment: string): number {
+    switch (sentiment?.toLowerCase()) {
+      case 'very_positive': return 1.0
+      case 'positive': return 0.5
+      case 'neutral': return 0.0
+      case 'negative': return -0.5
+      case 'very_negative': return -1.0
+      default: return 0.0
+    }
+  }
+
+  // Helper method to extract domain from URL
+  private extractDomainFromUrl(url: string): string {
+    try {
+      const urlObj = new URL(url)
+      let domain = urlObj.hostname.toLowerCase()
+      
+      // Remove www. prefix
+      if (domain.startsWith('www.')) {
+        domain = domain.substring(4)
+      }
+      
+      return domain
+    } catch (error) {
+      console.warn(`Invalid URL for domain extraction: ${url}`)
+      return 'unknown.com'
+    }
   }
 
   private async validateRequest(request: MaxAssessmentRequest): Promise<void> {
@@ -491,5 +1509,945 @@ export class MaxVisibilityPipeline {
 
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
+  /**
+   * Public method for testing Step 3: Get AI responses from Perplexity
+   * Exposes the private getAIResponses method for testing
+   */
+  async testStep3_getAIResponses(
+    questions: Array<{ id: string; question: string; type: MaxQuestionType }>,
+    onProgress?: (progress: PipelineProgress) => void
+  ): Promise<Array<{ question: typeof questions[0], response: string, citations: string[] }>> {
+    return this.getAIResponses(questions, onProgress)
+  }
+
+  /**
+   * Public method for testing: Generate questions using enhanced context
+   * Exposes question generation with enhanced context
+   */
+  async testStep2_generateQuestions(
+    companyData: {
+      id: string
+      name: string
+      domain: string
+      description?: string
+      industry?: string
+    },
+    enhancedContext?: EnhancedCompanyContext
+  ): Promise<Array<{ id: string; question: string; type: MaxQuestionType }>> {
+    const generatedQuestions = await this.questionGenerator.generateQuestions({
+      company: companyData,
+      enhancedContext,
+      question_count: 50,
+      question_types: [
+        'direct_conversational',
+        'indirect_conversational', 
+        'comparison_query',
+        'recommendation_request',
+        'explanatory_query'
+      ]
+    })
+    
+    // Convert to pipeline format
+    return generatedQuestions.map((q, index) => ({
+      id: `test-q${index + 1}`,
+      question: q.question,
+      type: q.type
+    }))
+  }
+
+  /**
+   * Public method for testing Step 4: GPT-4o Analysis
+   * Exposes the GPT-4o analyzer for testing individual responses
+   */
+  async testStep4_analyzeWithGPT4o(
+    company: {
+      id: string
+      name: string
+      domain: string
+      description?: string
+      industry?: string
+    },
+    responses: Array<{ question: any, response: string, citations: string[] }>
+  ): Promise<any[]> {
+    console.log(`🧠 Testing Step 4: GPT-4o analysis of ${responses.length} responses (PARALLEL)`)
+    
+    // Run all GPT-4o analyses in parallel for speed
+    const analysisPromises = responses.map(async (responseData) => {
+      try {
+        const gpt4oAnalysis = await this.callGPT4oAnalyzer({
+          company,
+          question: responseData.question.question,
+          aiResponse: responseData.response,
+          citations: responseData.citations
+        })
+        
+        return {
+          question_id: responseData.question.id,
+          question_text: responseData.question.question,
+          analysis: gpt4oAnalysis,
+          processed_at: new Date().toISOString()
+        }
+        
+      } catch (error) {
+        console.error(`GPT-4o analysis failed for question ${responseData.question.id}:`, error)
+        return {
+          question_id: responseData.question.id,
+          question_text: responseData.question.question,
+          analysis: this.createFallbackAnalysis({
+            company,
+            question: responseData.question.question,
+            aiResponse: responseData.response,
+            citations: responseData.citations
+          }),
+          error: (error as Error).message,
+          processed_at: new Date().toISOString()
+        }
+      }
+    })
+    
+    // Wait for all analyses to complete in parallel
+    const analyses = await Promise.all(analysisPromises)
+    
+    console.log(`✅ GPT-4o parallel test analysis completed: ${analyses.length} responses processed`)
+    
+    return analyses
+  }
+
+  /**
+   * Public method for testing Step 5: Tough-but-Fair Scoring Algorithm
+   * Exposes the scoring algorithm for testing final score calculations
+   */
+  testStep5_calculateFinalScores(analyses: MaxQuestionAnalysis[]): MaxVisibilityScore {
+    return this.calculateFinalScores(analyses)
+  }
+
+  /**
+   * Save progress update to database for real-time UI updates
+   */
+  private async saveProgressUpdate(
+    assessmentId: string, 
+    progress: PipelineProgress
+  ): Promise<void> {
+    try {
+      await this.supabase
+        .from('max_visibility_runs')
+        .update({
+          progress_percentage: progress.completed,
+          progress_stage: progress.stage,
+          progress_message: progress.message,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', assessmentId)
+      
+      console.log(`📊 Progress saved: ${progress.completed}% - ${progress.stage} - ${progress.message}`)
+    } catch (error) {
+      console.error('❌ Failed to save progress update:', error)
+      // Don't throw - progress updates shouldn't fail the whole pipeline
+    }
+  }
+
+  /**
+   * Create enhanced progress callback that saves to database
+   */
+  private createProgressCallback(
+    assessmentId: string,
+    userCallback?: (progress: PipelineProgress) => void
+  ): (progress: PipelineProgress) => void {
+    return async (progress: PipelineProgress) => {
+      // Save to database for status API
+      await this.saveProgressUpdate(assessmentId, progress)
+      
+      // Call user callback if provided
+      if (userCallback) {
+        userCallback(progress)
+      }
+    }
+  }
+
+  /**
+   * Extract domain from URL and build citation-to-company mapping
+   */
+  private buildCitationDomainMapping(citations: string[]): Map<string, string> {
+    const domainMapping = new Map<string, string>()
+    
+    citations.forEach(url => {
+      try {
+        const domain = this.extractDomainFromUrl(url)
+        if (domain && domain !== 'unknown.com') {
+          domainMapping.set(domain, url)
+        }
+      } catch (error) {
+        // Skip invalid URLs
+      }
+    })
+    
+    return domainMapping
+  }
+
+  /**
+   * Smart competitor extraction from citations
+   * Maps competitors mentioned in text to their actual domains from citations
+   */
+  private extractCompetitorDomainsFromCitations(
+    aiResponse: string,
+    citations: string[]
+  ): Map<string, string> {
+    const competitorDomains = new Map<string, string>()
+    
+    // Common AI/SaaS companies and their domains (for inference)
+    const knownCompanies = new Map([
+      ['jasper', 'jasper.ai'],
+      ['copy.ai', 'copy.ai'],
+      ['copyai', 'copy.ai'],
+      ['openai', 'openai.com'],
+      ['anthropic', 'anthropic.com'],
+      ['claude', 'anthropic.com'],
+      ['salesforce', 'salesforce.com'],
+      ['hubspot', 'hubspot.com'],
+      ['microsoft', 'microsoft.com'],
+      ['google', 'google.com'],
+      ['amazon', 'amazon.com'],
+      ['oracle', 'oracle.com'],
+      ['adobe', 'adobe.com'],
+      ['zoom', 'zoom.us'],
+      ['slack', 'slack.com'],
+      ['notion', 'notion.so'],
+      ['airtable', 'airtable.com'],
+      ['asana', 'asana.com'],
+      ['monday', 'monday.com'],
+      ['zendesk', 'zendesk.com'],
+      ['intercom', 'intercom.com'],
+      ['stripe', 'stripe.com'],
+      ['shopify', 'shopify.com'],
+      ['squarespace', 'squarespace.com'],
+      ['wix', 'wix.com'],
+      ['wordpress', 'wordpress.com'],
+      ['github', 'github.com'],
+      ['gitlab', 'gitlab.com'],
+      ['bitbucket', 'bitbucket.org'],
+      ['atlassian', 'atlassian.com'],
+      ['jira', 'atlassian.com'],
+      ['confluence', 'atlassian.com'],
+      ['trello', 'trello.com'],
+      ['discord', 'discord.com'],
+      ['spotify', 'spotify.com'],
+      ['netflix', 'netflix.com'],
+      ['twilio', 'twilio.com'],
+      ['sendgrid', 'sendgrid.com'],
+      ['mailchimp', 'mailchimp.com'],
+      ['constant contact', 'constantcontact.com'],
+      ['aweber', 'aweber.com'],
+      ['convertkit', 'convertkit.com'],
+      ['klaviyo', 'klaviyo.com'],
+      ['segment', 'segment.com'],
+      ['mixpanel', 'mixpanel.com'],
+      ['amplitude', 'amplitude.com'],
+      ['hotjar', 'hotjar.com'],
+      ['fullstory', 'fullstory.com'],
+      ['logrocket', 'logrocket.com'],
+      ['datadog', 'datadoghq.com'],
+      ['new relic', 'newrelic.com'],
+      ['splunk', 'splunk.com'],
+      ['elastic', 'elastic.co'],
+      ['mongodb', 'mongodb.com'],
+      ['redis', 'redis.io'],
+      ['postgresql', 'postgresql.org'],
+      ['mysql', 'mysql.com'],
+      ['aws', 'aws.amazon.com'],
+      ['azure', 'azure.microsoft.com'],
+      ['gcp', 'cloud.google.com'],
+      ['digitalocean', 'digitalocean.com'],
+      ['linode', 'linode.com'],
+      ['vultr', 'vultr.com'],
+      ['heroku', 'heroku.com'],
+      ['vercel', 'vercel.com'],
+      ['netlify', 'netlify.com'],
+      ['cloudflare', 'cloudflare.com'],
+      ['fastly', 'fastly.com'],
+      ['contentful', 'contentful.com'],
+      ['strapi', 'strapi.io'],
+      ['sanity', 'sanity.io'],
+      ['prismic', 'prismic.io'],
+      ['ghost', 'ghost.org'],
+      ['webflow', 'webflow.com'],
+      ['figma', 'figma.com'],
+      ['sketch', 'sketch.com'],
+      ['invision', 'invisionapp.com'],
+      ['adobe xd', 'adobe.com'],
+      ['canva', 'canva.com'],
+      ['loom', 'loom.com'],
+      ['calendly', 'calendly.com'],
+      ['acuity', 'acuityscheduling.com'],
+      ['typeform', 'typeform.com'],
+      ['jotform', 'jotform.com'],
+      ['gravity forms', 'gravityforms.com'],
+      ['contact form 7', 'contactform7.com'],
+      ['ninja forms', 'ninjaforms.com'],
+      ['formstack', 'formstack.com'],
+      ['wufoo', 'wufoo.com'],
+      ['surveymonkey', 'surveymonkey.com'],
+      ['google forms', 'forms.google.com'],
+      ['microsoft forms', 'forms.microsoft.com'],
+      ['zapier', 'zapier.com'],
+      ['ifttt', 'ifttt.com'],
+      ['make', 'make.com'],
+      ['integromat', 'make.com'],
+      ['automate.io', 'automate.io'],
+      ['pabbly', 'pabbly.com'],
+      ['workato', 'workato.com'],
+      ['pipedream', 'pipedream.com'],
+      ['n8n', 'n8n.io'],
+      ['retool', 'retool.com'],
+      ['bubble', 'bubble.io'],
+      ['glide', 'glideapps.com'],
+      ['adalo', 'adalo.com'],
+      ['thunkable', 'thunkable.com'],
+      ['appgyver', 'appgyver.com'],
+      ['outsystems', 'outsystems.com'],
+      ['mendix', 'mendix.com'],
+      ['microsoft power apps', 'powerapps.microsoft.com'],
+      ['google app maker', 'appmaker.google.com'],
+      ['quickbase', 'quickbase.com'],
+      ['caspio', 'caspio.com'],
+      ['zoho', 'zoho.com'],
+      ['oracle apex', 'apex.oracle.com'],
+      ['servicenow', 'servicenow.com'],
+      ['workday', 'workday.com'],
+      ['successfactors', 'successfactors.com'],
+      ['bamboohr', 'bamboohr.com'],
+      ['adp', 'adp.com'],
+      ['payroll', 'paychex.com'],
+      ['gusto', 'gusto.com'],
+      ['rippling', 'rippling.com'],
+      ['namely', 'namely.com'],
+      ['kronos', 'kronos.com'],
+      ['ultipro', 'ultipro.com'],
+      ['ceridian', 'ceridian.com'],
+      ['paycom', 'paycom.com'],
+      ['paylocity', 'paylocity.com'],
+      ['paycor', 'paycor.com'],
+      ['isolved', 'isolved.com'],
+      ['justworks', 'justworks.com'],
+      ['trinet', 'trinet.com'],
+      ['insperity', 'insperity.com'],
+      ['paychex', 'paychex.com'],
+      ['quickbooks', 'quickbooks.intuit.com'],
+      ['xero', 'xero.com'],
+      ['freshbooks', 'freshbooks.com'],
+      ['wave', 'waveapps.com'],
+      ['zoho books', 'zoho.com'],
+      ['sage', 'sage.com'],
+      ['netsuite', 'netsuite.com'],
+      ['dynamics', 'dynamics.microsoft.com'],
+      ['epicor', 'epicor.com'],
+      ['infor', 'infor.com'],
+      ['ifs', 'ifs.com'],
+      ['unit4', 'unit4.com'],
+      ['workday financial', 'workday.com'],
+      ['blackline', 'blackline.com'],
+      ['floqast', 'floqast.com'],
+      ['trintech', 'trintech.com'],
+      ['prophix', 'prophix.com'],
+      ['host analytics', 'hostanalytics.com'],
+      ['adaptive insights', 'workday.com'],
+      ['anaplan', 'anaplan.com'],
+      ['board', 'board.com'],
+      ['jedox', 'jedox.com'],
+      ['tm1', 'ibm.com'],
+      ['hyperion', 'oracle.com'],
+      ['cognos', 'ibm.com'],
+      ['business objects', 'sap.com'],
+      ['microstrategy', 'microstrategy.com'],
+      ['looker', 'cloud.google.com'],
+      ['tableau', 'tableau.com'],
+      ['power bi', 'powerbi.microsoft.com'],
+      ['qlik', 'qlik.com'],
+      ['spotfire', 'spotfire.tibco.com'],
+      ['sisense', 'sisense.com'],
+      ['domo', 'domo.com'],
+      ['chartio', 'chartio.com'],
+      ['periscope', 'sisense.com'],
+      ['metabase', 'metabase.com'],
+      ['superset', 'superset.apache.org'],
+      ['grafana', 'grafana.com'],
+      ['kibana', 'elastic.co'],
+      ['splunk dashboard', 'splunk.com'],
+      ['datadog dashboard', 'datadoghq.com'],
+      ['new relic dashboard', 'newrelic.com'],
+      ['dynatrace', 'dynatrace.com'],
+      ['appd', 'appdynamics.com'],
+      ['pingdom', 'pingdom.com'],
+      ['uptimerobot', 'uptimerobot.com'],
+      ['statuspage', 'statuspage.io'],
+      ['pagerduty', 'pagerduty.com'],
+      ['opsgenie', 'atlassian.com'],
+      ['victorops', 'victorops.com'],
+      ['xmatters', 'xmatters.com'],
+      ['splunk on-call', 'splunk.com'],
+      ['bigpanda', 'bigpanda.io'],
+      ['moogsoft', 'moogsoft.com'],
+      ['logicmonitor', 'logicmonitor.com'],
+      ['solarwinds', 'solarwinds.com'],
+      ['nagios', 'nagios.org'],
+      ['zabbix', 'zabbix.com'],
+      ['icinga', 'icinga.com'],
+      ['cacti', 'cacti.net'],
+      ['observium', 'observium.org'],
+      ['librenms', 'librenms.org'],
+      ['pandora fms', 'pandorafms.org'],
+      ['checkmk', 'checkmk.com'],
+      ['sensu', 'sensu.io'],
+      ['prometheus', 'prometheus.io'],
+      ['influxdb', 'influxdata.com'],
+      ['timescaledb', 'timescale.com'],
+      ['clickhouse', 'clickhouse.com'],
+      ['snowflake', 'snowflake.com'],
+      ['databricks', 'databricks.com'],
+      ['palantir', 'palantir.com'],
+      ['alteryx', 'alteryx.com'],
+      ['knime', 'knime.com'],
+      ['rapidminer', 'rapidminer.com'],
+      ['dataiku', 'dataiku.com'],
+      ['h2o.ai', 'h2o.ai'],
+      ['datarobot', 'datarobot.com'],
+      ['domino', 'dominodatalab.com'],
+      ['sagemaker', 'aws.amazon.com'],
+      ['azure ml', 'azure.microsoft.com'],
+      ['google ml', 'cloud.google.com'],
+      ['vertex ai', 'cloud.google.com'],
+      ['watson', 'ibm.com'],
+      ['einstein', 'salesforce.com'],
+      ['cortana', 'microsoft.com'],
+      ['alexa', 'amazon.com'],
+      ['siri', 'apple.com'],
+      ['bixby', 'samsung.com'],
+      ['google assistant', 'assistant.google.com'],
+      ['tensorflow', 'tensorflow.org'],
+      ['pytorch', 'pytorch.org'],
+      ['keras', 'keras.io'],
+      ['scikit-learn', 'scikit-learn.org'],
+      ['pandas', 'pandas.pydata.org'],
+      ['numpy', 'numpy.org'],
+      ['scipy', 'scipy.org'],
+      ['matplotlib', 'matplotlib.org'],
+      ['seaborn', 'seaborn.pydata.org'],
+      ['plotly', 'plotly.com'],
+      ['bokeh', 'bokeh.org'],
+      ['altair', 'altair-viz.github.io'],
+      ['d3.js', 'd3js.org'],
+      ['chart.js', 'chartjs.org'],
+      ['highcharts', 'highcharts.com'],
+      ['amcharts', 'amcharts.com'],
+      ['fusioncharts', 'fusioncharts.com'],
+      ['canvasjs', 'canvasjs.com'],
+      ['google charts', 'developers.google.com'],
+      ['microsoft chart controls', 'microsoft.com'],
+      ['devexpress', 'devexpress.com'],
+      ['telerik', 'telerik.com'],
+      ['syncfusion', 'syncfusion.com'],
+      ['componentone', 'componentone.com'],
+      ['infragistics', 'infragistics.com'],
+      ['kendo ui', 'telerik.com'],
+      ['ext js', 'sencha.com'],
+      ['sencha', 'sencha.com'],
+      ['dhtmlx', 'dhtmlx.com'],
+      ['webix', 'webix.com'],
+      ['ag-grid', 'ag-grid.com'],
+      ['handsontable', 'handsontable.com'],
+      ['datatables', 'datatables.net'],
+      ['tabulator', 'tabulator.info'],
+      ['gridjs', 'gridjs.io'],
+      ['react table', 'react-table.tanstack.com'],
+      ['angular material', 'material.angular.io'],
+      ['material ui', 'mui.com'],
+      ['ant design', 'ant.design'],
+      ['chakra ui', 'chakra-ui.com'],
+      ['semantic ui', 'semantic-ui.com'],
+      ['bootstrap', 'getbootstrap.com'],
+      ['foundation', 'foundation.zurb.com'],
+      ['bulma', 'bulma.io'],
+      ['tailwind css', 'tailwindcss.com'],
+      ['styled components', 'styled-components.com'],
+      ['emotion', 'emotion.sh'],
+      ['stitches', 'stitches.dev'],
+      ['vanilla extract', 'vanilla-extract.style'],
+      ['linaria', 'linaria.dev'],
+      ['goober', 'goober.js.org'],
+      ['theme ui', 'theme-ui.com'],
+      ['rebass', 'rebassjs.org'],
+      ['grommet', 'grommet.io'],
+      ['evergreen', 'evergreen.segment.com'],
+      ['blueprint', 'blueprintjs.com'],
+      ['fluent ui', 'developer.microsoft.com'],
+      ['carbon design', 'carbondesignsystem.com'],
+      ['atlaskit', 'atlaskit.atlassian.com'],
+      ['polaris', 'polaris.shopify.com'],
+      ['lightning design', 'lightningdesignsystem.com'],
+      ['clarity', 'clarity.design'],
+      ['primeng', 'primeng.org'],
+      ['quasar', 'quasar.dev'],
+      ['buefy', 'buefy.org'],
+      ['element plus', 'element-plus.org'],
+      ['naive ui', 'naiveui.com'],
+      ['arco design', 'arco.design'],
+      ['tdesign', 'tdesign.tencent.com'],
+      ['semi design', 'semi.design'],
+      ['mantine', 'mantine.dev'],
+      ['nextui', 'nextui.org'],
+      ['react bootstrap', 'react-bootstrap.github.io'],
+      ['reactstrap', 'reactstrap.github.io'],
+      ['react suite', 'rsuitejs.com'],
+      ['fluentui', 'developer.microsoft.com'],
+      ['office ui fabric', 'developer.microsoft.com'],
+      ['fabric.js', 'fabricjs.com'],
+      ['konva.js', 'konvajs.org'],
+      ['paper.js', 'paperjs.org'],
+      ['p5.js', 'p5js.org'],
+      ['processing', 'processing.org'],
+      ['three.js', 'threejs.org'],
+      ['babylon.js', 'babylonjs.com'],
+      ['a-frame', 'aframe.io'],
+      ['ar.js', 'ar-js-org.github.io'],
+      ['8th wall', '8thwall.com'],
+      ['vuforia', 'vuforia.com'],
+      ['arcore', 'developers.google.com'],
+      ['arkit', 'developer.apple.com'],
+      ['hololens', 'microsoft.com'],
+      ['magic leap', 'magicleap.com'],
+      ['oculus', 'oculus.com'],
+      ['vive', 'vive.com'],
+      ['pico', 'picoxr.com'],
+      ['varjo', 'varjo.com'],
+      ['unity', 'unity.com'],
+      ['unreal engine', 'unrealengine.com'],
+      ['godot', 'godotengine.org'],
+      ['defold', 'defold.com'],
+      ['construct', 'construct.net'],
+      ['gamemaker', 'gamemaker.io'],
+      ['rpg maker', 'rpgmakerweb.com'],
+      ['ren\'py', 'renpy.org'],
+      ['twine', 'twinery.org'],
+      ['ink', 'inklestudios.com'],
+      ['articy', 'articy.com'],
+      ['chatmapper', 'chatmapper.com'],
+      ['yarn', 'yarnspinner.dev'],
+      ['dialogue system', 'pixelcrushers.com'],
+      ['fungus', 'fungusgames.com'],
+      ['inky', 'github.com'],
+      ['screenplay', 'fountain.io'],
+      ['celtx', 'celtx.com'],
+      ['final draft', 'finaldraft.com'],
+      ['movie magic', 'screenplay.com'],
+      ['montage', 'montage.com'],
+      ['avid', 'avid.com'],
+      ['adobe premiere', 'adobe.com'],
+      ['final cut pro', 'apple.com'],
+      ['davinci resolve', 'blackmagicdesign.com'],
+      ['sony vegas', 'vegascreativesoftware.com'],
+      ['filmora', 'filmora.wondershare.com'],
+      ['camtasia', 'techsmith.com'],
+      ['obs', 'obsproject.com'],
+      ['streamlabs', 'streamlabs.com'],
+      ['xsplit', 'xsplit.com'],
+      ['nvidia broadcast', 'nvidia.com'],
+      ['elgato', 'elgato.com'],
+      ['blue yeti', 'bluesound.com'],
+      ['rode', 'rode.com'],
+      ['shure', 'shure.com'],
+      ['audio-technica', 'audio-technica.com'],
+      ['sennheiser', 'sennheiser.com'],
+      ['beyerdynamic', 'beyerdynamic.com'],
+      ['akg', 'akg.com'],
+      ['sony audio', 'sony.com'],
+      ['bose', 'bose.com'],
+      ['jbl', 'jbl.com'],
+      ['beats', 'beatsbydre.com'],
+      ['apple airpods', 'apple.com'],
+      ['samsung galaxy buds', 'samsung.com'],
+      ['google pixel buds', 'store.google.com'],
+      ['amazon echo', 'amazon.com'],
+      ['google nest', 'nest.google.com'],
+      ['apple homepod', 'apple.com'],
+      ['sonos', 'sonos.com'],
+      ['bang & olufsen', 'bang-olufsen.com'],
+      ['harman kardon', 'harmankardon.com'],
+      ['marshall', 'marshallheadphones.com'],
+      ['klipsch', 'klipsch.com'],
+      ['bowers & wilkins', 'bowerswilkins.com'],
+      ['focal', 'focal.com'],
+      ['kef', 'kef.com'],
+      ['monitor audio', 'monitoraudio.com'],
+      ['paradigm', 'paradigm.com'],
+      ['psb', 'psbspeakers.com'],
+      ['totem', 'totemacoustic.com'],
+      ['energy', 'energy-speakers.com'],
+      ['mirage', 'miragespeakers.com'],
+      ['infinity', 'infinity.com'],
+      ['polk audio', 'polkaudio.com'],
+      ['definitive technology', 'definitivetech.com'],
+      ['boston acoustics', 'bostonacoustics.com'],
+      ['cambridge audio', 'cambridgeaudio.com'],
+      ['rega', 'rega.co.uk'],
+      ['nad', 'nadelectronics.com'],
+      ['rotel', 'rotel.com'],
+      ['marantz', 'marantz.com'],
+      ['denon', 'denon.com'],
+      ['yamaha', 'yamaha.com'],
+      ['pioneer', 'pioneer.com'],
+      ['onkyo', 'onkyo.com'],
+      ['integra', 'integrahometheater.com'],
+      ['anthem', 'anthemav.com'],
+      ['arcam', 'arcam.co.uk'],
+      ['audioquest', 'audioquest.com'],
+      ['chord', 'chordelectronics.co.uk'],
+      ['dali', 'dali-speakers.com'],
+      ['dynaudio', 'dynaudio.com'],
+      ['elac', 'elac.com'],
+      ['focal utopia', 'focal.com'],
+      ['grado', 'gradolabs.com'],
+      ['hifiman', 'hifiman.com'],
+      ['meze', 'mezeaudio.com'],
+      ['audeze', 'audeze.com'],
+      ['abyss', 'abyssheadphones.com'],
+      ['stax', 'stax.co.jp'],
+      ['etymotic', 'etymotic.com'],
+      ['campfire audio', 'campfireaudio.com'],
+      ['64 audio', '64audio.com'],
+      ['noble audio', 'nobleaudio.com'],
+      ['empire ears', 'empireears.com'],
+      ['jh audio', 'jhaudio.com'],
+      ['westone', 'westone.com'],
+      ['shure se', 'shure.com'],
+      ['sony wf', 'sony.com'],
+      ['apple airpods pro', 'apple.com'],
+      ['bose quietcomfort', 'bose.com'],
+      ['sennheiser momentum', 'sennheiser.com'],
+      ['beyerdynamic dt', 'beyerdynamic.com'],
+      ['audio-technica ath', 'audio-technica.com'],
+      ['akg k', 'akg.com'],
+      ['philips fidelio', 'philips.com'],
+      ['v-moda', 'v-moda.com'],
+      ['master & dynamic', 'masterdynamic.com'],
+      ['b&w', 'bowerswilkins.com'],
+      ['bang & olufsen beoplay', 'bang-olufsen.com'],
+      ['marshall major', 'marshallheadphones.com'],
+      ['beats studio', 'beatsbydre.com'],
+      ['jbl live', 'jbl.com'],
+      ['sony wh', 'sony.com'],
+      ['skullcandy', 'skullcandy.com'],
+      ['jlab', 'jlabaudio.com'],
+      ['anker soundcore', 'soundcore.com'],
+      ['1more', '1more.com'],
+      ['soundpeats', 'soundpeats.com'],
+      ['mpow', 'mpowstore.com'],
+      ['taotronics', 'taotronics.com'],
+      ['aukey', 'aukey.com'],
+      ['tribit', 'tribit.com'],
+      ['tronsmart', 'tronsmart.com'],
+      ['creative', 'creative.com'],
+      ['logitech', 'logitech.com'],
+      ['razer', 'razer.com'],
+      ['steelseries', 'steelseries.com'],
+      ['corsair', 'corsair.com'],
+      ['hyperx', 'hyperx.com'],
+      ['astro', 'astrogaming.com'],
+      ['turtle beach', 'turtlebeach.com'],
+      ['plantronics', 'plantronics.com'],
+      ['poly', 'poly.com'],
+      ['jabra', 'jabra.com'],
+      ['sennheiser gaming', 'sennheiser.com'],
+      ['beyerdynamic gaming', 'beyerdynamic.com'],
+      ['audio-technica gaming', 'audio-technica.com'],
+      ['asus rog', 'asus.com'],
+      ['msi', 'msi.com'],
+      ['alienware', 'alienware.com'],
+      ['origin pc', 'originpc.com'],
+      ['falcon northwest', 'falcon-nw.com'],
+      ['maingear', 'maingear.com'],
+      ['digital storm', 'digitalstormonline.com'],
+      ['cybertron', 'cybertronpc.com'],
+      ['cyberpower', 'cyberpowerpc.com'],
+      ['ibuypower', 'ibuypower.com'],
+      ['nzxt', 'nzxt.com'],
+      ['corsair pc', 'corsair.com'],
+      ['hp omen', 'hp.com'],
+      ['dell xps', 'dell.com'],
+      ['lenovo legion', 'lenovo.com'],
+      ['acer predator', 'acer.com'],
+      ['asus', 'asus.com'],
+      ['gigabyte', 'gigabyte.com'],
+      ['asrock', 'asrock.com'],
+      ['evga', 'evga.com'],
+      ['zotac', 'zotac.com'],
+      ['palit', 'palit.com'],
+      ['gainward', 'gainward.com'],
+      ['galax', 'galax.com'],
+      ['kfa2', 'kfa2.com'],
+      ['inno3d', 'inno3d.com'],
+      ['pny', 'pny.com'],
+      ['msi graphics', 'msi.com'],
+      ['sapphire', 'sapphiretech.com'],
+      ['powercolor', 'powercolor.com'],
+      ['his', 'hisdigital.com'],
+      ['club 3d', 'club-3d.com'],
+      ['visiontek', 'visiontek.com'],
+      ['xfx', 'xfxforce.com'],
+      ['ati', 'amd.com'],
+      ['nvidia', 'nvidia.com'],
+      ['amd', 'amd.com'],
+      ['intel', 'intel.com'],
+      ['qualcomm', 'qualcomm.com'],
+      ['mediatek', 'mediatek.com'],
+      ['broadcom', 'broadcom.com'],
+      ['marvell', 'marvell.com'],
+      ['realtek', 'realtek.com'],
+      ['via', 'via.com.tw'],
+      ['sis', 'sis.com'],
+      ['uli', 'uli.com.tw'],
+      ['ali', 'ali.com.tw'],
+      ['opti', 'opti.com'],
+      ['cirrus logic', 'cirrus.com'],
+      ['creative labs', 'creative.com'],
+      ['ess', 'esstech.com'],
+      ['c-media', 'cmedia.com.tw'],
+      ['via envy', 'via.com.tw'],
+      ['analog devices', 'analog.com'],
+      ['texas instruments', 'ti.com'],
+      ['maxim', 'maximintegrated.com'],
+      ['linear technology', 'linear.com'],
+      ['intersil', 'intersil.com'],
+      ['fairchild', 'fairchildsemi.com'],
+      ['national semiconductor', 'ti.com'],
+      ['philips semiconductors', 'nxp.com'],
+      ['motorola', 'motorola.com'],
+      ['freescale', 'nxp.com'],
+      ['nxp', 'nxp.com'],
+      ['st microelectronics', 'st.com'],
+      ['infineon', 'infineon.com'],
+      ['renesas', 'renesas.com'],
+      ['microchip', 'microchip.com'],
+      ['atmel', 'microchip.com'],
+      ['cypress', 'cypress.com'],
+      ['lattice', 'latticesemi.com'],
+      ['altera', 'intel.com'],
+      ['xilinx', 'xilinx.com'],
+      ['microsemi', 'microsemi.com'],
+      ['actel', 'microsemi.com'],
+      ['quicklogic', 'quicklogic.com'],
+      ['sige', 'sige.com'],
+      ['peregrine', 'psemi.com'],
+      ['rf micro devices', 'qorvo.com'],
+      ['triquint', 'qorvo.com'],
+      ['qorvo', 'qorvo.com'],
+      ['skyworks', 'skyworksinc.com'],
+      ['avago', 'broadcom.com'],
+      ['hittite', 'analog.com'],
+      ['mini-circuits', 'minicircuits.com'],
+      ['murata', 'murata.com'],
+      ['tdk', 'tdk.com'],
+      ['kemet', 'kemet.com'],
+      ['vishay', 'vishay.com'],
+      ['yageo', 'yageo.com'],
+      ['panasonic', 'panasonic.com'],
+      ['nichicon', 'nichicon.co.jp'],
+      ['rubycon', 'rubycon.co.jp'],
+      ['united chemi-con', 'chemi-con.com'],
+      ['cornell dubilier', 'cde.com'],
+      ['illinois capacitor', 'illinoiscapacitor.com'],
+      ['mallory', 'mallory-sonalert.com'],
+      ['sprague', 'cde.com'],
+      ['sangamo', 'cde.com'],
+      ['genteq', 'genteq.com'],
+      ['motor', 'motors.com'],
+      ['general electric', 'ge.com'],
+      ['westinghouse', 'westinghousenuclear.com'],
+      ['siemens', 'siemens.com'],
+      ['abb', 'abb.com'],
+      ['schneider electric', 'se.com'],
+      ['eaton', 'eaton.com'],
+      ['emerson', 'emerson.com'],
+      ['honeywell', 'honeywell.com'],
+      ['johnson controls', 'johnsoncontrols.com'],
+      ['carrier', 'carrier.com'],
+      ['trane', 'trane.com'],
+      ['lennox', 'lennox.com'],
+      ['york', 'york.com'],
+      ['goodman', 'goodmanmfg.com'],
+      ['rheem', 'rheem.com'],
+      ['ruud', 'ruud.com'],
+      ['bradford white', 'bradfordwhite.com'],
+      ['a.o. smith', 'aosmith.com'],
+      ['state', 'statewaterheaters.com'],
+      ['american', 'americanwaterheater.com'],
+      ['reliance', 'reliancewaterheaters.com'],
+      ['richmond', 'richmondwaterheaters.com'],
+      ['whirlpool', 'whirlpool.com'],
+      ['ge appliances', 'geappliances.com'],
+      ['frigidaire', 'frigidaire.com'],
+      ['electrolux', 'electrolux.com'],
+      ['kenmore', 'kenmore.com'],
+      ['maytag', 'maytag.com'],
+      ['amana', 'amana.com'],
+      ['kitchenaid', 'kitchenaid.com'],
+      ['jenn-air', 'jennair.com'],
+      ['thermador', 'thermador.com'],
+      ['bosch', 'bosch.com'],
+      ['miele', 'miele.com'],
+      ['sub-zero', 'subzero-wolf.com'],
+      ['wolf', 'subzero-wolf.com'],
+      ['viking', 'vikingrange.com'],
+      ['dacor', 'dacor.com'],
+      ['fisher & paykel', 'fisherpaykel.com'],
+      ['asko', 'asko.com'],
+      ['blomberg', 'blomberg.com'],
+      ['bertazzoni', 'bertazzoni.com'],
+      ['smeg', 'smeg.com'],
+      ['la cornue', 'lacornue.com'],
+      ['aga', 'aga-ranges.com'],
+      ['falcon', 'falconrange.com'],
+      ['rangemaster', 'rangemaster.co.uk'],
+      ['lacanche', 'lacanche.com'],
+      ['ilve', 'ilve.com'],
+      ['verona', 'veronaappliances.com'],
+      ['capital', 'capital-cooking.com'],
+      ['bluestar', 'bluestarcooking.com'],
+      ['american range', 'americanrange.com'],
+      ['garland', 'garland-group.com'],
+      ['southbend', 'southbendrange.com'],
+      ['imperial', 'imperialrange.com'],
+      ['montague', 'montaguecompany.com'],
+      ['vulcan', 'vulcanequipment.com'],
+      ['alto-shaam', 'alto-shaam.com'],
+      ['rational', 'rational-online.com'],
+      ['convotherm', 'convotherm.com'],
+      ['electrolux professional', 'electroluxprofessional.com'],
+      ['hobart', 'hobartcorp.com'],
+      ['kitchenaid commercial', 'kitchenaid.com'],
+      ['vollrath', 'vollrath.com'],
+      ['cambro', 'cambro.com'],
+      ['carlisle', 'carlislefsp.com'],
+      ['rubbermaid', 'rubbermaidcommercial.com'],
+      ['san jamar', 'sanjamar.com'],
+      ['winco', 'winco.com'],
+      ['tablecraft', 'tablecraft.com'],
+      ['update', 'updateinternational.com'],
+      ['browne', 'browne.ca'],
+      ['thunder group', 'thundergroup.com'],
+      ['johnson rose', 'johnsonrose.com'],
+      ['alegacy', 'alegacyfoodservice.com'],
+      ['advance tabco', 'advancetabco.com'],
+      ['eagle group', 'eaglegrp.com'],
+      ['regency', 'regency-tables.com'],
+      ['john boos', 'johnboos.com'],
+      ['metro', 'metro.com'],
+      ['intermetro', 'metro.com'],
+      ['nexel', 'nexel.com'],
+      ['quantum', 'quantumstorage.com'],
+      ['akro-mils', 'akro-mils.com'],
+      ['sterilite', 'sterilite.com'],
+      ['rubbermaid storage', 'rubbermaid.com'],
+      ['iris usa', 'irisusainc.com'],
+      ['stewardbench', 'stewardbench.com'],
+      ['trinity', 'trinityracks.com'],
+      ['origami', 'origamirack.com'],
+      ['honey-can-do', 'honeycando.com'],
+      ['whitmor', 'whitmor.com'],
+      ['closetmaid', 'closetmaid.com'],
+      ['rubbermaid home', 'rubbermaid.com'],
+      ['elfa', 'elfa.com'],
+      ['california closets', 'californiaclosets.com'],
+      ['easy closets', 'easyclosets.com'],
+      ['reach-in', 'reach-in.com'],
+      ['organized living', 'organizedliving.com'],
+      ['freedomrail', 'organizedliving.com'],
+      ['schulte', 'schultestorage.com'],
+      ['ventilated', 'ventilatedshelving.com'],
+      ['wire shelving', 'wireshelvingstore.com'],
+      ['metro shelving', 'metro.com'],
+      ['nexel shelving', 'nexel.com'],
+      ['quantum shelving', 'quantumstorage.com'],
+      ['eagle shelving', 'eaglegrp.com'],
+      ['advance tabco shelving', 'advancetabco.com'],
+      ['regency shelving', 'regency-tables.com'],
+      ['john boos shelving', 'johnboos.com'],
+      ['vollrath shelving', 'vollrath.com'],
+      ['cambro shelving', 'cambro.com'],
+      ['carlisle shelving', 'carlislefsp.com'],
+      ['rubbermaid shelving', 'rubbermaidcommercial.com'],
+      ['san jamar shelving', 'sanjamar.com'],
+      ['winco shelving', 'winco.com'],
+      ['tablecraft shelving', 'tablecraft.com'],
+      ['update shelving', 'updateinternational.com'],
+      ['browne shelving', 'browne.ca'],
+      ['thunder group shelving', 'thundergroup.com'],
+      ['johnson rose shelving', 'johnsonrose.com'],
+      ['alegacy shelving', 'alegacyfoodservice.com']
+    ])
+    
+    // Extract citation domains
+    const citationDomains = new Set<string>()
+    citations.forEach(url => {
+      try {
+        const domain = this.extractDomainFromUrl(url)
+        if (domain && domain !== 'unknown.com') {
+          citationDomains.add(domain)
+        }
+      } catch (error) {
+        // Skip invalid URLs
+      }
+    })
+    
+    // Check citations for competitor domains first
+    citationDomains.forEach(domain => {
+      // Direct domain match to company name
+      const companyFromDomain = this.inferCompanyFromDomain(domain)
+      if (companyFromDomain && aiResponse.toLowerCase().includes(companyFromDomain.toLowerCase())) {
+        competitorDomains.set(companyFromDomain.toLowerCase(), domain)
+      }
+    })
+    
+    // Extract mentioned companies and match to known domains
+    const words = aiResponse.toLowerCase().match(/\b[a-z][a-z0-9]*(?:\.[a-z]{2,4})?\b/g) || []
+    const possibleCompanies = new Set(words.filter(word => 
+      word.length > 2 && 
+      !['the', 'and', 'for', 'with', 'this', 'that', 'from', 'they', 'have', 'been', 'will', 'can', 'are', 'but', 'not', 'you', 'all', 'any', 'had', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'way', 'who', 'boy', 'did', 'she', 'use', 'her', 'oil', 'sit', 'set'].includes(word)
+    ))
+    
+    possibleCompanies.forEach(company => {
+      if (knownCompanies.has(company)) {
+        competitorDomains.set(company, knownCompanies.get(company)!)
+      }
+    })
+    
+    return competitorDomains
+  }
+  
+  /**
+   * Infer company name from domain
+   */
+  private inferCompanyFromDomain(domain: string): string | null {
+    // Remove common prefixes/suffixes
+    let company = domain.replace(/^(www\.|app\.|api\.|blog\.|docs\.|help\.|support\.)/, '')
+    company = company.replace(/\.(com|io|ai|dev|co|net|org|app|tech|software|saas)$/, '')
+    
+    // Handle special cases
+    const specialCases = new Map([
+      ['jasper', 'Jasper'],
+      ['copy', 'Copy.ai'],
+      ['openai', 'OpenAI'],
+      ['anthropic', 'Anthropic'],
+      ['salesforce', 'Salesforce'],
+      ['hubspot', 'HubSpot'],
+      ['microsoft', 'Microsoft'],
+      ['google', 'Google'],
+      ['amazon', 'Amazon'],
+      ['oracle', 'Oracle'],
+      ['adobe', 'Adobe']
+    ])
+    
+    return specialCases.get(company) || 
+           (company.length > 2 ? company.charAt(0).toUpperCase() + company.slice(1) : null)
   }
 } 

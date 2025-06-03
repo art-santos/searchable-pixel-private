@@ -102,7 +102,7 @@ export function WelcomeCard() {
 
   return (
     <Card className="h-full flex flex-col">
-      <CardContent className="p-8 h-full flex flex-col">
+      <CardContent className="py-8 px-6 h-full flex flex-col">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={controls}

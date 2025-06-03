@@ -184,7 +184,7 @@ export class SplitAnalytics implements ISplitAnalytics {
     
     this.config = {
       apiKey: config.apiKey,
-      apiEndpoint: config.apiEndpoint || 'https://split.dev/api',
+      apiEndpoint: config.apiEndpoint || (process.env.NODE_ENV === 'development' ? 'http://localhost:3000/api' : 'https://split.dev/api'),
       debug: config.debug || false
     }
     

@@ -26,8 +26,8 @@ export default function VisibilityLayout({
         <SidebarProvider className="dark">
           <SplitSidebar />
           <SidebarInset className="flex flex-col h-screen">
-            <SplitTopbar />
             <div className="flex-1 min-h-0 overflow-auto">
+              <SplitTopbar />
               {children}
             </div>
           </SidebarInset>

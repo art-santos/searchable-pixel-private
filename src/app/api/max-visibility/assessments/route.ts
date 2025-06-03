@@ -156,26 +156,86 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (companyCreateError) {
-        console.log('❌ Failed to create company:', companyCreateError)
-        throw companyCreateError
+        // If it's a duplicate key error, try to find the existing company again with broader search
+        if (companyCreateError.code === '23505') {
+          console.log('🔄 Duplicate detected, searching for existing company with broader criteria...')
+          
+          // Try multiple search strategies
+          const searchStrategies = [
+            // Exact domain match
+            { root_url: profile.domain },
+            // Domain with www prefix
+            { root_url: `www.${profile.domain}` },
+            // Domain without www
+            { root_url: profile.domain.replace(/^www\./, '') },
+            // Company name match
+            { company_name: profile.workspace_name }
+          ]
+          
+          let existingCompany = null
+          let foundStrategy = null
+          
+          for (const strategy of searchStrategies) {
+            console.log(`🔍 Trying search strategy:`, strategy)
+            const { data: foundCompany, error: searchError } = await supabase
+              .from('companies')
+              .select('id, company_name, root_url')
+              .match(strategy)
+              .limit(1)
+              .single()
+            
+            if (!searchError && foundCompany) {
+              existingCompany = foundCompany
+              foundStrategy = strategy
+              console.log(`✅ Found company using strategy:`, strategy, 'Company:', foundCompany.id)
+              break
+            }
+          }
+          
+          if (!existingCompany) {
+            console.log('❌ Could not find existing company despite duplicate constraint')
+            return NextResponse.json(
+              { 
+                success: false,
+                data: null,
+                error: 'Company creation failed due to duplicate constraint, but existing company could not be found. Please contact support.'
+              },
+              { status: 500 }
+            )
+          }
+          
+          console.log('✅ Found existing company after duplicate:', existingCompany.id)
+          company = existingCompany
+        } else {
+          console.log('❌ Failed to create company:', companyCreateError)
+          throw companyCreateError
+        }
+      } else {
+        console.log('✅ New company created:', newCompany?.id)
+        company = newCompany
       }
-      
-      console.log('✅ New company created:', newCompany.id)
-      company = newCompany
     } else if (companyFindError) {
       console.log('❌ Company lookup error:', companyFindError)
       throw companyFindError
+    } else {
+      console.log('✅ Existing company found:', company?.id)
     }
 
+    // Ensure company is properly resolved
     if (!company) {
       console.log('❌ Company resolution failed')
       return NextResponse.json(
-        { error: 'Failed to resolve company information' },
+        { 
+          success: false,
+          data: null,
+          error: 'Failed to resolve company information'
+        },
         { status: 500 }
       )
     }
 
-    console.log('✅ Existing company found:', company.id)
+    // Type assertion to ensure TypeScript knows company is not null
+    const resolvedCompany = company as NonNullable<typeof company>
 
     // Initialize the MAX visibility pipeline
     console.log('🔧 Initializing MAX visibility pipeline...')
@@ -184,48 +244,14 @@ export async function POST(request: NextRequest) {
     try {
       const pipeline = new MaxVisibilityPipeline()
       
-      // Test connectivity before starting
-      console.log('🧪 Testing API connectivity...')
-      const connectivityTest = await pipeline.testConnectivity()
-      if (!connectivityTest.success) {
-        console.log('❌ Connectivity test failed:', connectivityTest.errors)
-        
-        // Check if it's specifically a Perplexity API key issue
-        const hasPerplexityError = connectivityTest.errors.some(error => 
-          error.toLowerCase().includes('perplexity') || 
-          error.toLowerCase().includes('api key') ||
-          error.toLowerCase().includes('unauthorized')
-        )
-        
-        if (hasPerplexityError) {
-          return NextResponse.json(
-            { 
-              success: false,
-              data: null,
-              error: 'Perplexity API key is missing or invalid. Please add a valid Perplexity API key to your environment variables to run visibility scans.'
-            },
-            { status: 400 }
-          )
-        }
-        
-        return NextResponse.json(
-          { 
-            success: false,
-            data: null,
-            error: `API connectivity issues: ${connectivityTest.errors.join(', ')}`
-          },
-          { status: 503 }
-        )
-      }
-
-      console.log('✅ Connectivity test passed - real Perplexity API access confirmed')
+      console.log('✅ Pipeline initialized successfully')
 
       // Prepare assessment request
       const assessmentRequest = {
         company: {
-          id: company.id,
-          name: company.company_name,
-          domain: company.root_url
+          id: resolvedCompany.id,
+          name: resolvedCompany.company_name,
+          domain: resolvedCompany.root_url
         },
         assessment_type: assessmentType,
         question_count: assessmentType === 'max' ? 50 : 20, // Proper question counts
@@ -247,7 +273,7 @@ export async function POST(request: NextRequest) {
         .from('max_visibility_runs')
         .insert([
           {
-            company_id: company.id,
+            company_id: resolvedCompany.id,
             triggered_by: user.id,
             status: 'running',
             started_at: new Date().toISOString(),

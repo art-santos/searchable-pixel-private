@@ -27,43 +27,34 @@ export function EnhancedCitationsTab({ hasVisibilityData, data }: EnhancedCitati
   }
 
   // Transform real data into citation format
-  const citations = data.citations?.recent_mentions?.map((mention: any, index: number) => {
-    // Find the full question data if available
-    const questionData = data.questions?.find((q: any) => q.question === mention.question)
-    const responseExcerpt = questionData?.ai_response || mention.ai_response || ''
-    
-    // Extract mention context from response
-    const getMentionContext = (response: string, context: string | null) => {
-      if (context) return context
-      // Try to extract a snippet around the company name
-      const companyName = data.company?.name || 'the company'
-      const mentionIndex = response.toLowerCase().indexOf(companyName.toLowerCase())
-      if (mentionIndex > -1) {
-        const start = Math.max(0, mentionIndex - 100)
-        const end = Math.min(response.length, mentionIndex + companyName.length + 100)
-        return '...' + response.substring(start, end) + '...'
-      }
-      return response.substring(0, 200) + '...'
-    }
+  const citations = data.citations?.all_mentions?.map((mention: any, index: number) => {
+    // Check if this is a real citation URL - use the presence of citation_url field
+    const hasValidUrl = mention.citation_url && mention.citation_url !== '#' && mention.citation_url.startsWith('http')
+    const citationUrl = hasValidUrl ? mention.citation_url : (mention.url || '#')
     
     return {
       id: index + 1,
-      engine: 'Perplexity', // Default for now - could be enhanced
-      query: mention.question,
-      matchType: mention.position === 'primary' ? 'Direct' : 'Indirect',
-      snippet: getMentionContext(responseExcerpt, mention.context),
-      date: new Date(data.last_updated || Date.now()).toISOString().split('T')[0],
-      url: '#', // Would need citation URLs from the real data
+      engine: 'Perplexity',
+      query: mention.question || 'AI Research Question',
+      matchType: mention.match_type === 'direct' ? 'Direct' : 'Indirect',
+      snippet: hasValidUrl ? 
+        `Source: ${mention.domain || 'External Link'}` : 
+        (mention.snippet || mention.context || 'No context available'),
+      date: new Date(mention.date || Date.now()).toISOString().split('T')[0],
+      url: citationUrl,
       sentiment: mention.sentiment || 'neutral',
-      confidence: 0.85, // Default confidence score
-      sources: ['AI Platform'], // Default source
-      engagement_score: 0.75 // Default engagement
+      confidence: mention.confidence || 0.85,
+      sources: hasValidUrl ? [citationUrl] : ['AI Platform'],
+      engagement_score: mention.confidence || 0.75,
+      isRealCitation: hasValidUrl,
+      bucket: mention.bucket || 'earned',
+      domain: mention.domain || 'unknown.com'
     }
   }) || []
 
   const filteredCitations = citations.filter(citation => {
-    const matchesSearch = citation.query.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         citation.snippet.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = (citation.query || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (citation.snippet || '').toLowerCase().includes(searchTerm.toLowerCase())
     const matchesEngine = engineFilter === 'all' || citation.engine === engineFilter
     const matchesType = matchTypeFilter === 'all' || citation.matchType === matchTypeFilter
     
@@ -198,7 +189,19 @@ export function EnhancedCitationsTab({ hasVisibilityData, data }: EnhancedCitati
                 </td>
                 <td className="py-3 px-4 text-[#ccc] max-w-md">
                   <div className="line-clamp-2" title={citation.snippet}>
-                    {citation.snippet}
+                    {citation.isRealCitation ? (
+                      <a 
+                        href={citation.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {citation.url}
+                      </a>
+                    ) : (
+                      citation.snippet
+                    )}
                   </div>
                 </td>
                 {hasMaxAccess && (
@@ -307,23 +310,50 @@ export function EnhancedCitationsTab({ hasVisibilityData, data }: EnhancedCitati
               <div>
                 <div className="text-[#888] text-xs font-medium uppercase mb-3">Citation Context</div>
                 <div className="bg-[#111] border border-[#333] rounded p-4">
-                  <div className="text-[#ccc] text-sm leading-relaxed">
-                    {selectedCitation.snippet}
-                  </div>
+                  {selectedCitation.isRealCitation ? (
+                    <div className="space-y-3">
+                      <div className="text-[#ccc] text-sm">
+                        <strong>Source URL:</strong>
+                      </div>
+                      <a 
+                        href={selectedCitation.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 underline text-sm break-all"
+                      >
+                        {selectedCitation.url}
+                      </a>
+                      <div className="text-[#ccc] text-sm leading-relaxed">
+                        This citation was extracted from the AI response and represents a source that influenced the answer.
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-[#ccc] text-sm leading-relaxed">
+                      {selectedCitation.snippet}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Actions */}
             <div className="border-t border-[#333] p-6 space-y-3">
-              <button className="w-full flex items-center gap-3 px-4 py-3 bg-[#111] hover:bg-[#222] border border-[#333] rounded text-white text-sm font-medium transition-colors">
+              <button 
+                onClick={() => navigator.clipboard.writeText(selectedCitation.url)}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-[#111] hover:bg-[#222] border border-[#333] rounded text-white text-sm font-medium transition-colors"
+              >
                 <Copy className="w-4 h-4" />
-                Copy Citation
+                Copy Citation URL
               </button>
-              <button className="w-full flex items-center gap-3 px-4 py-3 bg-[#111] hover:bg-[#222] border border-[#333] rounded text-white text-sm font-medium transition-colors">
-                <ArrowUpRight className="w-4 h-4" />
-                View Source
-              </button>
+              {selectedCitation.isRealCitation && (
+                <button 
+                  onClick={() => window.open(selectedCitation.url, '_blank')}
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-[#111] hover:bg-[#222] border border-[#333] rounded text-white text-sm font-medium transition-colors"
+                >
+                  <ArrowUpRight className="w-4 h-4" />
+                  View Source
+                </button>
+              )}
             </div>
           </div>
         </>
