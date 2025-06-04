@@ -50,7 +50,7 @@ export default function Dashboard() {
 
   return (
     <motion.main 
-      className="bg-[#0c0c0c] pl-6 pr-4 md:pr-6 lg:pr-8 pb-8 md:pb-12"
+      className="min-h-screen bg-[#0c0c0c] pl-6 pr-4 md:pr-6 lg:pr-8 pb-8 md:pb-12"
       initial="hidden"
       animate="visible"
       variants={containerVariants}

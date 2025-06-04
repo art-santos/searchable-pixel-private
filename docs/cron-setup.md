@@ -1,200 +1,195 @@
-# Cron Job Setup for SBAC
+# 🕒 Cron Job Setup for Billing Management
 
-## Overview
-The SBAC system requires periodic tasks to:
-1. Reset monthly usage counters based on billing cycles
-2. Clean up old data according to retention policies
+This document explains how to set up automated billing cycle processing for the subscription system.
 
-## Setting Up Your Cron Secret Token
+## 📋 Overview
 
-### 1. Generate a Secure Token
+The billing system uses cron jobs to:
+- Reset usage counters monthly
+- Calculate overage charges
+- Send usage alerts
+- Process billing cycles automatically
+
+## 🛠 Environment Variables
+
+Add these to your `.env.local`:
+
 ```bash
-# Generate a secure random token
-openssl rand -base64 32
+# Cron job security
+CRON_SECRET=your-secure-random-string-here
+
+# Billing configuration  
+BILLING_OVERAGE_ARTICLE_PRICE_CENTS=1000  # $10 per article
+BILLING_OVERAGE_DOMAIN_PRICE_CENTS=10000  # $100 per domain
 ```
 
-### 2. Add to Environment Variables
-Add the generated token to your `.env.local` file:
-```env
-CRON_SECRET_TOKEN=your_generated_token_here
-```
+## 🚀 Deployment Options
 
-### 3. Deploy Your Application
-Make sure this environment variable is set in your production environment (Vercel, etc.)
-
-## Cron Service Options
-
-### Option 1: Vercel Cron Jobs (Recommended for Vercel Deployments)
+### Option 1: Vercel Cron Jobs (Recommended)
 
 Add to your `vercel.json`:
+
 ```json
 {
-  "crons": [{
-    "path": "/api/cron/reset-usage",
-    "schedule": "0 0 * * *"
-  }]
+  "crons": [
+    {
+      "path": "/api/cron/billing-cycle",
+      "schedule": "0 0 1 * *"
+    }
+  ]
 }
 ```
 
-**Note**: Vercel automatically adds authentication headers to cron requests. You'll need to update the endpoint to check for Vercel's cron authentication:
+This runs the billing cycle processor on the 1st of every month at midnight UTC.
 
-```typescript
-// Update your /api/cron/reset-usage/route.ts
-import { headers } from 'next/headers'
+### Option 2: External Cron Service
 
-export async function POST(req: NextRequest) {
-  // For Vercel cron jobs
-  const authHeader = headers().get('authorization')
-  
-  // Vercel adds this header for cron jobs
-  if (process.env.VERCEL) {
-    const cronSecret = headers().get('x-vercel-cron-signature')
-    if (cronSecret !== process.env.CRON_SECRET) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-  } else {
-    // For external cron services
-    const expectedToken = process.env.CRON_SECRET_TOKEN
-    if (!expectedToken || authHeader !== `Bearer ${expectedToken}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-  }
-  
-  // ... rest of your code
-}
+Use a service like [cron-job.org](https://cron-job.org) or GitHub Actions:
+
+**Schedule**: `0 0 1 * *` (Monthly on 1st)
+**URL**: `https://yourapp.vercel.app/api/cron/billing-cycle`
+**Method**: POST
+**Headers**: 
 ```
-
-### Option 2: Cron-job.org (Free External Service)
-
-1. Sign up at [cron-job.org](https://cron-job.org)
-2. Create a new cron job:
-   - **URL**: `https://yourdomain.com/api/cron/reset-usage`
-   - **Schedule**: Daily at midnight (0 0 * * *)
-   - **Request Method**: POST
-   - **Request Headers**: 
-     ```
-     Authorization: Bearer YOUR_CRON_SECRET_TOKEN
-     ```
+Authorization: Bearer your-cron-secret
+Content-Type: application/json
+```
 
 ### Option 3: GitHub Actions
 
-Create `.github/workflows/cron-usage-reset.yml`:
-```yaml
-name: Reset Usage Counters
+Create `.github/workflows/billing-cron.yml`:
 
+```yaml
+name: Monthly Billing Cycle
 on:
   schedule:
-    - cron: '0 0 * * *' # Daily at midnight UTC
-  workflow_dispatch: # Allow manual trigger
+    - cron: '0 0 1 * *'  # 1st of every month
+  workflow_dispatch:  # Allow manual trigger
 
 jobs:
-  reset-usage:
+  billing:
     runs-on: ubuntu-latest
     steps:
-      - name: Call Reset Usage API
-        env:
-          CRON_TOKEN: ${{ secrets.CRON_SECRET_TOKEN }}
-          API_URL: ${{ secrets.API_URL }}
+      - name: Trigger Billing Cycle
         run: |
-          curl -X POST $API_URL/api/cron/reset-usage \
-            -H "Authorization: Bearer $CRON_TOKEN" \
+          curl -X POST "${{ vars.APP_URL }}/api/cron/billing-cycle" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json"
 ```
 
-Add secrets in GitHub repository settings:
-- `CRON_SECRET_TOKEN`: Your generated token
-- `API_URL`: Your production URL (e.g., https://yourdomain.com)
+## 🧪 Testing
 
-### Option 4: Upstash (Serverless Cron)
+### Manual Testing
 
-If using Upstash for Redis/Kafka, they offer QStash for serverless cron:
-
-```typescript
-// Install: npm install @upstash/qstash
-import { Client } from "@upstash/qstash"
-
-const client = new Client({ token: process.env.QSTASH_TOKEN })
-
-// Schedule the job
-await client.publishJSON({
-  url: "https://yourdomain.com/api/cron/reset-usage",
-  headers: {
-    Authorization: `Bearer ${process.env.CRON_SECRET_TOKEN}`
-  },
-  cron: "0 0 * * *"
-})
-```
-
-## Testing Your Cron Job
-
-### Local Testing
-In development, you can test the endpoint directly:
 ```bash
-# Since we allow GET in development
-curl http://localhost:3000/api/cron/reset-usage
-```
-
-### Production Testing
-Test with your token:
-```bash
-curl -X POST https://yourdomain.com/api/cron/reset-usage \
-  -H "Authorization: Bearer YOUR_CRON_SECRET_TOKEN" \
+# Test the cron endpoint (development)
+curl -X POST "http://localhost:3000/api/cron/billing-cycle" \
+  -H "Authorization: Bearer your-cron-secret" \
   -H "Content-Type: application/json"
 ```
 
-## Monitoring
+### Response Format
 
-### 1. Add Logging
-The cron endpoint already logs success/failure. Consider adding:
-- Webhook notifications on failure
-- Database logs for audit trail
-- Monitoring service integration (Sentry, LogRocket)
-
-### 2. Health Checks
-Consider adding a health check endpoint:
-```typescript
-// /api/cron/health/route.ts
-export async function GET() {
-  const lastReset = await getLastResetTimestamp()
-  const isHealthy = Date.now() - lastReset < 25 * 60 * 60 * 1000 // 25 hours
-  
-  return NextResponse.json({
-    healthy: isHealthy,
-    lastReset: new Date(lastReset).toISOString()
-  })
+```json
+{
+  "message": "Billing cycle processing complete",
+  "results": {
+    "processed": 5,
+    "errors": 0,
+    "usageAlerts": 2
+  }
 }
 ```
 
-## Schedule Recommendations
+## 📊 What the Cron Job Does
 
-### Daily Reset (Recommended)
-- **Schedule**: `0 0 * * *` (midnight UTC)
-- **Why**: Ensures all users get timely resets regardless of timezone
+### 1. Usage Reset
+- Resets `article_credits_used` to 0
+- Resets `max_scans_used` and `daily_scans_used` to 0
+- Updates billing period dates
 
-### Alternative Schedules
-- **Hourly Check**: `0 * * * *` - More frequent but uses more resources
-- **Twice Daily**: `0 0,12 * * *` - Good balance for global users
+### 2. Overage Calculation
+- Calculates charges for usage beyond limits
+- Stores overage amounts for Stripe billing
+- Logs billing events for audit trail
 
-## Security Best Practices
+### 3. Alert Generation
+- Sends alerts when usage exceeds 80% of limits
+- Logs usage warnings
+- (Future: Email notifications)
 
-1. **Rotate Tokens Regularly**: Change your CRON_SECRET_TOKEN monthly
-2. **Use HTTPS Only**: Never call cron endpoints over HTTP
-3. **Rate Limiting**: Add rate limiting to prevent abuse
-4. **IP Whitelisting**: If your cron service supports it, whitelist their IPs
-5. **Monitoring**: Set up alerts for failed or suspicious cron attempts
+### 4. Billing Period Management
+- Advances billing period by 1 month
+- Maintains purchased add-ons across cycles
+- Updates next billing date
 
-## Troubleshooting
+## 🔍 Monitoring
+
+### Logs to Watch
+```bash
+# Successful processing
+✅ Processed billing cycle for user abc123
+
+# Usage alerts
+⚠️  Usage alert for user xyz789: Articles: 90%, Domains: 75%
+
+# Processing summary
+🎉 Billing cycle processing complete: {"processed": 5, "errors": 0, "usageAlerts": 2}
+```
+
+### Database Queries
+
+Check billing events:
+```sql
+SELECT * FROM usage_events 
+WHERE event_type = 'billing_cycle_reset' 
+ORDER BY created_at DESC 
+LIMIT 10;
+```
+
+Check subscription status:
+```sql
+SELECT 
+  user_id,
+  plan_type,
+  billing_period_start,
+  billing_period_end,
+  article_credits_used,
+  article_credits_included,
+  overage_amount_cents
+FROM subscription_usage 
+WHERE plan_status = 'active'
+ORDER BY billing_period_end ASC;
+```
+
+## 🚨 Error Handling
+
+The cron job handles errors gracefully:
+- Individual subscription failures don't stop the entire process
+- Errors are logged with user IDs for investigation
+- Results summary shows success/error counts
 
 ### Common Issues
 
-1. **401 Unauthorized**
-   - Check token is correctly set in environment
-   - Verify Authorization header format
+1. **Database Connection**: Ensure service role client has proper permissions
+2. **Timezone Handling**: All dates stored in UTC
+3. **Rate Limiting**: Processes subscriptions sequentially to avoid overload
 
-2. **Function Timeout**
-   - Consider implementing pagination for large user bases
-   - Use background jobs for heavy processing
+## 🔐 Security
 
-3. **Duplicate Resets**
-   - Implement idempotency checks
-   - Use database locks if needed 
+- Use a strong `CRON_SECRET` (32+ characters)
+- Restrict endpoint access to authorized sources only
+- Monitor cron job logs for unauthorized access attempts
+- Consider IP whitelisting for external cron services
+
+## 📈 Scaling
+
+For high-volume deployments:
+- Consider batch processing in chunks
+- Add queue system for large subscription counts
+- Implement retry logic for failed billing cycles
+- Add monitoring and alerting for cron job failures
+
+---
+
+> 💡 **Tip**: Test billing cycles on staging environment first with a small subset of users before deploying to production. 

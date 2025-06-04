@@ -21,10 +21,13 @@ import {
   Loader2,
   ExternalLink,
   FileText,
-  Key
+  Key,
+  LogOut,
+  Plus,
+  Minus
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { UpgradeDialog } from '@/components/subscription/upgrade-dialog'
 import { PlanType } from '@/lib/subscription/config'
 import { useSubscription } from '@/hooks/useSubscription'
@@ -67,6 +70,46 @@ interface UserProfile {
   profile_picture_url?: string | null
 }
 
+interface UsageData {
+  billingPeriod: {
+    start: string
+    end: string
+    planType: string
+  }
+  articles: {
+    included: number
+    used: number
+    purchased: number
+    remaining: number
+    percentage: number
+    note?: string
+  }
+  domains: {
+    included: number
+    used: number
+    purchased: number
+    remaining: number
+    percentage: number
+  }
+  aiLogs: {
+    included: number
+    used: number
+    remaining: number
+    percentage: number
+    overage: number
+    overageCost: number
+  }
+  scans: {
+    maxScansUsed: number
+    dailyScansUsed: number
+    totalScansUsed: number
+    unlimitedMax: boolean
+    dailyAllowed: boolean
+  }
+  recentEvents: any[]
+  addOns: any[]
+}
+
 const pricingPlans: PricingPlan[] = [
   {
     id: 'visibility',
@@ -74,9 +117,10 @@ const pricingPlans: PricingPlan[] = [
     price: 40,
     annualPrice: 32,
     features: [
+      '1 domain tracking',
       'Daily visibility scans',
       'Citation analysis',
-      'Single domain tracking',
+      '250 AI crawler logs/month',
       'Email alerts'
     ],
     limits: {
@@ -91,8 +135,10 @@ const pricingPlans: PricingPlan[] = [
     price: 200,
     annualPrice: 160,
     features: [
-      'Daily MAX visibility scans',
+      '1 domain tracking',
       '10 monthly AI articles',
+      'MAX visibility scans',
+      '500 AI crawler logs/month',
       'Competitor benchmarking',
       'Keyword trend analysis',
       'Priority support'
@@ -110,11 +156,13 @@ const pricingPlans: PricingPlan[] = [
     price: 1000,
     annualPrice: 800,
     features: [
-      'Everything in Plus',
-      '30 premium articles',
+      '3 domains tracking',
+      '30 monthly AI articles',
       'Unlimited MAX scans',
+      '1,000 AI crawler logs/month',
       'Multi-brand tracking',
-      'Up to 3 domains'
+      'Premium support',
+      'API access'
     ],
     limits: {
       scans: 'Unlimited',
@@ -126,6 +174,7 @@ const pricingPlans: PricingPlan[] = [
 
 export default function SettingsPage() {
   const { user } = useAuth()
+  const router = useRouter()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [profileLoading, setProfileLoading] = useState(true)
   const [activeSection, setActiveSection] = useState('general')
@@ -140,6 +189,14 @@ export default function SettingsPage() {
   const [showSuccessToast, setShowSuccessToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('Settings saved successfully')
   const { usage: subscriptionUsage, refresh: refreshUsage } = useSubscription()
+  
+  // Real usage data
+  const [usageData, setUsageData] = useState<UsageData | null>(null)
+  const [loadingUsage, setLoadingUsage] = useState(true)
+  
+  // Add-on state
+  const [extraArticles, setExtraArticles] = useState(0)
+  const [extraDomains, setExtraDomains] = useState(0)
   
   // API Keys state
   const [apiKeys, setApiKeys] = useState<any[]>([])
@@ -161,6 +218,31 @@ export default function SettingsPage() {
   
   const searchParams = useSearchParams()
   const supabase = createClient()
+
+  // Fetch usage data
+  const fetchUsageData = async () => {
+    console.log('🔍 Fetching usage data...')
+    setLoadingUsage(true)
+    try {
+      const response = await fetch('/api/usage/current')
+      console.log('📡 Usage API response status:', response.status)
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('📊 Usage data received:', data)
+        setUsageData(data.usage)
+        console.log('✅ Usage data set successfully')
+      } else {
+        console.error('❌ Failed to fetch usage data, status:', response.status)
+        const errorData = await response.text()
+        console.error('Error response:', errorData)
+      }
+    } catch (error) {
+      console.error('💥 Error fetching usage data:', error)
+    } finally {
+      setLoadingUsage(false)
+    }
+  }
 
   // Fetch user profile data
   useEffect(() => {
@@ -195,6 +277,13 @@ export default function SettingsPage() {
 
     fetchProfile()
   }, [user, supabase])
+
+  // Fetch usage data on component mount
+  useEffect(() => {
+    if (user) {
+      fetchUsageData()
+    }
+  }, [user])
   
   // Check URL parameters for tab selection and upgrade dialog
   useEffect(() => {
@@ -223,12 +312,20 @@ export default function SettingsPage() {
   // Fetch user's subscription data on mount
   useEffect(() => {
     async function fetchSubscription() {
+      console.log('🔍 Fetching subscription data...')
       try {
         const response = await fetch('/api/user/subscription')
+        console.log('📡 Subscription API response status:', response.status)
+        
         if (response.ok) {
           const data = await response.json()
+          console.log('💳 Subscription data received:', data)
+          
           setStripeCustomerId(data.stripeCustomerId)
           setCurrentPlan(data.subscriptionPlan || 'free')
+          
+          console.log('✅ Set currentPlan to:', data.subscriptionPlan || 'free')
+          
           // Determine if user is on annual billing based on their current plan
           if (data.subscriptionStatus === 'active' && data.subscriptionPeriodEnd) {
             const periodEnd = new Date(data.subscriptionPeriodEnd)
@@ -236,9 +333,11 @@ export default function SettingsPage() {
             const monthsUntilEnd = (periodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30)
             setIsAnnualBilling(monthsUntilEnd > 6)
           }
+        } else {
+          console.error('❌ Failed to fetch subscription data, status:', response.status)
         }
       } catch (error) {
-        console.error('Error fetching subscription:', error)
+        console.error('💥 Error fetching subscription:', error)
       } finally {
         setLoadingSubscription(false)
       }
@@ -448,32 +547,84 @@ export default function SettingsPage() {
     { id: 'plausible', name: 'Plausible', icon: '📈', status: 'not_connected', description: '' }
   ])
   
-  // Dynamic billing data based on current plan
+  // Dynamic billing data based on current plan and real usage
   const getBillingData = () => {
-    if (currentPlan === 'free') {
+    console.log('🔍 getBillingData called with:', { 
+      usageData: usageData ? 'loaded' : 'null',
+      currentPlan,
+      usageDataPlanType: usageData?.billingPeriod?.planType 
+    })
+    
+    if (!usageData) {
+      return {
+        name: 'Loading...',
+        price: 0,
+        period: 'month',
+        nextBilling: null,
+        usage: {
+          scans: { 
+            maxScansUsed: 0, 
+            dailyScansUsed: 0, 
+            totalScansUsed: 0, 
+            unlimitedMax: false, 
+            dailyAllowed: true 
+          },
+          articles: { used: 0, limit: 0, remaining: 0, percentage: 0, note: 'Loading...' },
+          domains: { used: 0, limit: 1, remaining: 1, percentage: 0 },
+          aiLogs: { 
+            included: 0, 
+            used: 0, 
+            remaining: 0, 
+            percentage: 0, 
+            overage: 0, 
+            overageCost: 0 
+          }
+        }
+      }
+    }
+
+    // Use actual subscription plan (currentPlan) instead of usage data plan
+    const planType = currentPlan || usageData.billingPeriod.planType || 'free'
+    
+    console.log('📊 Final plan determination:', {
+      currentPlan,
+      usageDataPlan: usageData.billingPeriod.planType,
+      finalPlanType: planType
+    })
+    
+    if (planType === 'free') {
+      console.log('🆓 Showing free plan UI')
       return {
         name: 'Free',
         price: 0,
         period: 'forever',
         nextBilling: null,
         usage: {
-          scans: { used: 3, limit: '5/month' },
-          articles: { used: 0, limit: 0 },
-          domains: { used: 1, limit: 1 }
+          scans: usageData.scans,
+          articles: usageData.articles,
+          domains: usageData.domains,
+          aiLogs: usageData.aiLogs
         }
       }
     }
     
-    const plan = pricingPlans.find(p => p.id === currentPlan) || pricingPlans[1]
+    const plan = pricingPlans.find(p => p.id === planType) || pricingPlans[1]
+    console.log('✅ Showing paid plan UI:', plan.name)
+    
     return {
       name: plan.name,
       price: isAnnualBilling ? plan.annualPrice : plan.price,
       period: 'month',
-      nextBilling: 'January 15, 2025',
+      nextBilling: new Date(usageData.billingPeriod.end).toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      }),
       usage: {
-        scans: { used: 45, limit: plan.limits.scans },
-        articles: { used: 6, limit: plan.limits.articles },
-        domains: { used: 1, limit: plan.limits.domains }
+        scans: usageData.scans,
+        articles: usageData.articles,
+        domains: usageData.domains,
+        aiLogs: usageData.aiLogs
       }
     }
   }
@@ -489,6 +640,15 @@ export default function SettingsPage() {
 
     setIsLoading(true)
     try {
+      // Calculate total price with add-ons
+      const basePlan = pricingPlans.find(p => p.id === planId)
+      if (!basePlan) return
+
+      const addOnCosts = {
+        extraArticles: extraArticles * 10, // $10 per article
+        extraDomains: extraDomains * 100   // $100 per domain
+      }
+
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -496,7 +656,11 @@ export default function SettingsPage() {
           planId,
           isAnnual: isAnnualBilling,
           customerId: stripeCustomerId,
-          customerEmail: workspace.email
+          customerEmail: workspace.email,
+          addOns: {
+            extraArticles,
+            extraDomains
+          }
         })
       })
 
@@ -504,7 +668,7 @@ export default function SettingsPage() {
       
       if (error) {
         console.error('Error creating checkout session:', error)
-        // TODO: Show error toast
+        showToast('Failed to create checkout session')
         return
       }
 
@@ -512,7 +676,7 @@ export default function SettingsPage() {
       window.location.href = url
     } catch (error) {
       console.error('Error:', error)
-      // TODO: Show error toast
+      showToast('Failed to upgrade plan')
     } finally {
       setIsLoading(false)
     }
@@ -521,7 +685,7 @@ export default function SettingsPage() {
   const handleManageSubscription = async () => {
     if (!stripeCustomerId) {
       console.error('No Stripe customer ID found')
-      // TODO: Show error toast
+      showToast('No subscription to manage')
       return
     }
 
@@ -537,7 +701,7 @@ export default function SettingsPage() {
       
       if (error) {
         console.error('Error creating portal session:', error)
-        // TODO: Show error toast
+        showToast('Failed to open billing portal')
         return
       }
 
@@ -545,7 +709,7 @@ export default function SettingsPage() {
       window.location.href = url
     } catch (error) {
       console.error('Error:', error)
-      // TODO: Show error toast
+      showToast('Failed to open billing portal')
     } finally {
       setIsLoading(false)
     }
@@ -557,6 +721,21 @@ export default function SettingsPage() {
     if (profile?.first_name) return profile.first_name
     if (user?.email) return user.email.split('@')[0]
     return 'User'
+  }
+
+  // Handle logout
+  const handleLogout = async () => {
+    setIsLoading(true)
+    try {
+      if (supabase) {
+        await supabase.auth.signOut()
+      }
+      router.push('/')
+    } catch (error) {
+      console.error('Error during logout:', error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -712,6 +891,24 @@ export default function SettingsPage() {
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
                         'Save Changes'
+                      )}
+                    </Button>
+                  </div>
+
+                  {/* Logout Button */}
+                  <div className="flex justify-end pt-4">
+                    <Button 
+                      onClick={handleLogout}
+                      disabled={isLoading}
+                      className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 hover:text-red-300 h-9 px-6 text-sm flex items-center gap-2"
+                    >
+                      {isLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <LogOut className="w-4 h-4" />
+                          Logout
+                        </>
                       )}
                     </Button>
                   </div>
@@ -926,39 +1123,41 @@ export default function SettingsPage() {
 
               {/* Billing Settings */}
               {activeSection === 'billing' && (
-                <div className="space-y-6">
+                <div className="space-y-8">
                   {/* Header */}
                   <div>
-                    <h2 className="text-xl font-medium text-white mb-2">Billing</h2>
+                    <h2 className="text-xl font-medium text-white mb-2">Billing & Usage</h2>
                     <p className="text-sm text-[#666]">
-                      Manage your subscription and payment methods
+                      Monitor your usage and manage your subscription
                     </p>
                   </div>
 
-                  {loadingSubscription ? (
+                  {loadingUsage ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="w-6 h-6 animate-spin text-[#666]" />
                     </div>
                   ) : (
                     <>
-                      {/* Current Plan Section */}
-                      <div>
-                        <div className="flex items-start justify-between mb-6">
+                      {/* Current Plan */}
+                      <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
+                        <div className="flex items-center justify-between">
                           <div>
-                            {currentPlan === 'free' ? (
-                              <div>
-                                <span className="text-2xl font-bold text-white">Free Plan</span>
-                                <p className="text-sm text-[#666] mt-1">Limited features</p>
-                              </div>
+                            <div className="flex items-center gap-3 mb-1">
+                              <h3 className="text-lg font-medium text-white">{billingPlan.name} Plan</h3>
+                              {usageData?.billingPeriod.planType !== 'free' && (
+                                <span className="text-sm bg-green-500/10 text-green-400 px-2 py-1 rounded border border-green-500/20">
+                                  Active
+                                </span>
+                              )}
+                            </div>
+                            {usageData?.billingPeriod.planType === 'free' ? (
+                              <p className="text-sm text-[#666]">Get started with basic features</p>
                             ) : (
-                              <div>
-                                <div className="flex items-baseline gap-3">
-                                  <span className="text-2xl font-bold text-white">{billingPlan.name}</span>
-                                  <span className="text-lg text-[#666]">${billingPlan.price}/month</span>
-                                </div>
+                              <div className="space-y-1">
+                                <p className="text-2xl font-bold text-white">${billingPlan.price}<span className="text-sm font-normal text-[#666]">/month</span></p>
                                 {billingPlan.nextBilling && (
-                                  <p className="text-sm text-[#666] mt-1">
-                                    Renews on {billingPlan.nextBilling}
+                                  <p className="text-sm text-[#666]">
+                                    Next billing: {billingPlan.nextBilling}
                                   </p>
                                 )}
                               </div>
@@ -971,142 +1170,368 @@ export default function SettingsPage() {
                           >
                             {isLoading ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : currentPlan === 'free' ? (
-                              'Upgrade'
+                            ) : usageData?.billingPeriod.planType === 'free' ? (
+                              'Upgrade Plan'
                             ) : (
                               'Change Plan'
                             )}
                           </Button>
                         </div>
+                      </div>
 
-                        {/* Usage Metrics */}
-                        <div className="space-y-4">
-                          {/* Visibility Scans */}
-                          <div>
-                            <div className="flex justify-between text-sm mb-2">
-                              <span className="text-[#888]">Visibility Scans</span>
-                              <span className="text-white">
-                                {billingPlan.usage.scans.used} / {billingPlan.usage.scans.limit}
-                              </span>
+                      {/* Usage Overview - Simple Rows */}
+                      <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
+                        <div className="p-6 border-b border-[#1a1a1a]">
+                          <h3 className="text-lg font-medium text-white">Usage Overview</h3>
+                        </div>
+                        
+                        <div className="divide-y divide-[#1a1a1a]">
+                          {/* AI Crawler Logs */}
+                          <div className="p-6 hover:bg-[#0c0c0c] transition-colors group">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-white font-medium font-mono text-sm tracking-tight">AI Crawler Logs</span>
+                                    <div className="relative">
+                                      <button className="text-[#444] hover:text-[#666] transition-colors">
+                                        <span className="text-xs cursor-help">ⓘ</span>
+                                      </button>
+                                      <div className="absolute left-6 top-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none bg-[#1a1a1a] border border-[#333] rounded-lg p-3 text-xs text-[#666] w-64 z-10 font-mono tracking-tight">
+                                        Tracks mentions of your brand across AI platforms. $0.008 per log after plan limits.
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-4 text-xs text-[#555] mt-1 font-mono tracking-tight">
+                                    <span>{usageData?.aiLogs?.used || 0} / {usageData?.aiLogs?.included || 0} used</span>
+                                    {usageData?.aiLogs && usageData.aiLogs.overage > 0 && (
+                                      <span className="text-[#888]">
+                                        +{usageData.aiLogs.overage} overage (${usageData.aiLogs.overageCost.toFixed(3)})
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right flex items-center gap-6">
+                                <div>
+                                  <div className="text-white font-medium text-sm font-mono tracking-tight">
+                                    {usageData?.aiLogs?.remaining || 0} left
+                                  </div>
+                                </div>
+                                <div className="w-40 h-1 bg-[#1a1a1a] rounded-full">
+                                  <div 
+                                    className="h-full bg-[#444] rounded-full transition-all duration-300"
+                                    style={{ 
+                                      width: `${Math.min(100, ((usageData?.aiLogs?.used || 0) / Math.max(1, usageData?.aiLogs?.included || 1)) * 100)}%` 
+                                    }}
+                                  />
+                                </div>
+                              </div>
                             </div>
-                            <div className="w-full h-2 bg-[#1a1a1a] rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full rounded-full transition-all duration-300 ${
-                                  currentPlan === 'free' ? 'bg-white/40' : 'bg-green-500/60'
-                                }`}
-                                style={{ 
-                                  width: `${
-                                    billingPlan.usage.scans.limit === 'Unlimited' 
-                                      ? '100' 
-                                      : (billingPlan.usage.scans.used / parseInt(billingPlan.usage.scans.limit.split('/')[0])) * 100
-                                  }%` 
-                                }}
-                              />
-                            </div>
-                            {currentPlan !== 'free' && (
-                              <p className="text-xs text-[#666] mt-1">
-                                {billingPlan.usage.scans.limit === 'Unlimited' ? 'Unlimited scans available' : `${billingPlan.usage.scans.used} scans used this month`}
-                              </p>
-                            )}
                           </div>
 
                           {/* AI Articles */}
-                          <div>
-                            <div className="flex justify-between text-sm mb-2">
-                              <span className="text-[#888]">AI Articles</span>
-                              <span className={`${billingPlan.usage.articles.limit === 0 ? 'text-[#666]' : 'text-white'}`}>
-                                {billingPlan.usage.articles.limit === 0 
-                                  ? 'Not available' 
-                                  : `${billingPlan.usage.articles.used} / ${billingPlan.usage.articles.limit}`
-                                }
-                              </span>
+                          <div className="p-6 hover:bg-[#0c0c0c] transition-colors group">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-white font-medium font-mono text-sm tracking-tight">AI Articles</span>
+                                    <div className="relative">
+                                      <button className="text-[#444] hover:text-[#666] transition-colors">
+                                        <span className="text-xs cursor-help">ⓘ</span>
+                                      </button>
+                                      <div className="absolute left-6 top-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none bg-[#1a1a1a] border border-[#333] rounded-lg p-3 text-xs text-[#666] w-64 z-10 font-mono tracking-tight">
+                                        AI-generated content optimized for visibility. Coming soon!
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="text-xs text-[#555] mt-1 font-mono tracking-tight">
+                                    {usageData?.articles?.note || 'Coming soon'}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right flex items-center gap-6">
+                                <div>
+                                  <div className="text-[#666] font-medium text-sm font-mono tracking-tight">
+                                    Coming Soon
+                                  </div>
+                                </div>
+                                <div className="w-40 h-1 bg-[#1a1a1a] rounded-full">
+                                  {/* Empty progress bar for coming soon */}
+                                </div>
+                              </div>
                             </div>
-                            <div className="w-full h-2 bg-[#1a1a1a] rounded-full overflow-hidden">
-                              {billingPlan.usage.articles.limit > 0 && (
-                                <div 
-                                  className="h-full bg-blue-500/60 rounded-full transition-all duration-300"
-                                  style={{ width: `${(billingPlan.usage.articles.used / billingPlan.usage.articles.limit) * 100}%` }}
-                                />
-                              )}
-                            </div>
-                            {billingPlan.usage.articles.limit > 0 && (
-                              <p className="text-xs text-[#666] mt-1">
-                                {billingPlan.usage.articles.limit - billingPlan.usage.articles.used} articles remaining
-                              </p>
-                            )}
                           </div>
 
-                          {/* Domains */}
-                          <div>
-                            <div className="flex justify-between text-sm mb-2">
-                              <span className="text-[#888]">Domains</span>
-                              <span className="text-white">
-                                {billingPlan.usage.domains.used} / {billingPlan.usage.domains.limit}
-                              </span>
+                          {/* Domain Tracking */}
+                          <div className="p-6 hover:bg-[#0c0c0c] transition-colors group">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-white font-medium font-mono text-sm tracking-tight">Domain Tracking</span>
+                                    <div className="relative">
+                                      <button className="text-[#444] hover:text-[#666] transition-colors">
+                                        <span className="text-xs cursor-help">ⓘ</span>
+                                      </button>
+                                      <div className="absolute left-6 top-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none bg-[#1a1a1a] border border-[#333] rounded-lg p-3 text-xs text-[#666] w-64 z-10 font-mono tracking-tight">
+                                        Number of domains you can monitor. $100 per additional domain per month.
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="text-xs text-[#555] mt-1 font-mono tracking-tight">
+                                    {usageData?.domains?.used} / {usageData?.domains?.included} domains
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right flex items-center gap-6">
+                                <div>
+                                  <div className="text-white font-medium text-sm font-mono tracking-tight">
+                                    {usageData?.domains?.remaining} slots left
+                                  </div>
+                                </div>
+                                <div className="w-40 h-1 bg-[#1a1a1a] rounded-full">
+                                  <div 
+                                    className="h-full bg-[#444] rounded-full transition-all duration-300"
+                                    style={{ width: `${Math.min(100, (usageData?.domains?.used / usageData?.domains?.included) * 100)}%` }}
+                                  />
+                                </div>
+                              </div>
                             </div>
-                            <div className="w-full h-2 bg-[#1a1a1a] rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-white/40 rounded-full transition-all duration-300"
-                                style={{ width: `${(billingPlan.usage.domains.used / billingPlan.usage.domains.limit) * 100}%` }}
-                              />
+                          </div>
+
+                          {/* Visibility Scans */}
+                          <div className="p-6 hover:bg-[#0c0c0c] transition-colors group">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-white font-medium font-mono text-sm tracking-tight">Visibility Scans</span>
+                                    <div className="relative">
+                                      <button className="text-[#444] hover:text-[#666] transition-colors">
+                                        <span className="text-xs cursor-help">ⓘ</span>
+                                      </button>
+                                      <div className="absolute left-6 top-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none bg-[#1a1a1a] border border-[#333] rounded-lg p-3 text-xs text-[#666] w-64 z-10 font-mono tracking-tight">
+                                        Deep analysis of your brand's AI visibility across platforms.
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="text-xs text-[#555] mt-1 font-mono tracking-tight">
+                                    {usageData?.scans?.unlimitedMax ? 'Unlimited MAX scans' : 'Daily scans only'}
+                                    {usageData?.scans?.totalScansUsed && usageData.scans.totalScansUsed > 0 && (
+                                      <span className="ml-2">({usageData.scans.totalScansUsed} total this month)</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right flex items-center gap-6">
+                                <div>
+                                  <div className="text-white font-medium text-sm font-mono tracking-tight">
+                                    {usageData?.scans?.totalScansUsed || 0} scans
+                                  </div>
+                                  {usageData?.scans && !usageData.scans.unlimitedMax && (
+                                    <div className="text-xs text-[#666] mt-1 font-mono tracking-tight">Upgrade for MAX scans</div>
+                                  )}
+                                  {usageData?.scans?.unlimitedMax && (
+                                    <div className="text-xs text-[#888] mt-1 font-mono tracking-tight">Unlimited MAX scans</div>
+                                  )}
+                                </div>
+                                <div className="w-40 h-1 bg-[#1a1a1a] rounded-full">
+                                  <div 
+                                    className="h-full bg-[#444] rounded-full transition-all duration-300"
+                                    style={{ width: usageData?.scans?.unlimitedMax ? '100%' : '30%' }}
+                                  />
+                                </div>
+                              </div>
                             </div>
-                            <p className="text-xs text-[#666] mt-1">
-                              {billingPlan.usage.domains.limit - billingPlan.usage.domains.used} domain slots available
-                            </p>
                           </div>
                         </div>
                       </div>
 
-                      {/* Payment Method - Only show for paid plans */}
-                      {currentPlan !== 'free' && (
-                        <div className="border border-[#1a1a1a] rounded-lg p-6">
-                          <h3 className="text-white font-medium mb-4">Payment Method</h3>
-                          
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-[#1a1a1a] rounded-lg flex items-center justify-center">
-                                <CreditCard className="w-5 h-5 text-[#666]" />
+                      {/* Usage Warnings */}
+                      {(usageData?.aiLogs?.percentage >= 80 || usageData?.aiLogs?.overage > 0) && (
+                        <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="w-4 h-4 bg-[#333] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <span className="text-[#888] text-xs">!</span>
+                            </div>
+                            <div>
+                              <h4 className="text-[#ccc] font-medium text-sm mb-1 font-mono tracking-tight">
+                                {usageData?.aiLogs?.overage > 0 ? 'Overage Charges' : 'Usage Warning'}
+                              </h4>
+                              <div className="text-xs text-[#666] space-y-1 font-mono tracking-tight">
+                                {usageData?.aiLogs?.overage > 0 && (
+                                  <p>• You have {usageData.aiLogs.overage} AI crawler logs over your plan limit, costing ${usageData.aiLogs.overageCost.toFixed(3)} this month.</p>
+                                )}
+                                {usageData?.aiLogs?.percentage >= 80 && usageData.aiLogs.overage === 0 && (
+                                  <p>• You've used {usageData.aiLogs.percentage}% of your AI crawler logs. Additional logs cost $0.008 each.</p>
+                                )}
                               </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Add-Ons Management */}
+                      {usageData?.billingPeriod.planType !== 'free' && (
+                        <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
+                          <div className="p-6 border-b border-[#1a1a1a]">
+                            <div className="flex items-center justify-between">
                               <div>
-                                <p className="text-white text-sm">•••• •••• •••• 4242</p>
-                                <p className="text-xs text-[#666]">Expires 12/25</p>
+                                <h3 className="text-lg font-medium text-white font-mono tracking-tight">Add-Ons</h3>
+                                <p className="text-xs text-[#666] font-mono tracking-tight">
+                                  Scale your usage beyond plan limits
+                                </p>
                               </div>
+                              {extraDomains > 0 && (
+                                <Button
+                                  onClick={() => {
+                                    // Handle saving add-ons
+                                    showToast('Add-ons updated successfully')
+                                  }}
+                                  className="bg-[#2a2a2a] text-white hover:bg-[#333] h-8 px-4 text-xs font-mono tracking-tight"
+                                >
+                                  Update Add-Ons
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="divide-y divide-[#1a1a1a]">
+                            {/* Extra Articles - Coming Soon */}
+                            <div className="p-6 hover:bg-[#0c0c0c] transition-colors">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-1">
+                                    <span className="text-white font-medium font-mono text-sm tracking-tight">Extra Articles</span>
+                                    <span className="text-xs bg-[#1a1a1a] text-[#888] px-2 py-1 rounded border border-[#2a2a2a] font-mono tracking-tight">
+                                      Coming Soon
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-[#555] font-mono tracking-tight">
+                                    AI article generation feature coming soon
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-4 ml-6">
+                                  <div className="text-right min-w-[70px]">
+                                    <div className="text-[#666] font-medium text-sm font-mono tracking-tight">
+                                      Coming Soon
+                                    </div>
+                                    <div className="text-xs text-[#555] font-mono tracking-tight">$10/article</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Extra Domains */}
+                            <div className="p-6 hover:bg-[#0c0c0c] transition-colors">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-1">
+                                    <span className="text-white font-medium font-mono text-sm tracking-tight">Extra Domains</span>
+                                    <span className="text-xs bg-[#1a1a1a] text-[#888] px-2 py-1 rounded border border-[#2a2a2a] font-mono tracking-tight">
+                                      $100/domain/month
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-[#555] font-mono tracking-tight">
+                                    Track additional domains beyond your plan limit
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-4 ml-6">
+                                  <div className="flex items-center gap-3">
+                                    <Button
+                                      onClick={() => setExtraDomains(Math.max(0, extraDomains - 1))}
+                                      disabled={extraDomains === 0}
+                                      size="sm"
+                                      className="w-7 h-7 p-0 bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333] disabled:opacity-50 text-white"
+                                    >
+                                      <Minus className="w-3 h-3" />
+                                    </Button>
+                                    <div className="min-w-[60px] text-center">
+                                      <div className="text-white font-medium text-sm font-mono tracking-tight">{extraDomains}</div>
+                                      <div className="text-xs text-[#555] font-mono tracking-tight">domains</div>
+                                    </div>
+                                    <Button
+                                      onClick={() => setExtraDomains(extraDomains + 1)}
+                                      size="sm"
+                                      className="w-7 h-7 p-0 bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333] text-white"
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                  <div className="text-right min-w-[70px]">
+                                    <div className="text-white font-medium text-sm font-mono tracking-tight">
+                                      {extraDomains > 0 ? `+$${extraDomains * 100}` : '$0'}
+                                    </div>
+                                    <div className="text-xs text-[#555] font-mono tracking-tight">per month</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Add-On Summary */}
+                          {extraDomains > 0 && (
+                            <div className="p-6 bg-[#0c0c0c] border-t border-[#1a1a1a]">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <span className="text-white font-medium font-mono text-sm tracking-tight">Total Monthly Add-Ons</span>
+                                  <p className="text-xs text-[#555] mt-1 font-mono tracking-tight">Changes take effect on your next billing cycle</p>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-white font-medium text-lg font-mono tracking-tight">
+                                    +${extraDomains * 100}
+                                  </div>
+                                  <div className="text-xs text-[#555] font-mono tracking-tight">per month</div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Manage Subscription */}
+                      {usageData?.billingPeriod.planType !== 'free' && stripeCustomerId && (
+                        <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="text-lg font-medium text-white mb-1 font-mono tracking-tight">Manage Subscription</h3>
+                              <p className="text-xs text-[#555] font-mono tracking-tight">Update billing information, view invoices, or cancel subscription</p>
                             </div>
                             <Button 
                               onClick={handleManageSubscription}
-                              variant="outline"
-                              className="border-[#333] hover:border-[#444] text-[#666] hover:text-white h-8 px-3 text-xs gap-1"
-                              disabled={isLoading || !stripeCustomerId}
+                              className="bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333] text-white h-8 px-4 text-xs gap-2 flex-shrink-0 font-mono tracking-tight"
+                              disabled={isLoading}
                             >
                               {isLoading ? (
                                 <Loader2 className="w-3 h-3 animate-spin" />
                               ) : (
                                 <>
-                                  Manage
                                   <ExternalLink className="w-3 h-3" />
+                                  Manage Billing
                                 </>
                               )}
                             </Button>
                           </div>
-                          <p className="text-xs text-[#666] mt-3">
-                            Update payment method, view invoices, or cancel subscription
-                          </p>
                         </div>
                       )}
 
                       {/* Upgrade CTA for Free Plan */}
-                      {currentPlan === 'free' && (
-                        <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6 text-center">
-                          <Zap className="w-10 h-10 text-[#666] mx-auto mb-3" />
-                          <h3 className="text-white font-medium mb-2">Unlock More Features</h3>
-                          <p className="text-[#666] text-sm mb-4 max-w-md mx-auto">
-                            Get daily visibility scans, AI-generated content, and advanced analytics
+                      {usageData?.billingPeriod.planType === 'free' && (
+                        <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-8 text-center">
+                          <div className="w-12 h-12 bg-[#333] rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Zap className="w-6 h-6 text-[#888]" />
+                          </div>
+                          <h3 className="text-lg font-medium text-white mb-2 font-mono tracking-tight">Ready to Scale?</h3>
+                          <p className="text-xs text-[#555] mb-6 max-w-md mx-auto font-mono tracking-tight">
+                            Upgrade to unlock AI article generation, unlimited visibility scans, and more AI crawler logs
                           </p>
                           <Button 
                             onClick={() => setShowPricingModal(true)}
-                            className="bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333] text-white h-9 px-6 text-sm"
+                            className="bg-[#2a2a2a] hover:bg-[#333] text-white h-8 px-6 text-xs font-mono tracking-tight"
                           >
-                            View Available Plans
+                            View Plans & Pricing
                           </Button>
                         </div>
                       )}
@@ -1202,7 +1627,9 @@ export default function SettingsPage() {
                       <div className="space-y-3 mb-6">
                         {plan.features.map((feature, index) => (
                           <div key={index} className="flex items-start gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-white mt-0.5 flex-shrink-0" />
+                            <div className="w-4 h-4 text-white mt-0.5 flex-shrink-0">
+                              <Check className="w-4 h-4" />
+                            </div>
                             <span className="text-sm text-white">{feature}</span>
                           </div>
                         ))}

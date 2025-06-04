@@ -160,7 +160,7 @@ export default function VisibilityPage() {
   // Show centralized empty state if no data
   if (!maxVisibility.hasData) {
     return (
-      <div className="min-h-full bg-[#0c0c0c]">
+      <div className="min-h-screen bg-[#0c0c0c]">
         <motion.main 
           className="p-8"
           initial="hidden"
@@ -195,7 +195,7 @@ export default function VisibilityPage() {
   }
 
   return (
-    <div className="min-h-full bg-[#0c0c0c]">
+    <div className="min-h-screen bg-[#0c0c0c]">
       <motion.main 
         className="p-8"
         initial="hidden"

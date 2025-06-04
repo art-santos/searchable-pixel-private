@@ -205,7 +205,7 @@ function createMinimalContext(basicInfo: CompanyBasicInfo): CompanyContext {
 // CORE QUESTIONS (35 total)
 const coreDistribution = {
   direct_conversational: 11,    // 31% - "How does {company} compare to other {category} solutions?"
-  indirect_conversational: 9,   // 26% - "What are the best {category} platforms available in 2024?"
+  indirect_conversational: 9,   // 26% - "What are the best {category} platforms available in 2025?"
   comparison_query: 9,          // 26% - "Compare the top {category} solutions available today"
   recommendation_request: 4,    // 11% - "What's the best {category} solution for modern businesses?"
   explanatory_query: 2          // 6% - "Explain the key differences between {category} platforms"
@@ -241,7 +241,7 @@ const enhancedVariables = {
 **Context-Aware Question Examples:**
 ```typescript
 // Core Question (industry-agnostic)
-"What are the best AI platforms available in 2024?"
+"What are the best AI platforms available in 2025?"
 
 // Context Question (uses Step 1 data)
 "I'm struggling with Manual data processing - what are the best solutions?"
@@ -359,7 +359,7 @@ try {
 {
   "question": {
     "id": "test-q1",
-    "question": "What are the best AI platforms available in 2024?",
+    "question": "What are the best AI platforms available in 2025?",
     "type": "indirect_conversational"
   },
   "response": "For AI platforms in 2024, several solutions stand out. OpenAI's GPT-4 continues to lead in conversational AI, while Google's Bard offers strong integration with Google services. Microsoft Azure AI provides enterprise-grade solutions with Azure OpenAI Service. For specialized use cases, Anthropic's Claude excels at safety-focused AI, and companies like Split.dev offer AI-powered content generation platforms specifically for B2B marketing workflows...",

@@ -2,8 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
-import { useAuth } from '@/contexts/AuthContext'
+import { usePathname } from "next/navigation"
 import { useUser } from '@/hooks/use-user'
 import { getUserInitials } from '@/lib/profile/avatar'
 import {
@@ -14,7 +13,6 @@ import {
   KeyIcon,
   HelpCircleIcon,
   FileTextIcon,
-  LogOutIcon,
 } from "lucide-react"
 import Image from 'next/image'
 
@@ -31,17 +29,9 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 
 export function SplitSidebar() {
   const pathname = usePathname()
-  const router = useRouter()
-  const { supabase } = useAuth()
   const { user, profile } = useUser()
 
   // Generate user initials
@@ -50,13 +40,6 @@ export function SplitSidebar() {
     profile?.full_name?.split(' ')[1],
     user?.email
   )
-
-  const handleLogout = async () => {
-    if (supabase) {
-      await supabase.auth.signOut()
-      router.push('/')
-    }
-  }
 
   return (
     <TooltipProvider delayDuration={100}>
@@ -162,30 +145,19 @@ export function SplitSidebar() {
           </Link>
         </div>
         
-        {/* Profile Square */}
+        {/* Profile Square - Now links to settings */}
         <SidebarFooter className="h-16 w-16 border-t border-r border-[#222222] bg-[#0c0c0c] flex items-center justify-center">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Avatar className="h-10 w-10 border border-[#333333] cursor-pointer hover:border-[#444444] transition-colors">
-                <AvatarImage 
-                  src={profile?.profile_picture_url || undefined} 
-                  alt={`${profile?.username || 'User'}'s profile picture`}
-                />
-                <AvatarFallback className="bg-[#222222] text-gray-400">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-[#161616] border-[#333333]">
-              <DropdownMenuItem 
-                className="text-gray-200 hover:bg-[#222222] cursor-pointer flex items-center gap-2"
-                onClick={handleLogout}
-              >
-                <LogOutIcon className="h-4 w-4" />
-                <span>Logout</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Link href="/settings" className="w-full h-full flex items-center justify-center">
+            <Avatar className="h-10 w-10 border border-[#333333] cursor-pointer hover:border-[#444444] transition-colors">
+              <AvatarImage 
+                src={profile?.profile_picture_url || undefined} 
+                alt={`${profile?.username || 'User'}'s profile picture`}
+              />
+              <AvatarFallback className="bg-[#222222] text-gray-400">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+          </Link>
         </SidebarFooter>
       </Sidebar>
     </TooltipProvider>

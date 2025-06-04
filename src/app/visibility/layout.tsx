@@ -25,8 +25,8 @@ export default function VisibilityLayout({
       <SimpleWorkspaceOnboarding>
         <SidebarProvider className="dark">
           <SplitSidebar />
-          <SidebarInset className="flex flex-col h-screen">
-            <div className="flex-1 min-h-0 overflow-auto">
+          <SidebarInset className="flex flex-col min-h-screen">
+            <div className="flex-1 overflow-auto">
               <SplitTopbar />
               {children}
             </div>
