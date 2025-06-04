@@ -25,6 +25,9 @@ interface BillingPeriod {
   plan_status: string
   stripe_subscription_id: string | null
   next_billing_date: string | null
+  overage_blocked?: boolean
+  last_overage_warning_sent?: string | null
+  overage_amount_cents?: number
 }
 
 export async function GET() {
@@ -41,6 +44,15 @@ export async function GET() {
 
     // Use service role client for database operations
     const serviceSupabase = createServiceRoleClient()
+
+    // Get user's billing preferences
+    const { data: userProfile, error: profileError } = await serviceSupabase
+      .from('profiles')
+      .select('billing_preferences')
+      .eq('id', user.id)
+      .single()
+
+    const billingPrefs = userProfile?.billing_preferences || {}
 
     // Get current billing period and usage
     let { data: billingPeriod, error: billingError } = await serviceSupabase
@@ -243,33 +255,93 @@ export async function GET() {
     const userSubscription = await getUserSubscription(user.id)
     const aiLogsOverage = Math.max(0, actualAiLogsUsed - billingPeriod.ai_logs_included)
     
-    if (aiLogsOverage > 0 && 
-        userSubscription?.subscription_id && 
-        userSubscription.subscription_status === 'active') {
-      
+    // Get usage warning levels
+    const { data: aiLogsWarningLevel } = await serviceSupabase
+      .rpc('get_usage_warning_level', {
+        p_user_id: user.id,
+        p_usage_type: 'ai_logs'
+      })
+
+    // Get spending limits
+    const { data: planSpendingLimit } = await serviceSupabase
+      .rpc('get_plan_spending_limit', { plan_type: billingPeriod.plan_type })
+
+    // Only use user's explicitly set spending limit, don't fall back to plan limit
+    const userConfiguredLimit = billingPrefs.spending_limit_cents
+    const effectiveSpendingLimit = userConfiguredLimit !== null && userConfiguredLimit !== undefined 
+      ? Math.min(planSpendingLimit || 999999, userConfiguredLimit)
+      : null // No spending limit if user hasn't configured one
+
+    // Get dismissed notifications for this user
+    const { data: dismissedNotifications, error: notifError } = await serviceSupabase
+      .from('dismissed_notifications')
+      .select('notification_type, notification_key')
+      .eq('user_id', user.id)
+
+    const dismissedSet = new Set(
+      (dismissedNotifications || []).map(d => `${d.notification_type}:${d.notification_key}`)
+    )
+
+    // Check if 90% usage notification should be shown
+    const aiLogsUsagePercentage = billingPeriod.ai_logs_included > 0 
+      ? Math.round((actualAiLogsUsed / billingPeriod.ai_logs_included) * 100)
+      : 0
+
+    const shouldShowUsageWarning = 
+      billingPrefs.overage_notifications !== false && // Only if user has notifications enabled
+      aiLogsUsagePercentage >= 90 && 
+      !dismissedSet.has('usage_warning:ai_logs_90') &&
+      billingPrefs.ai_logs_enabled !== false // Only if tracking is enabled
+
+    // Format notifications that should be shown
+    const notifications = shouldShowUsageWarning ? [{
+      type: 'usage_warning',
+      key: 'ai_logs_90',
+      title: 'Almost there!',
+      message: `You've used ${aiLogsUsagePercentage}% of your AI crawler logs this month. Additional logs cost $0.008 each.`,
+      level: 'warning',
+      dismissible: true
+    }] : []
+
+    if (aiLogsOverage > 0 && userSubscription) {
       try {
-        // Report overage usage to Stripe
-        const usageRecord = await reportMeteredUsage({
-          subscriptionId: userSubscription.subscription_id,
-          meteredType: 'ai_logs',
-          quantity: aiLogsOverage
-        })
-        
-        if (usageRecord) {
-          console.log(`📊 Reported ${aiLogsOverage} AI logs overage to Stripe for user ${user.id}`)
+        // Check if billing is allowed before reporting to Stripe
+        const { data: canBill } = await serviceSupabase
+          .rpc('can_bill_overage', {
+            p_user_id: user.id,
+            p_overage_cents: Math.round(aiLogsOverage * 0.8),
+            p_usage_type: 'ai_logs'
+          })
+
+        // For admin users without subscription, just log the overage
+        if (userSubscription.is_admin && !userSubscription.subscription_id) {
+          console.log(`🧪 Admin overage detected: ${aiLogsOverage} AI logs (would cost $${(aiLogsOverage * 0.008).toFixed(3)})`)
+        } else if (userSubscription.subscription_id && userSubscription.subscription_status === 'active' && canBill) {
+          // Report overage usage to Stripe for real subscribers only if allowed
+          const usageRecord = await reportMeteredUsage({
+            subscriptionId: userSubscription.subscription_id,
+            meteredType: 'ai_logs',
+            quantity: aiLogsOverage
+          })
           
-          // Record the billing event
-          await serviceSupabase
-            .from('usage_events')
-            .insert({
-              user_id: user.id,
-              subscription_usage_id: billingPeriod.usage_id,
-              event_type: 'ai_log_tracked',
-              amount: aiLogsOverage,
-              metadata: { stripe_usage_record_id: usageRecord.id },
-              billable: true,
-              cost_cents: Math.round(aiLogsOverage * 0.8) // $0.008 = 0.8 cents
-            })
+          if (usageRecord) {
+            console.log(`📊 Reported ${aiLogsOverage} AI logs overage to Stripe for user ${user.id}`)
+            
+            // Record the billing event
+            await serviceSupabase
+              .from('usage_events')
+              .insert({
+                user_id: user.id,
+                subscription_usage_id: billingPeriod.usage_id,
+                event_type: 'ai_log_tracked',
+                amount: aiLogsOverage,
+                metadata: { stripe_usage_record_id: usageRecord.id },
+                billable: true,
+                cost_cents: Math.round(aiLogsOverage * 0.8) // $0.008 = 0.8 cents
+              })
+          }
+        } else if (!canBill) {
+          console.log(`🚫 AI logs overage blocked due to spending limits: ${aiLogsOverage} logs`)
         }
       } catch (error) {
         console.error('Error reporting AI logs overage to Stripe:', error)
@@ -283,6 +355,22 @@ export async function GET() {
         start: billingPeriod.period_start,
         end: billingPeriod.period_end,
         planType: billingPeriod.plan_type
+      },
+      billingPreferences: {
+        ai_logs_enabled: billingPrefs.ai_logs_enabled !== false,
+        spending_limit_cents: userConfiguredLimit,
+        overage_notifications: billingPrefs.overage_notifications !== false,
+        auto_billing_enabled: billingPrefs.auto_billing_enabled !== false,
+        analytics_only_mode: billingPrefs.analytics_only_mode === true
+      },
+      spendingLimits: {
+        plan_limit_cents: planSpendingLimit,
+        user_limit_cents: userConfiguredLimit,
+        effective_limit_cents: effectiveSpendingLimit,
+        current_overage_cents: billingPeriod.overage_amount_cents || 0,
+        remaining_cents: effectiveSpendingLimit !== null 
+          ? Math.max(0, effectiveSpendingLimit - (billingPeriod.overage_amount_cents || 0))
+          : null // No remaining limit if no spending limit is configured
       },
       articles: {
         included: 0, // Not implemented yet
@@ -308,7 +396,11 @@ export async function GET() {
           : 0,
         overage: aiLogsOverage,
         overageCost: aiLogsOverage * 0.008,
-        reportedToStripe: aiLogsOverage > 0 && userSubscription?.subscription_id ? true : false
+        reportedToStripe: aiLogsOverage > 0 && userSubscription?.subscription_id ? true : false,
+        warningLevel: aiLogsWarningLevel || 'normal',
+        trackingEnabled: billingPrefs.ai_logs_enabled !== false,
+        billingBlocked: billingPeriod.overage_blocked === true,
+        analyticsOnlyMode: billingPrefs.analytics_only_mode === true
       },
       scans: {
         maxScansUsed: maxScansThisPeriod,
@@ -318,7 +410,8 @@ export async function GET() {
         dailyAllowed: true // All plans get daily scans
       },
       recentEvents: recentEvents || [],
-      addOns: addOns || []
+      addOns: addOns || [],
+      notifications: notifications
     }
 
     return NextResponse.json({ usage })

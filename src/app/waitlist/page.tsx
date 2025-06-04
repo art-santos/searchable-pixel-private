@@ -8,6 +8,19 @@ import { Input } from '@/components/ui/input'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import Image from 'next/image'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
+
+// Check if waitlist is enabled via environment variable
+// Set NEXT_PUBLIC_WAITLIST_ENABLED=true to enable waitlist
+// By default, it redirects to signup
+function useWaitlistCheck() {
+  useEffect(() => {
+    const waitlistEnabled = process.env.NEXT_PUBLIC_WAITLIST_ENABLED === 'true'
+    if (!waitlistEnabled) {
+      redirect('/signup')
+    }
+  }, [])
+}
 
 const hostingPlatforms = [
   // Popular no-code platforms
@@ -50,6 +63,9 @@ const interestOptions = [
 ]
 
 export default function WaitlistPage() {
+  // Check if waitlist is enabled, redirect to signup if not
+  useWaitlistCheck()
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',

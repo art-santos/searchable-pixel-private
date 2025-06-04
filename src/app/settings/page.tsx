@@ -24,7 +24,9 @@ import {
   Key,
   LogOut,
   Plus,
-  Minus
+  Minus,
+  AlertTriangle,
+  DollarSign
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -35,6 +37,9 @@ import { UsageDisplay } from '@/components/subscription/usage-display'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 import { AvatarUpload } from '@/components/profile/avatar-upload'
+import { BillingPreferences } from '@/components/billing/billing-preferences'
+import { Switch } from "@/components/ui/switch"
+import { NotificationBannerList } from "@/components/ui/notification-banner"
 
 interface AnalyticsProvider {
   id: string
@@ -76,6 +81,20 @@ interface UsageData {
     end: string
     planType: string
   }
+  billingPreferences?: {
+    ai_logs_enabled: boolean
+    spending_limit_cents: number | null
+    overage_notifications: boolean
+    auto_billing_enabled: boolean
+    analytics_only_mode: boolean
+  }
+  spendingLimits?: {
+    plan_limit_cents: number
+    user_limit_cents: number
+    effective_limit_cents: number
+    current_overage_cents: number
+    remaining_cents: number
+  }
   articles: {
     included: number
     used: number
@@ -98,6 +117,10 @@ interface UsageData {
     percentage: number
     overage: number
     overageCost: number
+    billingBlocked?: boolean
+    warningLevel?: 'overage' | 'critical' | 'warning' | 'normal'
+    analyticsOnlyMode?: boolean
+    trackingEnabled?: boolean
   }
   scans: {
     maxScansUsed: number
@@ -108,6 +131,14 @@ interface UsageData {
   }
   recentEvents: any[]
   addOns: any[]
+  notifications?: Array<{
+    type: string
+    key: string
+    title: string
+    message: string
+    level: 'info' | 'warning' | 'error' | 'success'
+    dismissible: boolean
+  }>
 }
 
 const pricingPlans: PricingPlan[] = [
@@ -197,6 +228,8 @@ export default function SettingsPage() {
   // Add-on state
   const [extraArticles, setExtraArticles] = useState(0)
   const [extraDomains, setExtraDomains] = useState(0)
+  const [addOnChanges, setAddOnChanges] = useState<{ articles: number, domains: number } | null>(null)
+  const [isUpdatingAddOns, setIsUpdatingAddOns] = useState(false)
   
   // API Keys state
   const [apiKeys, setApiKeys] = useState<any[]>([])
@@ -216,8 +249,49 @@ export default function SettingsPage() {
     fromPath?: string
   }>({})
   
+  // Billing sub-tab state
+  const [billingTab, setBillingTab] = useState<'plans' | 'usage' | 'settings'>('plans')
+  
+  // Add state for handling preference updates
+  const [savingPreferences, setSavingPreferences] = useState(false)
+  const [preferencesSaveMessage, setPreferencesSaveMessage] = useState('')
+  
   const searchParams = useSearchParams()
   const supabase = createClient()
+
+  // Function to save billing preferences
+  const saveBillingPreferences = async (preferences: any) => {
+    setSavingPreferences(true)
+    setPreferencesSaveMessage('')
+    
+    try {
+      const response = await fetch('/api/billing/preferences', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ preferences })
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save preferences')
+      }
+      
+      setPreferencesSaveMessage('Saved successfully')
+      fetchUsageData() // Refresh usage data to show updated preferences
+      
+      // Clear success message after 2 seconds
+      setTimeout(() => setPreferencesSaveMessage(''), 2000)
+    } catch (error) {
+      setPreferencesSaveMessage('Failed to save')
+      console.error('Error saving preferences:', error)
+      
+      // Clear error message after 3 seconds
+      setTimeout(() => setPreferencesSaveMessage(''), 3000)
+    } finally {
+      setSavingPreferences(false)
+    }
+  }
 
   // Fetch usage data
   const fetchUsageData = async () => {
@@ -728,13 +802,114 @@ export default function SettingsPage() {
     setIsLoading(true)
     try {
       if (supabase) {
-        await supabase.auth.signOut()
+      await supabase.auth.signOut()
       }
       router.push('/')
     } catch (error) {
       console.error('Error during logout:', error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  // Handle add-on changes
+  const handleAddOnChange = (type: 'articles' | 'domains', value: number) => {
+    if (type === 'articles') {
+      setExtraArticles(value)
+      setAddOnChanges({ articles: value, domains: extraDomains })
+    } else {
+      setExtraDomains(value)
+      setAddOnChanges({ articles: extraArticles, domains: value })
+    }
+  }
+
+  const cancelAddOnChanges = () => {
+    if (!addOnChanges) return
+    
+    // Reset sliders to current values  
+    setExtraArticles(addOnChanges.articles)
+    setExtraDomains(addOnChanges.domains)
+    setAddOnChanges(null)
+  }
+
+  const applyAddOnChanges = async () => {
+    if (!addOnChanges) return
+
+    setIsUpdatingAddOns(true)
+    try {
+      // Handle extra domains
+      if (addOnChanges.domains !== extraDomains) {
+        const action = addOnChanges.domains === 0 ? 'remove' : 
+                     extraDomains === 0 ? 'add' : 'update'
+        
+        const response = await fetch('/api/billing/manage-addons', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action,
+            addonType: 'extra_domains',
+            quantity: addOnChanges.domains
+          })
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to update domains')
+        }
+
+        console.log('✅ Successfully updated extra domains')
+      }
+
+      // Handle extra articles (when feature is available)
+      // Feature disabled for now - removing to prevent linter errors
+      
+      // Reset changes state
+      setAddOnChanges(null)
+      showToast('Add-ons updated successfully!')
+      
+      // Refresh usage data
+      fetchUsageData()
+
+    } catch (error) {
+      console.error('Error updating add-ons:', error)
+      showToast(error instanceof Error ? error.message : 'Failed to update add-ons')
+    } finally {
+      setIsUpdatingAddOns(false)
+    }
+  }
+
+  // Initialize add-ons from usage data
+  useEffect(() => {
+    if (usageData?.addOns) {
+      const articlesAddon = usageData.addOns.find(addon => addon.add_on_type === 'extra_articles')
+      const domainsAddon = usageData.addOns.find(addon => addon.add_on_type === 'extra_domains')
+      
+      setExtraArticles(articlesAddon?.quantity || 0)
+      setExtraDomains(domainsAddon?.quantity || 0)
+    }
+  }, [usageData])
+
+  // Function to dismiss notifications
+  const handleDismissNotification = async (notificationType: string, notificationKey: string) => {
+    try {
+      const response = await fetch('/api/notifications/dismiss', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          notification_type: notificationType, 
+          notification_key: notificationKey 
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to dismiss notification')
+      }
+      
+      // Refresh usage data to update notifications
+      fetchUsageData()
+    } catch (error) {
+      console.error('Error dismissing notification:', error)
+      showToast('Failed to dismiss notification')
     }
   }
 
@@ -774,6 +949,15 @@ export default function SettingsPage() {
 
           {/* Content Area - Scrollable */}
           <div className="flex-1 min-w-0">
+            {/* Notification Banners */}
+            {usageData?.notifications && usageData.notifications.length > 0 && (
+              <NotificationBannerList
+                notifications={usageData.notifications}
+                onDismiss={handleDismissNotification}
+                className="mb-6"
+              />
+            )}
+            
             <motion.div
               key={activeSection}
               initial={{ opacity: 0, y: 10 }}
@@ -1123,367 +1307,348 @@ export default function SettingsPage() {
 
               {/* Billing Settings */}
               {activeSection === 'billing' && (
-                <div className="space-y-8">
+                <div className="space-y-6">
                   {/* Header */}
                   <div>
                     <h2 className="text-xl font-medium text-white mb-2">Billing & Usage</h2>
                     <p className="text-sm text-[#666]">
-                      Monitor your usage and manage your subscription
+                      Manage your subscription and usage preferences
                     </p>
                   </div>
 
+                  {/* Sub-tabs for Billing */}
+                  <div className="border-b border-[#1a1a1a]">
+                    <nav className="flex space-x-8">
+                      <button
+                        onClick={() => setBillingTab('plans')}
+                        className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors font-mono tracking-tight ${
+                          billingTab === 'plans'
+                            ? 'border-white text-white'
+                            : 'border-transparent text-[#666] hover:text-white'
+                        }`}
+                      >
+                        Plans & Billing
+                      </button>
+                      <button
+                        onClick={() => setBillingTab('usage')}
+                        className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors font-mono tracking-tight ${
+                          billingTab === 'usage'
+                            ? 'border-white text-white'
+                            : 'border-transparent text-[#666] hover:text-white'
+                        }`}
+                      >
+                        Usage
+                      </button>
+                      <button
+                        onClick={() => setBillingTab('settings')}
+                        className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors font-mono tracking-tight ${
+                          billingTab === 'settings'
+                            ? 'border-white text-white'
+                            : 'border-transparent text-[#666] hover:text-white'
+                        }`}
+                      >
+                        Settings
+                      </button>
+                    </nav>
+                  </div>
+
                   {loadingUsage ? (
-                    <div className="flex items-center justify-center py-12">
+                    <div className="flex items-center justify-center py-16">
                       <Loader2 className="w-6 h-6 animate-spin text-[#666]" />
                     </div>
                   ) : (
                     <>
-                      {/* Current Plan */}
-                      <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="flex items-center gap-3 mb-1">
-                              <h3 className="text-lg font-medium text-white">{billingPlan.name} Plan</h3>
-                              {usageData?.billingPeriod.planType !== 'free' && (
-                                <span className="text-sm bg-green-500/10 text-green-400 px-2 py-1 rounded border border-green-500/20">
-                                  Active
-                                </span>
-                              )}
-                            </div>
-                            {usageData?.billingPeriod.planType === 'free' ? (
-                              <p className="text-sm text-[#666]">Get started with basic features</p>
-                            ) : (
-                              <div className="space-y-1">
-                                <p className="text-2xl font-bold text-white">${billingPlan.price}<span className="text-sm font-normal text-[#666]">/month</span></p>
+                      {/* Plans & Billing Tab */}
+                      {billingTab === 'plans' && (
+                        <div className="space-y-8">
+                          {/* Current Plan - Simplified */}
+                          <div className="py-6 border-b border-[#1a1a1a]">
+                            <div className="flex items-center justify-between">
+                      <div>
+                                <div className="flex items-center gap-3 mb-2">
+                                  <h3 className="text-2xl font-medium text-white font-mono tracking-tight">{billingPlan.name}</h3>
+                                  {usageData?.billingPeriod.planType !== 'free' && (
+                                    <span className="text-xs bg-[#222] text-[#999] px-2 py-1 rounded-sm border border-[#333] font-mono tracking-tight">
+                                      Active
+                                    </span>
+                                  )}
+                              </div>
+                                <div className="space-y-1">
+                                  {usageData?.billingPeriod.planType === 'free' ? (
+                                    <p className="text-[#666] font-mono tracking-tight text-sm">Get started with basic features</p>
+                                  ) : (
+                                    <>
+                                      <p className="text-3xl font-bold text-white font-mono tracking-tight">
+                                        ${billingPlan.price}
+                                        <span className="text-lg font-normal text-[#666]">/month</span>
+                                      </p>
                                 {billingPlan.nextBilling && (
-                                  <p className="text-sm text-[#666]">
+                                        <p className="text-xs text-[#666] font-mono tracking-tight">
                                     Next billing: {billingPlan.nextBilling}
                                   </p>
                                 )}
-                              </div>
+                                    </>
                             )}
                           </div>
+                              </div>
+                              <div className="flex gap-3">
                           <Button
                             onClick={() => setShowPricingModal(true)}
-                            className="bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333] text-white h-9 px-4 text-sm"
+                                  className="bg-white text-black hover:bg-[#f5f5f5] h-10 px-6 font-mono tracking-tight text-sm"
                             disabled={isLoading}
                           >
-                            {isLoading ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : usageData?.billingPeriod.planType === 'free' ? (
-                              'Upgrade Plan'
-                            ) : (
-                              'Change Plan'
-                            )}
+                                  {usageData?.billingPeriod.planType === 'free' ? 'Upgrade Plan' : 'Change Plan'}
                           </Button>
+                                {usageData?.billingPeriod.planType !== 'free' && stripeCustomerId && (
+                                  <Button
+                                    onClick={handleManageSubscription}
+                                    variant="outline"
+                                    className="border-[#333] text-white hover:bg-[#1a1a1a] h-10 px-6 font-mono tracking-tight text-sm"
+                                    disabled={isLoading}
+                                  >
+                                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Manage Billing'}
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
                         </div>
-                      </div>
 
-                      {/* Usage Overview - Simple Rows */}
-                      <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
-                        <div className="p-6 border-b border-[#1a1a1a]">
-                          <h3 className="text-lg font-medium text-white">Usage Overview</h3>
-                        </div>
-                        
-                        <div className="divide-y divide-[#1a1a1a]">
-                          {/* AI Crawler Logs */}
-                          <div className="p-6 hover:bg-[#0c0c0c] transition-colors group">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-4">
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-white font-medium font-mono text-sm tracking-tight">AI Crawler Logs</span>
-                                    <div className="relative">
-                                      <button className="text-[#444] hover:text-[#666] transition-colors">
-                                        <span className="text-xs cursor-help">ⓘ</span>
-                                      </button>
-                                      <div className="absolute left-6 top-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none bg-[#1a1a1a] border border-[#333] rounded-lg p-3 text-xs text-[#666] w-64 z-10 font-mono tracking-tight">
-                                        Tracks mentions of your brand across AI platforms. $0.008 per log after plan limits.
+                          {/* Add-ons - Simplified */}
+                          {usageData?.billingPeriod.planType !== 'free' && (
+                            <div>
+                              <h3 className="text-lg font-medium text-white mb-6 font-mono tracking-tight">Add-ons</h3>
+                        <div className="space-y-4">
+                                {/* Extra Domains */}
+                                <div className="flex items-center justify-between py-4 border-b border-[#1a1a1a]">
+                          <div>
+                                    <div className="font-medium text-white font-mono tracking-tight text-sm">Extra Domains</div>
+                                    <div className="text-xs text-[#666] font-mono tracking-tight">$100 per domain per month</div>
+                                  </div>
+                                  <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-3">
+                                      <Button
+                                        onClick={async () => {
+                                          if (extraDomains === 0) return
+                                          setIsUpdatingAddOns(true)
+                                          try {
+                                            const response = await fetch('/api/billing/manage-addons', {
+                                              method: 'POST',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({
+                                                action: extraDomains === 1 ? 'remove' : 'update',
+                                                addonType: 'extra_domains',
+                                                quantity: Math.max(0, extraDomains - 1)
+                                              })
+                                            })
+                                            if (response.ok) {
+                                              setExtraDomains(Math.max(0, extraDomains - 1))
+                                              showToast('Extra domains updated!')
+                                              fetchUsageData()
+                                            }
+                                          } catch (error) {
+                                            showToast('Failed to update domains')
+                                          } finally {
+                                            setIsUpdatingAddOns(false)
+                                          }
+                                        }}
+                                        disabled={extraDomains === 0 || isUpdatingAddOns}
+                                        size="sm"
+                                        variant="outline"
+                                        className="w-8 h-8 p-0 border-[#333] font-mono"
+                                      >
+                                        <Minus className="w-4 h-4" />
+                                      </Button>
+                                      <span className="text-white font-medium min-w-[2rem] text-center font-mono tracking-tight text-sm">{extraDomains}</span>
+                                      <Button
+                                        onClick={async () => {
+                                          setIsUpdatingAddOns(true)
+                                          try {
+                                            const response = await fetch('/api/billing/manage-addons', {
+                                              method: 'POST',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({
+                                                action: extraDomains === 0 ? 'add' : 'update',
+                                                addonType: 'extra_domains',
+                                                quantity: extraDomains + 1
+                                              })
+                                            })
+                                            if (response.ok) {
+                                              setExtraDomains(extraDomains + 1)
+                                              showToast('Extra domains updated!')
+                                              fetchUsageData()
+                                            }
+                                          } catch (error) {
+                                            showToast('Failed to update domains')
+                                          } finally {
+                                            setIsUpdatingAddOns(false)
+                                          }
+                                        }}
+                                        disabled={isUpdatingAddOns}
+                                        size="sm"
+                                        variant="outline"
+                                        className="w-8 h-8 p-0 border-[#333] font-mono"
+                                      >
+                                        <Plus className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                    <div className="text-right min-w-[5rem]">
+                                      <div className="font-medium text-white font-mono tracking-tight text-sm">
+                                        {extraDomains > 0 ? `+$${extraDomains * 100}` : '$0'}
                                       </div>
+                                      <div className="text-xs text-[#666] font-mono tracking-tight">per month</div>
                                     </div>
                                   </div>
-                                  <div className="flex items-center gap-4 text-xs text-[#555] mt-1 font-mono tracking-tight">
-                                    <span>{usageData?.aiLogs?.used || 0} / {usageData?.aiLogs?.included || 0} used</span>
+                                </div>
+
+                                {/* Extra Articles - Coming Soon */}
+                                <div className="flex items-center justify-between py-4 border-b border-[#1a1a1a]">
+                                  <div>
+                                    <div className="font-medium text-white font-mono tracking-tight text-sm">Extra Articles</div>
+                                    <div className="text-xs text-[#666] font-mono tracking-tight">$10 per article per month</div>
+                                  </div>
+                                  <div className="flex items-center gap-4">
+                                    <span className="text-xs bg-[#222] text-[#666] px-2 py-1 rounded-sm border border-[#333] font-mono tracking-tight">
+                                      Coming Soon
+                              </span>
+                            </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Upgrade CTA for Free Plan */}
+                          {usageData?.billingPeriod.planType === 'free' && (
+                            <div className="text-center py-12 border-t border-[#1a1a1a]">
+                              <div className="w-16 h-16 bg-[#1a1a1a] rounded-sm flex items-center justify-center mx-auto mb-4">
+                                <Zap className="w-8 h-8 text-[#666]" />
+                              </div>
+                              <h3 className="text-xl font-medium text-white mb-2 font-mono tracking-tight">Ready to Scale?</h3>
+                              <p className="text-[#666] mb-6 max-w-md mx-auto font-mono tracking-tight text-sm">
+                                Upgrade to unlock AI article generation, unlimited visibility scans, and advanced AI tracking
+                              </p>
+                              <Button 
+                                onClick={() => setShowPricingModal(true)}
+                                className="bg-white text-black hover:bg-[#f5f5f5] h-10 px-8 font-mono tracking-tight text-sm"
+                              >
+                                View Plans & Pricing
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Usage & Controls Tab */}
+                      {billingTab === 'usage' && (
+                        <div className="space-y-8">
+                          {/* Usage Overview - Clean Layout */}
+                          <div>
+                            <h3 className="text-lg font-medium text-white mb-6 font-mono tracking-tight">Current Usage</h3>
+                            <div className="space-y-6">
+                              {/* AI Crawler Logs */}
+                              <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                                <div>
+                                  <div className="font-medium text-white font-mono tracking-tight text-sm">AI Crawler Logs</div>
+                                  <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
+                                    {usageData?.aiLogs?.used || 0} / {usageData?.aiLogs?.included || 0} used
                                     {usageData?.aiLogs && usageData.aiLogs.overage > 0 && (
-                                      <span className="text-[#888]">
-                                        +{usageData.aiLogs.overage} overage (${usageData.aiLogs.overageCost.toFixed(3)})
+                                      <span className="text-[#888] ml-2">
+                                        (+{usageData.aiLogs.overage} overage)
                                       </span>
                                     )}
                                   </div>
                                 </div>
-                              </div>
-                              <div className="text-right flex items-center gap-6">
-                                <div>
-                                  <div className="text-white font-medium text-sm font-mono tracking-tight">
-                                    {usageData?.aiLogs?.remaining || 0} left
-                                  </div>
-                                </div>
-                                <div className="w-40 h-1 bg-[#1a1a1a] rounded-full">
-                                  <div 
-                                    className="h-full bg-[#444] rounded-full transition-all duration-300"
-                                    style={{ 
-                                      width: `${Math.min(100, ((usageData?.aiLogs?.used || 0) / Math.max(1, usageData?.aiLogs?.included || 1)) * 100)}%` 
-                                    }}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* AI Articles */}
-                          <div className="p-6 hover:bg-[#0c0c0c] transition-colors group">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-4">
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-white font-medium font-mono text-sm tracking-tight">AI Articles</span>
-                                    <div className="relative">
-                                      <button className="text-[#444] hover:text-[#666] transition-colors">
-                                        <span className="text-xs cursor-help">ⓘ</span>
-                                      </button>
-                                      <div className="absolute left-6 top-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none bg-[#1a1a1a] border border-[#333] rounded-lg p-3 text-xs text-[#666] w-64 z-10 font-mono tracking-tight">
-                                        AI-generated content optimized for visibility. Coming soon!
+                                <div className="flex items-center gap-6">
+                                  <div className="text-right">
+                                    <div className="font-medium text-white font-mono tracking-tight text-sm">{usageData?.aiLogs?.remaining || 0} left</div>
+                                    {usageData?.aiLogs && usageData.aiLogs.overage > 0 && (
+                                      <div className="text-xs text-[#888] font-mono tracking-tight">
+                                        ${usageData.aiLogs.overageCost.toFixed(3)} overage
                                       </div>
-                                    </div>
-                                  </div>
-                                  <div className="text-xs text-[#555] mt-1 font-mono tracking-tight">
-                                    {usageData?.articles?.note || 'Coming soon'}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="text-right flex items-center gap-6">
-                                <div>
-                                  <div className="text-[#666] font-medium text-sm font-mono tracking-tight">
-                                    Coming Soon
-                                  </div>
-                                </div>
-                                <div className="w-40 h-1 bg-[#1a1a1a] rounded-full">
-                                  {/* Empty progress bar for coming soon */}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Domain Tracking */}
-                          <div className="p-6 hover:bg-[#0c0c0c] transition-colors group">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-4">
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-white font-medium font-mono text-sm tracking-tight">Domain Tracking</span>
-                                    <div className="relative">
-                                      <button className="text-[#444] hover:text-[#666] transition-colors">
-                                        <span className="text-xs cursor-help">ⓘ</span>
-                                      </button>
-                                      <div className="absolute left-6 top-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none bg-[#1a1a1a] border border-[#333] rounded-lg p-3 text-xs text-[#666] w-64 z-10 font-mono tracking-tight">
-                                        Number of domains you can monitor. $100 per additional domain per month.
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="text-xs text-[#555] mt-1 font-mono tracking-tight">
-                                    {usageData?.domains?.used} / {usageData?.domains?.included} domains
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="text-right flex items-center gap-6">
-                                <div>
-                                  <div className="text-white font-medium text-sm font-mono tracking-tight">
-                                    {usageData?.domains?.remaining} slots left
-                                  </div>
-                                </div>
-                                <div className="w-40 h-1 bg-[#1a1a1a] rounded-full">
-                                  <div 
-                                    className="h-full bg-[#444] rounded-full transition-all duration-300"
-                                    style={{ width: `${Math.min(100, (usageData?.domains?.used / usageData?.domains?.included) * 100)}%` }}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Visibility Scans */}
-                          <div className="p-6 hover:bg-[#0c0c0c] transition-colors group">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-4">
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-white font-medium font-mono text-sm tracking-tight">Visibility Scans</span>
-                                    <div className="relative">
-                                      <button className="text-[#444] hover:text-[#666] transition-colors">
-                                        <span className="text-xs cursor-help">ⓘ</span>
-                                      </button>
-                                      <div className="absolute left-6 top-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none bg-[#1a1a1a] border border-[#333] rounded-lg p-3 text-xs text-[#666] w-64 z-10 font-mono tracking-tight">
-                                        Deep analysis of your brand's AI visibility across platforms.
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="text-xs text-[#555] mt-1 font-mono tracking-tight">
-                                    {usageData?.scans?.unlimitedMax ? 'Unlimited MAX scans' : 'Daily scans only'}
-                                    {usageData?.scans?.totalScansUsed && usageData.scans.totalScansUsed > 0 && (
-                                      <span className="ml-2">({usageData.scans.totalScansUsed} total this month)</span>
                                     )}
                                   </div>
-                                </div>
-                              </div>
-                              <div className="text-right flex items-center gap-6">
-                                <div>
-                                  <div className="text-white font-medium text-sm font-mono tracking-tight">
-                                    {usageData?.scans?.totalScansUsed || 0} scans
-                                  </div>
-                                  {usageData?.scans && !usageData.scans.unlimitedMax && (
-                                    <div className="text-xs text-[#666] mt-1 font-mono tracking-tight">Upgrade for MAX scans</div>
-                                  )}
-                                  {usageData?.scans?.unlimitedMax && (
-                                    <div className="text-xs text-[#888] mt-1 font-mono tracking-tight">Unlimited MAX scans</div>
-                                  )}
-                                </div>
-                                <div className="w-40 h-1 bg-[#1a1a1a] rounded-full">
-                                  <div 
-                                    className="h-full bg-[#444] rounded-full transition-all duration-300"
-                                    style={{ width: usageData?.scans?.unlimitedMax ? '100%' : '30%' }}
-                                  />
-                                </div>
-                              </div>
+                                  <div className="w-24 h-1 bg-[#1a1a1a] rounded-sm">
+                                    <div 
+                                      className={`h-full rounded-sm transition-all ${
+                                        (usageData?.aiLogs?.percentage || 0) >= 100 ? 'bg-[#666]' :
+                                        (usageData?.aiLogs?.percentage || 0) >= 80 ? 'bg-[#888]' : 'bg-[#444]'
+                                }`}
+                                style={{ 
+                                        width: `${Math.min(100, ((usageData?.aiLogs?.used || 0) / Math.max(1, usageData?.aiLogs?.included || 1)) * 100)}%` 
+                                }}
+                              />
                             </div>
+                                </div>
+                          </div>
+
+                              {/* Domains */}
+                              <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                          <div>
+                                  <div className="font-medium text-white font-mono tracking-tight text-sm">Domain Tracking</div>
+                                  <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
+                                    {usageData?.domains?.used || 0} / {usageData?.domains?.included || 1} domains
+                            </div>
+                                </div>
+                                <div className="flex items-center gap-6">
+                                  <div className="text-right">
+                                    <div className="font-medium text-white font-mono tracking-tight text-sm">{usageData?.domains?.remaining || 0} slots left</div>
+                                  </div>
+                                  <div className="w-24 h-1 bg-[#1a1a1a] rounded-sm">
+                                    <div 
+                                      className="h-full bg-[#444] rounded-sm transition-all"
+                                      style={{ width: `${Math.min(100, ((usageData?.domains?.used || 0) / Math.max(1, usageData?.domains?.included || 1)) * 100)}%` }}
+                                    />
+                            </div>
+                                </div>
+                          </div>
+
+                              {/* Visibility Scans */}
+                              <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                          <div>
+                                  <div className="font-medium text-white font-mono tracking-tight text-sm">Visibility Scans</div>
+                                  <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
+                                    {usageData?.scans?.unlimitedMax ? 'Unlimited' : 'Daily scans only'}
+                            </div>
+                                </div>
+                                <div className="flex items-center gap-6">
+                                  <div className="text-right">
+                                    <div className="font-medium text-white font-mono tracking-tight text-sm">{usageData?.scans?.totalScansUsed || 0} this month</div>
+                                  </div>
+                                  <div className="w-24 h-1 bg-[#1a1a1a] rounded-sm">
+                                    <div 
+                                      className="h-full bg-[#444] rounded-sm transition-all"
+                                      style={{ width: usageData?.scans?.unlimitedMax ? '100%' : '25%' }}
+                              />
+                            </div>
+                                </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* Usage Warnings */}
-                      {(usageData?.aiLogs?.percentage >= 80 || usageData?.aiLogs?.overage > 0) && (
-                        <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="w-4 h-4 bg-[#333] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                              <span className="text-[#888] text-xs">!</span>
-                            </div>
-                            <div>
-                              <h4 className="text-[#ccc] font-medium text-sm mb-1 font-mono tracking-tight">
-                                {usageData?.aiLogs?.overage > 0 ? 'Overage Charges' : 'Usage Warning'}
-                              </h4>
-                              <div className="text-xs text-[#666] space-y-1 font-mono tracking-tight">
-                                {usageData?.aiLogs?.overage > 0 && (
-                                  <p>• You have {usageData.aiLogs.overage} AI crawler logs over your plan limit, costing ${usageData.aiLogs.overageCost.toFixed(3)} this month.</p>
-                                )}
-                                {usageData?.aiLogs?.percentage >= 80 && usageData.aiLogs.overage === 0 && (
-                                  <p>• You've used {usageData.aiLogs.percentage}% of your AI crawler logs. Additional logs cost $0.008 each.</p>
-                                )}
+                          {/* Usage Warnings - Simplified */}
+                          {((usageData?.aiLogs?.percentage && usageData.aiLogs.percentage >= 80) || 
+                            (usageData?.aiLogs?.overage && usageData.aiLogs.overage > 0) || 
+                            usageData?.aiLogs?.billingBlocked) && (
+                            <div className="flex items-start gap-3 py-4 border-t border-[#1a1a1a]">
+                              <div className={`w-4 h-4 rounded-sm flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                                usageData?.aiLogs?.billingBlocked ? 'bg-[#333] text-[#999]' :
+                                usageData?.aiLogs?.overage && usageData.aiLogs.overage > 0 ? 'bg-[#333] text-[#ccc]' :
+                                'bg-[#333] text-[#aaa]'
+                              }`}>
+                                <span className="text-xs font-mono">!</span>
                               </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Add-Ons Management */}
-                      {usageData?.billingPeriod.planType !== 'free' && (
-                        <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg">
-                          <div className="p-6 border-b border-[#1a1a1a]">
-                            <div className="flex items-center justify-between">
                               <div>
-                                <h3 className="text-lg font-medium text-white font-mono tracking-tight">Add-Ons</h3>
-                                <p className="text-xs text-[#666] font-mono tracking-tight">
-                                  Scale your usage beyond plan limits
-                                </p>
-                              </div>
-                              {extraDomains > 0 && (
-                                <Button
-                                  onClick={() => {
-                                    // Handle saving add-ons
-                                    showToast('Add-ons updated successfully')
-                                  }}
-                                  className="bg-[#2a2a2a] text-white hover:bg-[#333] h-8 px-4 text-xs font-mono tracking-tight"
-                                >
-                                  Update Add-Ons
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="divide-y divide-[#1a1a1a]">
-                            {/* Extra Articles - Coming Soon */}
-                            <div className="p-6 hover:bg-[#0c0c0c] transition-colors">
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-3 mb-1">
-                                    <span className="text-white font-medium font-mono text-sm tracking-tight">Extra Articles</span>
-                                    <span className="text-xs bg-[#1a1a1a] text-[#888] px-2 py-1 rounded border border-[#2a2a2a] font-mono tracking-tight">
-                                      Coming Soon
-                                    </span>
-                                  </div>
-                                  <p className="text-xs text-[#555] font-mono tracking-tight">
-                                    AI article generation feature coming soon
-                                  </p>
+                                <div className="font-medium text-white mb-1 font-mono tracking-tight text-sm">
+                                  {usageData?.aiLogs?.billingBlocked ? 'Billing Protection Active' :
+                                   usageData?.aiLogs?.overage && usageData.aiLogs.overage > 0 ? 'Overage Charges Active' :
+                                   'Approaching Usage Limit'}
                                 </div>
-                                <div className="flex items-center gap-4 ml-6">
-                                  <div className="text-right min-w-[70px]">
-                                    <div className="text-[#666] font-medium text-sm font-mono tracking-tight">
-                                      Coming Soon
-                                    </div>
-                                    <div className="text-xs text-[#555] font-mono tracking-tight">$10/article</div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Extra Domains */}
-                            <div className="p-6 hover:bg-[#0c0c0c] transition-colors">
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-3 mb-1">
-                                    <span className="text-white font-medium font-mono text-sm tracking-tight">Extra Domains</span>
-                                    <span className="text-xs bg-[#1a1a1a] text-[#888] px-2 py-1 rounded border border-[#2a2a2a] font-mono tracking-tight">
-                                      $100/domain/month
-                                    </span>
-                                  </div>
-                                  <p className="text-xs text-[#555] font-mono tracking-tight">
-                                    Track additional domains beyond your plan limit
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-4 ml-6">
-                                  <div className="flex items-center gap-3">
-                                    <Button
-                                      onClick={() => setExtraDomains(Math.max(0, extraDomains - 1))}
-                                      disabled={extraDomains === 0}
-                                      size="sm"
-                                      className="w-7 h-7 p-0 bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333] disabled:opacity-50 text-white"
-                                    >
-                                      <Minus className="w-3 h-3" />
-                                    </Button>
-                                    <div className="min-w-[60px] text-center">
-                                      <div className="text-white font-medium text-sm font-mono tracking-tight">{extraDomains}</div>
-                                      <div className="text-xs text-[#555] font-mono tracking-tight">domains</div>
-                                    </div>
-                                    <Button
-                                      onClick={() => setExtraDomains(extraDomains + 1)}
-                                      size="sm"
-                                      className="w-7 h-7 p-0 bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333] text-white"
-                                    >
-                                      <Plus className="w-3 h-3" />
-                                    </Button>
-                                  </div>
-                                  <div className="text-right min-w-[70px]">
-                                    <div className="text-white font-medium text-sm font-mono tracking-tight">
-                                      {extraDomains > 0 ? `+$${extraDomains * 100}` : '$0'}
-                                    </div>
-                                    <div className="text-xs text-[#555] font-mono tracking-tight">per month</div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Add-On Summary */}
-                          {extraDomains > 0 && (
-                            <div className="p-6 bg-[#0c0c0c] border-t border-[#1a1a1a]">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <span className="text-white font-medium font-mono text-sm tracking-tight">Total Monthly Add-Ons</span>
-                                  <p className="text-xs text-[#555] mt-1 font-mono tracking-tight">Changes take effect on your next billing cycle</p>
-                                </div>
-                                <div className="text-right">
-                                  <div className="text-white font-medium text-lg font-mono tracking-tight">
-                                    +${extraDomains * 100}
-                                  </div>
-                                  <div className="text-xs text-[#555] font-mono tracking-tight">per month</div>
+                                <div className="text-xs text-[#666] font-mono tracking-tight">
+                                  {usageData?.aiLogs?.billingBlocked && 
+                                    'AI log overage billing has been paused due to your spending limits. Tracking continues for analytics.'}
+                                  {usageData?.aiLogs?.overage && usageData.aiLogs.overage > 0 && !usageData?.aiLogs?.billingBlocked && 
+                                    `You have ${usageData.aiLogs.overage} AI crawler logs over your plan limit, costing $${usageData.aiLogs.overageCost?.toFixed(3) || '0.000'} this month.`}
+                                  {usageData?.aiLogs?.percentage && usageData.aiLogs.percentage >= 80 && (!usageData?.aiLogs?.overage || usageData.aiLogs.overage === 0) && 
+                                    `You've used ${usageData.aiLogs.percentage}% of your AI logs. Additional logs cost $0.008 each.`}
                                 </div>
                               </div>
                             </div>
@@ -1491,48 +1656,147 @@ export default function SettingsPage() {
                         </div>
                       )}
 
-                      {/* Manage Subscription */}
-                      {usageData?.billingPeriod.planType !== 'free' && stripeCustomerId && (
-                        <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-6">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h3 className="text-lg font-medium text-white mb-1 font-mono tracking-tight">Manage Subscription</h3>
-                              <p className="text-xs text-[#555] font-mono tracking-tight">Update billing information, view invoices, or cancel subscription</p>
-                            </div>
-                            <Button 
-                              onClick={handleManageSubscription}
-                              className="bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333] text-white h-8 px-4 text-xs gap-2 flex-shrink-0 font-mono tracking-tight"
-                              disabled={isLoading}
-                            >
-                              {isLoading ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <>
-                                  <ExternalLink className="w-3 h-3" />
-                                  Manage Billing
-                                </>
+                      {/* Settings Tab */}
+                      {billingTab === 'settings' && (
+                        <div className="space-y-8">
+                              <div>
+                            <div className="flex items-center justify-between mb-6">
+                              <h3 className="text-lg font-medium text-white font-mono tracking-tight">Billing Controls</h3>
+                              {preferencesSaveMessage && (
+                                <div className={`text-xs font-mono tracking-tight px-2 py-1 rounded-sm ${
+                                  preferencesSaveMessage.includes('success') ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10'
+                                }`}>
+                                  {preferencesSaveMessage}
+                              </div>
                               )}
-                            </Button>
+                            </div>
+                            <div className="space-y-6">
+                              {/* AI Logs Tracking Toggle */}
+                              <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                                <div>
+                                  <div className="font-medium text-white font-mono tracking-tight text-sm">AI Crawler Tracking</div>
+                                  <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
+                                    Track AI crawler visits to your website for analytics and billing
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-6">
+                                  <div className="text-right">
+                                    <div className="font-medium text-white font-mono tracking-tight text-sm">
+                                      {usageData?.aiLogs?.trackingEnabled !== false ? 'Enabled' : 'Disabled'}
+                                    </div>
+                                  </div>
+                                  <div className="w-12">
+                                    <Switch
+                                      checked={usageData?.aiLogs?.trackingEnabled !== false}
+                                      disabled={savingPreferences}
+                                      onCheckedChange={(checked) => {
+                                        saveBillingPreferences({ ai_logs_enabled: checked })
+                                      }}
+                                    />
+                                  </div>
+                              </div>
+                            </div>
+
+                              {/* Monthly Spending Limit */}
+                              {usageData?.aiLogs?.trackingEnabled !== false && (
+                                <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                              <div>
+                                    <div className="font-medium text-white font-mono tracking-tight text-sm">Monthly Spending Limit</div>
+                                    <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
+                                      Maximum amount to spend on overages per month
+                              </div>
+                              </div>
+                                  <div className="flex items-center gap-6">
+                                    <div className="text-right">
+                                      <div className="font-medium text-white font-mono tracking-tight text-sm">
+                                        {usageData?.spendingLimits?.user_limit_cents && 
+                                         usageData.spendingLimits.user_limit_cents !== usageData.spendingLimits.plan_limit_cents
+                                          ? `$${(usageData.spendingLimits.user_limit_cents / 100).toFixed(2)}`
+                                          : 'Not configured'}
+                            </div>
+                                    </div>
+                                    <div className="w-24">
+                                      <div className="relative">
+                                        <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-[#666] font-mono text-xs">$</span>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          step="0.01"
+                                          placeholder="0.00"
+                                          disabled={savingPreferences}
+                                          defaultValue={usageData?.spendingLimits?.user_limit_cents && 
+                                                       usageData.spendingLimits.user_limit_cents !== usageData.spendingLimits.plan_limit_cents
+                                                ? (usageData.spendingLimits.user_limit_cents / 100).toFixed(2)
+                                                : ''}
+                                          className="pl-5 pr-2 py-1 h-7 bg-[#111] border-[#333] text-white font-mono text-xs tracking-tight"
+                                          onBlur={(e) => {
+                                            const value = parseFloat(e.target.value) || 0
+                                            
+                                            if (value > 0) {
+                                              saveBillingPreferences({ spending_limit_cents: Math.round(value * 100) })
+                                            } else {
+                                              // Set to null to remove the limit
+                                              saveBillingPreferences({ spending_limit_cents: null })
+                                            }
+                                          }}
+                                        />
+                                </div>
+                              </div>
                           </div>
                         </div>
                       )}
 
-                      {/* Upgrade CTA for Free Plan */}
-                      {usageData?.billingPeriod.planType === 'free' && (
-                        <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-8 text-center">
-                          <div className="w-12 h-12 bg-[#333] rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Zap className="w-6 h-6 text-[#888]" />
+                              {/* Current Usage Summary */}
+                              {usageData?.spendingLimits && (
+                                <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                            <div>
+                                    <div className="font-medium text-white font-mono tracking-tight text-sm">Current Overage</div>
+                                    <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
+                                      Overage charges this billing period
+                            </div>
+                                  </div>
+                                  <div className="flex items-center gap-6">
+                                    <div className="text-right">
+                                      <div className="font-medium text-white font-mono tracking-tight text-sm">
+                                        ${(usageData.spendingLimits.current_overage_cents / 100).toFixed(2)}
+                                      </div>
+                                      <div className="text-xs text-[#666] font-mono tracking-tight">
+                                        {usageData.spendingLimits.remaining_cents !== null
+                                          ? `$${(usageData.spendingLimits.remaining_cents / 100).toFixed(2)} remaining`
+                                          : 'No spending limit set'}
+                                      </div>
+                                    </div>
                           </div>
-                          <h3 className="text-lg font-medium text-white mb-2 font-mono tracking-tight">Ready to Scale?</h3>
-                          <p className="text-xs text-[#555] mb-6 max-w-md mx-auto font-mono tracking-tight">
-                            Upgrade to unlock AI article generation, unlimited visibility scans, and more AI crawler logs
-                          </p>
-                          <Button 
-                            onClick={() => setShowPricingModal(true)}
-                            className="bg-[#2a2a2a] hover:bg-[#333] text-white h-8 px-6 text-xs font-mono tracking-tight"
-                          >
-                            View Plans & Pricing
-                          </Button>
+                        </div>
+                      )}
+
+                              {/* Platform Notifications */}
+                              <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                                <div>
+                                  <div className="font-medium text-white font-mono tracking-tight text-sm">Platform Notifications</div>
+                                  <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
+                                    Show friendly banner warnings when you reach 90% of your usage limits
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-6">
+                                  <div className="text-right">
+                                    <div className="font-medium text-white font-mono tracking-tight text-sm">
+                                      {usageData?.billingPreferences?.overage_notifications !== false ? 'Enabled' : 'Disabled'}
+                                    </div>
+                                  </div>
+                                  <div className="w-12">
+                                    <Switch
+                                      checked={usageData?.billingPreferences?.overage_notifications !== false}
+                                      disabled={savingPreferences}
+                                      onCheckedChange={(checked) => {
+                                        saveBillingPreferences({ overage_notifications: checked })
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </>

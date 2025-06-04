@@ -47,30 +47,6 @@ export function SignupForm({
   const router = useRouter()
   const supabase = createClient()
 
-  // Load onboarding data on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined' && !lockedEmail) {
-      // Only load onboarding data if user came directly from onboarding flow
-      // Don't load if they're just signing up independently
-      const justFromOnboarding = sessionStorage.getItem('fromOnboarding')
-      const onboardingData = localStorage.getItem('onboardingData')
-      
-      if (justFromOnboarding === 'true' && onboardingData) {
-        try {
-          const data = JSON.parse(onboardingData)
-          setEmail(data.email || '')
-        } catch (e) {
-          console.log('Failed to parse onboarding data:', e)
-        }
-      } else {
-        // Clear any existing form data for fresh signup
-        setEmail('')
-        setPassword('')
-        setConfirmPassword('')
-      }
-    }
-  }, [lockedEmail])
-
   // Check password requirements when password changes
   useEffect(() => {
     const updatedRequirements = passwordRequirements.map(req => ({
@@ -135,35 +111,14 @@ export function SignupForm({
 
       // Check if user was created and signed in
       if (data.user) {
-        // Set a flag to indicate user just signed up (for onboarding overlay)
-        sessionStorage.setItem('justSignedUp', 'true')
-        
         console.log('✅ SIGNUP SUCCESS:')
         console.log('👤 User created:', data.user?.email)
         console.log('🆔 User ID:', data.user?.id)
         
-        // Check if we have onboarding data
-        const onboardingData = localStorage.getItem('onboardingData')
-        if (onboardingData) {
-          console.log('📦 Found onboarding data in localStorage')
-          try {
-            const parsed = JSON.parse(onboardingData)
-            console.log('🔍 Onboarding data contains:')
-            console.log('  - Email:', parsed.email)
-            console.log('  - Website:', parsed.siteUrl)
-            console.log('  - Keywords:', parsed.keywords)
-            console.log('  - Business:', parsed.businessOffering)
-          } catch (e) {
-            console.log('❌ Failed to parse onboarding data:', e)
-          }
-        } else {
-          console.log('⚠️ No onboarding data found in localStorage')
-        }
-        
         // Call success callback
         onSignupSuccess?.()
         
-        // Redirect to dashboard which has onboarding overlay
+        // Redirect to dashboard (SimpleWorkspaceOnboarding will handle onboarding)
         router.push('/dashboard')
       } else {
         showNotification("error", "Failed to create account")

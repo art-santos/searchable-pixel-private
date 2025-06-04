@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { ArrowLeft, ExternalLink, HelpCircle, Search, ChevronUp, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import { useToast } from '@/components/ui/use-toast'
+import { AICrawlerSetup } from '@/components/ai-crawler/ai-crawler-setup'
 
 interface ConnectAnalyticsDialogProps {
   open: boolean
@@ -145,6 +146,7 @@ export function ConnectAnalyticsDialog({
   onOpenChange,
 }: ConnectAnalyticsDialogProps) {
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null)
+  const [showAICrawlerSetup, setShowAICrawlerSetup] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [votedPlatforms, setVotedPlatforms] = useState<Set<string>>(new Set())
   const [platformVotes, setPlatformVotes] = useState<Record<string, number>>({})
@@ -246,14 +248,36 @@ export function ConnectAnalyticsDialog({
   }, [filteredPlatforms, platformVotes])
 
   const handleBack = () => {
-    setSelectedPlatform(null)
-    setSearchQuery('')
+    if (showAICrawlerSetup) {
+      setShowAICrawlerSetup(false)
+      setSelectedPlatform(null)
+    } else {
+      setSelectedPlatform(null)
+      setSearchQuery('')
+    }
   }
 
   const handleClose = () => {
     setSelectedPlatform(null)
+    setShowAICrawlerSetup(false)
     setSearchQuery('')
     onOpenChange(false)
+  }
+
+  const handlePlatformSelect = (platformId: string) => {
+    setSelectedPlatform(platformId)
+    
+    // For supported platforms, show AI crawler setup
+    if (platformId === 'vercel' || platformId === 'custom') {
+      setShowAICrawlerSetup(true)
+    }
+    // For other platforms, show existing setup instructions
+  }
+
+  const handleAICrawlerComplete = () => {
+    // Close dialog and refresh page to show new data
+    handleClose()
+    window.location.reload()
   }
 
   const handleVote = async (platformId: string, e: React.MouseEvent) => {
@@ -312,7 +336,14 @@ export function ConnectAnalyticsDialog({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px] bg-black border-[#1a1a1a]">
-        {selectedPlatform === null ? (
+        {showAICrawlerSetup ? (
+          // AI Crawler Setup flow
+          <AICrawlerSetup
+            platform={selectedPlatform as 'vercel' | 'custom'}
+            onComplete={handleAICrawlerComplete}
+            onBack={handleBack}
+          />
+        ) : selectedPlatform === null ? (
           // Platform selection screen
           <>
             <DialogHeader>
@@ -345,7 +376,7 @@ export function ConnectAnalyticsDialog({
                 return (
                   <Component
                     key={platform.id}
-                    onClick={isAvailable ? () => setSelectedPlatform(platform.id) : undefined}
+                    onClick={isAvailable ? () => handlePlatformSelect(platform.id) : undefined}
                     className={`w-full p-3 rounded-lg border transition-colors text-left group ${
                       isAvailable 
                         ? 'border-[#1a1a1a] hover:border-[#333] cursor-pointer' 
