@@ -1,97 +1,71 @@
-# Stripe Integration Setup Guide
+# Stripe Integration Setup
 
-This guide will walk you through setting up Stripe for your Split application.
+This guide will walk you through setting up Stripe payments for the application. The integration includes both subscription billing and metered usage billing.
 
 ## Prerequisites
 
-1. A Stripe account (create one at https://stripe.com)
-2. Access to your Stripe Dashboard
+- Stripe account (test or live)
+- Stripe CLI (for webhook testing)
+- Access to Stripe Dashboard
 
-## Step 1: Get Your API Keys
+## Step 1: Create Stripe Products and Prices
 
-1. Log in to your [Stripe Dashboard](https://dashboard.stripe.com)
-2. Toggle between Test mode and Live mode (start with Test mode)
-3. Go to **Developers** → **API keys**
-4. Copy your:
-   - **Publishable key** (starts with `pk_test_` or `pk_live_`)
-   - **Secret key** (starts with `sk_test_` or `sk_live_`)
+### Base Subscription Plans
 
-## Step 2: Create Products and Prices
+Create the following products in your Stripe Dashboard:
 
-In your Stripe Dashboard:
+1. **Visibility Plan**
+   - Product: "Visibility Plan"
+   - Prices:
+     - Monthly: $40/month
+     - Annual: $400/year (save $80)
 
-1. Go to **Products** → **Add product**
+2. **Plus Plan**
+   - Product: "Plus Plan"
+   - Prices:
+     - Monthly: $200/month
+     - Annual: $2000/year (save $400)
 
-### Create the Visibility Plan
-- **Name**: Visibility Plan
-- **Description**: Daily visibility scans, citation analysis, single domain tracking
-- **Pricing**:
-  - Monthly: $40/month (recurring)
-  - Annual: $384/year (recurring, equals $32/month)
+3. **Pro Plan**
+   - Product: "Pro Plan"
+   - Prices:
+     - Monthly: $1000/month
+     - Annual: $10000/year (save $2000)
 
-### Create the Plus Plan
-- **Name**: Plus Plan
-- **Description**: Daily MAX visibility scans, 10 monthly AI articles, priority support
-- **Pricing**:
-  - Monthly: $200/month (recurring)
-  - Annual: $1,920/year (recurring, equals $160/month)
+### Metered Usage Pricing
 
-### Create the Pro Plan
-- **Name**: Pro Plan
-- **Description**: 30 premium articles, unlimited MAX scans, multi-brand tracking
-- **Pricing**:
-  - Monthly: $1,000/month (recurring)
-  - Annual: $9,600/year (recurring, equals $800/month)
+Create the following metered pricing for overages and add-ons:
 
-After creating each price, copy the Price ID (starts with `price_`)
+4. **AI Crawler Logs Overage**
+   - Product: "AI Crawler Logs"
+   - Price: $0.008 per log
+   - Billing: Monthly
+   - Usage Type: Metered
 
-## Step 3: Set Up Webhooks
+5. **Extra Articles**
+   - Product: "Extra Articles"
+   - Price: $10 per article per month
+   - Billing: Monthly
+   - Usage Type: Licensed (quantity-based)
 
-1. In Stripe Dashboard, go to **Developers** → **Webhooks**
-2. Click **Add endpoint**
-3. Use the Stripe CLI to test webhooks locally:
+6. **Extra Domains**
+   - Product: "Extra Domains"
+   - Price: $100 per domain per month
+   - Billing: Monthly
+   - Usage Type: Licensed (quantity-based)
 
-   **Step 1: Download the Stripe CLI and log in**
-   ```bash
-   # Download and install the Stripe CLI from https://stripe.com/docs/stripe-cli
-   stripe login
-   ```
-   After running `stripe login`, follow the instructions to authenticate with your Stripe account.
+## Step 2: Configure Environment Variables
 
-   **Step 2: Forward webhook events to your local server**
-   ```bash
-   stripe listen --forward-to localhost:3000/api/stripe/webhook
-   ```
-   This command will forward Stripe events to your local webhook endpoint.
+Add the following environment variables to your `.env.local` file:
 
-   **Step 3: Trigger test events with the CLI**
-   ```bash
-   stripe trigger payment_intent.succeeded
-   ```
-   You can use `stripe trigger` to simulate various events. See [Stripe CLI docs](https://stripe.com/docs/stripe-cli) for more options.
-
-   For production, set your webhook endpoint to:  
-   `https://yourdomain.com/api/stripe/webhook`
-4. Select events to listen for:
-   - `checkout.session.completed`
-   - `customer.subscription.updated`
-   - `customer.subscription.deleted`
-   - `invoice.payment_failed`
-5. Copy the **Signing secret** (starts with `whsec_`) 
-
-## Step 4: Configure Environment Variables
-
-Create a `.env.local` file in your project root with the following:
-
+### Base Subscription Prices
 ```bash
-# App URL
-NEXT_PUBLIC_APP_URL=http://localhost:3000  # Change to your production URL
-
 # Stripe Configuration
-STRIPE_SECRET_KEY=sk_test_YOUR_SECRET_KEY
-STRIPE_WEBHOOK_SECRET=whsec_YOUR_WEBHOOK_SECRET
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_signing_secret
 
-# Stripe Price IDs for each plan
+# Base Plan Prices
 STRIPE_VISIBILITY_MONTHLY_PRICE_ID=price_VISIBILITY_MONTHLY_ID
 STRIPE_VISIBILITY_ANNUAL_PRICE_ID=price_VISIBILITY_ANNUAL_ID
 STRIPE_PLUS_MONTHLY_PRICE_ID=price_PLUS_MONTHLY_ID
@@ -99,109 +73,206 @@ STRIPE_PLUS_ANNUAL_PRICE_ID=price_PLUS_ANNUAL_ID
 STRIPE_PRO_MONTHLY_PRICE_ID=price_PRO_MONTHLY_ID
 STRIPE_PRO_ANNUAL_PRICE_ID=price_PRO_ANNUAL_ID
 
-# Supabase Service Role Key (required for webhook operations)
-SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
+# Metered Usage Prices
+STRIPE_AI_LOGS_METERED_PRICE_ID=price_AI_LOGS_METERED_ID
+STRIPE_EXTRA_ARTICLES_PRICE_ID=price_EXTRA_ARTICLES_ID
+STRIPE_EXTRA_DOMAINS_PRICE_ID=price_EXTRA_DOMAINS_ID
 ```
 
-## Step 5: Configure Stripe Customer Portal
+## Step 3: Webhook Configuration
 
-1. Go to **Settings** → **Billing** → **Customer portal**
-2. Enable the customer portal
-3. Configure:
+### Create Webhook Endpoint
+
+1. Go to Stripe Dashboard → Developers → Webhooks
+2. Click "Add endpoint"
+3. URL: `https://yourdomain.com/api/stripe/webhook`
+4. Listen to these events:
+   - `checkout.session.completed`
+   - `customer.subscription.created`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+   - `invoice.payment_succeeded`
+   - `invoice.payment_failed`
+   - `invoice.finalized` (for metered billing)
+
+### Webhook Events for Metered Billing
+
+The webhook will handle:
+- **invoice.finalized**: When usage charges are calculated
+- **customer.subscription.updated**: When add-ons are modified
+- **subscription_schedule.updated**: For plan changes with add-ons
+
+## Step 4: Customer Portal Configuration
+
+1. Go to Stripe Dashboard → Settings → Billing → Customer Portal
+2. Configure:
    - **Subscriptions**: Allow customers to cancel and switch plans
    - **Invoice history**: Enable
    - **Payment methods**: Allow updates
+   - **Proration**: Enable for plan changes
 4. Save changes
+
+## Step 5: Usage Tracking Integration
+
+### Automatic Overage Reporting
+
+The system automatically:
+1. **Tracks real usage** from database tables (`crawler_visits`, `max_visibility_runs`)
+2. **Calculates overages** when users exceed plan limits
+3. **Reports to Stripe** via metered usage records
+4. **Bills monthly** through Stripe's invoice system
+
+### API Endpoints for Usage
+
+- `GET /api/usage/current` - Get usage data and auto-report overages
+- `POST /api/usage/track` - Manually track specific usage events
+- `POST /api/billing/manage-addons` - Add/remove subscription add-ons
+
+### Real-Time Billing Flow
+
+```
+User exceeds AI logs limit → 
+Usage API calculates overage → 
+Stripe usage record created → 
+Monthly invoice includes overage charges
+```
 
 ## Step 6: Database Integration
 
-The Stripe integration is configured to work with the `profiles` table in your Supabase database. The webhook handlers (`/api/stripe/webhook/route.ts`) automatically:
+The Stripe integration works with the subscription tracking tables:
 
-1. Store Stripe customer IDs with user profiles
-2. Track subscription status and plan details
-3. Update user permissions based on their plan
-
-The following columns have been added to the `profiles` table:
 ```sql
--- Stripe-related columns in the profiles table
-stripe_customer_id TEXT UNIQUE,
-subscription_status TEXT DEFAULT 'free',
-subscription_plan TEXT DEFAULT 'free', 
-subscription_period_end TIMESTAMP WITH TIME ZONE,
-subscription_id TEXT
+-- Enhanced subscription tracking
+subscription_usage (
+  ai_logs_included,    -- Plan limits
+  ai_logs_used,        -- Actual usage
+  stripe_subscription_id -- Linked to Stripe
+)
+
+-- Detailed usage events
+usage_events (
+  event_type,          -- 'ai_log_tracked', 'article_generated'
+  billable,            -- Whether this creates charges
+  cost_cents,          -- Cost in cents
+  metadata             -- Stripe usage record IDs
+)
+
+-- Add-ons tracking
+subscription_add_ons (
+  add_on_type,         -- 'extra_articles', 'extra_domains'
+  stripe_subscription_item_id, -- Linked to Stripe subscription item
+  quantity,            -- Number of add-ons
+  unit_price_cents     -- Price per add-on
+)
 ```
 
-The integration includes:
-- **Helper functions** in `src/lib/stripe-profiles.ts` for managing Stripe data
-- **Webhook handlers** that automatically update subscription data
-- **API route** at `/api/user/subscription` for fetching subscription status
-- **Settings page** integration for managing subscriptions
+## Step 7: Testing Metered Billing
 
-## Step 7: Testing
+### Test Overage Billing
 
-### Test Payment Flow:
-1. Use Stripe test cards: https://stripe.com/docs/testing
-2. Common test card: `4242 4242 4242 4242` (any future date, any CVC)
-3. Test the complete flow:
-   - Plan selection
-   - Checkout redirect
-   - Successful payment
-   - Webhook processing
-   - Customer portal access
+1. **Create test subscription** with a plan (e.g., Pro = 1000 AI logs)
+2. **Simulate usage** that exceeds limits (e.g., 1200 logs)
+3. **Check Stripe Dashboard** for usage records
+4. **Verify monthly invoice** includes overage charges ($1.60 for 200 logs × $0.008)
 
-### Test Webhook Locally:
-1. Install Stripe CLI: https://stripe.com/docs/stripe-cli
-2. Login: `stripe login`
-3. Forward webhooks: `stripe listen --forward-to localhost:3000/api/stripe/webhook`
-4. The CLI will show your webhook signing secret
+### Test Add-ons
 
-## Step 8: Verify Integration
+1. **Use add-ons API** to add extra articles/domains
+2. **Check Stripe subscription** for new line items
+3. **Verify proration** on next invoice
 
-The settings page automatically:
+### Test Cards
 
-1. Fetches the user's Stripe customer ID from the profiles table
-2. Shows the current subscription status and plan
-3. Enables the "Manage" button for existing customers
-4. Handles successful payment redirects
+Use Stripe test cards:
+- Success: `4242 4242 4242 4242`
+- Declined: `4000 0000 0000 0002`
+- Requires authentication: `4000 0025 0000 3155`
 
-## Step 9: Go Live Checklist
+## Step 8: Production Deployment
 
-Before going live:
+### Environment Setup
 
-- [ ] Replace test API keys with live keys
-- [ ] Update webhook endpoint to production URL
-- [ ] Create live mode products and prices
-- [ ] Update environment variables with live price IDs
-- [ ] Test the complete flow in live mode with a real card
-- [ ] Set up proper error handling and logging
-- [ ] Configure Stripe email receipts and branding
+1. **Replace test keys** with live Stripe keys
+2. **Update webhook endpoint** to production URL
+3. **Verify webhook signing secret** for production
 
-## Troubleshooting
+### Monitoring
 
-### Common Issues:
+Monitor these Stripe events:
+- **Usage records** being created correctly
+- **Invoices** including metered charges
+- **Failed payments** and dunning management
+- **Subscription modifications** (add-ons)
 
-1. **Webhook signature verification failed**
-   - Ensure you're using the correct webhook secret
-   - Check that the raw request body is being passed to Stripe
+## Step 9: Pricing Strategy Implementation
 
-2. **Checkout session fails**
-   - Verify all price IDs are correct
-   - Check that environment variables are loaded
+### Current Pricing Structure
 
-3. **Customer portal not working**
-   - Ensure it's enabled in Stripe settings
-   - Verify customer ID is being passed correctly
+**Base Plans:**
+- Free: 100 AI logs, 1 domain, daily scans
+- Visibility ($40/mo): 250 AI logs, 1 domain, daily + MAX scans  
+- Plus ($200/mo): 500 AI logs, 1 domain, 10 articles, unlimited scans
+- Pro ($1000/mo): 1000 AI logs, 3 domains, 30 articles, unlimited scans
 
-4. **Subscription data not updating**
-   - Check Supabase RLS policies on the profiles table
-   - Ensure the webhook endpoint is receiving events
-   - Check the webhook logs in Stripe Dashboard
-   - Verify SUPABASE_SERVICE_ROLE_KEY is set correctly
+**Metered Overages:**
+- AI logs: $0.008 per log beyond plan limits
+- Extra articles: $10/article/month (subscription add-on)
+- Extra domains: $100/domain/month (subscription add-on)
 
-### Useful Links:
-- [Stripe Documentation](https://stripe.com/docs)
-- [Stripe API Reference](https://stripe.com/docs/api)
-- [Stripe Support](https://support.stripe.com)
+### Revenue Optimization
+
+The metered billing enables:
+- **Predictable base revenue** from subscription plans
+- **Usage-based scaling** for high-volume customers
+- **Flexible add-ons** for growing businesses
+- **No service interruptions** (soft limits with billing)
+
+## Step 10: Customer Communication
+
+### Usage Warnings
+
+The system provides:
+- **80% usage warnings** before overages
+- **Real-time usage tracking** in dashboard
+- **Cost transparency** showing potential charges
+- **Upgrade prompts** when approaching limits
+
+### Billing Transparency
+
+Customers see:
+- **Current usage** vs plan limits
+- **Estimated overage costs** in real-time
+- **Add-on pricing** before purchasing
+- **Detailed invoices** with usage breakdowns
+
+---
+
+## 🚀 Quick Start Checklist
+
+- [ ] Create Stripe products for base plans
+- [ ] Create metered pricing for AI logs, articles, domains
+- [ ] Configure environment variables
+- [ ] Set up webhook endpoint
+- [ ] Configure customer portal
+- [ ] Test with Stripe test cards
+- [ ] Verify usage tracking and billing
+- [ ] Deploy to production with live keys
+
+## 🛠 Troubleshooting
+
+### Common Issues
+
+1. **Usage not being tracked**: Check if user has active subscription and metered price is configured
+2. **Webhook failures**: Verify webhook signing secret and endpoint URL
+3. **Add-ons not working**: Ensure subscription has the correct price IDs
+4. **Overage not billed**: Check if metered usage records are being created in Stripe
+
+### Debug Tools
+
+- Use Stripe CLI: `stripe listen --forward-to localhost:3000/api/stripe/webhook`
+- Check Stripe logs in dashboard for webhook delivery
+- Monitor application logs for usage tracking events
+- Verify database records match Stripe subscription items
 
 ## Security Notes
 

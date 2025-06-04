@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { getUserSubscription } from '@/lib/stripe-profiles'
+import { reportMeteredUsage } from '@/lib/stripe'
 
 interface BillingPeriod {
   usage_id: string
@@ -231,6 +232,49 @@ export async function GET() {
           updated_at: 'NOW()'
         })
         .eq('id', billingPeriod.usage_id)
+      
+      // Update the billingPeriod object for calculations below
+      if (!updateUsageError) {
+        billingPeriod.ai_logs_used = actualAiLogsUsed
+      }
+    }
+
+    // Check for AI logs overage and report to Stripe if user has active subscription
+    const userSubscription = await getUserSubscription(user.id)
+    const aiLogsOverage = Math.max(0, actualAiLogsUsed - billingPeriod.ai_logs_included)
+    
+    if (aiLogsOverage > 0 && 
+        userSubscription?.subscription_id && 
+        userSubscription.subscription_status === 'active') {
+      
+      try {
+        // Report overage usage to Stripe
+        const usageRecord = await reportMeteredUsage({
+          subscriptionId: userSubscription.subscription_id,
+          meteredType: 'ai_logs',
+          quantity: aiLogsOverage
+        })
+        
+        if (usageRecord) {
+          console.log(`📊 Reported ${aiLogsOverage} AI logs overage to Stripe for user ${user.id}`)
+          
+          // Record the billing event
+          await serviceSupabase
+            .from('usage_events')
+            .insert({
+              user_id: user.id,
+              subscription_usage_id: billingPeriod.usage_id,
+              event_type: 'ai_log_tracked',
+              amount: aiLogsOverage,
+              metadata: { stripe_usage_record_id: usageRecord.id },
+              billable: true,
+              cost_cents: Math.round(aiLogsOverage * 0.8) // $0.008 = 0.8 cents
+            })
+        }
+      } catch (error) {
+        console.error('Error reporting AI logs overage to Stripe:', error)
+        // Don't fail the whole request if Stripe reporting fails
+      }
     }
 
     // Calculate usage percentages and limits
@@ -262,8 +306,9 @@ export async function GET() {
         percentage: billingPeriod.ai_logs_included > 0 
           ? Math.round((actualAiLogsUsed / billingPeriod.ai_logs_included) * 100)
           : 0,
-        overage: Math.max(0, actualAiLogsUsed - billingPeriod.ai_logs_included),
-        overageCost: Math.max(0, actualAiLogsUsed - billingPeriod.ai_logs_included) * 0.008
+        overage: aiLogsOverage,
+        overageCost: aiLogsOverage * 0.008,
+        reportedToStripe: aiLogsOverage > 0 && userSubscription?.subscription_id ? true : false
       },
       scans: {
         maxScansUsed: maxScansThisPeriod,

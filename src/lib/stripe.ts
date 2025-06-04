@@ -2,7 +2,8 @@ import Stripe from 'stripe'
 
 // Initialize Stripe
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia',
+  apiVersion: '2024-06-20',
+  typescript: true,
 })
 
 // Helper function to format price for display
@@ -31,6 +32,17 @@ export function getPriceId(planId: string, isAnnual: boolean): string | null {
   return priceIds[key] || null
 }
 
+// Get metered pricing IDs for usage-based billing
+export function getMeteredPriceId(type: 'ai_logs' | 'extra_articles' | 'extra_domains'): string | null {
+  const meteredPriceIds: Record<string, string> = {
+    ai_logs: process.env.STRIPE_AI_LOGS_METERED_PRICE_ID!,
+    extra_articles: process.env.STRIPE_EXTRA_ARTICLES_PRICE_ID!,
+    extra_domains: process.env.STRIPE_EXTRA_DOMAINS_PRICE_ID!,
+  }
+  
+  return meteredPriceIds[type] || null
+}
+
 // Map Stripe subscription to our plan names
 export function mapSubscriptionToPlan(subscription: Stripe.Subscription): string {
   const priceId = subscription.items.data[0]?.price.id
@@ -45,4 +57,89 @@ export function mapSubscriptionToPlan(subscription: Stripe.Subscription): string
   }
   
   return priceMap[priceId] || 'free'
+}
+
+// Create or update metered usage for a subscription
+export async function reportMeteredUsage({
+  subscriptionId,
+  meteredType,
+  quantity,
+  timestamp = Math.floor(Date.now() / 1000)
+}: {
+  subscriptionId: string
+  meteredType: 'ai_logs' | 'extra_articles' | 'extra_domains'
+  quantity: number
+  timestamp?: number
+}): Promise<Stripe.UsageRecord | null> {
+  try {
+    // Get the subscription to find the metered item
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+      expand: ['items']
+    })
+    
+    // Find the metered price ID for this type
+    const meteredPriceId = getMeteredPriceId(meteredType)
+    if (!meteredPriceId) {
+      console.error(`No metered price ID configured for ${meteredType}`)
+      return null
+    }
+    
+    // Find the subscription item for this metered price
+    const meteredItem = subscription.items.data.find(
+      item => item.price.id === meteredPriceId
+    )
+    
+    if (!meteredItem) {
+      console.error(`No subscription item found for metered type ${meteredType}`)
+      return null
+    }
+    
+    // Create usage record
+    const usageRecord = await stripe.subscriptionItems.createUsageRecord(
+      meteredItem.id,
+      {
+        quantity,
+        timestamp,
+        action: 'set' // Use 'set' to report absolute usage, 'increment' for additions
+      }
+    )
+    
+    return usageRecord
+  } catch (error) {
+    console.error('Error reporting metered usage:', error)
+    return null
+  }
+}
+
+// Add metered items to an existing subscription
+export async function addMeteredItemsToSubscription(
+  subscriptionId: string,
+  items: Array<{
+    type: 'ai_logs' | 'extra_articles' | 'extra_domains'
+    quantity?: number
+  }>
+): Promise<boolean> {
+  try {
+    const itemsToAdd = items.map(item => {
+      const priceId = getMeteredPriceId(item.type)
+      if (!priceId) {
+        throw new Error(`No price ID found for ${item.type}`)
+      }
+      
+      return {
+        price: priceId,
+        quantity: item.quantity || 1
+      }
+    })
+    
+    await stripe.subscriptions.update(subscriptionId, {
+      items: itemsToAdd,
+      proration_behavior: 'always_invoice'
+    })
+    
+    return true
+  } catch (error) {
+    console.error('Error adding metered items to subscription:', error)
+    return false
+  }
 } 
