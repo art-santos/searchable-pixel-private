@@ -67,20 +67,28 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
 
   const handleAddPaymentMethod = async () => {
     try {
+      setError(null)
+      console.log('🔄 Starting payment method setup...')
+      
       const response = await fetch('/api/stripe/setup-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       })
       
-      if (response.ok) {
-        const { setupIntent } = await response.json()
-        window.location.href = setupIntent.url
+      console.log('📡 Setup intent response status:', response.status)
+      const data = await response.json()
+      console.log('📋 Setup intent response data:', data)
+      
+      if (response.ok && data.setupIntent?.url) {
+        console.log('✅ Redirecting to Stripe checkout:', data.setupIntent.url)
+        window.location.href = data.setupIntent.url
       } else {
-        throw new Error('Failed to create setup intent')
+        console.error('❌ Setup intent failed:', data)
+        throw new Error(data.details || data.error || 'Failed to create setup intent')
       }
     } catch (error) {
-      setError('Failed to set up payment method')
-      console.error('Error setting up payment method:', error)
+      console.error('💥 Payment method setup error:', error)
+      setError(error instanceof Error ? error.message : 'Failed to set up payment method')
     }
   }
 

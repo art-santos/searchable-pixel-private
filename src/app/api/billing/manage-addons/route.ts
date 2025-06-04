@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { getUserSubscription } from '@/lib/stripe-profiles'
-import { stripe, getMeteredPriceId } from '@/lib/stripe'
+import { stripe, getAddOnPriceId } from '@/lib/stripe'
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,8 +41,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No active subscription found' }, { status: 400 })
     }
 
-    // Get the metered price ID for this addon type
-    const priceId = getMeteredPriceId(addonType as 'extra_articles' | 'extra_domains')
+    // Get the add-on price ID for this addon type (fixed monthly pricing)
+    const priceId = getAddOnPriceId(addonType as 'extra_articles' | 'extra_domains')
     
     if (!priceId) {
       return NextResponse.json({ error: `No price configured for ${addonType}` }, { status: 400 })
@@ -114,11 +114,12 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: 'Addon already exists' }, { status: 400 })
         }
         
-        // Add new subscription item
+        // Add new subscription item with immediate prorated billing
         result = await stripe.subscriptionItems.create({
           subscription: userSubscription.subscription_id,
           price: priceId,
-          quantity: quantity || 1
+          quantity: quantity || 1,
+          proration_behavior: 'always_invoice'
         })
         
         console.log(`✅ Added ${addonType} addon with quantity ${quantity || 1}`)
@@ -133,9 +134,10 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: 'Invalid quantity' }, { status: 400 })
         }
         
-        // Update existing subscription item
+        // Update existing subscription item with prorated billing
         result = await stripe.subscriptionItems.update(existingItem.id, {
-          quantity: quantity
+          quantity: quantity,
+          proration_behavior: 'always_invoice'
         })
         
         console.log(`✅ Updated ${addonType} addon quantity to ${quantity}`)
@@ -146,8 +148,10 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: 'Addon not found' }, { status: 404 })
         }
         
-        // Remove subscription item
-        result = await stripe.subscriptionItems.del(existingItem.id)
+        // Remove subscription item with prorated credit
+        result = await stripe.subscriptionItems.del(existingItem.id, {
+          proration_behavior: 'always_invoice'
+        })
         
         console.log(`✅ Removed ${addonType} addon`)
         break
@@ -199,11 +203,19 @@ export async function POST(req: NextRequest) {
       action,
       addonType,
       quantity: action === 'remove' ? 0 : quantity || 1,
-      message: `Successfully ${action}ed ${addonType}`
+      message: `Successfully ${action}ed ${addonType}`,
+      stripeResult: result ? {
+        id: result.id,
+        priceId: result.price?.id,
+        quantity: result.quantity
+      } : null
     })
 
   } catch (error) {
     console.error('Error managing addon:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 } 

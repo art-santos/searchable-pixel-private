@@ -291,7 +291,7 @@ export function UpgradeDialog({
                   </Button>
                   <Button
                     onClick={handleUpgrade}
-                    className="flex-1 h-10 bg-white text-black hover:bg-white/90 font-medium group"
+                    className="flex-1 h-10 bg-[#1a1a1a] hover:bg-[#333] border border-[#333] hover:border-[#444] text-white font-medium group"
                   >
                     Upgrade
                     <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-0.5 transition-transform" />

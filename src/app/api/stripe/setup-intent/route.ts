@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { stripe } from '@/lib/stripe'
 import { getUserSubscription } from '@/lib/stripe-profiles'
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     // Get user from auth
     const supabase = createClient()
@@ -38,38 +38,55 @@ export async function POST() {
       }
     }
 
-    // Create setup intent for payment method
+    // Construct proper base URL with scheme
+    const requestUrl = new URL(request.url)
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${requestUrl.protocol}//${requestUrl.host}`
+    
+    // Ensure the base URL has a proper scheme
+    const normalizedBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`
+
+    // Create setup intent for payment method with Link support
     const setupIntent = await stripe.setupIntents.create({
       customer: customerId,
-      payment_method_types: ['card'],
+      payment_method_types: ['card', 'link'],
       usage: 'off_session',
       metadata: {
         user_id: user.id
       }
     })
 
-    // Create Stripe Checkout session for payment method setup
+    // Create Stripe Checkout session for payment method setup with Link support
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'setup',
-      payment_method_types: ['card'],
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard?setup=success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard?setup=canceled`,
+      payment_method_types: ['card', 'link'],
+      success_url: `${normalizedBaseUrl}/dashboard?setup=success`,
+      cancel_url: `${normalizedBaseUrl}/dashboard?setup=canceled`,
       metadata: {
         user_id: user.id,
         setup_intent_id: setupIntent.id
-      }
+      },
+      // Add configuration to better handle errors and Link payments
+      payment_method_configuration: undefined, // Use default configuration
+      locale: 'auto', // Auto-detect locale to fix the localization error
+      allow_promotion_codes: false,
+      billing_address_collection: 'auto',
+      customer_creation: 'if_required'
     })
 
     return NextResponse.json({ 
       setupIntent: {
         id: setupIntent.id,
-        url: session.url
+        url: session.url,
+        client_secret: setupIntent.client_secret
       }
     })
 
   } catch (error) {
     console.error('Error creating setup intent:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 } 

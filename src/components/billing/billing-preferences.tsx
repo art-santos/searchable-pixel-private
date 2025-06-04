@@ -454,7 +454,7 @@ export function BillingPreferences({ usageData, onPreferencesChange }: BillingPr
         <Button
           onClick={savePreferences}
           disabled={saving}
-          className="bg-white text-black hover:bg-[#f5f5f5] font-mono tracking-tight text-sm"
+          className="bg-[#1a1a1a] hover:bg-[#333] border border-[#333] hover:border-[#444] text-white font-mono tracking-tight text-sm"
         >
           {saving ? 'Saving...' : 'Save Preferences'}
         </Button>

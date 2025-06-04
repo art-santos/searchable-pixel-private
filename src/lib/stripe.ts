@@ -32,15 +32,23 @@ export function getPriceId(planId: string, isAnnual: boolean): string | null {
   return priceIds[key] || null
 }
 
-// Get metered pricing IDs for usage-based billing
-export function getMeteredPriceId(type: 'ai_logs' | 'extra_articles' | 'extra_domains'): string | null {
+// Get metered pricing IDs for usage-based billing (AI logs only)
+export function getMeteredPriceId(type: 'ai_logs'): string | null {
   const meteredPriceIds: Record<string, string> = {
     ai_logs: process.env.STRIPE_AI_LOGS_METERED_PRICE_ID!,
+  }
+  
+  return meteredPriceIds[type] || null
+}
+
+// Get add-on pricing IDs for fixed monthly billing (domains, articles)
+export function getAddOnPriceId(type: 'extra_articles' | 'extra_domains'): string | null {
+  const addOnPriceIds: Record<string, string> = {
     extra_articles: process.env.STRIPE_EXTRA_ARTICLES_PRICE_ID!,
     extra_domains: process.env.STRIPE_EXTRA_DOMAINS_PRICE_ID!,
   }
   
-  return meteredPriceIds[type] || null
+  return addOnPriceIds[type] || null
 }
 
 // Map Stripe subscription to our plan names
@@ -59,7 +67,7 @@ export function mapSubscriptionToPlan(subscription: Stripe.Subscription): string
   return priceMap[priceId] || 'free'
 }
 
-// Create or update metered usage for a subscription
+// Create or update metered usage for a subscription (AI logs only)
 export async function reportMeteredUsage({
   subscriptionId,
   meteredType,
@@ -67,7 +75,7 @@ export async function reportMeteredUsage({
   timestamp = Math.floor(Date.now() / 1000)
 }: {
   subscriptionId: string
-  meteredType: 'ai_logs' | 'extra_articles' | 'extra_domains'
+  meteredType: 'ai_logs'
   quantity: number
   timestamp?: number
 }): Promise<Stripe.UsageRecord | null> {
@@ -111,11 +119,11 @@ export async function reportMeteredUsage({
   }
 }
 
-// Add metered items to an existing subscription
+// Add metered items to an existing subscription (AI logs only)
 export async function addMeteredItemsToSubscription(
   subscriptionId: string,
   items: Array<{
-    type: 'ai_logs' | 'extra_articles' | 'extra_domains'
+    type: 'ai_logs'
     quantity?: number
   }>
 ): Promise<boolean> {
@@ -140,6 +148,39 @@ export async function addMeteredItemsToSubscription(
     return true
   } catch (error) {
     console.error('Error adding metered items to subscription:', error)
+    return false
+  }
+}
+
+// Add fixed-price add-ons to an existing subscription (domains, articles)
+export async function addSubscriptionAddOns(
+  subscriptionId: string,
+  addOns: Array<{
+    type: 'extra_articles' | 'extra_domains'
+    quantity: number
+  }>
+): Promise<boolean> {
+  try {
+    const itemsToAdd = addOns.map(addOn => {
+      const priceId = getAddOnPriceId(addOn.type)
+      if (!priceId) {
+        throw new Error(`No price ID found for ${addOn.type}`)
+      }
+      
+      return {
+        price: priceId,
+        quantity: addOn.quantity
+      }
+    })
+    
+    await stripe.subscriptions.update(subscriptionId, {
+      items: itemsToAdd,
+      proration_behavior: 'always_invoice'
+    })
+    
+    return true
+  } catch (error) {
+    console.error('Error adding subscription add-ons:', error)
     return false
   }
 } 

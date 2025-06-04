@@ -40,6 +40,7 @@ import { AvatarUpload } from '@/components/profile/avatar-upload'
 import { BillingPreferences } from '@/components/billing/billing-preferences'
 import { Switch } from "@/components/ui/switch"
 import { NotificationBannerList } from "@/components/ui/notification-banner"
+import { DomainAddonDialog } from '@/components/subscription/domain-addon-dialog'
 
 interface AnalyticsProvider {
   id: string
@@ -258,6 +259,7 @@ export default function SettingsPage() {
   
   const searchParams = useSearchParams()
   const supabase = createClient()
+  const [showDomainDialog, setShowDomainDialog] = useState(false)
 
   // Function to save billing preferences
   const saveBillingPreferences = async (preferences: any) => {
@@ -1394,16 +1396,16 @@ export default function SettingsPage() {
                               <div className="flex gap-3">
                           <Button
                             onClick={() => setShowPricingModal(true)}
-                                  className="bg-white text-black hover:bg-[#f5f5f5] h-10 px-6 font-mono tracking-tight text-sm"
+                            className="bg-[#1a1a1a] hover:bg-[#333] border border-[#333] hover:border-[#444] text-white h-8 px-4 font-mono tracking-tight text-sm"
                             disabled={isLoading}
                           >
-                                  {usageData?.billingPeriod.planType === 'free' ? 'Upgrade Plan' : 'Change Plan'}
+                            {usageData?.billingPeriod.planType === 'free' ? 'Upgrade Plan' : 'Change Plan'}
                           </Button>
                                 {usageData?.billingPeriod.planType !== 'free' && stripeCustomerId && (
                                   <Button
                                     onClick={handleManageSubscription}
                                     variant="outline"
-                                    className="border-[#333] text-white hover:bg-[#1a1a1a] h-10 px-6 font-mono tracking-tight text-sm"
+                                    className="border-[#1a1a1a] hover:border-[#333] text-[#666] hover:text-white bg-transparent hover:bg-[#1a1a1a] h-8 px-4 font-mono tracking-tight text-sm"
                                     disabled={isLoading}
                                   >
                                     {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Manage Billing'}
@@ -1414,7 +1416,7 @@ export default function SettingsPage() {
                         </div>
 
                           {/* Add-ons - Simplified */}
-                          {usageData?.billingPeriod.planType !== 'free' && (
+                          {usageData?.billingPeriod.planType !== 'free' && (currentPlan === 'plus' || currentPlan === 'pro') && (
                             <div>
                               <h3 className="text-lg font-medium text-white mb-6 font-mono tracking-tight">Add-ons</h3>
                         <div className="space-y-4">
@@ -1444,6 +1446,9 @@ export default function SettingsPage() {
                                               setExtraDomains(Math.max(0, extraDomains - 1))
                                               showToast('Extra domains updated!')
                                               fetchUsageData()
+                                            } else {
+                                              const error = await response.json()
+                                              showToast(error.error || 'Failed to update domains')
                                             }
                                           } catch (error) {
                                             showToast('Failed to update domains')
@@ -1476,6 +1481,9 @@ export default function SettingsPage() {
                                               setExtraDomains(extraDomains + 1)
                                               showToast('Extra domains updated!')
                                               fetchUsageData()
+                                            } else {
+                                              const error = await response.json()
+                                              showToast(error.error || 'Failed to update domains')
                                             }
                                           } catch (error) {
                                             showToast('Failed to update domains')
@@ -1513,6 +1521,25 @@ export default function SettingsPage() {
                             </div>
                                 </div>
                               </div>
+                            </div>
+                          )}
+
+                          {/* Domain Add-on Unavailable for Visibility Plan */}
+                          {usageData?.billingPeriod.planType !== 'free' && currentPlan === 'visibility' && (
+                            <div className="bg-[#111] border border-[#1a1a1a] rounded-lg p-6">
+                              <div className="flex items-center gap-3 mb-3">
+                                <Globe className="w-5 h-5 text-[#666]" />
+                                <h3 className="text-lg font-medium text-white font-mono tracking-tight">Multi-Domain Tracking</h3>
+                              </div>
+                              <p className="text-sm text-[#666] mb-4">
+                                Track additional domains beyond your primary domain. Available on Plus and Pro plans.
+                              </p>
+                              <Button
+                                onClick={() => setShowPricingModal(true)}
+                                className="bg-[#1a1a1a] hover:bg-[#333] border border-[#333] hover:border-[#444] text-white h-8 px-4 font-mono tracking-tight text-sm"
+                              >
+                                Upgrade to Plus
+                              </Button>
                             </div>
                           )}
 
@@ -1844,11 +1871,11 @@ export default function SettingsPage() {
                   <button
                     onClick={() => setIsAnnualBilling(!isAnnualBilling)}
                     className={`relative w-12 h-6 rounded-full transition-colors ${
-                      isAnnualBilling ? 'bg-white' : 'bg-[#333]'
+                      isAnnualBilling ? 'bg-[#1a1a1a] border border-[#333]' : 'bg-[#333]'
                     }`}
                   >
                     <div
-                      className={`absolute top-1 w-4 h-4 bg-black rounded-full transition-transform ${
+                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
                         isAnnualBilling ? 'translate-x-7' : 'translate-x-1'
                       }`}
                     />
@@ -1905,7 +1932,7 @@ export default function SettingsPage() {
                           currentPlan === plan.id
                             ? 'bg-[#333] text-white cursor-default'
                             : plan.recommended
-                            ? 'bg-white text-black hover:bg-gray-100'
+                            ? 'bg-[#1a1a1a] hover:bg-[#333] border border-[#333] hover:border-[#444] text-white'
                             : 'bg-[#1a1a1a] text-white hover:bg-[#2a2a2a] border border-[#333]'
                         }`}
                         disabled={currentPlan === plan.id || isLoading}
@@ -2033,6 +2060,17 @@ export default function SettingsPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Domain Add-on Dialog */}
+      <DomainAddonDialog
+        open={showDomainDialog}
+        onOpenChange={setShowDomainDialog}
+        currentDomains={extraDomains}
+        onSuccess={() => {
+          fetchUsageData()
+          showToast('Domain add-ons updated successfully!')
+        }}
+      />
     </main>
   )
 } 

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { stripe, mapSubscriptionToPlan } from '@/lib/stripe'
+import { stripe, mapSubscriptionToPlan, getAddOnPriceId } from '@/lib/stripe'
 import { 
   updateUserSubscription, 
   updateSubscriptionStatus, 
   downgradeToFreePlan 
 } from '@/lib/stripe-profiles'
+import { createServiceRoleClient } from '@/lib/supabase/server'
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
 
@@ -51,10 +52,15 @@ export async function POST(req: NextRequest) {
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription
         
-        // Handle subscription updates (plan changes, renewals)
+        // Handle subscription updates (plan changes, renewals, add-ons)
         console.log('Subscription updated:', subscription.id)
         console.log('Status:', subscription.status)
         console.log('Current plan:', mapSubscriptionToPlan(subscription))
+        console.log('Items:', subscription.items.data.map(item => ({
+          id: item.id,
+          priceId: item.price.id,
+          quantity: item.quantity
+        })))
         
         // Update subscription info in the database
         await updateSubscriptionStatus({
@@ -63,6 +69,9 @@ export async function POST(req: NextRequest) {
           plan: mapSubscriptionToPlan(subscription),
           currentPeriodEnd: new Date(subscription.current_period_end * 1000)
         })
+
+        // Handle add-on changes
+        await updateSubscriptionAddOns(subscription)
         
         break
       }
@@ -107,5 +116,88 @@ export async function POST(req: NextRequest) {
       { error: 'Failed to process webhook' },
       { status: 500 }
     )
+  }
+}
+
+// Helper function to update subscription add-ons in database
+async function updateSubscriptionAddOns(subscription: Stripe.Subscription) {
+  try {
+    const serviceSupabase = createServiceRoleClient()
+    
+    // Get user ID from subscription
+    const { data: profile, error: profileError } = await serviceSupabase
+      .from('profiles')
+      .select('id')
+      .eq('stripe_customer_id', subscription.customer)
+      .single()
+    
+    if (profileError || !profile) {
+      console.error('Could not find user for subscription:', subscription.id)
+      return
+    }
+
+    const userId = profile.id
+
+    // Get current billing period
+    const { data: billingPeriod, error: billingError } = await serviceSupabase
+      .rpc('get_current_billing_period', { p_user_id: userId })
+      .single()
+
+    if (billingError || !billingPeriod) {
+      console.error('Could not find billing period for user:', userId)
+      return
+    }
+
+    // Get add-on price IDs for comparison
+    const domainPriceId = getAddOnPriceId('extra_domains')
+    const articlePriceId = getAddOnPriceId('extra_articles')
+
+    // Mark all existing add-ons as cancelled first
+    await serviceSupabase
+      .from('subscription_add_ons')
+      .update({ status: 'cancelled' })
+      .eq('user_id', userId)
+      .eq('status', 'active')
+
+    // Process current subscription items
+    for (const item of subscription.items.data) {
+      let addOnType: 'extra_domains' | 'extra_articles' | null = null
+      let unitPriceCents = 0
+
+      if (item.price.id === domainPriceId) {
+        addOnType = 'extra_domains'
+        unitPriceCents = 10000 // $100
+      } else if (item.price.id === articlePriceId) {
+        addOnType = 'extra_articles'
+        unitPriceCents = 1000 // $10
+      }
+
+      if (addOnType && item.quantity > 0) {
+        // Create or reactivate add-on record
+        const addonData = {
+          user_id: userId,
+          subscription_usage_id: billingPeriod.usage_id,
+          add_on_type: addOnType,
+          quantity: item.quantity,
+          unit_price_cents: unitPriceCents,
+          total_price_cents: item.quantity * unitPriceCents,
+          stripe_subscription_item_id: item.id,
+          status: 'active',
+          billing_period_start: billingPeriod.period_start,
+          billing_period_end: billingPeriod.period_end
+        }
+
+        await serviceSupabase
+          .from('subscription_add_ons')
+          .upsert(addonData, {
+            onConflict: 'user_id,add_on_type,status'
+          })
+
+        console.log(`✅ Updated ${addOnType} add-on: ${item.quantity} units`)
+      }
+    }
+
+  } catch (error) {
+    console.error('Error updating subscription add-ons:', error)
   }
 } 

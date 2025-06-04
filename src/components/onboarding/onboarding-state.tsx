@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CheckCircle2, Circle, ArrowRight, BarChart3, Globe, FileText, Zap } from 'lucide-react'
+import { CheckCircle2, Circle, ArrowRight, BarChart3, Globe, FileText, Zap, Info, Sparkles } from 'lucide-react'
 import Link from 'next/link'
+import { AnimatePresence, motion } from 'framer-motion'
 
 interface OnboardingStep {
   id: string
@@ -205,6 +206,56 @@ export function OnboardingState({
             </CardContent>
           </Card>
         )}
+
+        {/* Complete Setup Button */}
+        <div className="mt-4 p-3 bg-[#1a1a1a] border border-[#333] rounded-lg">
+          <div className="flex items-center gap-2 text-[#888] text-sm">
+            <Info className="w-4 h-4" />
+            This is a demo account. Some features may be limited.
+          </div>
+        </div>
+
+        {/* Demo account notice */}
+        {user?.email === 'admin@splitlabs.io' && (
+          <div className="mt-4 p-3 bg-[#1a1a1a] border border-[#333] rounded-lg">
+            <div className="flex items-center gap-2 text-[#888] text-sm">
+              <Info className="w-4 h-4" />
+              This is a demo account. Some features may be limited.
+            </div>
+          </div>
+        )}
+
+        <AnimatePresence>
+          {state.showWelcome && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="fixed bottom-6 right-6 bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4 shadow-lg max-w-sm z-50"
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-[#1a1a1a] rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="w-4 h-4 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-white mb-1">Welcome to Split!</h3>
+                  <p className="text-xs text-[#666] mb-3">
+                    Complete your setup to start tracking your AI visibility.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      onClick={() => dispatch({ type: 'COMPLETE_ONBOARDING' })}
+                      className="bg-[#1a1a1a] hover:bg-[#333] border border-[#333] hover:border-[#444] text-white"
+                    >
+                      Get Started
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   )

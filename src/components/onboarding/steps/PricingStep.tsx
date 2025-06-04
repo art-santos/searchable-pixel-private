@@ -34,13 +34,13 @@ export function PricingStep({ isAnnual, setIsAnnual, onSelectPlan }: PricingStep
         <button
           onClick={() => setIsAnnual(!isAnnual)}
           className={`relative w-12 h-6 rounded-full transition-colors ${
-            isAnnual ? 'bg-white' : 'bg-[#333]'
+            isAnnual ? 'bg-[#1a1a1a] border border-[#333]' : 'bg-[#333]'
           }`}
         >
           <div
             className={`absolute top-1 w-4 h-4 rounded-full transition-transform ${
               isAnnual 
-                ? 'translate-x-7 bg-black' 
+                ? 'translate-x-7 bg-white' 
                 : 'translate-x-1 bg-white'
             }`}
           />
