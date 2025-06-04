@@ -60,7 +60,7 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
         const [profileResult, companyResult] = await Promise.all([
           supabase
             .from('profiles')
-            .select('first_name, workspace_name')
+            .select('first_name, workspace_name, domain')
             .eq('id', user.id)
             .single(),
           supabase
@@ -93,7 +93,7 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
           setWorkspaceData({
             name: profile.first_name || '',
             workspaceName: profile.workspace_name || '',
-            domain: company?.root_url ? new URL(company.root_url).hostname : ''
+            domain: profile.domain || (company?.root_url ? new URL(company.root_url).hostname : '')
           })
         }
       } catch (err) {
@@ -109,15 +109,25 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
   const handleComplete = async () => {
     if (!user || !supabase) return
 
+    console.log('🚀 ONBOARDING DEBUG: Starting workspace onboarding completion...')
+    console.log('👤 User:', { id: user.id, email: user.email })
+    console.log('📝 Workspace data:', workspaceData)
+
+    // Validate required fields
+    if (!workspaceData.name.trim() || !workspaceData.workspaceName.trim() || !workspaceData.domain.trim()) {
+      console.error('❌ ONBOARDING DEBUG: Missing required fields')
+      return
+    }
+
     setIsLoading(true)
 
     try {
-      // Use the proper onboarding data save function
-      const result = await saveOnboardingData(user, {
+      console.log('💾 ONBOARDING DEBUG: About to call saveOnboardingData...')
+      console.log('📋 ONBOARDING DEBUG: Payload:', {
         userName: workspaceData.name,
         workspaceName: workspaceData.workspaceName,
         userEmail: user.email || '',
-        domain: workspaceData.domain || 'example.com',
+        domain: workspaceData.domain, // Use the actual domain entered by user
         isAnalyticsConnected: false,
         keywords: [],
         businessOffering: '',
@@ -125,24 +135,46 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
         competitors: []
       })
 
+      // Use the proper onboarding data save function
+      const result = await saveOnboardingData(user, {
+        userName: workspaceData.name,
+        workspaceName: workspaceData.workspaceName,
+        userEmail: user.email || '',
+        domain: workspaceData.domain,
+        isAnalyticsConnected: false,
+        keywords: [],
+        businessOffering: '',
+        knownFor: '',
+        competitors: []
+      })
+
+      console.log('📋 ONBOARDING DEBUG: saveOnboardingData result:', result)
+
       if (!result.success) {
-        console.error('Failed to save onboarding data:', result.error)
+        console.error('❌ ONBOARDING DEBUG: Failed to save onboarding data:', result.error)
+        console.error('🔍 ONBOARDING DEBUG: Full result object:', result)
         // Still try to hide onboarding to avoid being stuck
         setShowOnboarding(false)
         return
       }
 
-      console.log('Onboarding completed successfully:', result)
+      console.log('✅ ONBOARDING DEBUG: Onboarding completed successfully:', result)
       
       // Hide onboarding and call completion callback
       setShowOnboarding(false)
       onComplete?.()
     } catch (err) {
-      console.error('Error completing onboarding:', err)
+      console.error('❌ ONBOARDING DEBUG: Unexpected error completing onboarding:', err)
+      console.error('🔍 ONBOARDING DEBUG: Error details:', {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined,
+        name: err instanceof Error ? err.name : undefined
+      })
       // Still hide onboarding to avoid being stuck
       setShowOnboarding(false)
     } finally {
       setIsLoading(false)
+      console.log('🏁 ONBOARDING DEBUG: Process completed, loading set to false')
     }
   }
 
@@ -151,7 +183,9 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
   }
 
   const canProceed = () => {
-    return workspaceData.name.trim() && workspaceData.workspaceName.trim()
+    return workspaceData.name.trim() && 
+           workspaceData.workspaceName.trim() && 
+           workspaceData.domain.trim()
   }
 
   // Show loading state while checking status
@@ -230,7 +264,7 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
 
               <div>
                 <label className="block text-xs text-[#888] mb-2">
-                  Company website
+                  Primary website domain
                 </label>
                 <Input
                   value={workspaceData.domain}
@@ -242,7 +276,7 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
                   className="bg-[#1a1a1a] border-[#333] text-white h-10 focus:border-[#444] transition-colors"
                 />
                 <p className="text-xs text-[#666] mt-1">
-                  Your main website domain (optional)
+                  Enter your main website domain (this will appear in your settings)
                 </p>
               </div>
             </div>

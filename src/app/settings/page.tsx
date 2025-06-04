@@ -652,9 +652,9 @@ export default function SettingsPage() {
             percentage: 0, 
             overage: 0, 
             overageCost: 0 
-          }
         }
       }
+    }
     }
 
     // Use actual subscription plan (currentPlan) instead of usage data plan
@@ -1593,10 +1593,10 @@ export default function SettingsPage() {
                                     <div className="font-medium text-white font-mono tracking-tight text-sm">{usageData?.domains?.remaining || 0} slots left</div>
                                   </div>
                                   <div className="w-24 h-1 bg-[#1a1a1a] rounded-sm">
-                                    <div 
+                                <div 
                                       className="h-full bg-[#444] rounded-sm transition-all"
                                       style={{ width: `${Math.min(100, ((usageData?.domains?.used || 0) / Math.max(1, usageData?.domains?.included || 1)) * 100)}%` }}
-                                    />
+                                />
                             </div>
                                 </div>
                           </div>
@@ -1614,7 +1614,7 @@ export default function SettingsPage() {
                                     <div className="font-medium text-white font-mono tracking-tight text-sm">{usageData?.scans?.totalScansUsed || 0} this month</div>
                                   </div>
                                   <div className="w-24 h-1 bg-[#1a1a1a] rounded-sm">
-                                    <div 
+                              <div 
                                       className="h-full bg-[#444] rounded-sm transition-all"
                                       style={{ width: usageData?.scans?.unlimitedMax ? '100%' : '25%' }}
                               />

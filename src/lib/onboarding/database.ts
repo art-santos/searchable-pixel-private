@@ -49,6 +49,7 @@ export async function saveOnboardingData(
       email: onboardingData.userEmail,
       first_name: onboardingData.userName || onboardingData.userEmail.split('@')[0], // Use actual name if provided, fallback to email stem
       workspace_name: onboardingData.workspaceName,
+      domain: onboardingData.domain,
       created_by: user.id,
       updated_by: user.id,
       onboarding_completed: false, // Will be set to true after AEO analysis

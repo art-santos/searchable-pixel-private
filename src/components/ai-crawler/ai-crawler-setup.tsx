@@ -2,23 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Card, 
-  CardContent, 
-  CardHeader,
-  CardTitle 
-} from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { 
   CreditCard, 
-  Zap, 
-  Shield, 
   CheckCircle2, 
   ArrowRight, 
-  Info,
   Loader2,
-  AlertTriangle
+  ArrowLeft,
+  Shield,
+  BarChart3,
+  AlertCircle
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSubscription } from '@/hooks/useSubscription'
@@ -41,7 +34,7 @@ interface PaymentMethod {
 
 export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupProps) {
   const { user } = useAuth()
-  const { usage } = useSubscription()
+  const { usage, subscription } = useSubscription()
   const [step, setStep] = useState<'intro' | 'payment' | 'complete'>('intro')
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
   const [loadingPayment, setLoadingPayment] = useState(true)
@@ -49,8 +42,8 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
   const [error, setError] = useState<string | null>(null)
 
   // Get plan information
-  const planType = usage?.billingPeriod?.planType || 'free'
-  const aiLogsIncluded = usage?.aiLogs?.included || (planType === 'free' ? 100 : 250)
+  const planType = subscription?.plan || 'free'
+  const aiLogsIncluded = planType === 'free' ? 100 : planType === 'visibility' ? 250 : planType === 'plus' ? 500 : planType === 'pro' ? 1000 : 100
   const hasPaymentMethod = paymentMethods.length > 0
 
   useEffect(() => {
@@ -81,7 +74,6 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
       
       if (response.ok) {
         const { setupIntent } = await response.json()
-        // Redirect to Stripe's hosted setup page
         window.location.href = setupIntent.url
       } else {
         throw new Error('Failed to create setup intent')
@@ -97,7 +89,6 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
     setError(null)
     
     try {
-      // Enable AI tracking in billing preferences
       const response = await fetch('/api/billing/preferences', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -150,96 +141,86 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
   const instructions = getPlatformInstructions()
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-[500px] mx-auto">
       <AnimatePresence mode="wait">
         {step === 'intro' && (
           <motion.div
             key="intro"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
+            exit={{ opacity: 0, y: -10 }}
             className="space-y-6"
           >
             {/* Header */}
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Zap className="w-8 h-8 text-blue-400" />
-              </div>
-              <h3 className="text-2xl font-semibold text-white mb-2">
+            <div className="text-center space-y-2">
+              <h2 className="text-xl text-white">
                 Enable AI Crawler Tracking
-              </h3>
-              <p className="text-[#666] max-w-md mx-auto">
-                Track which AI engines are viewing your content to optimize your AI visibility strategy
+              </h2>
+              <p className="text-sm text-[#666]">
+                Track which AI systems are viewing your content
               </p>
             </div>
 
-            {/* What you get */}
-            <Card className="bg-[#0a0a0a] border-[#1a1a1a]">
-              <CardContent className="p-6">
-                <h4 className="font-medium text-white mb-4">What you'll get:</h4>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-white text-sm font-medium">Real-time AI crawler detection</p>
-                      <p className="text-[#666] text-xs">Track ChatGPT, Claude, Perplexity, and 50+ other AI crawlers</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-white text-sm font-medium">Attribution by source</p>
-                      <p className="text-[#666] text-xs">See which AI engines are crawling your content most</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-white text-sm font-medium">Usage analytics</p>
-                      <p className="text-[#666] text-xs">Monitor trends and optimize your AI visibility</p>
-                    </div>
-                  </div>
+            {/* Free Plan Highlight */}
+            <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-white font-medium">Free Plan Included</div>
+                <div className="text-sm bg-[#1a1a1a] text-[#888] px-2 py-1 rounded font-mono">
+                  {aiLogsIncluded} logs/month
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="text-sm text-[#666]">
+                Additional logs beyond your plan: <span className="text-[#888] font-mono">$0.008 each</span>
+              </div>
+            </div>
 
-            {/* Pricing */}
-            <Card className="bg-[#0a0a0a] border-[#1a1a1a]">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-3 mb-4">
-                  <Info className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-medium text-white mb-1">Pricing</h4>
-                    <p className="text-[#666] text-sm">
-                      You get <span className="text-white font-medium">{aiLogsIncluded} free AI crawler logs</span> per month. 
-                      Additional logs cost <span className="text-white font-medium">$0.008 each</span>.
-                    </p>
-                  </div>
+            {/* Features */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 py-3">
+                <div className="w-8 h-8 bg-[#1a1a1a] rounded-lg flex items-center justify-center">
+                  <BarChart3 className="w-4 h-4 text-[#888]" />
                 </div>
-                
-                {planType === 'free' && (
-                  <div className="flex items-start gap-3 mt-4 p-3 bg-yellow-500/5 border border-yellow-500/20 rounded-lg">
-                    <AlertTriangle className="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-yellow-200 text-xs">
-                      Free plan users need a payment method on file to track AI crawlers beyond the included amount.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                <div>
+                  <div className="text-sm text-white">Real-time Detection</div>
+                  <div className="text-xs text-[#666]">See AI crawlers as they visit</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 py-3">
+                <div className="w-8 h-8 bg-[#1a1a1a] rounded-lg flex items-center justify-center">
+                  <Shield className="w-4 h-4 text-[#888]" />
+                </div>
+                <div>
+                  <div className="text-sm text-white">Source Attribution</div>
+                  <div className="text-xs text-[#666]">Know which AI systems are crawling</div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 py-3">
+                <div className="w-8 h-8 bg-[#1a1a1a] rounded-lg flex items-center justify-center">
+                  <CheckCircle2 className="w-4 h-4 text-[#888]" />
+                </div>
+                <div>
+                  <div className="text-sm text-white">Full Control</div>
+                  <div className="text-xs text-[#666]">Disable anytime in Settings</div>
+                </div>
+              </div>
+            </div>
 
+            {/* Action */}
             {loadingPayment ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-[#666]" />
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-4 h-4 animate-spin text-[#666]" />
               </div>
             ) : (
-              <div className="flex gap-3">
+              <div className="flex gap-3 pt-2">
                 {onBack && (
                   <Button
                     onClick={onBack}
                     variant="outline"
-                    className="flex-1 border-[#333] text-[#666] hover:text-white"
+                    className="flex-1 border-[#1a1a1a] text-[#666] hover:text-white bg-transparent hover:bg-[#1a1a1a]"
                   >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
                     Back
                   </Button>
                 )}
@@ -251,22 +232,24 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
                       setStep('payment')
                     }
                   }}
-                  className="flex-1 bg-white text-black hover:bg-gray-100"
+                  className="flex-1 bg-[#1a1a1a] hover:bg-[#333] border border-[#333] hover:border-[#444] text-white"
                   disabled={isEnabling}
                 >
                   {isEnabling ? (
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  ) : (
-                    <Zap className="w-4 h-4 mr-2" />
-                  )}
-                  {hasPaymentMethod || planType !== 'free' ? 'Enable Tracking' : 'Add Payment Method'}
+                  ) : null}
+                  {hasPaymentMethod || planType !== 'free' ? 'Enable Tracking' : 'Continue'}
+                  <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
             )}
 
             {error && (
-              <div className="text-red-400 text-sm text-center bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                {error}
+              <div className="bg-[#1a1a1a] border border-[#333] p-3 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-[#888] mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-[#888]">{error}</div>
+                </div>
               </div>
             )}
           </motion.div>
@@ -275,107 +258,132 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
         {step === 'payment' && (
           <motion.div
             key="payment"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
+            exit={{ opacity: 0, y: -10 }}
             className="space-y-6"
           >
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500/20 to-blue-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <CreditCard className="w-8 h-8 text-green-400" />
-              </div>
-              <h3 className="text-2xl font-semibold text-white mb-2">
+            <div className="text-center space-y-2">
+              <h2 className="text-xl text-white">
                 Add Payment Method
-              </h3>
-              <p className="text-[#666] max-w-md mx-auto">
-                We need a payment method on file to bill for any usage beyond your {aiLogsIncluded} free AI crawler logs.
+              </h2>
+              <p className="text-sm text-[#666]">
+                Required for usage beyond {aiLogsIncluded} free logs per month
               </p>
             </div>
 
-            <Card className="bg-[#0a0a0a] border-[#1a1a1a]">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-3">
-                  <Shield className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-medium text-white mb-2">Secure & Transparent</h4>
-                    <ul className="space-y-1 text-sm text-[#666]">
-                      <li>• Your card is securely stored by Stripe</li>
-                      <li>• You'll only be charged for usage above {aiLogsIncluded} logs/month</li>
-                      <li>• Cancel anytime in billing settings</li>
-                      <li>• Real-time usage tracking and alerts</li>
-                    </ul>
-                  </div>
+            <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4 space-y-4">
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-[#888]" />
+                <div className="text-sm text-white">Secure & Transparent</div>
+              </div>
+              
+              <div className="space-y-2 text-sm text-[#666]">
+                <div className="flex items-start gap-2">
+                  <div className="w-1 h-1 bg-[#666] rounded-full mt-2 flex-shrink-0"></div>
+                  <div>Payment securely processed by Stripe</div>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="flex items-start gap-2">
+                  <div className="w-1 h-1 bg-[#666] rounded-full mt-2 flex-shrink-0"></div>
+                  <div>Only charged for usage above {aiLogsIncluded} logs/month</div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-1 h-1 bg-[#666] rounded-full mt-2 flex-shrink-0"></div>
+                  <div>Cancel or disable anytime in Settings</div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-1 h-1 bg-[#666] rounded-full mt-2 flex-shrink-0"></div>
+                  <div>Real-time usage tracking and alerts</div>
+                </div>
+              </div>
+            </div>
 
             <div className="flex gap-3">
               <Button
                 onClick={() => setStep('intro')}
                 variant="outline"
-                className="flex-1 border-[#333] text-[#666] hover:text-white"
+                className="flex-1 border-[#1a1a1a] text-[#666] hover:text-white bg-transparent hover:bg-[#1a1a1a]"
               >
+                <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
               </Button>
               <Button
                 onClick={handleAddPaymentMethod}
-                className="flex-1 bg-white text-black hover:bg-gray-100"
+                className="flex-1 bg-[#1a1a1a] hover:bg-[#333] border border-[#333] hover:border-[#444] text-white"
               >
                 <CreditCard className="w-4 h-4 mr-2" />
                 Add Payment Method
               </Button>
             </div>
+
+            {error && (
+              <div className="bg-[#1a1a1a] border border-[#333] p-3 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-[#888] mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-[#888]">{error}</div>
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
 
         {step === 'complete' && (
           <motion.div
             key="complete"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
+            exit={{ opacity: 0, y: -10 }}
             className="space-y-6"
           >
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500/20 to-blue-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="w-8 h-8 text-green-400" />
+            <div className="text-center space-y-4">
+              <div className="w-12 h-12 bg-[#1a1a1a] border border-[#333] rounded-lg flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-2xl font-semibold text-white mb-2">
-                AI Tracking Enabled!
-              </h3>
-              <p className="text-[#666] max-w-md mx-auto">
-                Now let's set up the code to start tracking AI crawlers on your {instructions.title} site.
-              </p>
+              <div>
+                <h2 className="text-xl text-white mb-2">
+                  AI Tracking Enabled
+                </h2>
+                <p className="text-sm text-[#666]">
+                  Now set up the code on your {instructions.title} site
+                </p>
+              </div>
             </div>
 
-            {/* Setup Instructions */}
-            <Card className="bg-[#0a0a0a] border-[#1a1a1a]">
-              <CardHeader>
-                <CardTitle className="text-white text-lg">Setup Instructions</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 pt-0">
-                <ol className="space-y-4">
-                  {instructions.steps.map((step, index) => (
-                    <li key={index} className="flex gap-3">
-                      <span className="text-[#666] flex-shrink-0 font-medium">{index + 1}.</span>
-                      <p className="text-[#ccc] text-sm">{step}</p>
-                    </li>
-                  ))}
-                </ol>
-              </CardContent>
-            </Card>
+            <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4">
+              <div className="text-sm text-white mb-3">Setup Instructions</div>
+              
+              <div className="space-y-3">
+                {instructions.steps.map((step, index) => (
+                  <div key={index} className="flex gap-3">
+                    <div className="w-5 h-5 bg-[#1a1a1a] border border-[#333] rounded flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs text-[#888] font-mono">{index + 1}</span>
+                    </div>
+                    <div className="text-sm text-[#888] leading-relaxed">
+                      {step}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-3">
+              <div className="text-xs text-[#666] text-center">
+                Manage tracking settings in{' '}
+                <span className="text-[#888]">Settings → Usage & Controls</span>
+              </div>
+            </div>
 
             <div className="flex gap-3">
               <Button
                 onClick={() => window.open('https://docs.split.dev', '_blank')}
                 variant="outline"
-                className="flex-1 border-[#333] text-[#666] hover:text-white"
+                className="flex-1 border-[#1a1a1a] text-[#666] hover:text-white bg-transparent hover:bg-[#1a1a1a]"
               >
-                View Documentation
+                Documentation
               </Button>
               <Button
                 onClick={onComplete}
-                className="flex-1 bg-white text-black hover:bg-gray-100"
+                className="flex-1 bg-[#1a1a1a] hover:bg-[#333] border border-[#333] hover:border-[#444] text-white"
               >
                 Complete Setup
                 <ArrowRight className="w-4 h-4 ml-2" />
