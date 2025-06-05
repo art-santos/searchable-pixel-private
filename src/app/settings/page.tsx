@@ -41,6 +41,7 @@ import { BillingPreferences } from '@/components/billing/billing-preferences'
 import { Switch } from "@/components/ui/switch"
 import { NotificationBannerList } from "@/components/ui/notification-banner"
 import { DomainAddonDialog } from '@/components/subscription/domain-addon-dialog'
+import { WorkspaceDeletionDialog } from '@/components/workspace/workspace-deletion-dialog'
 
 interface AnalyticsProvider {
   id: string
@@ -173,7 +174,8 @@ const pricingPlans: PricingPlan[] = [
       '500 AI crawler logs/month',
       'Competitor benchmarking',
       'Keyword trend analysis',
-      'Priority support'
+      'Priority support',
+      'Extra domains: +$100/month each'
     ],
     limits: {
       scans: 'Unlimited',
@@ -188,18 +190,19 @@ const pricingPlans: PricingPlan[] = [
     price: 1000,
     annualPrice: 800,
     features: [
-      '3 domains tracking',
+      '1 domain tracking',
       '30 monthly AI articles',
       'Unlimited MAX scans',
       '1,000 AI crawler logs/month',
       'Multi-brand tracking',
       'Premium support',
-      'API access'
+      'API access',
+      'Extra domains: +$100/month each'
     ],
     limits: {
       scans: 'Unlimited',
       articles: 30,
-      domains: 3
+      domains: 1
     }
   }
 ]
@@ -260,7 +263,17 @@ export default function SettingsPage() {
   const searchParams = useSearchParams()
   const supabase = createClient()
   const [showDomainDialog, setShowDomainDialog] = useState(false)
-
+  
+  // Add state for highlighting sections
+  const [highlightedSection, setHighlightedSection] = useState<string | null>(null)
+  
+  // Workspace management state
+  const [workspaces, setWorkspaces] = useState<any[]>([])
+  const [loadingWorkspaces, setLoadingWorkspaces] = useState(true)
+  const [showWorkspaceCreationDialog, setShowWorkspaceCreationDialog] = useState(false)
+  const [showWorkspaceDeletionDialog, setShowWorkspaceDeletionDialog] = useState(false)
+  const [domainsToRemove, setDomainsToRemove] = useState(0)
+  
   // Function to save billing preferences
   const saveBillingPreferences = async (preferences: any) => {
     setSavingPreferences(true)
@@ -320,6 +333,31 @@ export default function SettingsPage() {
     }
   }
 
+  // Fetch workspaces data
+  const fetchWorkspaces = async () => {
+    console.log('🏢 Fetching workspaces...')
+    setLoadingWorkspaces(true)
+    try {
+      const response = await fetch('/api/workspaces')
+      console.log('📡 Workspaces API response status:', response.status)
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('🏢 Workspaces data received:', data)
+        setWorkspaces(data.workspaces || [])
+        console.log('✅ Workspaces data set successfully')
+      } else {
+        console.error('❌ Failed to fetch workspaces data, status:', response.status)
+        const errorData = await response.text()
+        console.error('Error response:', errorData)
+      }
+    } catch (error) {
+      console.error('💥 Error fetching workspaces:', error)
+    } finally {
+      setLoadingWorkspaces(false)
+    }
+  }
+
   // Fetch user profile data
   useEffect(() => {
     const fetchProfile = async () => {
@@ -358,6 +396,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (user) {
       fetchUsageData()
+      fetchWorkspaces()
     }
   }, [user])
   
@@ -368,10 +407,22 @@ export default function SettingsPage() {
     const feature = searchParams.get('feature')
     const requiredPlan = searchParams.get('requiredPlan') as PlanType
     const fromPath = searchParams.get('fromPath')
+    const highlight = searchParams.get('highlight')
     
     // Auto-select tab if specified
     if (tab) {
       setActiveSection(tab)
+      
+      // If highlighting domains in billing tab, switch to usage sub-tab
+      if (tab === 'billing' && highlight === 'domains') {
+        setBillingTab('usage')
+        setHighlightedSection('domains')
+        
+        // Remove highlight after 3 seconds
+        setTimeout(() => {
+          setHighlightedSection(null)
+        }, 3000)
+      }
     }
     
     // Show upgrade dialog if redirected from protected route
@@ -891,6 +942,19 @@ export default function SettingsPage() {
     }
   }, [usageData])
 
+  // Calculate actual workspace counts
+  const getWorkspaceCounts = () => {
+    const totalWorkspaces = workspaces.length
+    const extraWorkspaces = Math.max(0, totalWorkspaces - 1) // Subtract 1 for primary workspace
+    return {
+      total: totalWorkspaces,
+      extra: extraWorkspaces,
+      primary: workspaces.filter(ws => ws.is_primary).length
+    }
+  }
+
+  const workspaceCounts = getWorkspaceCounts()
+
   // Function to dismiss notifications
   const handleDismissNotification = async (notificationType: string, notificationKey: string) => {
     try {
@@ -913,6 +977,109 @@ export default function SettingsPage() {
       console.error('Error dismissing notification:', error)
       showToast('Failed to dismiss notification')
     }
+  }
+
+  // Workspace-aware domain management handlers
+  const handleAddDomain = async () => {
+    // First, check if we need to add billing slot
+    const needsBillingSlot = workspaceCounts.extra >= extraDomains
+    
+    if (needsBillingSlot) {
+      // Add the domain slot to Stripe billing first
+      setIsUpdatingAddOns(true)
+      try {
+        const response = await fetch('/api/billing/manage-addons', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: extraDomains === 0 ? 'add' : 'update',
+            addonType: 'extra_domains',
+            quantity: extraDomains + 1
+          })
+        })
+        
+        if (response.ok) {
+          // Update the local state
+          setExtraDomains(extraDomains + 1)
+          // Refresh usage data
+          await fetchUsageData()
+          showToast('Domain slot added! You can now create a new workspace.')
+        } else {
+          const error = await response.json()
+          showToast(error.error || 'Failed to add domain slot')
+        }
+      } catch (error) {
+        console.error('Error adding domain:', error)
+        showToast('Failed to add domain slot')
+      } finally {
+        setIsUpdatingAddOns(false)
+      }
+    } else {
+      // User already has available billing slots, just show info
+      showToast('You have available domain slots. Use the domain selector to create a new workspace.')
+    }
+  }
+
+  const handleRemoveDomain = async () => {
+    if (extraDomains === 0) return
+    
+    // Check how many extra workspaces exist (non-primary)
+    const extraWorkspaces = workspaces.filter(ws => !ws.is_primary)
+    
+    if (extraWorkspaces.length === 0) {
+      // No extra workspaces to delete, just update billing
+      setIsUpdatingAddOns(true)
+      try {
+        const response = await fetch('/api/billing/manage-addons', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: extraDomains === 1 ? 'remove' : 'update',
+            addonType: 'extra_domains',
+            quantity: Math.max(0, extraDomains - 1)
+          })
+        })
+        
+        if (response.ok) {
+          setExtraDomains(Math.max(0, extraDomains - 1))
+          showToast('Domain slot removed!')
+          fetchUsageData()
+        } else {
+          const error = await response.json()
+          showToast(error.error || 'Failed to remove domain slot')
+        }
+      } catch (error) {
+        showToast('Failed to remove domain slot')
+      } finally {
+        setIsUpdatingAddOns(false)
+      }
+    } else {
+      // Show workspace deletion dialog
+      setDomainsToRemove(1)
+      setShowWorkspaceDeletionDialog(true)
+    }
+  }
+
+  const handleWorkspacesDeleted = async (workspaceIds: string[]) => {
+    // Delete workspaces from database
+    for (const workspaceId of workspaceIds) {
+      try {
+        const response = await fetch(`/api/workspaces?id=${workspaceId}`, {
+          method: 'DELETE'
+        })
+        
+        if (!response.ok) {
+          throw new Error('Failed to delete workspace')
+        }
+      } catch (error) {
+        console.error('Error deleting workspace:', error)
+        throw error
+      }
+    }
+    
+    // Refresh workspaces list
+    await fetchWorkspaces()
+    showToast(`${workspaceIds.length} workspace${workspaceIds.length > 1 ? 's' : ''} deleted successfully!`)
   }
 
   return (
@@ -1423,39 +1590,15 @@ export default function SettingsPage() {
                                 {/* Extra Domains */}
                                 <div className="flex items-center justify-between py-4 border-b border-[#1a1a1a]">
                           <div>
-                                    <div className="font-medium text-white font-mono tracking-tight text-sm">Extra Domains</div>
-                                    <div className="text-xs text-[#666] font-mono tracking-tight">$100 per domain per month</div>
+                                    <div className="font-medium text-white font-mono tracking-tight text-sm">Extra Workspaces</div>
+                                    <div className="text-xs text-[#666] font-mono tracking-tight">
+                                      $100 per workspace per month • {workspaceCounts.total} total ({workspaceCounts.extra} extra)
+                                    </div>
                                   </div>
                                   <div className="flex items-center gap-4">
                                     <div className="flex items-center gap-3">
                                       <Button
-                                        onClick={async () => {
-                                          if (extraDomains === 0) return
-                                          setIsUpdatingAddOns(true)
-                                          try {
-                                            const response = await fetch('/api/billing/manage-addons', {
-                                              method: 'POST',
-                                              headers: { 'Content-Type': 'application/json' },
-                                              body: JSON.stringify({
-                                                action: extraDomains === 1 ? 'remove' : 'update',
-                                                addonType: 'extra_domains',
-                                                quantity: Math.max(0, extraDomains - 1)
-                                              })
-                                            })
-                                            if (response.ok) {
-                                              setExtraDomains(Math.max(0, extraDomains - 1))
-                                              showToast('Extra domains updated!')
-                                              fetchUsageData()
-                                            } else {
-                                              const error = await response.json()
-                                              showToast(error.error || 'Failed to update domains')
-                                            }
-                                          } catch (error) {
-                                            showToast('Failed to update domains')
-                                          } finally {
-                                            setIsUpdatingAddOns(false)
-                                          }
-                                        }}
+                                        onClick={handleRemoveDomain}
                                         disabled={extraDomains === 0 || isUpdatingAddOns}
                                         size="sm"
                                         variant="outline"
@@ -1463,34 +1606,9 @@ export default function SettingsPage() {
                                       >
                                         <Minus className="w-4 h-4" />
                                       </Button>
-                                      <span className="text-white font-medium min-w-[2rem] text-center font-mono tracking-tight text-sm">{extraDomains}</span>
+                                      <span className="text-white font-medium min-w-[2rem] text-center font-mono tracking-tight text-sm">{workspaceCounts.extra}</span>
                                       <Button
-                                        onClick={async () => {
-                                          setIsUpdatingAddOns(true)
-                                          try {
-                                            const response = await fetch('/api/billing/manage-addons', {
-                                              method: 'POST',
-                                              headers: { 'Content-Type': 'application/json' },
-                                              body: JSON.stringify({
-                                                action: extraDomains === 0 ? 'add' : 'update',
-                                                addonType: 'extra_domains',
-                                                quantity: extraDomains + 1
-                                              })
-                                            })
-                                            if (response.ok) {
-                                              setExtraDomains(extraDomains + 1)
-                                              showToast('Extra domains updated!')
-                                              fetchUsageData()
-                                            } else {
-                                              const error = await response.json()
-                                              showToast(error.error || 'Failed to update domains')
-                                            }
-                                          } catch (error) {
-                                            showToast('Failed to update domains')
-                                          } finally {
-                                            setIsUpdatingAddOns(false)
-                                          }
-                                        }}
+                                        onClick={handleAddDomain}
                                         disabled={isUpdatingAddOns}
                                         size="sm"
                                         variant="outline"
@@ -1501,7 +1619,7 @@ export default function SettingsPage() {
                                     </div>
                                     <div className="text-right min-w-[5rem]">
                                       <div className="font-medium text-white font-mono tracking-tight text-sm">
-                                        {extraDomains > 0 ? `+$${extraDomains * 100}` : '$0'}
+                                        {workspaceCounts.extra > 0 ? `+$${workspaceCounts.extra * 100}` : '$0'}
                                       </div>
                                       <div className="text-xs text-[#666] font-mono tracking-tight">per month</div>
                                     </div>
@@ -1608,7 +1726,9 @@ export default function SettingsPage() {
                           </div>
 
                               {/* Domains */}
-                              <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                              <div className={`flex items-center justify-between py-3 border-b border-[#1a1a1a] rounded-lg px-3 transition-all duration-500 ${
+                                highlightedSection === 'domains' ? 'bg-white/5 border-white/20' : ''
+                              }`}>
                           <div>
                                   <div className="font-medium text-white font-mono tracking-tight text-sm">Domain Tracking</div>
                                   <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
@@ -2071,6 +2191,15 @@ export default function SettingsPage() {
           showToast('Domain add-ons updated successfully!')
         }}
       />
+
+      {/* Workspace Deletion Dialog */}
+      <WorkspaceDeletionDialog
+        open={showWorkspaceDeletionDialog}
+        onOpenChange={setShowWorkspaceDeletionDialog}
+        workspaces={workspaces}
+        domainsToRemove={domainsToRemove}
+        onConfirm={handleWorkspacesDeleted}
+      />
     </main>
   )
-} 
+}

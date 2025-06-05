@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    if (!['add', 'update', 'remove'].includes(action)) {
+    if (!['add', 'update', 'remove', 'sync'].includes(action)) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
 
@@ -102,6 +102,65 @@ export async function POST(req: NextRequest) {
     const subscription = await stripe.subscriptions.retrieve(userSubscription.subscription_id, {
       expand: ['items']
     })
+
+    // Handle sync action - synchronize billing with actual workspace count
+    if (action === 'sync' && addonType === 'extra_domains') {
+      try {
+        // Get actual workspace count directly from database
+        const serviceSupabase = createServiceRoleClient()
+        const { data: workspaces, error: workspaceError } = await serviceSupabase
+          .from('workspaces')
+          .select('id, is_primary')
+          .eq('user_id', user.id)
+        
+        if (workspaceError) {
+          throw new Error('Failed to fetch workspaces')
+        }
+        
+        const totalWorkspaces = workspaces?.length || 0
+        const extraWorkspaces = Math.max(0, totalWorkspaces - 1) // Subtract primary workspace
+        
+        // Find existing subscription item for domains
+        const existingItem = subscription.items.data.find(item => item.price.id === priceId)
+        const currentQuantity = existingItem?.quantity || 0
+        
+        if (extraWorkspaces !== currentQuantity) {
+          if (extraWorkspaces === 0 && existingItem) {
+            // Remove addon if no extra workspaces
+            await stripe.subscriptionItems.del(existingItem.id, {
+              proration_behavior: 'always_invoice'
+            })
+          } else if (extraWorkspaces > 0) {
+            if (existingItem) {
+              // Update existing
+              await stripe.subscriptionItems.update(existingItem.id, {
+                quantity: extraWorkspaces,
+                proration_behavior: 'always_invoice'
+              })
+            } else {
+              // Create new
+              await stripe.subscriptionItems.create({
+                subscription: userSubscription.subscription_id,
+                price: priceId,
+                quantity: extraWorkspaces,
+                proration_behavior: 'always_invoice'
+              })
+            }
+          }
+        }
+        
+        return NextResponse.json({ 
+          success: true, 
+          action: 'sync',
+          addonType,
+          quantity: extraWorkspaces,
+          message: `Synced billing to ${extraWorkspaces} extra domains`
+        })
+      } catch (syncError) {
+        console.error('Sync error:', syncError)
+        return NextResponse.json({ error: 'Failed to sync billing' }, { status: 500 })
+      }
+    }
 
     // Find existing subscription item for this addon
     const existingItem = subscription.items.data.find(item => item.price.id === priceId)

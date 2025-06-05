@@ -1,40 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getUserSubscription } from '@/lib/stripe-profiles'
 
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     const supabase = createClient()
     
-    // Get the current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    
-    // Get user's subscription data
-    const subscription = await getUserSubscription(user.id)
-    
-    // Admin override: if user is admin, always treat as pro
-    const effectivePlan = subscription?.is_admin ? 'pro' : (subscription?.subscription_plan || 'free')
-    const effectiveStatus = subscription?.is_admin ? 'active' : (subscription?.subscription_status || 'free')
-    
+
+    // Get user profile with subscription info
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_plan, subscription_status, stripe_customer_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile) {
+      return NextResponse.json({
+        subscriptionPlan: 'free',
+        subscriptionStatus: 'active',
+        stripeCustomerId: null
+      })
+    }
+
     return NextResponse.json({
-      stripeCustomerId: subscription?.stripe_customer_id || null,
-      subscriptionStatus: effectiveStatus,
-      subscriptionPlan: effectivePlan,
-      subscriptionPeriodEnd: subscription?.subscription_period_end || null,
-      isAdmin: subscription?.is_admin || false
+      subscriptionPlan: profile.subscription_plan || 'free',
+      subscriptionStatus: profile.subscription_status || 'active',
+      stripeCustomerId: profile.stripe_customer_id
     })
+
   } catch (error) {
-    console.error('Error fetching user subscription:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch subscription data' },
-      { status: 500 }
-    )
+    console.error('Error fetching subscription:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 } 
