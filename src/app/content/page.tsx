@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { useCompany } from '@/hooks/useCompany'
 import { CompletedArticlesTab } from './components/completed-articles-tab'
@@ -16,6 +17,7 @@ const tabs = [
 
 export default function ContentPage() {
   const { loading } = useAuth()
+  const { switching } = useWorkspace()
   const { isLoading: companyLoading } = useCompany()
   const shouldReduceMotion = useReducedMotion()
   const [activeTab, setActiveTab] = useState('completed')
@@ -130,5 +132,49 @@ export default function ContentPage() {
         </AnimatePresence>
       </div>
       </motion.main>
-  )
-} 
+
+      {/* Workspace Switching Overlay */}
+      {switching && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center"
+          style={{ pointerEvents: 'all' }}
+        >
+          <div className="text-center">
+            <div className="w-16 h-16 mx-auto mb-4" style={{ perspective: '300px' }}>
+              <div 
+                className="w-full h-full workspace-flip-animation"
+                style={{ 
+                  transformStyle: 'preserve-3d'
+                }}
+              >
+                <img 
+                  src="/images/split-icon-white.svg" 
+                  alt="Split" 
+                  className="w-full h-full"
+                />
+              </div>
+            </div>
+            <h2 className="text-xl font-semibold text-white mb-2">Switching workspace...</h2>
+            <p className="text-[#888] text-sm">Loading your workspace data</p>
+          </div>
+        </motion.div>
+      )}
+
+      <style jsx global>{`
+        @keyframes workspaceFlip {
+          0% { transform: rotateY(0deg); }
+          25% { transform: rotateY(90deg); }
+          50% { transform: rotateY(180deg); }
+          75% { transform: rotateY(270deg); }
+          100% { transform: rotateY(360deg); }
+        }
+        
+        .workspace-flip-animation {
+          animation: workspaceFlip 2s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+        }
+      `}</style>
+    )
+  } 

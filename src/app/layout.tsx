@@ -3,6 +3,7 @@ import "@/fonts/cal-sans.css"; // Changed the import to use a local CSS file
 import "./globals.css";
 // import Announcements from "@/components/announcements"; // Removed import again
 import { AuthProvider } from "@/contexts/AuthContext"; // Import the AuthProvider
+import { WorkspaceProvider } from "@/contexts/WorkspaceContext"; // Import the WorkspaceProvider
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 // Removed inter import
@@ -98,13 +99,15 @@ export default function RootLayout({
         */}
         {/* Wrap the main content with AuthProvider */}
         <AuthProvider>
-          <TooltipProvider>
-            {/* Removed LPTopbar - it's now handled in the (main) layout */}
-            <main className="flex-grow">
-              {children}
-            </main>
-            {/* Removed Footer - it's now handled in the (main) layout */}
-          </TooltipProvider>
+          <WorkspaceProvider>
+            <TooltipProvider>
+              {/* Removed LPTopbar - it's now handled in the (main) layout */}
+              <main className="flex-grow">
+                {children}
+              </main>
+              {/* Removed Footer - it's now handled in the (main) layout */}
+            </TooltipProvider>
+          </WorkspaceProvider>
         </AuthProvider>
       </body>
     </html>

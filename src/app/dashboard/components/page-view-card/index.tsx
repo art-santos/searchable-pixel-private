@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { CrawlerSelector } from "@/components/custom/crawler-selector"
 import {
   TimeframeSelector,
-  TimeframeOption,
+  TimeframeOption as TimeframeType,
 } from "@/components/custom/timeframe-selector"
 import { ViewsChart } from "./views-chart"
 import { useState, useEffect } from "react"
@@ -10,8 +10,8 @@ import { motion, useReducedMotion } from "framer-motion"
 import { LinkIcon, TrendingUp, Loader2 } from "lucide-react"
 import { ConnectAnalyticsDialog } from "../connect-analytics-dialog"
 import { useAuth } from "@/contexts/AuthContext"
-
-export type TimeframeType = TimeframeOption
+import { useWorkspace } from "@/contexts/WorkspaceContext"
+import { Chart } from "./chart"
 
 interface CrawlerOption {
   id: string
@@ -28,6 +28,7 @@ interface ChartDataPoint {
 
 export function PageViewCard() {
   const { supabase } = useAuth()
+  const { currentWorkspace, switching } = useWorkspace()
   const [timeframe, setTimeframe] = useState<TimeframeType>('Last 24 hours')
   const [selectedCrawler, setSelectedCrawler] = useState<string>('all')
   const [isChartVisible, setIsChartVisible] = useState(false)
@@ -40,12 +41,31 @@ export function PageViewCard() {
   const [isConnected, setIsConnected] = useState(false)
   const shouldReduceMotion = useReducedMotion()
 
-  // Fetch data when component mounts or when timeframe/crawler changes
+  // Fetch data when component mounts, timeframe/crawler changes, or workspace changes
   useEffect(() => {
-    fetchCrawlerVisits()
+    if (currentWorkspace) {
+      fetchCrawlerVisits()
+    }
+  }, [timeframe, selectedCrawler, currentWorkspace])
+
+  // Listen for workspace changes
+  useEffect(() => {
+    const handleWorkspaceChange = () => {
+      if (currentWorkspace) {
+        fetchCrawlerVisits()
+      }
+    }
+
+    window.addEventListener('workspaceChanged', handleWorkspaceChange)
+    return () => window.removeEventListener('workspaceChanged', handleWorkspaceChange)
   }, [timeframe, selectedCrawler])
 
   const fetchCrawlerVisits = async () => {
+    if (!currentWorkspace) {
+      setIsLoading(false)
+      return
+    }
+
     setIsLoading(true)
     setError(null)
     setIsChartVisible(false)
@@ -58,7 +78,7 @@ export function PageViewCard() {
       // Auto-detect user's timezone
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
       
-      const response = await fetch(`/api/dashboard/crawler-visits?timeframe=${encodeURIComponent(timeframe)}&crawler=${selectedCrawler}&timezone=${encodeURIComponent(timezone)}`, {
+      const response = await fetch(`/api/dashboard/crawler-visits?timeframe=${encodeURIComponent(timeframe)}&crawler=${selectedCrawler}&timezone=${encodeURIComponent(timezone)}&workspaceId=${currentWorkspace.id}`, {
         headers: {
           'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
         }
@@ -151,7 +171,21 @@ export function PageViewCard() {
         </CardHeader>
         
         <CardContent className="flex-1 min-h-0 pt-4 pr-6 pb-8 pl-6 flex flex-col relative">
-          {isLoading ? (
+          {switching ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="w-8 h-8 mx-auto mb-3">
+                  <img 
+                    src="/images/split-icon-white.svg" 
+                    alt="Split" 
+                    className="w-full h-full animate-spin"
+                    style={{ animation: 'spin 1s linear infinite' }}
+                  />
+                </div>
+                <p className="text-[#666] text-sm">Switching workspace...</p>
+              </div>
+            </div>
+          ) : isLoading ? (
             <div className="flex items-center justify-center h-full">
               <Loader2 className="w-6 h-6 animate-spin text-[#666]" />
             </div>

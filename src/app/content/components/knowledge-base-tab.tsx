@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronRight } from 'lucide-react'
+import { motion, useReducedMotion } from 'framer-motion'
+import { ChevronRight, Database, Upload, FileText, Globe, Sparkles } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 import { useKnowledgeBase } from '@/hooks/useKnowledgeBase'
 import { useCompany } from '@/hooks/useCompany'
 import { KnowledgeTable } from '@/components/knowledge-base/knowledge-table'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
 
 const availableTags = [
   { value: 'company-overview', label: 'Company Overview' },
@@ -22,6 +24,8 @@ const availableTags = [
 ]
 
 export function KnowledgeBaseTab() {
+  const { currentWorkspace, switching } = useWorkspace()
+  const shouldReduceMotion = useReducedMotion()
   const { company, isLoading: companyLoading } = useCompany()
   const knowledgeBase = useKnowledgeBase()
   const [newKnowledgeContent, setNewKnowledgeContent] = useState('')
@@ -176,6 +180,43 @@ export function KnowledgeBaseTab() {
         variant: 'destructive'
       })
     }
+  }
+
+  // Show workspace switching loading state
+  if (switching) {
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="w-8 h-8 mx-auto mb-3">
+            <div 
+              className="w-full h-full workspace-flip-animation"
+              style={{ 
+                transformStyle: 'preserve-3d',
+                perspective: '200px'
+              }}
+            >
+              <img 
+                src="/images/split-icon-white.svg" 
+                alt="Split" 
+                className="w-full h-full"
+              />
+            </div>
+          </div>
+          <p className="text-[#666] text-sm">Loading workspace knowledge base...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show loading state when no workspace is selected
+  if (!currentWorkspace) {
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-[#666] text-sm">No workspace selected</p>
+        </div>
+      </div>
+    )
   }
 
   return (

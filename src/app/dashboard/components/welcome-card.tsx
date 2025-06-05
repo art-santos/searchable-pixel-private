@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { motion, useAnimation, useReducedMotion } from "framer-motion"
 import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/AuthContext"
+import { useWorkspace } from "@/contexts/WorkspaceContext"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { BarChart3, FileText, Zap, ExternalLink, BookOpen, HelpCircle, Rocket, ArrowRight, TrendingUp } from "lucide-react"
@@ -22,6 +23,7 @@ interface VisibilityScore {
 
 export function WelcomeCard() {
   const { user } = useAuth()
+  const { currentWorkspace } = useWorkspace()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [visibilityScore, setVisibilityScore] = useState<VisibilityScore | null>(null)
@@ -64,7 +66,7 @@ export function WelcomeCard() {
   // Fetch latest visibility score
   useEffect(() => {
     const fetchVisibilityScore = async () => {
-      if (!user || !supabase) {
+      if (!user || !supabase || !currentWorkspace) {
         setLoadingScore(false)
         return
       }
@@ -74,7 +76,7 @@ export function WelcomeCard() {
           .from('max_visibility_runs')
           .select('id, total_score, created_at, status')
           .eq('triggered_by', user.id)
-          .eq('status', 'completed')
+          .eq('workspace_id', currentWorkspace.id)
           .order('created_at', { ascending: false })
           .limit(1)
 
@@ -94,7 +96,7 @@ export function WelcomeCard() {
     }
 
     fetchVisibilityScore()
-  }, [user, supabase])
+  }, [user, supabase, currentWorkspace])
 
   useEffect(() => {
     if (shouldReduceMotion) {

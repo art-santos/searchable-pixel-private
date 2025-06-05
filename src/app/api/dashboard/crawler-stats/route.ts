@@ -17,8 +17,13 @@ export async function GET(request: Request) {
     // Get query params
     const url = new URL(request.url)
     const timeframe = url.searchParams.get('timeframe') || 'today'
+    const workspaceId = url.searchParams.get('workspaceId') // Add workspace filtering
     
-    console.log(`[Crawler Stats API] Fetching crawler stats for timeframe: ${timeframe}`)
+    if (!workspaceId) {
+      return NextResponse.json({ error: 'Workspace ID required' }, { status: 400 })
+    }
+    
+    console.log(`[Crawler Stats API] Fetching crawler stats for workspace: ${workspaceId}, timeframe: ${timeframe}`)
     
     // Calculate date range based on timeframe
     let startDate = new Date()
@@ -39,11 +44,11 @@ export async function GET(request: Request) {
 
     console.log(`[Crawler Stats API] Using date range from: ${startDate.toISOString()}`)
 
-    // Fetch crawler visits within the timeframe
+    // Fetch crawler visits within the timeframe, filtered by workspace
     const { data: visits, error } = await supabase
       .from('crawler_visits')
       .select('crawler_name, crawler_company, timestamp')
-      .eq('user_id', userId)
+      .eq('workspace_id', workspaceId)  // Filter by workspace instead of user
       .gte('timestamp', startDate.toISOString())
 
     if (error) {
@@ -51,7 +56,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Failed to fetch crawler data' }, { status: 500 })
     }
 
-    console.log(`[Crawler Stats API] Found ${visits?.length || 0} visits`)
+    console.log(`[Crawler Stats API] Found ${visits?.length || 0} visits for workspace ${workspaceId}`)
 
     if (!visits || visits.length === 0) {
       return NextResponse.json({

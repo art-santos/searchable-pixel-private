@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { FileText, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
 import { mockCompletedArticles, type Article } from '../data/mock-articles'
 
 interface CompletedArticlesTabProps {
@@ -17,6 +18,7 @@ export function CompletedArticlesTab({
   onSwitchToKnowledge 
 }: CompletedArticlesTabProps) {
   const router = useRouter()
+  const { currentWorkspace, switching } = useWorkspace()
   const shouldReduceMotion = useReducedMotion()
   const [currentPage, setCurrentPage] = useState(1)
   const articlesPerPage = 9
@@ -63,6 +65,43 @@ export function CompletedArticlesTab({
     setCurrentPage(page)
     // Scroll to top when page changes
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  // Show workspace switching loading state
+  if (switching) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 mx-auto mb-3">
+            <div 
+              className="w-full h-full workspace-flip-animation"
+              style={{ 
+                transformStyle: 'preserve-3d',
+                perspective: '200px'
+              }}
+            >
+              <img 
+                src="/images/split-icon-white.svg" 
+                alt="Split" 
+                className="w-full h-full"
+              />
+            </div>
+          </div>
+          <p className="text-[#666] text-sm">Loading workspace articles...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show loading state when no workspace is selected
+  if (!currentWorkspace) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-[#666] text-sm">No workspace selected</p>
+        </div>
+      </div>
+    )
   }
 
   if (currentArticles.length === 0) {

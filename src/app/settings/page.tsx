@@ -35,6 +35,7 @@ import { PlanType } from '@/lib/subscription/config'
 import { useSubscription } from '@/hooks/useSubscription'
 import { UsageDisplay } from '@/components/subscription/usage-display'
 import { useAuth } from '@/contexts/AuthContext'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
 import { createClient } from '@/lib/supabase/client'
 import { AvatarUpload } from '@/components/profile/avatar-upload'
 import { BillingPreferences } from '@/components/billing/billing-preferences'
@@ -209,6 +210,7 @@ const pricingPlans: PricingPlan[] = [
 
 export default function SettingsPage() {
   const { user } = useAuth()
+  const { currentWorkspace, switching } = useWorkspace()
   const router = useRouter()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [profileLoading, setProfileLoading] = useState(true)
@@ -224,6 +226,24 @@ export default function SettingsPage() {
   const [showSuccessToast, setShowSuccessToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('Settings saved successfully')
   const { usage: subscriptionUsage, refresh: refreshUsage } = useSubscription()
+  
+  // Workspace state management
+  const [workspaceSettings, setWorkspaceSettings] = useState({
+    name: '',
+    domain: '',
+    email: ''
+  })
+  
+  // Initialize workspace settings from current workspace
+  useEffect(() => {
+    if (currentWorkspace) {
+      setWorkspaceSettings({
+        name: currentWorkspace.workspace_name || '',
+        domain: currentWorkspace.domain || '',
+        email: user?.email || ''
+      })
+    }
+  }, [currentWorkspace, user])
   
   // Real usage data
   const [usageData, setUsageData] = useState<UsageData | null>(null)
@@ -624,38 +644,51 @@ export default function SettingsPage() {
 
   // Unified function to save all general settings (workspace + profile)
   const handleSaveSettings = async () => {
-    if (!user || !supabase) return
+    if (!user || !supabase || !currentWorkspace) return
 
     setIsLoading(true)
     try {
-      const { error } = await supabase
+      // Save profile data
+      const { error: profileError } = await supabase
         .from('profiles')
         .upsert({
           id: user.id,
           first_name: profile?.first_name,
-          workspace_name: workspace.name,
-          domain: workspace.domain,
-          email: workspace.email,
           updated_by: user.id
         })
 
-      if (error) {
-        console.error('Error updating profile:', error)
+      if (profileError) {
+        console.error('Error updating profile:', profileError)
+        showToast('Failed to save profile settings')
+        return
+      }
+
+      // Save workspace data
+      const { error: workspaceError } = await supabase
+        .from('workspaces')
+        .update({
+          workspace_name: workspaceSettings.name,
+          domain: workspaceSettings.domain,
+          updated_by: user.id
+        })
+        .eq('id', currentWorkspace.id)
+
+      if (workspaceError) {
+        console.error('Error updating workspace:', workspaceError)
+        showToast('Failed to save workspace settings')
         return
       }
 
       // Update local profile state
       setProfile((prev: UserProfile | null) => ({
         ...prev,
-        first_name: profile?.first_name,
-        workspace_name: workspace.name,
-        domain: workspace.domain,
-        email: workspace.email
+        first_name: profile?.first_name
       }))
 
       showToast('Settings saved successfully')
     } catch (err) {
       console.error('Error saving settings:', err)
+      showToast('Failed to save settings')
     } finally {
       setIsLoading(false)
     }
@@ -1197,13 +1230,15 @@ export default function SettingsPage() {
 
                   {/* Workspace Settings */}
                   <div className="space-y-6 pt-6 border-t border-[#1a1a1a]">
-                    <h3 className="text-white font-medium">Workspace Settings</h3>
+                    <h3 className="text-white font-medium">Current Workspace Settings</h3>
                     
+                    {currentWorkspace ? (
+                      <>
                     <div>
                       <label className="block text-sm text-[#888] mb-2">Workspace Name</label>
                       <Input
-                        value={workspace.name}
-                        onChange={(e) => setWorkspace(prev => ({ ...prev, name: e.target.value }))}
+                            value={workspaceSettings.name}
+                            onChange={(e) => setWorkspaceSettings(prev => ({ ...prev, name: e.target.value }))}
                         placeholder="My Company"
                         className="bg-[#0a0a0a] border-[#2a2a2a] text-white h-10"
                       />
@@ -1212,8 +1247,8 @@ export default function SettingsPage() {
                     <div>
                       <label className="block text-sm text-[#888] mb-2">Primary Domain</label>
                       <Input
-                        value={workspace.domain}
-                        onChange={(e) => setWorkspace(prev => ({ ...prev, domain: e.target.value }))}
+                            value={workspaceSettings.domain}
+                            onChange={(e) => setWorkspaceSettings(prev => ({ ...prev, domain: e.target.value }))}
                         placeholder="example.com"
                         className="bg-[#0a0a0a] border-[#2a2a2a] text-white h-10"
                       />
@@ -1223,14 +1258,29 @@ export default function SettingsPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm text-[#888] mb-2">Contact Email</label>
-                      <Input
-                        value={workspace.email}
-                        onChange={(e) => setWorkspace(prev => ({ ...prev, email: e.target.value }))}
-                        placeholder="team@example.com"
-                        className="bg-[#0a0a0a] border-[#2a2a2a] text-white h-10"
-                      />
+                          <label className="block text-sm text-[#888] mb-2">Workspace Type</label>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs px-2 py-1 rounded ${
+                              currentWorkspace.is_primary 
+                                ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                                : 'bg-gray-500/10 text-gray-400 border border-gray-500/20'
+                            }`}>
+                              {currentWorkspace.is_primary ? 'Primary Workspace' : 'Additional Workspace'}
+                            </span>
                     </div>
+                          <p className="text-xs text-[#666] mt-2">
+                            {currentWorkspace.is_primary 
+                              ? 'This is your primary workspace and cannot be deleted'
+                              : 'Additional workspace that can be managed independently'
+                            }
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4">
+                        <p className="text-[#666] text-sm">Loading workspace settings...</p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Save Button */}
@@ -2200,6 +2250,50 @@ export default function SettingsPage() {
         domainsToRemove={domainsToRemove}
         onConfirm={handleWorkspacesDeleted}
       />
+
+      {/* Workspace Switching Overlay */}
+      {switching && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center"
+          style={{ pointerEvents: 'all' }}
+        >
+          <div className="text-center">
+            <div className="w-16 h-16 mx-auto mb-4" style={{ perspective: '300px' }}>
+              <div 
+                className="w-full h-full workspace-flip-animation"
+                style={{ 
+                  transformStyle: 'preserve-3d'
+                }}
+              >
+                <img 
+                  src="/images/split-icon-white.svg" 
+                  alt="Split" 
+                  className="w-full h-full"
+                />
+              </div>
+            </div>
+            <h2 className="text-xl font-semibold text-white mb-2">Switching workspace...</h2>
+            <p className="text-[#888] text-sm">Loading your workspace data</p>
+          </div>
+        </motion.div>
+      )}
+
+      <style jsx global>{`
+        @keyframes workspaceFlip {
+          0% { transform: rotateY(0deg); }
+          25% { transform: rotateY(90deg); }
+          50% { transform: rotateY(180deg); }
+          75% { transform: rotateY(270deg); }
+          100% { transform: rotateY(360deg); }
+        }
+        
+        .workspace-flip-animation {
+          animation: workspaceFlip 2s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+        }
+      `}</style>
     </main>
   )
-}
+} 

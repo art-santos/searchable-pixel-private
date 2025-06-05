@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth } from '@/contexts/AuthContext'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
 import { PageViewCard } from './components/page-view-card'
 import { WelcomeCard } from './components/welcome-card'
 import { AttributionBySourceCard } from './components/attribution-by-source-card'
@@ -11,6 +12,7 @@ import { CheckCircle2, XCircle, X } from 'lucide-react'
 
 export default function Dashboard() {
   const { user, supabase, loading } = useAuth()
+  const { switching } = useWorkspace()
   const shouldReduceMotion = useReducedMotion()
   const [setupStatus, setSetupStatus] = useState<'success' | 'canceled' | null>(null)
 
@@ -31,6 +33,11 @@ export default function Dashboard() {
       }
     }
   }, [])
+
+  // Debug switching state changes
+  useEffect(() => {
+    console.log('🎭 Dashboard switching state changed:', switching)
+  }, [switching])
 
   const containerVariants = shouldReduceMotion ? {
     hidden: { opacity: 1 },
@@ -132,6 +139,50 @@ export default function Dashboard() {
           </motion.div>
         </div>
       </div>
+
+      {/* Workspace Switching Overlay */}
+      {switching && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center"
+          style={{ pointerEvents: 'all' }}
+        >
+          <div className="text-center">
+            <div className="w-16 h-16 mx-auto mb-4" style={{ perspective: '300px' }}>
+              <div 
+                className="w-full h-full workspace-flip-animation"
+                style={{ 
+                  transformStyle: 'preserve-3d'
+                }}
+              >
+                <img 
+                  src="/images/split-icon-white.svg" 
+                  alt="Split" 
+                  className="w-full h-full"
+                />
+              </div>
+            </div>
+            <h2 className="text-xl font-semibold text-white mb-2">Switching workspace...</h2>
+            <p className="text-[#888] text-sm">Loading your workspace data</p>
+          </div>
+        </motion.div>
+      )}
+
+      <style jsx global>{`
+        @keyframes workspaceFlip {
+          0% { transform: rotateY(0deg); }
+          25% { transform: rotateY(90deg); }
+          50% { transform: rotateY(180deg); }
+          75% { transform: rotateY(270deg); }
+          100% { transform: rotateY(360deg); }
+        }
+        
+        .workspace-flip-animation {
+          animation: workspaceFlip 2s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+        }
+      `}</style>
     </motion.main>
   )
 }

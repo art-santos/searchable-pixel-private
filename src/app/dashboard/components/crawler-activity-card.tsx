@@ -3,6 +3,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { motion, useReducedMotion } from "framer-motion"
 import { TimeframeSelector, TimeframeOption } from "@/components/custom/timeframe-selector"
 import { useState } from "react"
+import { useWorkspace } from "@/contexts/WorkspaceContext"
+import { Loader2 } from "lucide-react"
 
 interface CrawlerLog {
   id: number
@@ -101,6 +103,8 @@ const crawlerLogs: CrawlerLog[] = [
 export function CrawlerActivityCard() {
   const shouldReduceMotion = useReducedMotion()
   const [timeframe, setTimeframe] = useState<TimeframeOption>('Last 24 hours')
+  const { currentWorkspace, switching } = useWorkspace()
+  const [isLoading, setIsLoading] = useState(false)
 
   const cardVariants = shouldReduceMotion 
     ? { hidden: {}, visible: {} }
@@ -152,48 +156,100 @@ export function CrawlerActivityCard() {
 
             {/* Log Entries */}
             <div className="flex-1 overflow-hidden bg-[#0c0c0c] relative min-h-0 group">
-              <div 
-                className="overflow-y-auto h-full px-6 py-3 custom-scrollbar"
-                style={{
-                  scrollbarWidth: 'thin',
-                  scrollbarColor: '#333 transparent'
-                }}
-              >
-                <div className="space-y-3">
-                  {crawlerLogs.map((log, index) => (
-                    <div key={log.id} className="group/item">
-                      <div className="flex items-center justify-between py-2 px-0 rounded-lg hover:bg-[#0f0f0f] transition-all duration-200">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-1.5">
-                            <span className="text-xs text-[#888] font-mono">{log.time}</span>
-                            <span className="px-2 py-0.5 text-xs font-medium bg-green-400/10 text-green-400 rounded">
-                              {log.method}
-                            </span>
-                            <span className="px-2 py-0.5 text-xs font-medium bg-orange-400/10 text-orange-400 rounded">
-                              {log.provider}
-                            </span>
-                          </div>
-                          <div className="text-sm text-[#ccc] truncate mb-1">
-                            {log.domain}<span className="text-[#777]">{log.path}</span>
-                          </div>
-                          <div className="text-xs text-[#777]">
-                            {log.crawler}
-                          </div>
-                        </div>
-                      </div>
+              {switching ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <div className="w-8 h-8 mx-auto mb-3">
+                      <img 
+                        src="/images/split-icon-white.svg" 
+                        alt="Split" 
+                        className="w-full h-full animate-spin"
+                        style={{ animation: 'spin 1s linear infinite' }}
+                      />
                     </div>
-                  ))}
+                    <p className="text-[#666] text-sm">Switching workspace...</p>
+                  </div>
                 </div>
-              </div>
-              
-              {/* View More Section - Only on Hover */}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#0c0c0c] via-[#0c0c0c]/95 to-transparent pt-6 pb-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <div className="flex justify-center">
-                  <button className="text-sm text-[#888] hover:text-white transition-colors font-medium px-4 py-2 rounded-lg border border-[#2a2a2a] hover:border-[#444] bg-[#111] hover:bg-[#1a1a1a]">
-                    View all activity
-                  </button>
-                </div>
-              </div>
+              ) : (
+                <>
+                  <div 
+                    className="overflow-y-auto h-full px-6 py-3 custom-scrollbar"
+                    style={{
+                      scrollbarWidth: 'thin',
+                      scrollbarColor: '#333 transparent'
+                    }}
+                  >
+                    <div className="space-y-3">
+                      {isLoading ? (
+                        <div className="flex justify-center items-center h-full">
+                          <Loader2 className="animate-spin h-8 w-8 text-white" />
+                        </div>
+                      ) : (
+                        crawlerLogs.map((log, index) => (
+                          <div key={log.id} className="group/item">
+                            <div className="flex items-center justify-between py-2 px-0 rounded-lg hover:bg-[#0f0f0f] transition-all duration-200">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-3 mb-1.5">
+                                  <span className="text-xs text-[#888] font-mono">{log.time}</span>
+                                  <span className="px-2 py-0.5 text-xs font-medium bg-green-400/10 text-green-400 rounded">
+                                    {log.method}
+                                  </span>
+                                  <span className="px-2 py-0.5 text-xs font-medium bg-orange-400/10 text-orange-400 rounded">
+                                    {log.provider}
+                                  </span>
+                                </div>
+                                <div className="text-sm text-[#ccc] truncate mb-1">
+                                  {log.domain}<span className="text-[#777]">{log.path}</span>
+                                </div>
+                                <div className="text-xs text-[#777]">
+                                  {log.crawler}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* View More Section - Only on Hover */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#0c0c0c] via-[#0c0c0c]/95 to-transparent pt-6 pb-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <div className="flex justify-center">
+                      <button className="text-sm text-[#888] hover:text-white transition-colors font-medium px-4 py-2 rounded-lg border border-[#2a2a2a] hover:border-[#444] bg-[#111] hover:bg-[#1a1a1a]">
+                        View all activity
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </motion.div>
+        </CardContent>
+      </Card>
+    </>
+  )
+} 
+                                <div className="text-xs text-[#777]">
+                                  {log.crawler}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* View More Section - Only on Hover */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#0c0c0c] via-[#0c0c0c]/95 to-transparent pt-6 pb-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <div className="flex justify-center">
+                      <button className="text-sm text-[#888] hover:text-white transition-colors font-medium px-4 py-2 rounded-lg border border-[#2a2a2a] hover:border-[#444] bg-[#111] hover:bg-[#1a1a1a]">
+                        View all activity
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </motion.div>
         </CardContent>

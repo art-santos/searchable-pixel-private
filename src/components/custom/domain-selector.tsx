@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { ChevronDown, Plus, Crown, Check } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
-import { createClient } from "@/lib/supabase/client"
+import { useWorkspace } from "@/contexts/WorkspaceContext"
 import { useRouter } from "next/navigation"
 import {
   DropdownMenu,
@@ -15,14 +15,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { WorkspaceCreationDialog } from '@/components/workspace/workspace-creation-dialog'
 
-interface Workspace {
-  id: string
-  domain: string
-  workspace_name: string
-  is_primary: boolean
-  created_at: string
-}
-
 interface DomainSelectorProps {
   showAddButton?: boolean
   position?: 'welcome' | 'topbar'
@@ -31,84 +23,48 @@ interface DomainSelectorProps {
 export function DomainSelector({ showAddButton = false, position = 'welcome' }: DomainSelectorProps) {
   const { user } = useAuth()
   const router = useRouter()
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([])
-  const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null)
-  const [profileDomain, setProfileDomain] = useState<string | null>(null)
-  const [profileWorkspaceName, setProfileWorkspaceName] = useState<string | null>(null)
+  const { 
+    currentWorkspace, 
+    workspaces, 
+    loading, 
+    switchWorkspace, 
+    refreshWorkspaces 
+  } = useWorkspace()
+  
   const [faviconUrl, setFaviconUrl] = useState<string>('/images/split-icon-white.svg')
-  const [loading, setLoading] = useState(true)
   const [subscription, setSubscription] = useState<any>(null)
   const [showWorkspaceCreationDialog, setShowWorkspaceCreationDialog] = useState(false)
-  const supabase = createClient()
 
-  // Get display domain from current workspace or fallback to profile
+  // Get display domain from current workspace or fallback
   const getDisplayDomain = () => {
     if (loading) return "Loading..."
     if (currentWorkspace?.domain) return currentWorkspace.domain
     if (currentWorkspace?.workspace_name) return `${currentWorkspace.workspace_name.toLowerCase().replace(/\s+/g, '')}.com`
-    // Fallback to profile data when no workspaces exist
-    if (profileDomain) return profileDomain
-    if (profileWorkspaceName) return `${profileWorkspaceName.toLowerCase().replace(/\s+/g, '')}.com`
     return "your-domain.com"
   }
 
-  // Fetch workspaces, subscription data, and profile fallback
+  // Fetch subscription data
   useEffect(() => {
-    const fetchData = async () => {
-      if (!user || !supabase) {
-        setLoading(false)
-        return
-      }
+    const fetchSubscription = async () => {
+      if (!user) return
 
       try {
-        // Fetch workspaces
-        const workspacesResponse = await fetch('/api/workspaces')
-        if (workspacesResponse.ok) {
-          const workspacesData = await workspacesResponse.json()
-          setWorkspaces(workspacesData.workspaces || [])
-          
-          // Set current workspace to primary workspace
-          const primaryWorkspace = workspacesData.workspaces?.find((ws: Workspace) => ws.is_primary)
-          if (primaryWorkspace) {
-            setCurrentWorkspace(primaryWorkspace)
-          } else if (workspacesData.workspaces?.length === 0) {
-            // If no workspaces exist, fetch profile data as fallback
-            const { data: profile, error: profileError } = await supabase
-              .from('profiles')
-              .select('domain, workspace_name')
-              .eq('id', user.id)
-              .single()
-            
-            if (!profileError && profile) {
-              setProfileDomain(profile.domain)
-              setProfileWorkspaceName(profile.workspace_name)
-            }
-          }
-        } else {
-          console.error('Failed to fetch workspaces:', workspacesResponse.status, workspacesResponse.statusText)
-        }
-
-        // Fetch subscription
         const subscriptionResponse = await fetch('/api/user/subscription')
         if (subscriptionResponse.ok) {
           const subscriptionData = await subscriptionResponse.json()
           setSubscription(subscriptionData)
-        } else {
-          console.error('Failed to fetch subscription:', subscriptionResponse.status, subscriptionResponse.statusText)
         }
       } catch (err) {
-        console.error('Error in data fetch:', err)
-      } finally {
-        setLoading(false)
+        console.error('Error fetching subscription:', err)
       }
     }
 
-    fetchData()
-  }, [user, supabase])
+    fetchSubscription()
+  }, [user])
 
-  // Load favicon when current workspace or profile data changes
+  // Load favicon when current workspace changes
   useEffect(() => {
-    const domain = currentWorkspace?.domain || profileDomain
+    const domain = currentWorkspace?.domain
     
     if (domain && domain !== "your-domain.com") {
       // Use Google's favicon service directly for simplicity and reliability
@@ -117,7 +73,7 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
     } else {
       setFaviconUrl('/images/split-icon-white.svg')
     }
-  }, [currentWorkspace, profileDomain])
+  }, [currentWorkspace])
 
   // Check if user can add domains
   const canAddDomains = subscription?.subscriptionPlan === 'plus' || subscription?.subscriptionPlan === 'pro'
@@ -136,28 +92,21 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
 
   const handleWorkspaceCreated = async (workspace: any) => {
     // Refresh workspaces list
-    try {
-      const workspacesResponse = await fetch('/api/workspaces')
-      if (workspacesResponse.ok) {
-        const workspacesData = await workspacesResponse.json()
-        setWorkspaces(workspacesData.workspaces || [])
-        
-        // Switch to the newly created workspace
-        const newWorkspace = workspacesData.workspaces?.find((ws: Workspace) => ws.id === workspace.id)
-        if (newWorkspace) {
-          setCurrentWorkspace(newWorkspace)
-        }
+    await refreshWorkspaces()
+    
+    // The workspaces array from context should now be updated
+    // We need to wait a bit for React state to update
+    setTimeout(() => {
+      const newWorkspace = workspaces.find(ws => ws.id === workspace.id)
+      
+      if (newWorkspace) {
+        switchWorkspace(newWorkspace)
       }
-    } catch (error) {
-      console.error('Error refreshing workspaces:', error)
-    }
+    }, 100)
   }
 
-  const handleWorkspaceSwitch = (workspace: Workspace) => {
-    setCurrentWorkspace(workspace)
-    // TODO: Implement workspace context switching
-    // This will be used to filter all data by workspace_id
-    console.log('Switching to workspace:', workspace)
+  const handleWorkspaceSwitch = async (workspace: any) => {
+    await switchWorkspace(workspace)
   }
 
   const getAddDomainText = () => {
@@ -265,11 +214,8 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
                     className="w-full h-full object-contain"
                   />
                 </div>
-                <div className="flex-1">
-                  <div className="text-sm">{profileWorkspaceName || 'Your Workspace'}</div>
-                  <div className="text-xs text-[#666]">{getDisplayDomain()}</div>
-                </div>
-                <span className="text-xs text-[#666] bg-[#333] px-1.5 py-0.5 rounded">Primary</span>
+                <span className="text-sm flex-1">{getDisplayDomain()}</span>
+                <span className="text-xs text-[#666] bg-[#333] px-1.5 py-0.5 rounded">Default</span>
               </div>
             </DropdownMenuItem>
           )}

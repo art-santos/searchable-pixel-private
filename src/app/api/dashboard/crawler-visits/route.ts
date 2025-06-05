@@ -19,8 +19,13 @@ export async function GET(request: Request) {
     const timeframe = url.searchParams.get('timeframe') || 'today'
     const crawler = url.searchParams.get('crawler') || 'all'
     const timezone = url.searchParams.get('timezone') || 'UTC'
+    const workspaceId = url.searchParams.get('workspaceId') // Add workspace filtering
     
-    console.log(`[Dashboard API] Fetching crawler visits for timeframe: ${timeframe}, crawler: ${crawler}, timezone: ${timezone}`)
+    if (!workspaceId) {
+      return NextResponse.json({ error: 'Workspace ID required' }, { status: 400 })
+    }
+    
+    console.log(`[Dashboard API] Fetching crawler visits for workspace: ${workspaceId}, timeframe: ${timeframe}, crawler: ${crawler}, timezone: ${timezone}`)
     
     // Helper function to get current time in user's timezone
     const getCurrentTimeInTimezone = () => {
@@ -61,11 +66,11 @@ export async function GET(request: Request) {
 
     console.log(`[Dashboard API] Using date range from: ${startDate.toISOString()}`)
 
-    // Build the query with date filtering
+    // Build the query with date filtering, filtered by workspace
     let query = supabase
       .from('crawler_visits')
       .select('timestamp, crawler_name, crawler_company')
-      .eq('user_id', userId)
+      .eq('workspace_id', workspaceId)  // Filter by workspace instead of user
       .gte('timestamp', startDate.toISOString())
       .order('timestamp', { ascending: true })
 
@@ -90,7 +95,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Failed to fetch visits' }, { status: 500 })
     }
 
-    console.log(`[Dashboard API] Found ${visits?.length || 0} visits`)
+    console.log(`[Dashboard API] Found ${visits?.length || 0} visits for workspace ${workspaceId}`)
 
     // Aggregate visits by time period
     const timeAggregates = new Map<string, number>()

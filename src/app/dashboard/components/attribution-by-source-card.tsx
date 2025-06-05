@@ -10,6 +10,7 @@ import {
 } from "@/components/custom/timeframe-selector"
 import { ConnectAnalyticsDialog } from "./connect-analytics-dialog"
 import { useAuth } from "@/contexts/AuthContext"
+import { useWorkspace } from "@/contexts/WorkspaceContext"
 
 interface CrawlerData {
   name: string
@@ -23,6 +24,7 @@ interface CrawlerData {
 export function AttributionBySourceCard() {
   const shouldReduceMotion = useReducedMotion()
   const { supabase } = useAuth()
+  const { currentWorkspace, switching } = useWorkspace()
   const [timeframe, setTimeframe] = useState<TimeframeOption>('Last 24 hours')
   const [isConnected, setIsConnected] = useState(false)
   const [showConnectDialog, setShowConnectDialog] = useState(false)
@@ -80,12 +82,31 @@ export function AttributionBySourceCard() {
     return `https://www.google.com/s2/favicons?domain=${constructedDomain}&sz=128`
   }
 
-  // Fetch crawler data when component mounts or timeframe changes
+  // Fetch crawler data when component mounts, timeframe changes, or workspace changes
   useEffect(() => {
-    fetchCrawlerData()
+    if (currentWorkspace) {
+      fetchCrawlerData()
+    }
+  }, [timeframe, currentWorkspace])
+
+  // Listen for workspace changes
+  useEffect(() => {
+    const handleWorkspaceChange = () => {
+      if (currentWorkspace) {
+        fetchCrawlerData()
+      }
+    }
+
+    window.addEventListener('workspaceChanged', handleWorkspaceChange)
+    return () => window.removeEventListener('workspaceChanged', handleWorkspaceChange)
   }, [timeframe])
 
   const fetchCrawlerData = async () => {
+    if (!currentWorkspace) {
+      setIsLoading(false)
+      return
+    }
+
     setIsLoading(true)
     setError(null)
     
@@ -101,7 +122,7 @@ export function AttributionBySourceCard() {
       const sessionResult = await supabase?.auth.getSession()
       const session = sessionResult?.data?.session
       
-      const response = await fetch(`/api/dashboard/crawler-stats?timeframe=${timeframeMap[timeframe]}`, {
+      const response = await fetch(`/api/dashboard/crawler-stats?timeframe=${timeframeMap[timeframe]}&workspaceId=${currentWorkspace.id}`, {
         headers: {
           'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
         }
@@ -244,7 +265,21 @@ export function AttributionBySourceCard() {
         </CardHeader>
 
         <CardContent className="flex-1 min-h-0 pt-6 pr-6 pb-8 pl-6 flex flex-col relative">
-          {isLoading ? (
+          {switching ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="w-8 h-8 mx-auto mb-3">
+                  <img 
+                    src="/images/split-icon-white.svg" 
+                    alt="Split" 
+                    className="w-full h-full animate-spin"
+                    style={{ animation: 'spin 1s linear infinite' }}
+                  />
+                </div>
+                <p className="text-[#666] text-sm">Switching workspace...</p>
+              </div>
+            </div>
+          ) : isLoading ? (
             <div className="flex items-center justify-center h-full">
               <Loader2 className="w-6 h-6 animate-spin text-[#666]" />
             </div>

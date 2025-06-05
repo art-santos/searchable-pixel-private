@@ -9,6 +9,7 @@ import {
   handleApiError 
 } from '@/lib/max-visibility/api-client'
 import { useSubscription } from '@/hooks/useSubscription'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
 import { toast } from '@/components/ui/use-toast'
 
 interface UseMaxVisibilityState {
@@ -77,8 +78,9 @@ export interface UseMaxVisibilityReturn extends UseMaxVisibilityState, UseMaxVis
   isInitialLoading: boolean
 }
 
-// Cache key for localStorage
-const VISIBILITY_CACHE_KEY = 'visibility_data_cache'
+// Cache key for localStorage - make it workspace-specific
+const getVisibilityCacheKey = (workspaceId?: string) => 
+  `visibility_data_cache_${workspaceId || 'default'}`
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes in milliseconds
 
 interface CacheEntry {
@@ -88,6 +90,7 @@ interface CacheEntry {
 
 export function useMaxVisibility(): UseMaxVisibilityReturn {
   const { subscription } = useSubscription()
+  const { currentWorkspace } = useWorkspace()
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const pollCountRef = useRef<number>(0)
   const maxPollAttempts = 150 // 5 minutes at 2-second intervals
@@ -156,7 +159,7 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
   // Load data from cache
   const loadFromCache = useCallback(() => {
     try {
-      const cached = localStorage.getItem(VISIBILITY_CACHE_KEY)
+      const cached = localStorage.getItem(getVisibilityCacheKey(currentWorkspace?.id))
       if (cached) {
         const { data, timestamp }: CacheEntry = JSON.parse(cached)
         const age = Date.now() - timestamp
@@ -182,7 +185,7 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
       console.error('Failed to load from cache:', error)
       return false
     }
-  }, [])
+  }, [currentWorkspace?.id])
 
   // Save data to cache
   const saveToCache = useCallback((data: any) => {
@@ -191,11 +194,11 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
         data,
         timestamp: Date.now()
       }
-      localStorage.setItem(VISIBILITY_CACHE_KEY, JSON.stringify(cacheEntry))
+      localStorage.setItem(getVisibilityCacheKey(currentWorkspace?.id), JSON.stringify(cacheEntry))
     } catch (error) {
       console.error('Failed to save to cache:', error)
     }
-  }, [])
+  }, [currentWorkspace?.id])
 
   // Load all data in parallel
   const loadAllData = useCallback(async (showLoading = true, useCache = false) => {
@@ -218,7 +221,7 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
         // Clear all caches to ensure fresh data
         console.log('🧹 Clearing all caches before loading...')
         maxVisibilityApi.clearCache()
-        localStorage.removeItem(VISIBILITY_CACHE_KEY)
+        localStorage.removeItem(getVisibilityCacheKey(currentWorkspace?.id))
       }
       
       // Load all data in parallel
@@ -525,7 +528,7 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
             
             console.log('🧹 Clearing all caches to ensure fresh data...')
             maxVisibilityApi.clearCache()
-            localStorage.removeItem(VISIBILITY_CACHE_KEY)
+            localStorage.removeItem(getVisibilityCacheKey(currentWorkspace?.id))
             
             console.log('🔄 Calling loadAllData to refresh after completion...')
             // Force fresh data load
@@ -772,7 +775,7 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
 
   // Clear cache function
   const clearCache = useCallback(() => {
-    localStorage.removeItem(VISIBILITY_CACHE_KEY)
+    localStorage.removeItem(getVisibilityCacheKey(currentWorkspace?.id))
     setState(prev => ({
       ...prev,
       data: null,
@@ -782,15 +785,44 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
       competitors: [],
       hasData: false
     }))
-  }, [])
+  }, [currentWorkspace?.id])
 
-  // Initial data loading
+  // Initial data loading - only when workspace is available
   useEffect(() => {
-    if (subscription) {
+    if (subscription && currentWorkspace) {
       loadFeatureAccess()
       loadInitialData()
+    } else if (!currentWorkspace) {
+      // Clear data when no workspace is selected
+      setState(prev => ({
+        ...prev,
+        data: null,
+        citations: [],
+        gaps: [],
+        insights: null,
+        competitors: [],
+        hasData: false,
+        isInitialLoading: false
+      }))
     }
-  }, [subscription, loadFeatureAccess, loadInitialData])
+  }, [subscription, currentWorkspace, loadFeatureAccess, loadInitialData])
+
+  // Listen for workspace changes and refresh data
+  useEffect(() => {
+    const handleWorkspaceChange = () => {
+      if (currentWorkspace) {
+        console.log('🔄 Workspace changed, refreshing visibility data...')
+        refresh()
+      }
+    }
+
+    // Listen for the custom workspace change event
+    window.addEventListener('workspaceChanged', handleWorkspaceChange)
+    
+    return () => {
+      window.removeEventListener('workspaceChanged', handleWorkspaceChange)
+    }
+  }, [currentWorkspace, refresh])
 
   // Cleanup polling on unmount
   useEffect(() => {

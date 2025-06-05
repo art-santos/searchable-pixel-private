@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
 import { TimeframeOption } from '@/components/custom/timeframe-selector'
 import { Sparkles, Zap } from 'lucide-react'
 import { motion, useReducedMotion } from 'framer-motion'
@@ -39,6 +40,7 @@ const tabs = [
 
 export default function VisibilityPage() {
   const { loading: authLoading, user } = useAuth()
+  const { currentWorkspace, switching } = useWorkspace()
   const { subscription } = useSubscription()
   const shouldReduceMotion = useReducedMotion()
   const [userProfile, setUserProfile] = useState<{workspace_name: string | null, domain: string | null} | null>(null)
