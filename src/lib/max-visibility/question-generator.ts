@@ -47,27 +47,34 @@ export class ConversationalQuestionGenerator {
   }
 
   /**
-   * Generate exactly 50 deterministic questions using enhanced context
-   * RIGID: Always 35 core + 15 context = 50 questions
+   * Generate deterministic questions using enhanced context
+   * MAX Mode: 50 questions (35 core + 15 context)
+   * Lite Mode: 20 questions (14 core + 6 context) 
    */
   async generateQuestions(request: QuestionGenerationRequest): Promise<GeneratedQuestion[]> {
-    // Validate we can generate exactly 50 questions
-    if (request.question_count && request.question_count !== 50) {
-      throw new Error('Question count must be exactly 50 for MAX Visibility assessment')
+    const questionCount = request.question_count || 50
+    
+    // Validate supported question counts
+    if (questionCount !== 50 && questionCount !== 20) {
+      throw new Error(`Question count must be exactly 50 (MAX mode) or 20 (Lite mode), got ${questionCount}`)
     }
 
     const companyContext = this.buildCompanyContext(request.company)
     const enhancedVars = this.buildEnhancedContextVariables(request.enhancedContext, companyContext)
     
-    // RIGID DISTRIBUTION: 35 core + 15 context = 50 total
-    const coreQuestions = this.generateCoreQuestions(companyContext, enhancedVars) // 35 questions
-    const contextQuestions = this.generateContextQuestions(companyContext, enhancedVars) // 15 questions
+    // Determine distribution based on question count
+    const isMaxMode = questionCount === 50
+    const coreCount = isMaxMode ? 35 : 14
+    const contextCount = isMaxMode ? 15 : 6
     
-    // Combine and ensure exactly 50
+    const coreQuestions = this.generateCoreQuestions(companyContext, enhancedVars, coreCount)
+    const contextQuestions = this.generateContextQuestions(companyContext, enhancedVars, contextCount)
+    
+    // Combine and validate count
     const allQuestions = [...coreQuestions, ...contextQuestions]
     
-    if (allQuestions.length !== 50) {
-      throw new Error(`Generated ${allQuestions.length} questions, expected exactly 50`)
+    if (allQuestions.length !== questionCount) {
+      throw new Error(`Generated ${allQuestions.length} questions, expected exactly ${questionCount}`)
     }
     
     // Return in deterministic order (no shuffling for consistency)
@@ -75,16 +82,27 @@ export class ConversationalQuestionGenerator {
   }
 
   /**
-   * Generate 35 core questions (industry-agnostic, always consistent)
+   * Generate core questions (industry-agnostic, always consistent)
+   * MAX mode: 35 questions, Lite mode: 14 questions
    */
   private generateCoreQuestions(
     context: CompanyContext, 
-    enhanced: EnhancedContextVariables
+    enhanced: EnhancedContextVariables,
+    targetCount: number = 35
   ): GeneratedQuestion[] {
     const questions: GeneratedQuestion[] = []
     
-    // DISTRIBUTION: 35 total
-    const distribution = {
+    // Scale distribution based on target count
+    const isLiteMode = targetCount === 14
+    const distribution = isLiteMode ? {
+      // Lite mode: 14 total (proportionally scaled)
+      direct_conversational: 5,     // ~36%
+      indirect_conversational: 4,   // ~29%  
+      comparison_query: 3,          // ~21%
+      recommendation_request: 2,    // ~14%
+      explanatory_query: 0          // Skip in lite mode
+    } : {
+      // MAX mode: 35 total
       direct_conversational: 11,    // 31% of 35
       indirect_conversational: 9,   // 26% of 35  
       comparison_query: 9,          // 26% of 35
@@ -94,6 +112,8 @@ export class ConversationalQuestionGenerator {
     
     // Generate each type deterministically
     for (const [type, count] of Object.entries(distribution)) {
+      if (count === 0) continue // Skip types with 0 count in lite mode
+      
       const typeTemplates = this.coreTemplates.filter(t => t.type === type as MaxQuestionType)
       const selectedTemplates = this.selectDeterministicTemplates(typeTemplates, count)
       
@@ -106,16 +126,26 @@ export class ConversationalQuestionGenerator {
   }
 
   /**
-   * Generate 15 context-enhanced questions using Step 1 data
+   * Generate context-enhanced questions using Step 1 data
+   * MAX mode: 15 questions, Lite mode: 6 questions
    */
   private generateContextQuestions(
     context: CompanyContext,
-    enhanced: EnhancedContextVariables
+    enhanced: EnhancedContextVariables,
+    targetCount: number = 15
   ): GeneratedQuestion[] {
     const questions: GeneratedQuestion[] = []
     
-    // DISTRIBUTION: 15 total - heavily weighted toward comparison and pain points
-    const distribution = {
+    // Scale distribution based on target count
+    const isLiteMode = targetCount === 6
+    const distribution = isLiteMode ? {
+      // Lite mode: 6 total (focused on most important)
+      comparison_query: 3,          // 50% - competitor comparisons (most important)
+      indirect_conversational: 2,   // 33% - pain point questions
+      direct_conversational: 1,     // 17% - value prop tests
+      recommendation_request: 0     // Skip in lite mode
+    } : {
+      // MAX mode: 15 total - heavily weighted toward comparison and pain points
       comparison_query: 6,          // 40% - competitor comparisons
       indirect_conversational: 5,   // 33% - pain point questions
       direct_conversational: 3,     // 20% - value prop tests
@@ -123,6 +153,8 @@ export class ConversationalQuestionGenerator {
     }
     
     for (const [type, count] of Object.entries(distribution)) {
+      if (count === 0) continue // Skip types with 0 count in lite mode
+      
       const typeTemplates = this.contextTemplates.filter(t => t.type === type as MaxQuestionType)
       const selectedTemplates = this.selectDeterministicTemplates(typeTemplates, count)
       

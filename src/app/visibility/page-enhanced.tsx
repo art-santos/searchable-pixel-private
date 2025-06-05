@@ -178,7 +178,8 @@ export default function EnhancedVisibilityPage() {
   }
 
   const handleRefreshScore = async () => {
-    await maxVisibility.triggerScan()
+    // Always trigger MAX scan from visibility dashboard
+    await maxVisibility.triggerScan('max')
   }
 
   // Helper to get display name

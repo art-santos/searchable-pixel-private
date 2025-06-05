@@ -145,8 +145,8 @@ export default function VisibilityPage() {
   }
 
   const handleRunNewScan = async () => {
-    // Always trigger a new MAX scan regardless of existing data
-    await maxVisibility.triggerScan()
+    // Always trigger a new MAX scan regardless of existing data or user subscription
+    await maxVisibility.triggerScan('max')
   }
 
   if (loading) {

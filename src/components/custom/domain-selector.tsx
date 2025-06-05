@@ -33,21 +33,26 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
   const router = useRouter()
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null)
+  const [profileDomain, setProfileDomain] = useState<string | null>(null)
+  const [profileWorkspaceName, setProfileWorkspaceName] = useState<string | null>(null)
   const [faviconUrl, setFaviconUrl] = useState<string>('/images/split-icon-white.svg')
   const [loading, setLoading] = useState(true)
   const [subscription, setSubscription] = useState<any>(null)
   const [showWorkspaceCreationDialog, setShowWorkspaceCreationDialog] = useState(false)
   const supabase = createClient()
 
-  // Get display domain from current workspace or fallback
+  // Get display domain from current workspace or fallback to profile
   const getDisplayDomain = () => {
     if (loading) return "Loading..."
     if (currentWorkspace?.domain) return currentWorkspace.domain
     if (currentWorkspace?.workspace_name) return `${currentWorkspace.workspace_name.toLowerCase().replace(/\s+/g, '')}.com`
+    // Fallback to profile data when no workspaces exist
+    if (profileDomain) return profileDomain
+    if (profileWorkspaceName) return `${profileWorkspaceName.toLowerCase().replace(/\s+/g, '')}.com`
     return "your-domain.com"
   }
 
-  // Fetch workspaces and subscription data
+  // Fetch workspaces, subscription data, and profile fallback
   useEffect(() => {
     const fetchData = async () => {
       if (!user || !supabase) {
@@ -66,6 +71,18 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
           const primaryWorkspace = workspacesData.workspaces?.find((ws: Workspace) => ws.is_primary)
           if (primaryWorkspace) {
             setCurrentWorkspace(primaryWorkspace)
+          } else if (workspacesData.workspaces?.length === 0) {
+            // If no workspaces exist, fetch profile data as fallback
+            const { data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('domain, workspace_name')
+              .eq('id', user.id)
+              .single()
+            
+            if (!profileError && profile) {
+              setProfileDomain(profile.domain)
+              setProfileWorkspaceName(profile.workspace_name)
+            }
           }
         }
 
@@ -85,9 +102,9 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
     fetchData()
   }, [user, supabase])
 
-  // Load favicon when current workspace changes
+  // Load favicon when current workspace or profile data changes
   useEffect(() => {
-    const domain = currentWorkspace?.domain
+    const domain = currentWorkspace?.domain || profileDomain
     
     if (domain && domain !== "your-domain.com") {
       // Use Google's favicon service directly for simplicity and reliability
@@ -96,7 +113,7 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
     } else {
       setFaviconUrl('/images/split-icon-white.svg')
     }
-  }, [currentWorkspace])
+  }, [currentWorkspace, profileDomain])
 
   // Check if user can add domains
   const canAddDomains = subscription?.subscriptionPlan === 'plus' || subscription?.subscriptionPlan === 'pro'
@@ -244,8 +261,11 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
                     className="w-full h-full object-contain"
                   />
                 </div>
-                <span className="text-sm flex-1">{getDisplayDomain()}</span>
-                <span className="text-xs text-[#666] bg-[#333] px-1.5 py-0.5 rounded">Default</span>
+                <div className="flex-1">
+                  <div className="text-sm">{profileWorkspaceName || 'Your Workspace'}</div>
+                  <div className="text-xs text-[#666]">{getDisplayDomain()}</div>
+                </div>
+                <span className="text-xs text-[#666] bg-[#333] px-1.5 py-0.5 rounded">Primary</span>
               </div>
             </DropdownMenuItem>
           )}
