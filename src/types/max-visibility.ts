@@ -552,6 +552,7 @@ export type MaxAnalysisEvent =
 export type AssessmentStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
 
 export interface MaxAssessmentRequest {
+  triggered_by?: string  // User ID who triggered the assessment
   company: {
     id: string
     name: string

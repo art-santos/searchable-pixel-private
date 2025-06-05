@@ -84,6 +84,8 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
               setProfileWorkspaceName(profile.workspace_name)
             }
           }
+        } else {
+          console.error('Failed to fetch workspaces:', workspacesResponse.status, workspacesResponse.statusText)
         }
 
         // Fetch subscription
@@ -91,6 +93,8 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
         if (subscriptionResponse.ok) {
           const subscriptionData = await subscriptionResponse.json()
           setSubscription(subscriptionData)
+        } else {
+          console.error('Failed to fetch subscription:', subscriptionResponse.status, subscriptionResponse.statusText)
         }
       } catch (err) {
         console.error('Error in data fetch:', err)

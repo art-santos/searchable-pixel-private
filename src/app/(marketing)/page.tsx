@@ -29,24 +29,37 @@ const faqSchema = {
 export default function LandingPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
+  const [redirecting, setRedirecting] = useState(false)
 
   // If user is logged in, redirect to dashboard
   useEffect(() => {
-    if (!loading && user) {
+    console.log('LandingPage: Auth state:', { user: !!user, loading, redirecting })
+    if (!loading && user && !redirecting) {
+      console.log('LandingPage: Redirecting logged-in user to dashboard')
+      setRedirecting(true)
       router.push('/dashboard')
     }
-  }, [user, loading, router])
+  }, [user, loading, router, redirecting])
 
-  if (loading) {
+  // Show loading while auth is loading or while redirecting
+  if (loading || redirecting) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent text-primary" />
+        {redirecting && (
+          <p className="ml-4 text-gray-400">Redirecting to dashboard...</p>
+        )}
       </div>
     )
   }
 
-  return (
-    <div className="-mt-20">
+  // If we get here, user is not logged in and should see the landing page
+  console.log('LandingPage: Rendering landing page for non-authenticated user')
+
+  // Fallback to prevent blank page
+  if (user === null && !loading && !redirecting) {
+    return (
+      <div className="-mt-20">
       <style jsx global>{`
         @keyframes dashboardFallIn {
           0% {
@@ -487,7 +500,19 @@ export default function LandingPage() {
       {/* CTA Section */}
       <CTASection />
 
-    <Schema json={faqSchema} />
+      <Schema json={faqSchema} />
+      </div>
+    )
+  }
+
+  // This should never happen, but just in case
+  return (
+    <div className="flex h-screen items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-white mb-4">Welcome to Split</h1>
+        <p className="text-gray-400 mb-4">Loading...</p>
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent text-primary mx-auto" />
+      </div>
     </div>
   )
 } 

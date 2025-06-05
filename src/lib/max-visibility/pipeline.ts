@@ -404,6 +404,20 @@ Important: Pay close attention to the specific language and terminology used in 
     // Create or use existing assessment record
     const assessmentId = existingAssessmentId || await this.createAssessmentRecord(request)
     
+    // If using existing assessment, update status to running
+    if (existingAssessmentId) {
+      await this.supabase
+        .from('max_visibility_runs')
+        .update({
+          status: 'running',
+          started_at: new Date().toISOString(),
+          progress_percentage: 0, // Start at 0%
+          progress_stage: 'setup',
+          progress_message: 'Assessment starting...'
+        })
+        .eq('id', assessmentId)
+    }
+    
     // Create enhanced progress callback that saves to database
     const enhancedProgress = this.createProgressCallback(assessmentId, onProgress)
     
@@ -414,7 +428,7 @@ Important: Pay close attention to the specific language and terminology used in 
       // STEP 1: Build enhanced company context from knowledge base
       enhancedProgress({
         stage: 'setup',
-        completed: 5,
+        completed: 0,
         total: 100,
         message: 'Building enhanced company context from knowledge base...'
       })
@@ -437,18 +451,43 @@ Important: Pay close attention to the specific language and terminology used in 
       // Stage 2: Generate questions using enhanced context
       enhancedProgress({
         stage: 'setup',
-        completed: 15,
-            total: 100,
+        completed: 10,
+        total: 100,
         message: 'Generating intelligent questions from company context...'
       })
       
       const questions = await this.generateQuestions(enhancedRequest, assessmentId, enhancedContext)
       
+      // Update progress after questions are generated
+      enhancedProgress({
+        stage: 'questions',
+        completed: 15,
+        total: 100,
+        message: `Generated ${questions.length} intelligent questions, starting AI analysis...`
+      })
+      
       // Continue with rest of pipeline...
       const responses = await this.getAIResponses(questions, enhancedProgress)
-      const analyses = await this.analyzeWithGPT4o(responses, enhancedRequest, assessmentId)
+      const analyses = await this.analyzeWithGPT4o(responses, enhancedRequest, assessmentId, enhancedProgress)
+      
+      // Update progress for scoring phase
+      enhancedProgress({
+        stage: 'scoring',
+        completed: 90,
+        total: 100,
+        message: 'Calculating visibility scores...'
+      })
+      
       const scores = this.calculateFinalScores(analyses)
       
+      // Update progress for saving results
+      enhancedProgress({
+        stage: 'scoring',
+        completed: 95,
+        total: 100,
+        message: 'Saving results...'
+      })
+
       await this.saveResults(assessmentId, analyses, scores)
       
       enhancedProgress({
@@ -622,62 +661,95 @@ Important: Pay close attention to the specific language and terminology used in 
   private async analyzeWithGPT4o(
     responses: Array<{ question: any, response: string, citations: string[] }>,
     request: MaxAssessmentRequest,
-    assessmentId: string
+    assessmentId: string,
+    onProgress?: (progress: PipelineProgress) => void
   ): Promise<MaxQuestionAnalysis[]> {
     console.log(`🧠 Starting GPT-4o analysis of ${responses.length} responses (PARALLEL)`)
     
     // Store GPT-4o raw analysis for scoring algorithm
     this.gpt4oAnalysisCache = new Map()
     
-    // Run all GPT-4o analyses in parallel for speed
-    const analysisPromises = responses.map(async (responseData) => {
-      try {
-        // Call GPT-4o with the analysis prompt from architecture
-        const gpt4oAnalysis = await this.callGPT4oAnalyzer({
-          company: request.company,
-          question: responseData.question.question,
-          aiResponse: responseData.response,
-          citations: responseData.citations
+    // Update progress for analysis start
+    onProgress?.({
+      stage: 'analysis',
+      completed: 60,
+      total: 100,
+      message: 'Starting intelligent analysis...'
     })
     
-        // Convert GPT-4o output to our analysis format
-    const analysis: MaxQuestionAnalysis = {
-          question_id: responseData.question.id,
-          question_text: responseData.question.question,
-          question_type: responseData.question.type,
-          ai_response: responseData.response,
-          response_citations: responseData.citations.map(url => ({
-            url,
-            text: url,
-            title: url
-      })),
-          mention_analysis: gpt4oAnalysis.mention_analysis,
-          citation_analysis: gpt4oAnalysis.citation_analysis,
-          question_score: gpt4oAnalysis.insights.visibility_score,
-      processed_at: new Date().toISOString()
-    }
-        
-        // Cache GPT-4o analysis for scoring algorithm
-        this.gpt4oAnalysisCache.set(responseData.question.id, gpt4oAnalysis)
+    // Process in smaller batches to track progress
+    const batchSize = 10
+    const analyses: MaxQuestionAnalysis[] = []
     
-        // Save individual analysis
-        const responseId = await this.saveQuestionAnalysis(assessmentId, analysis)
-        
-        if (!responseId) {
-          console.warn(`⚠️ Failed to save response for question ${responseData.question.id}`)
+    for (let i = 0; i < responses.length; i += batchSize) {
+      const batch = responses.slice(i, i + batchSize)
+      
+      console.log(`🔍 Analyzing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(responses.length / batchSize)}`)
+      
+      // Run batch analysis in parallel
+      const batchPromises = batch.map(async (responseData) => {
+        try {
+          // Call GPT-4o with the analysis prompt from architecture
+          const gpt4oAnalysis = await this.callGPT4oAnalyzer({
+            company: request.company,
+            question: responseData.question.question,
+            aiResponse: responseData.response,
+            citations: responseData.citations
+          })
+      
+          // Convert GPT-4o output to our analysis format
+          const analysis: MaxQuestionAnalysis = {
+            question_id: responseData.question.id,
+            question_text: responseData.question.question,
+            question_type: responseData.question.type,
+            ai_response: responseData.response,
+            response_citations: responseData.citations.map(url => ({
+              url,
+              text: url,
+              title: url
+            })),
+            mention_analysis: gpt4oAnalysis.mention_analysis,
+            citation_analysis: gpt4oAnalysis.citation_analysis,
+            question_score: gpt4oAnalysis.insights.visibility_score,
+            processed_at: new Date().toISOString()
+          }
+          
+          // Cache GPT-4o analysis for scoring algorithm
+          this.gpt4oAnalysisCache.set(responseData.question.id, gpt4oAnalysis)
+      
+          // Save individual analysis
+          const responseId = await this.saveQuestionAnalysis(assessmentId, analysis)
+          
+          if (!responseId) {
+            console.warn(`⚠️ Failed to save response for question ${responseData.question.id}`)
+          }
+          
+          return analysis
+          
+        } catch (error) {
+          console.error(`GPT-4o analysis failed for question ${responseData.question.id}:`, error)
+          // Create error analysis
+          return this.createErrorAnalysis(responseData.question, error as Error)
         }
-        
-        return analysis
-        
-      } catch (error) {
-        console.error(`GPT-4o analysis failed for question ${responseData.question.id}:`, error)
-        // Create error analysis
-        return this.createErrorAnalysis(responseData.question, error as Error)
+      })
+      
+      const batchResults = await Promise.all(batchPromises)
+      analyses.push(...batchResults)
+      
+      // Update progress
+      const progressPercentage = 60 + Math.round((i + batch.length) / responses.length * 25)
+      onProgress?.({
+        stage: 'analysis',
+        completed: progressPercentage,
+        total: 100,
+        message: `Analyzed ${i + batch.length} of ${responses.length} responses`
+      })
+      
+      // Small delay between batches
+      if (i + batchSize < responses.length) {
+        await this.sleep(200)
       }
-    })
-    
-    // Wait for all analyses to complete in parallel
-    const analyses = await Promise.all(analysisPromises)
+    }
     
     console.log(`✅ GPT-4o parallel analysis completed: ${analyses.length} responses processed`)
     
@@ -1244,6 +1316,7 @@ RESPOND IN VALID JSON FORMAT ONLY:
       .from('max_visibility_runs')
       .insert({
         company_id: request.company.id || request.company.name,
+        triggered_by: request.triggered_by,
         status: 'running',
         total_score: 0,
         mention_rate: 0,

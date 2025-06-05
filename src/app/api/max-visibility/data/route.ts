@@ -636,71 +636,130 @@ export async function GET(request: NextRequest) {
     
     const { data: chartAssessments } = await supabase
       .from('max_visibility_runs')
-      .select('total_score, created_at')
+      .select('id, total_score, created_at')
       .eq('company_id', company.id) // 'company' must be in scope here
       .eq('status', 'completed')
       .gte('created_at', thirtyDaysAgo.toISOString())
       .order('created_at', { ascending: false });
     
-    // Group assessments by date and take the latest one for each day
-    const assessmentsByDate = new Map<string, { score: number; created_at: string }>();
+    // Group assessments by date, keeping multiple per day with timestamps
+    const assessmentsByDate = new Map<string, Array<{ score: number; created_at: string; id?: string }>>();
     
     if (chartAssessments) {
       chartAssessments.forEach(assess => {
         const assessDate = new Date(assess.created_at).toDateString();
         if (!assessmentsByDate.has(assessDate)) {
-          assessmentsByDate.set(assessDate, {
-            score: assess.total_score,
-            created_at: assess.created_at
-          });
+          assessmentsByDate.set(assessDate, []);
         }
+        assessmentsByDate.get(assessDate)!.push({
+          score: assess.total_score,
+          created_at: assess.created_at,
+          id: assess.id
+        });
       });
-      console.log(`📊 Chart data: Found ${chartAssessments.length} assessments, using latest score for ${assessmentsByDate.size} unique days`);
+      
+      // Sort assessments within each date by time
+      assessmentsByDate.forEach((assessments, date) => {
+        assessments.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      });
+      
+      console.log(`📊 Chart data: Found ${chartAssessments.length} assessments across ${assessmentsByDate.size} unique days`);
     } else {
       console.log(`📊 Chart data: No chartAssessments found for the period.`);
     }
     
-    const finalChartData: Array<{ date: string; score: number; fullDate: string; isCurrentPeriod: boolean }> = [];
+    const finalChartData: Array<{ 
+      date: string; 
+      score: number; 
+      fullDate: string; 
+      isCurrentPeriod: boolean;
+      time?: string;
+      assessmentId?: string;
+    }> = [];
+
+    // Check if any day has multiple assessments
+    const hasMultipleAssessmentsPerDay = Array.from(assessmentsByDate.values()).some(assessments => assessments.length > 1);
+    console.log(`📊 Chart data: hasMultipleAssessmentsPerDay = ${hasMultipleAssessmentsPerDay}`);
+    console.log(`📊 Chart data: Assessment breakdown by date:`, 
+      Array.from(assessmentsByDate.entries()).map(([date, assessments]) => 
+        `${date}: ${assessments.length} assessments`
+      ).join(', ')
+    );
 
     if (assessmentsByDate.size === 1) {
-      // Corrected variable destructuring here
+      // Single day with potentially multiple assessments
       const firstEntry = assessmentsByDate.entries().next().value;
       if (firstEntry) {
-        const [dateStringKey, assessmentDataValue] = firstEntry; 
-        const assessmentDate = new Date(assessmentDataValue.created_at); 
-
-        finalChartData.push({
-          date: assessmentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          score: assessmentDataValue.score,
-          fullDate: assessmentDate.toISOString(),
-          isCurrentPeriod: assessmentDate.toDateString() === todayForChart.toDateString() // Use todayForChart
+        const [dateStringKey, assessments] = firstEntry; 
+        
+        // Add all assessments for this day
+        assessments.forEach((assessment, index) => {
+          const assessmentDate = new Date(assessment.created_at);
+          const timeString = hasMultipleAssessmentsPerDay ? assessmentDate.toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit',
+            hour12: true 
+          }) : undefined;
+          
+          const dataPoint = {
+            date: assessmentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            score: assessment.score,
+            fullDate: assessment.created_at,
+            isCurrentPeriod: assessmentDate.toDateString() === todayForChart.toDateString(),
+            time: timeString,
+            assessmentId: assessment.id
+          };
+          
+          console.log(`📊 Chart point ${index + 1}:`, JSON.stringify(dataPoint, null, 2));
+          finalChartData.push(dataPoint);
         });
-        console.log(`📊 Chart data: Single assessment point generated for ${assessmentDate.toDateString()} with score ${assessmentDataValue.score}`);
-      } else {
-        // This case should ideally not be reached if assessmentsByDate.size === 1,
-        // but it handles potential edge cases and satisfies TypeScript.
-        console.warn('⚠️ Chart data: assessmentsByDate.size was 1, but .next().value was undefined. This should not happen.');
+        
+        console.log(`📊 Chart data: Generated ${assessments.length} points for ${dateStringKey}`);
       }
     } else { 
+      // Multiple days - show timeline with potentially multiple points per day
       for (let i = 29; i >= 0; i--) {
-        const dateLoop = new Date(todayForChart); // Use todayForChart
+        const dateLoop = new Date(todayForChart);
         dateLoop.setDate(todayForChart.getDate() - i); 
         const dateStringKey = dateLoop.toDateString();
-        const dayAssessment = assessmentsByDate.get(dateStringKey);
-        const score = dayAssessment ? dayAssessment.score : 0;
+        const dayAssessments = assessmentsByDate.get(dateStringKey) || [];
         
-        finalChartData.push({
-          date: dateLoop.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          score: score,
-          fullDate: dateLoop.toISOString(),
-          isCurrentPeriod: dateLoop.toDateString() === todayForChart.toDateString() // Use todayForChart
-        });
+        if (dayAssessments.length > 0) {
+          // Add all assessments for this day
+          dayAssessments.forEach((assessment, assessmentIndex) => {
+            const assessmentDate = new Date(assessment.created_at);
+            const timeString = hasMultipleAssessmentsPerDay ? assessmentDate.toLocaleTimeString('en-US', { 
+              hour: 'numeric', 
+              minute: '2-digit',
+              hour12: true 
+            }) : undefined;
+            
+            const dataPoint = {
+              date: dateLoop.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+              score: assessment.score,
+              fullDate: assessment.created_at,
+              isCurrentPeriod: dateLoop.toDateString() === todayForChart.toDateString(),
+              time: timeString,
+              assessmentId: assessment.id
+            };
+            
+            if (dayAssessments.length > 1) {
+              console.log(`📊 Multiple assessments on ${dateStringKey} - Point ${assessmentIndex + 1}:`, JSON.stringify(dataPoint, null, 2));
+            }
+            finalChartData.push(dataPoint);
+          });
+        } else {
+          // No assessments for this day, add zero score
+          finalChartData.push({
+            date: dateLoop.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            score: 0,
+            fullDate: dateLoop.toISOString(),
+            isCurrentPeriod: dateLoop.toDateString() === todayForChart.toDateString()
+          });
+        }
       }
-      if (assessmentsByDate.size === 0) {
-        console.log(`📊 Chart data: Generated 30 days of 0 scores (no assessments found).`);
-      } else {
-        console.log(`📊 Chart data: Generated 30-day period with ${assessmentsByDate.size} unique assessment days.`);
-      }
+      
+      console.log(`📊 Chart data: Generated 30-day period with ${finalChartData.filter(d => d.score > 0).length} assessment points`);
     }
 
     // Safely handle responses that might be empty

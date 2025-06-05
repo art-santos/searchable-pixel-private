@@ -19,6 +19,8 @@ interface ChartDataPoint {
   date: string
   score: number
   isCurrentPeriod?: boolean
+  time?: string
+  assessmentId?: string
 }
 
 interface CustomDotProps {
@@ -38,7 +40,7 @@ interface CustomTooltipProps {
 }
 
 const CustomDot = ({ cx, cy, payload, ...props }: CustomDotProps) => {
-  if (!cx || !cy || !payload) {
+  if (!cx || !cy || !payload || cx === undefined || cy === undefined) {
     return <g />  // Return empty group instead of null
   }
   
@@ -48,13 +50,13 @@ const CustomDot = ({ cx, cy, payload, ...props }: CustomDotProps) => {
       <motion.circle
         cx={cx}
         cy={cy}
-        r={8}
+        r="8"
         fill="none"
         stroke="#fff"
         strokeWidth={1}
         opacity={0.6}
         animate={{
-          r: [6, 12, 6],
+          r: ["6", "12", "6"],
           opacity: [0.6, 0.2, 0.6],
         }}
         transition={{
@@ -67,7 +69,7 @@ const CustomDot = ({ cx, cy, payload, ...props }: CustomDotProps) => {
       <circle
         cx={cx}
         cy={cy}
-        r={4}
+        r="4"
         fill="#fff"
         stroke="#333"
         strokeWidth={2}
@@ -79,7 +81,7 @@ const CustomDot = ({ cx, cy, payload, ...props }: CustomDotProps) => {
 // Custom dot for single data point scatter chart
 const SingleDataPointDot = (props: any) => {
   const { cx, cy } = props;
-  if (!cx || !cy) return null;
+  if (!cx || !cy || cx === undefined || cy === undefined) return <g />;
   
   return (
     <g>
@@ -87,13 +89,13 @@ const SingleDataPointDot = (props: any) => {
       <motion.circle
         cx={cx}
         cy={cy}
-        r={8}
+        r="8"
         fill="none"
         stroke="#fff"
         strokeWidth={1}
         opacity={0.6}
         animate={{
-          r: [8, 16, 8],
+          r: ["8", "16", "8"],
           opacity: [0.6, 0.2, 0.6],
         }}
         transition={{
@@ -106,7 +108,7 @@ const SingleDataPointDot = (props: any) => {
       <circle
         cx={cx}
         cy={cy}
-        r={6}
+        r="6"
         fill="#fff"
         stroke="#333"
         strokeWidth={2}
@@ -117,7 +119,10 @@ const SingleDataPointDot = (props: any) => {
 
 const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
-    const isCurrentPeriod = payload[0].payload?.isCurrentPeriod
+    const dataPoint = payload[0].payload as ChartDataPoint
+    const isCurrentPeriod = dataPoint?.isCurrentPeriod
+    const time = dataPoint?.time
+    const assessmentId = dataPoint?.assessmentId
     
     return (
       <div className="bg-[#1a1a1a] border border-[#333333] px-3 py-2 rounded-lg">
@@ -127,12 +132,75 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
             <span className="ml-2 text-xs text-green-400">● LIVE</span>
           )}
         </p>
-        <p className="font-geist-mono text-xs text-[#666666]">{label}</p>
+        <p className="font-geist-mono text-xs text-[#666666]">
+          {label}
+          {time && <span className="ml-2 text-[#888888] font-medium">at {time}</span>}
+        </p>
+        {assessmentId && (
+          <p className="font-geist-mono text-xs text-[#555555]">
+            {assessmentId.substring(0, 8)}...
+          </p>
+        )}
       </div>
     )
   }
   return null
 }
+
+// Custom tick component to display date and time on separate lines
+const CustomXAxisTick = (props: any) => {
+  const { x, y, payload, index } = props;
+  const chartData = props.chartData || [];
+  const dataPoint = chartData[index];
+  const hasTime = dataPoint?.time;
+  
+  if (!hasTime) {
+    // If no time, render normally
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <text 
+          x={0} 
+          y={0} 
+          dy={16} 
+          textAnchor="middle" 
+          fill="#666666" 
+          fontSize="11"
+          fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace"
+        >
+          {payload.value}
+        </text>
+      </g>
+    );
+  }
+  
+  // Render date and time on separate lines
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text 
+        x={0} 
+        y={0} 
+        dy={12} 
+        textAnchor="middle" 
+        fill="#666666" 
+        fontSize="11"
+        fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace"
+      >
+        {payload.value}
+      </text>
+      <text 
+        x={0} 
+        y={0} 
+        dy={26} 
+        textAnchor="middle" 
+        fill="#888888" 
+        fontSize="10"
+        fontFamily="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace"
+      >
+        {dataPoint.time}
+      </text>
+    </g>
+  );
+};
 
 interface VisibilityChartProps {
   timeframe: TimeframeOption
@@ -156,6 +224,14 @@ export function VisibilityChart({
   onMouseLeave
 }: VisibilityChartProps) {
   const isSingleDataPoint = chartData.length === 1;
+  const hasMultipleAssessmentsPerDay = chartData.some(point => point.time);
+  
+  // Debug logging (reduced)
+  if (chartData.length === 0) {
+    console.log('📊 Chart component: No data points');
+  }
+  
+
 
   return (
     <div>
@@ -226,12 +302,9 @@ export function VisibilityChart({
                           dataKey="date"
                           type="category"
                           axisLine={{ stroke: '#333333' }}
-                          tick={{ 
-                            fill: '#666666', 
-                            fontSize: 11,
-                            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
-                          }}
+                          tick={<CustomXAxisTick chartData={chartData} />}
                           tickLine={false}
+                          height={hasMultipleAssessmentsPerDay ? 50 : 30}
                         />
                         <YAxis
                           type="number"
@@ -279,12 +352,9 @@ export function VisibilityChart({
                         <XAxis
                           dataKey="date"
                           axisLine={{ stroke: '#333333' }}
-                          tick={{ 
-                            fill: '#666666', 
-                            fontSize: 11,
-                            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
-                          }}
+                          tick={<CustomXAxisTick chartData={chartData} />}
                           tickLine={false}
+                          height={hasMultipleAssessmentsPerDay ? 50 : 30}
                         />
                         <YAxis
                           axisLine={{ stroke: '#333333' }}

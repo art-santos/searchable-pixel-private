@@ -28,6 +28,8 @@ export async function GET(
       )
     }
 
+    console.log('✅ User authenticated for status check:', user.id)
+
     // Get assessment details with progress and error information
     const { data: assessment, error } = await supabase
       .from('max_visibility_runs')

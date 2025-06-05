@@ -74,6 +74,7 @@ export function WelcomeCard() {
           .from('max_visibility_runs')
           .select('id, total_score, created_at, status')
           .eq('triggered_by', user.id)
+          .eq('status', 'completed')
           .order('created_at', { ascending: false })
           .limit(1)
 

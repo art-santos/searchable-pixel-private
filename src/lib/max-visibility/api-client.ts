@@ -169,7 +169,8 @@ class MaxVisibilityApiClient {
         })
       }
 
-      const { data: { session } } = await this.supabase.auth.getSession()
+      const sessionResult = await this.supabase.auth.getSession()
+      const session = sessionResult.data?.session
       
       const response = await fetch(url.toString(), {
         ...options,
@@ -180,17 +181,37 @@ class MaxVisibilityApiClient {
         },
       })
 
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status} ${response.statusText}`)
+      let result: any
+      try {
+        result = await response.json()
+      } catch (parseError) {
+        console.error('Failed to parse JSON response:', parseError)
+        return {
+          data: null,
+          error: `HTTP ${response.status}: ${response.statusText} (Invalid JSON response)`,
+          success: false
+        }
       }
-
-      const result = await response.json()
       
-      if (result.success && result.data) {
+      // If response is not ok, but we got JSON, it might have error details
+      if (!response.ok) {
+        console.error(`API request failed: ${response.status} ${response.statusText}`, result)
+        return {
+          data: null,
+          error: result?.error || result?.message || `HTTP ${response.status}: ${response.statusText}`,
+          success: false
+        }
+      }
+      
+      if (result?.success && result?.data) {
         this.setCache(cacheKey, result.data)
       }
 
-      return result
+      return result || {
+        data: null,
+        error: 'Invalid response format',
+        success: false
+      }
     } catch (error) {
       console.error(`Max Visibility API Error (${endpoint}):`, error)
       return {
@@ -210,9 +231,14 @@ class MaxVisibilityApiClient {
 
   // Trigger a new assessment/scan
   async triggerAssessment(type: 'lite' | 'max' = 'lite'): Promise<MaxVisibilityApiResponse<{ assessment_id: string }>> {
-    return this.makeRequest<{ assessment_id: string }>('/assessments', {
+    // For now, use a simplified approach that matches the existing API pattern
+    // This will be handled by the assess endpoint on the server side
+    return this.makeRequest<{ assessment_id: string }>('/assess', {
       method: 'POST',
-      body: JSON.stringify({ type })
+      body: JSON.stringify({ 
+        type,
+        assessment_type: type 
+      })
     })
   }
 

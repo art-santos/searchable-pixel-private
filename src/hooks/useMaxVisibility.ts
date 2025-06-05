@@ -23,6 +23,7 @@ interface UseMaxVisibilityState {
   
   // Loading states
   isLoading: boolean
+  isInitialLoading: boolean
   isRefreshing: boolean
   isLoadingCitations: boolean
   isLoadingGaps: boolean
@@ -71,7 +72,19 @@ interface UseMaxVisibilityActions {
   exportData: (format: 'csv' | 'json', type: 'citations' | 'gaps' | 'insights') => Promise<string | null>
 }
 
-export interface UseMaxVisibilityReturn extends UseMaxVisibilityState, UseMaxVisibilityActions {}
+export interface UseMaxVisibilityReturn extends UseMaxVisibilityState, UseMaxVisibilityActions {
+  // Additional properties that should be exposed in the return type
+  isInitialLoading: boolean
+}
+
+// Cache key for localStorage
+const VISIBILITY_CACHE_KEY = 'visibility_data_cache'
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes in milliseconds
+
+interface CacheEntry {
+  data: any
+  timestamp: number
+}
 
 export function useMaxVisibility(): UseMaxVisibilityReturn {
   const { subscription } = useSubscription()
@@ -86,7 +99,8 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
     gaps: [],
     insights: null,
     competitors: [],
-    isLoading: true,
+    isLoading: false,
+    isInitialLoading: true,
     isRefreshing: false,
     isLoadingCitations: false,
     isLoadingGaps: false,
@@ -113,6 +127,11 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
     }
   })
 
+  // Separate state for smooth progress animation
+  const [animatedProgress, setAnimatedProgress] = useState(0)
+  const animatedProgressRef = useRef(0)
+  const animationFrameRef = useRef<number>()
+
   // Check if user has MAX access
   const hasMaxAccess = subscription?.plan === 'plus' || subscription?.plan === 'pro'
 
@@ -134,57 +153,157 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
     }
   }, [])
 
-  // Load main visibility data
-  const loadVisibilityData = useCallback(async (showLoading = true) => {
-    console.log('📊 LoadVisibilityData called, showLoading:', showLoading)
+  // Load data from cache
+  const loadFromCache = useCallback(() => {
+    try {
+      const cached = localStorage.getItem(VISIBILITY_CACHE_KEY)
+      if (cached) {
+        const { data, timestamp }: CacheEntry = JSON.parse(cached)
+        const age = Date.now() - timestamp
+        if (age < CACHE_TTL) {
+          console.log('📦 Using cached visibility data')
+          setState(prev => ({
+            ...prev,
+            data: data.visibility,
+            citations: data.citations || [],
+            gaps: data.gaps || [],
+            insights: data.insights || null,
+            competitors: data.competitors || [],
+            hasData: true,
+            lastUpdated: data.lastUpdated,
+            scanType: data.scanType,
+            isInitialLoading: false
+          }))
+          return true
+        }
+      }
+      return false
+    } catch (error) {
+      console.error('Failed to load from cache:', error)
+      return false
+    }
+  }, [])
+
+  // Save data to cache
+  const saveToCache = useCallback((data: any) => {
+    try {
+      const cacheEntry: CacheEntry = {
+        data,
+        timestamp: Date.now()
+      }
+      localStorage.setItem(VISIBILITY_CACHE_KEY, JSON.stringify(cacheEntry))
+    } catch (error) {
+      console.error('Failed to save to cache:', error)
+    }
+  }, [])
+
+  // Load all data in parallel
+  const loadAllData = useCallback(async (showLoading = true, useCache = false) => {
+    console.log('📊 Loading all visibility data...', { showLoading, useCache })
     
     if (showLoading) {
       setState(prev => ({ ...prev, isLoading: true, error: null }))
     }
 
     try {
-      console.log('🌐 Calling maxVisibilityApi.getVisibilityData()...')
-      const response = await maxVisibilityApi.getVisibilityData()
-      console.log('📋 API Response:', { success: response.success, hasData: !!response.data, error: response.error })
-      
-      if (response.success && response.data) {
-        console.log('✅ Found visibility data:', {
-          score: response.data.score.overall_score,
-          lastUpdated: response.data.last_updated,
-          scanType: response.data.scan_type
-        })
-        
-        setState(prev => ({
-          ...prev,
-          data: response.data!,
-          hasData: true,
-          lastUpdated: response.data!.last_updated,
-          scanType: response.data!.scan_type,
-          competitors: response.data!.competitive.competitors,
-          isLoading: false,
-          error: null
-        }))
-        
-        console.log('✅ State updated with new visibility data')
+      // Only try cache on initial load
+      if (useCache) {
+        console.log('🔍 Checking cache first...')
+        if (loadFromCache()) {
+          console.log('✅ Using cached data')
+          return
+        }
+        console.log('❌ No valid cache found, loading fresh data')
       } else {
-        console.log('ℹ️ No visibility data found or API error')
+        // Clear all caches to ensure fresh data
+        console.log('🧹 Clearing all caches before loading...')
+        maxVisibilityApi.clearCache()
+        localStorage.removeItem(VISIBILITY_CACHE_KEY)
+      }
+      
+      // Load all data in parallel
+      const [
+        visibilityResponse,
+        citationsResponse,
+        gapsResponse,
+        insightsResponse,
+        featureAccessResponse
+      ] = await Promise.all([
+        maxVisibilityApi.getVisibilityData(),
+        maxVisibilityApi.getCitations(),
+        maxVisibilityApi.getContentGaps(),
+        maxVisibilityApi.getInsights(),
+        maxVisibilityApi.getFeatureAccess()
+      ])
+
+      // Check responses
+
+      // Process all responses
+      if (visibilityResponse.success && visibilityResponse.data) {
+        const newData = {
+          visibility: visibilityResponse.data,
+          citations: citationsResponse.success && citationsResponse.data ? citationsResponse.data.citations : [],
+          gaps: gapsResponse.success && gapsResponse.data ? gapsResponse.data.gaps : [],
+          insights: insightsResponse.success ? insightsResponse.data : null,
+          competitors: visibilityResponse.data.competitive.competitors || [],
+          lastUpdated: visibilityResponse.data.last_updated,
+          scanType: visibilityResponse.data.scan_type
+        }
+
+        // Update state with fresh data
+
+        // Update state
         setState(prev => ({
           ...prev,
-          data: null,
-          hasData: false,
+          data: newData.visibility,
+          citations: newData.citations,
+          gaps: newData.gaps,
+          insights: newData.insights,
+          competitors: newData.competitors,
+          hasData: true,
+          lastUpdated: newData.lastUpdated,
+          scanType: newData.scanType,
           isLoading: false,
-          error: handleApiError(response.error)
+          isInitialLoading: false,
+          error: null,
+          featureAccess: featureAccessResponse.success && featureAccessResponse.data ? {
+            hasMaxAccess: featureAccessResponse.data.has_max_access,
+            features: featureAccessResponse.data.features
+          } : prev.featureAccess
+        }))
+
+        // Save to cache
+        saveToCache(newData)
+        console.log('✅ Data loaded and cached successfully')
+      } else {
+        console.error('❌ Failed to load visibility data:', visibilityResponse.error)
+        setState(prev => ({
+          ...prev,
+          isLoading: false,
+          isInitialLoading: false,
+          error: handleApiError(visibilityResponse.error)
         }))
       }
     } catch (error) {
-      console.error('❌ Error in loadVisibilityData:', error)
+      console.error('💥 Error loading visibility data:', error)
       setState(prev => ({
         ...prev,
         isLoading: false,
+        isInitialLoading: false,
         error: 'Failed to load visibility data'
       }))
     }
-  }, [])
+  }, [loadFromCache, saveToCache])
+
+  // Load initial data (can use cache)
+  const loadInitialData = useCallback(async () => {
+    await loadAllData(true, true) // showLoading=true, useCache=true
+  }, [loadAllData])
+
+  // Refresh data (always fresh)
+  const refresh = useCallback(async () => {
+    await loadAllData(true, false) // showLoading=true, useCache=false
+  }, [loadAllData])
 
   // Load citations data
   const loadCitations = useCallback(async (filters?: Record<string, any>) => {
@@ -276,6 +395,36 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
     }
   }, [])
 
+  // Smooth progress animation function
+  const animateProgressTo = useCallback((targetProgress: number) => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+    }
+
+    const startProgress = animatedProgressRef.current
+    const difference = targetProgress - startProgress
+    const duration = 1000 // 1 second animation
+    const startTime = Date.now()
+
+    const animate = () => {
+      const elapsed = Date.now() - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      
+      // Use ease-out animation for smoother feel
+      const easeOut = 1 - Math.pow(1 - progress, 3)
+      const currentProgress = startProgress + (difference * easeOut)
+      
+      animatedProgressRef.current = currentProgress
+      setAnimatedProgress(currentProgress)
+
+      if (progress < 1) {
+        animationFrameRef.current = requestAnimationFrame(animate)
+      }
+    }
+
+    animate()
+  }, [])
+
   // Poll assessment status
   const pollAssessmentStatus = useCallback(async (assessmentId: string) => {
     try {
@@ -327,6 +476,7 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
           message: message?.substring(0, 50) 
         })
         
+        // Update state with new progress
         setState(prev => ({
           ...prev,
           currentAssessment: {
@@ -340,6 +490,11 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
           }
         }))
 
+        // Animate progress smoothly to new value
+        if (progress !== undefined && progress !== animatedProgressRef.current) {
+          animateProgressTo(progress)
+        }
+
         // If completed successfully, refresh data
         if (status === 'completed') {
           console.log('✅ Assessment completed, stopping polling and refreshing data...')
@@ -349,31 +504,40 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
             pollIntervalRef.current = null
           }
           
-          setState(prev => ({
-            ...prev,
-            isRefreshing: false,
-            currentAssessment: { 
-              id: null, 
-              status: null, 
-              progress: 0,
-              stage: undefined,
-              message: undefined,
-              error: undefined,
-              company: undefined
-            }
-          }))
+          // Animate to 100% before closing
+          animateProgressTo(100)
           
-          console.log('🧹 Clearing API cache to ensure fresh data...')
-          maxVisibilityApi.clearCache()
-          
-          console.log('🔄 Calling loadVisibilityData to refresh after completion...')
-          await loadVisibilityData(false)
-          console.log('✅ Data refresh completed after assessment')
-          
-          toast({
-            title: "Scan completed",
-            description: "Your visibility data has been updated.",
-          })
+          // Small delay to show 100% completion before closing modal
+          setTimeout(async () => {
+            setState(prev => ({
+              ...prev,
+              isRefreshing: false,
+              currentAssessment: { 
+                id: null, 
+                status: null, 
+                progress: 0,
+                stage: undefined,
+                message: undefined,
+                error: undefined,
+                company: undefined
+              }
+            }))
+            
+            console.log('🧹 Clearing all caches to ensure fresh data...')
+            maxVisibilityApi.clearCache()
+            localStorage.removeItem(VISIBILITY_CACHE_KEY)
+            
+            console.log('🔄 Calling loadAllData to refresh after completion...')
+            // Force fresh data load
+            await loadAllData(false, false) // no loading state, no cache
+            console.log('✅ Data refresh completed after assessment')
+            
+            toast({
+              title: "Scan completed",
+              description: "Your visibility data has been updated.",
+            })
+          }, 1500) // 1.5 second delay to show completion
+
         } else if (status === 'failed') {
           console.log('❌ Assessment failed, stopping polling')
           
@@ -406,12 +570,23 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
       } else {
         console.warn('❌ Failed to poll assessment status:', response.error)
         // Don't stop polling on API errors, might be temporary
+        // But log more details for debugging
+        console.warn('Poll response details:', {
+          success: response.success,
+          error: response.error,
+          hasData: !!response.data
+        })
       }
-    } catch (error) {
-      console.error('❌ Failed to poll assessment status:', error)
-      // Don't stop polling on network errors, might be temporary
+          } catch (error) {
+        console.error('❌ Failed to poll assessment status:', error)
+        // Don't stop polling on network errors, might be temporary
+        // But log error details for debugging
+        console.error('Poll error details:', {
+          errorType: error instanceof Error ? error.constructor.name : 'Unknown',
+          errorMessage: error instanceof Error ? error.message : String(error)
+        })
     }
-  }, [loadVisibilityData])
+  }, [loadAllData, animateProgressTo])
 
   // Trigger a new scan/assessment
   const triggerScan = useCallback(async (type: 'lite' | 'max' = hasMaxAccess ? 'max' : 'lite') => {
@@ -424,13 +599,40 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
       return
     }
 
-    setState(prev => ({ ...prev, isRefreshing: true, error: null }))
+    console.log('🚀 triggerScan called with type:', type)
+
+    // Set up initial state - make sure progress modal shows
+    setState(prev => ({ 
+      ...prev, 
+      isRefreshing: true, 
+      error: null,
+      currentAssessment: {
+        id: null,
+        status: 'pending',
+        progress: 0,
+        stage: 'setup',
+        message: 'Preparing scan...',
+        error: undefined,
+        company: undefined
+      }
+    }))
 
     try {
+      console.log('📡 Making API call to trigger assessment...')
       const response = await maxVisibilityApi.triggerAssessment(type)
+      
+      console.log('📋 API Response received:', {
+        success: response.success,
+        hasData: !!response.data,
+        hasError: !!response.error,
+        responseKeys: Object.keys(response),
+        data: response.data,
+        error: response.error
+      })
       
       if (response.success && response.data) {
         const assessmentId = response.data.assessment_id
+        console.log('✅ Assessment started with ID:', assessmentId)
         
         setState(prev => ({
           ...prev,
@@ -438,42 +640,73 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
             id: assessmentId,
             status: 'pending',
             progress: 0,
-            stage: undefined,
-            message: undefined,
+            stage: 'setup',
+            message: 'Assessment initialized...',
             error: undefined,
             company: undefined
           }
         }))
 
+        // Initialize animated progress to match the starting progress
+        animatedProgressRef.current = 0
+        setAnimatedProgress(0)
+
         // Reset poll counter for new assessment
         pollCountRef.current = 0
 
-        // Start polling for status updates
-        pollIntervalRef.current = setInterval(() => {
-          pollAssessmentStatus(assessmentId)
-        }, 2000) // Poll every 2 seconds
+        // Start polling for status updates with a slight delay to ensure modal shows
+        setTimeout(() => {
+          console.log('⏰ Starting status polling...')
+          pollIntervalRef.current = setInterval(() => {
+            pollAssessmentStatus(assessmentId)
+          }, 2000) // Poll every 2 seconds
+        }, 1000) // 1 second delay to ensure UI updates
 
         toast({
           title: "Scan started",
           description: `${type.toUpperCase()} visibility scan is now running.`,
         })
       } else {
+        console.error('❌ Failed to start assessment:', {
+          success: response.success,
+          error: response.error,
+          fullResponse: response
+        })
         setState(prev => ({
           ...prev,
           isRefreshing: false,
-          error: handleApiError(response.error)
+          currentAssessment: {
+            id: null,
+            status: null,
+            progress: 0,
+            stage: undefined,
+            message: undefined,
+            error: undefined,
+            company: undefined
+          },
+          error: handleApiError(response.error) || 'Unknown error occurred'
         }))
         
         toast({
           title: "Failed to start scan",
-          description: handleApiError(response.error),
+          description: handleApiError(response.error) || 'Unknown error occurred',
           variant: "destructive",
         })
       }
     } catch (error) {
+      console.error('💥 triggerScan error:', error)
       setState(prev => ({
         ...prev,
         isRefreshing: false,
+        currentAssessment: {
+          id: null,
+          status: null,
+          progress: 0,
+          stage: undefined,
+          message: undefined,
+          error: undefined,
+          company: undefined
+        },
         error: 'Failed to start scan'
       }))
       
@@ -484,13 +717,6 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
       })
     }
   }, [subscription, hasMaxAccess, pollAssessmentStatus])
-
-  // Main refresh function
-  const refresh = useCallback(async () => {
-    setState(prev => ({ ...prev, isRefreshing: true }))
-    await loadVisibilityData(false)
-    setState(prev => ({ ...prev, isRefreshing: false }))
-  }, [loadVisibilityData])
 
   // Section-specific refresh functions
   const refreshCitations = useCallback(async (filters?: Record<string, any>) => {
@@ -546,20 +772,25 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
 
   // Clear cache function
   const clearCache = useCallback(() => {
-    maxVisibilityApi.clearCache()
-    toast({
-      title: "Cache cleared",
-      description: "Data cache has been cleared. Fresh data will be loaded on next request.",
-    })
+    localStorage.removeItem(VISIBILITY_CACHE_KEY)
+    setState(prev => ({
+      ...prev,
+      data: null,
+      citations: [],
+      gaps: [],
+      insights: null,
+      competitors: [],
+      hasData: false
+    }))
   }, [])
 
   // Initial data loading
   useEffect(() => {
     if (subscription) {
       loadFeatureAccess()
-      loadVisibilityData()
+      loadInitialData()
     }
-  }, [subscription, loadFeatureAccess, loadVisibilityData])
+  }, [subscription, loadFeatureAccess, loadInitialData])
 
   // Cleanup polling on unmount
   useEffect(() => {
@@ -570,9 +801,27 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
     }
   }, [])
 
+  // Cleanup animation on unmount
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current)
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+    }
+  }, [])
+
   return {
     // State
     ...state,
+    
+    // Replace progress with animated version for smoother UX
+    currentAssessment: {
+      ...state.currentAssessment,
+      progress: animatedProgress
+    },
     
     // Actions
     refresh,
@@ -582,6 +831,9 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
     refreshInsights,
     clearError,
     clearCache,
-    exportData
+    exportData,
+    
+    // Additional properties
+    isInitialLoading: state.isInitialLoading
   }
 } 
