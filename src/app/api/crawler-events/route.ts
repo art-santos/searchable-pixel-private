@@ -99,6 +99,26 @@ export async function POST(request: Request) {
 
     console.log(`[Crawler API] 📊 Received ${events.length} events for user ${userId}`)
 
+    // Get user's primary workspace for assigning tracked visits (optional for backward compatibility)
+    let workspaceId = null
+    try {
+      const { data: primaryWorkspace, error: workspaceError } = await supabaseAdmin
+        .from('workspaces')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('is_primary', true)
+        .single()
+
+      if (primaryWorkspace && !workspaceError) {
+        workspaceId = primaryWorkspace.id
+        console.log('[Crawler API] 🏢 Using primary workspace:', workspaceId)
+      } else {
+        console.warn('[Crawler API] ⚠️ No primary workspace found, tracking without workspace assignment')
+      }
+    } catch (error) {
+      console.warn('[Crawler API] ⚠️ Workspace lookup failed, continuing without workspace:', error)
+    }
+
     // Process events
     const processedEvents = []
     const dailyStats = new Map() // Key: domain-date-crawler
@@ -160,6 +180,11 @@ export async function POST(request: Request) {
         response_time_ms: event.responseTimeMs,
         country: event.country,
         metadata: event.metadata
+      }
+
+      // Add workspace_id only if we have one (for backward compatibility)
+      if (workspaceId) {
+        crawlerVisit.workspace_id = workspaceId
       }
 
       processedEvents.push(crawlerVisit)

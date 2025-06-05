@@ -70,9 +70,11 @@ export async function GET(request: Request) {
     let query = supabase
       .from('crawler_visits')
       .select('timestamp, crawler_name, crawler_company')
-      .eq('workspace_id', workspaceId)  // Filter by workspace instead of user
       .gte('timestamp', startDate.toISOString())
       .order('timestamp', { ascending: true })
+
+    // Filter by workspace first, fall back to user for backward compatibility
+    query = query.or(`workspace_id.eq.${workspaceId},and(workspace_id.is.null,user_id.eq.${userId})`)
 
     // Filter by specific crawler if not 'all'
     if (crawler !== 'all') {

@@ -48,8 +48,8 @@ export async function GET(request: Request) {
     const { data: visits, error } = await supabase
       .from('crawler_visits')
       .select('crawler_name, crawler_company, timestamp')
-      .eq('workspace_id', workspaceId)  // Filter by workspace instead of user
       .gte('timestamp', startDate.toISOString())
+      .or(`workspace_id.eq.${workspaceId},and(workspace_id.is.null,user_id.eq.${userId})`)
 
     if (error) {
       console.error('Error fetching crawler visits:', error)
