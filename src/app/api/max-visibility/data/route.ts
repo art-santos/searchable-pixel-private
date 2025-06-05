@@ -629,59 +629,78 @@ export async function GET(request: NextRequest) {
       console.log(`   ${index + 1}. ${comp.name} (Rank ${comp.rank}) - ${comp.isUser ? 'USER' : 'COMPETITOR'}`)
     })
 
-    // Build chart data (last 30 days with latest score per day)
-    const chartData = []
-    const today = new Date()
-    
     // Get all assessments for this company in the last 30 days
-    const thirtyDaysAgo = new Date(today)
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    const todayForChart = new Date(); // Renamed to avoid conflict if 'today' is used elsewhere later
+    const thirtyDaysAgo = new Date(todayForChart);
+    thirtyDaysAgo.setDate(todayForChart.getDate() - 30);
     
     const { data: chartAssessments } = await supabase
       .from('max_visibility_runs')
       .select('total_score, created_at')
-      .eq('company_id', company.id)
+      .eq('company_id', company.id) // 'company' must be in scope here
       .eq('status', 'completed')
       .gte('created_at', thirtyDaysAgo.toISOString())
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: false });
     
     // Group assessments by date and take the latest one for each day
-    const assessmentsByDate = new Map<string, { score: number; created_at: string }>()
+    const assessmentsByDate = new Map<string, { score: number; created_at: string }>();
     
     if (chartAssessments) {
       chartAssessments.forEach(assess => {
-        const assessDate = new Date(assess.created_at).toDateString()
-        
-        // Only keep the latest assessment for each day (they're ordered by created_at desc)
+        const assessDate = new Date(assess.created_at).toDateString();
         if (!assessmentsByDate.has(assessDate)) {
           assessmentsByDate.set(assessDate, {
             score: assess.total_score,
             created_at: assess.created_at
-          })
+          });
         }
-      })
-      
-      console.log(`📊 Chart data: Found ${chartAssessments.length} assessments, using latest score for ${assessmentsByDate.size} unique days`)
+      });
+      console.log(`📊 Chart data: Found ${chartAssessments.length} assessments, using latest score for ${assessmentsByDate.size} unique days`);
+    } else {
+      console.log(`📊 Chart data: No chartAssessments found for the period.`);
     }
     
-    // Generate 30 days of chart data using latest score per day
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(today)
-      date.setDate(date.getDate() - i)
-      
-      const isCurrentDay = i === 0 // Today is current period
-      const dateString = date.toDateString()
-      
-      // Use latest assessment score for this day, or 0 if no assessment
-      const dayAssessment = assessmentsByDate.get(dateString)
-      const score = dayAssessment ? dayAssessment.score : 0
-      
-      chartData.push({
-        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        score: score,
-        fullDate: date.toISOString(),
-        isCurrentPeriod: isCurrentDay
-      })
+    const finalChartData: Array<{ date: string; score: number; fullDate: string; isCurrentPeriod: boolean }> = [];
+
+    if (assessmentsByDate.size === 1) {
+      // Corrected variable destructuring here
+      const firstEntry = assessmentsByDate.entries().next().value;
+      if (firstEntry) {
+        const [dateStringKey, assessmentDataValue] = firstEntry; 
+        const assessmentDate = new Date(assessmentDataValue.created_at); 
+
+        finalChartData.push({
+          date: assessmentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          score: assessmentDataValue.score,
+          fullDate: assessmentDate.toISOString(),
+          isCurrentPeriod: assessmentDate.toDateString() === todayForChart.toDateString() // Use todayForChart
+        });
+        console.log(`📊 Chart data: Single assessment point generated for ${assessmentDate.toDateString()} with score ${assessmentDataValue.score}`);
+      } else {
+        // This case should ideally not be reached if assessmentsByDate.size === 1,
+        // but it handles potential edge cases and satisfies TypeScript.
+        console.warn('⚠️ Chart data: assessmentsByDate.size was 1, but .next().value was undefined. This should not happen.');
+      }
+    } else { 
+      for (let i = 29; i >= 0; i--) {
+        const dateLoop = new Date(todayForChart); // Use todayForChart
+        dateLoop.setDate(todayForChart.getDate() - i); 
+        const dateStringKey = dateLoop.toDateString();
+        const dayAssessment = assessmentsByDate.get(dateStringKey);
+        const score = dayAssessment ? dayAssessment.score : 0;
+        
+        finalChartData.push({
+          date: dateLoop.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          score: score,
+          fullDate: dateLoop.toISOString(),
+          isCurrentPeriod: dateLoop.toDateString() === todayForChart.toDateString() // Use todayForChart
+        });
+      }
+      if (assessmentsByDate.size === 0) {
+        console.log(`📊 Chart data: Generated 30 days of 0 scores (no assessments found).`);
+      } else {
+        console.log(`📊 Chart data: Generated 30-day period with ${assessmentsByDate.size} unique assessment days.`);
+      }
     }
 
     // Safely handle responses that might be empty
@@ -778,10 +797,10 @@ export async function GET(request: NextRequest) {
       },
       last_updated: assessment.updated_at,
       scan_type: 'max' as const,
-      chartData: chartData,
+      chartData: finalChartData,
       share_of_voice: cumulativeShareOfVoice, // CUMULATIVE share of voice
       questions_analyzed: responses.length,
-      mentions_found: mentionedResponses.length,
+      responses: mentionedResponses,
       // Add cumulative metrics for frontend
       cumulative_data: {
         total_assessments: allCompanyAssessments?.length || 1,

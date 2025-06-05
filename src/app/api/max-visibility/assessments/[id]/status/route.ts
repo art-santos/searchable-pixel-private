@@ -47,6 +47,15 @@ export async function GET(
       .eq('id', assessmentId)
       .single()
 
+    console.log('📊 Raw assessment data from DB:', {
+      id: assessment?.id,
+      status: assessment?.status,
+      progress: assessment?.progress_percentage,
+      stage: assessment?.progress_stage,
+      message: assessment?.progress_message,
+      error: assessment?.error_message
+    })
+
     if (error || !assessment) {
       console.log('❌ Assessment not found:', assessmentId, error?.message)
       return NextResponse.json(
@@ -100,7 +109,7 @@ export async function GET(
         stage,
         message,
         error: assessment.status === 'failed' ? (assessment.error_message || 'Assessment failed') : undefined,
-        company: assessment.companies?.company_name
+        company: (assessment.companies as any)?.company_name
       },
       error: null
     })

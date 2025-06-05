@@ -749,7 +749,7 @@ ANALYZE AND PROVIDE:
    - Extract ALL company/product mentions in the response
    - For each competitor found:
      * company_name: string (exact name mentioned in response)
-     * domain: string (USE the domain from COMPETITOR DOMAIN MAPPING above if available, otherwise infer from company name like "jasper.ai" for "Jasper", or "unknown.com" if cannot determine)
+     * domain: string (USE the domain from COMPETITOR DOMAIN MAPPING above if available, otherwise infer from company name)
      * mention_position: "primary" | "secondary" | "passing"
      * sentiment: "very_positive" | "positive" | "neutral" | "negative" | "very_negative"
      * context: string (quote mentioning this competitor)
@@ -757,9 +757,18 @@ ANALYZE AND PROVIDE:
    CRITICAL: For domain extraction:
    - FIRST check the COMPETITOR DOMAIN MAPPING above for exact matches
    - IF found in mapping, use that exact domain
-   - IF not in mapping but company name is clear (like "Jasper", "OpenAI", "Salesforce"), infer likely domain
-   - ONLY use "unknown.com" if you cannot determine or infer the domain
-   - NEVER use "placeholder.com" or generic placeholders
+   - IF not in mapping, infer the likely domain from company name:
+     * "Jasper" → "jasper.ai"
+     * "OpenAI" → "openai.com"
+     * "Salesforce" → "salesforce.com"
+     * "HubSpot" → "hubspot.com"
+     * "Microsoft" → "microsoft.com"
+     * "Google" → "google.com"
+     * "Apple" → "apple.com"
+     * "Slack" → "slack.com"
+     * General pattern: CompanyName → companyname.com (lowercase)
+   - NEVER use "unknown.com", "placeholder.com", or generic placeholders
+   - If you truly cannot determine a domain, SKIP that competitor entirely
 
 3. CITATION ANALYSIS:
    - For each citation URL, classify into:
@@ -1322,32 +1331,33 @@ RESPOND IN VALID JSON FORMAT ONLY:
       // Get cached GPT-4o analysis for competitor data
       const gpt4oAnalysis = this.gpt4oAnalysisCache?.get(analysis.question_id)
       
-      // Collect competitors from GPT-4o analysis
-      if (gpt4oAnalysis?.competitor_analysis) {
-        for (const competitor of gpt4oAnalysis.competitor_analysis) {
-          const key = competitor.company_name?.toLowerCase() || 'unknown'
-          if (!allCompetitors.has(key) && competitor.company_name) {
-            // Skip entries with placeholder or missing domains
-            const domain = competitor.domain || ''
-            if (domain === 'placeholder.com' || domain === 'unknown.com' || !domain) {
-              console.warn(`⚠️ Skipping competitor "${competitor.company_name}" with invalid domain: "${domain}"`)
-              continue
+              // Collect competitors from GPT-4o analysis
+        if (gpt4oAnalysis?.competitor_analysis) {
+          for (const competitor of gpt4oAnalysis.competitor_analysis) {
+            const key = competitor.company_name?.toLowerCase() || 'unknown'
+            if (!allCompetitors.has(key) && competitor.company_name) {
+              const domain = competitor.domain || ''
+              
+              // Only skip if domain is completely missing or clearly placeholder
+              if (!domain || domain === 'placeholder.com') {
+                console.warn(`⚠️ Skipping competitor "${competitor.company_name}" with missing/placeholder domain: "${domain}"`)
+                continue
+              }
+              
+              allCompetitors.set(key, {
+                run_id: assessmentId,
+                competitor_name: competitor.company_name,
+                competitor_domain: domain,
+                competitor_description: competitor.context || '',
+                mention_count: 1,
+                sentiment_average: this.convertSentimentToScore(competitor.sentiment),
+                created_at: new Date().toISOString()
+              })
+              
+              console.log(`✅ Valid competitor found: "${competitor.company_name}" → ${domain}`)
             }
-            
-            allCompetitors.set(key, {
-              run_id: assessmentId,
-              competitor_name: competitor.company_name,
-              competitor_domain: domain,
-              competitor_description: competitor.context || '',
-              mention_count: 1,
-              sentiment_average: this.convertSentimentToScore(competitor.sentiment),
-              created_at: new Date().toISOString()
-            })
-            
-            console.log(`✅ Valid competitor found: "${competitor.company_name}" → ${domain}`)
           }
         }
-      }
 
       // Collect citations from structured analysis - use correct response ID
       const responseId = questionToResponseMap.get(analysis.question_id)
@@ -1717,11 +1727,16 @@ RESPOND IN VALID JSON FORMAT ONLY:
       const companyName = this.extractCompanyNameFromDomain(domain)
       
       // Check if this company/domain is mentioned in the response
+      // NOTE: We're being more permissive here - if a domain appears in citations,
+      // it's likely relevant even if not explicitly mentioned in the response text
       if (this.isDomainRelevantToResponse(domain, companyName, aiResponse)) {
         competitorDomains.set(companyName, domain)
         console.log(`✅ Mapped competitor: "${companyName}" → ${domain}`)
       } else {
-        console.log(`⚠️ Domain ${domain} not mentioned in response, skipping`)
+        // Still include domains from citations even if not explicitly mentioned
+        // The fact that they're cited suggests relevance
+        competitorDomains.set(companyName, domain)
+        console.log(`✅ Including competitor from citation: "${companyName}" → ${domain}`)
       }
     })
     

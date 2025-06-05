@@ -8,6 +8,9 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  ScatterChart,
+  Scatter,
+  Cell
 } from 'recharts'
 import { motion, AnimatePresence } from 'framer-motion'
 import { TimeframeSelector, TimeframeOption } from '@/components/custom/timeframe-selector'
@@ -35,7 +38,7 @@ interface CustomTooltipProps {
 }
 
 const CustomDot = ({ cx, cy, payload, ...props }: CustomDotProps) => {
-  if (!cx || !cy || !payload || !payload.isCurrentPeriod) {
+  if (!cx || !cy || !payload) {
     return <g />  // Return empty group instead of null
   }
   
@@ -65,6 +68,45 @@ const CustomDot = ({ cx, cy, payload, ...props }: CustomDotProps) => {
         cx={cx}
         cy={cy}
         r={4}
+        fill="#fff"
+        stroke="#333"
+        strokeWidth={2}
+      />
+    </g>
+  )
+}
+
+// Custom dot for single data point scatter chart
+const SingleDataPointDot = (props: any) => {
+  const { cx, cy } = props;
+  if (!cx || !cy) return null;
+  
+  return (
+    <g>
+      {/* Pulsing ring animation */}
+      <motion.circle
+        cx={cx}
+        cy={cy}
+        r={8}
+        fill="none"
+        stroke="#fff"
+        strokeWidth={1}
+        opacity={0.6}
+        animate={{
+          r: [8, 16, 8],
+          opacity: [0.6, 0.2, 0.6],
+        }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+      />
+      {/* Main dot */}
+      <circle
+        cx={cx}
+        cy={cy}
+        r={6}
         fill="#fff"
         stroke="#333"
         strokeWidth={2}
@@ -113,6 +155,8 @@ export function VisibilityChart({
   onMouseMove,
   onMouseLeave
 }: VisibilityChartProps) {
+  const isSingleDataPoint = chartData.length === 1;
+
   return (
     <div>
       <div className="mb-6">
@@ -163,65 +207,116 @@ export function VisibilityChart({
                   }}
                 >
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
-                      data={chartData}
-                      margin={{ top: 20, right: 30, left: -40, bottom: 20 }}
-                      onMouseMove={onMouseMove}
-                      onMouseLeave={onMouseLeave}
-                    >
-                      <defs>
-                        <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#fff" stopOpacity={0.15} />
-                          <stop offset="100%" stopColor="#fff" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid
-                        vertical={false}
-                        horizontal={true}
-                        strokeDasharray="4 4"
-                        stroke="#333333"
-                        opacity={0.4}
-                      />
-                      <XAxis
-                        dataKey="date"
-                        axisLine={{ stroke: '#333333' }}
-                        tick={{ 
-                          fill: '#666666', 
-                          fontSize: 11,
-                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
-                        }}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        axisLine={{ stroke: '#333333' }}
-                        tick={{ 
-                          fill: '#666666', 
-                          fontSize: 11,
-                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
-                        }}
-                        tickLine={false}
-                        domain={[0, 100]}
-                        tickFormatter={(value) => `${value}`}
-                      />
-                      <Tooltip
-                        content={<CustomTooltip />}
-                        cursor={false}
-                      />
-                      <Area
-                        type="linear"
-                        dataKey="score"
-                        stroke="#fff"
-                        strokeWidth={2}
-                        fill="url(#scoreGradient)"
-                        dot={<CustomDot />}
-                        activeDot={{ 
-                          r: 6, 
-                          fill: '#fff',
-                          stroke: '#333',
-                          strokeWidth: 2
-                        }}
-                      />
-                    </AreaChart>
+                    {isSingleDataPoint ? (
+                      // Show scatter chart for single data point
+                      <ScatterChart
+                        data={chartData}
+                        margin={{ top: 20, right: 30, left: -40, bottom: 20 }}
+                        onMouseMove={onMouseMove}
+                        onMouseLeave={onMouseLeave}
+                      >
+                        <CartesianGrid
+                          vertical={false}
+                          horizontal={true}
+                          strokeDasharray="4 4"
+                          stroke="#333333"
+                          opacity={0.4}
+                        />
+                        <XAxis
+                          dataKey="date"
+                          type="category"
+                          axisLine={{ stroke: '#333333' }}
+                          tick={{ 
+                            fill: '#666666', 
+                            fontSize: 11,
+                            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
+                          }}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          type="number"
+                          axisLine={{ stroke: '#333333' }}
+                          tick={{ 
+                            fill: '#666666', 
+                            fontSize: 11,
+                            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
+                          }}
+                          tickLine={false}
+                          domain={[0, 100]}
+                          tickFormatter={(value) => `${value}`}
+                        />
+                        <Tooltip
+                          content={<CustomTooltip />}
+                          cursor={false}
+                        />
+                        <Scatter
+                          dataKey="score"
+                          fill="#fff"
+                          shape={<SingleDataPointDot />}
+                        />
+                      </ScatterChart>
+                    ) : (
+                      // Show area chart for multiple data points
+                      <AreaChart
+                        data={chartData}
+                        margin={{ top: 20, right: 30, left: -40, bottom: 20 }}
+                        onMouseMove={onMouseMove}
+                        onMouseLeave={onMouseLeave}
+                      >
+                        <defs>
+                          <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#fff" stopOpacity={0.15} />
+                            <stop offset="100%" stopColor="#fff" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid
+                          vertical={false}
+                          horizontal={true}
+                          strokeDasharray="4 4"
+                          stroke="#333333"
+                          opacity={0.4}
+                        />
+                        <XAxis
+                          dataKey="date"
+                          axisLine={{ stroke: '#333333' }}
+                          tick={{ 
+                            fill: '#666666', 
+                            fontSize: 11,
+                            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
+                          }}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          axisLine={{ stroke: '#333333' }}
+                          tick={{ 
+                            fill: '#666666', 
+                            fontSize: 11,
+                            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
+                          }}
+                          tickLine={false}
+                          domain={[0, 100]}
+                          tickFormatter={(value) => `${value}`}
+                        />
+                        <Tooltip
+                          content={<CustomTooltip />}
+                          cursor={false}
+                        />
+                        <Area
+                          type="linear"
+                          dataKey="score"
+                          stroke="#fff"
+                          strokeWidth={2}
+                          fill="url(#scoreGradient)"
+                          dot={<CustomDot />}
+                          activeDot={{ 
+                            r: 6, 
+                            fill: '#fff',
+                            stroke: '#333',
+                            strokeWidth: 2
+                          }}
+                        />
+                      </AreaChart>
+                    )}
                   </ResponsiveContainer>
                 </motion.div>
               </motion.div>
