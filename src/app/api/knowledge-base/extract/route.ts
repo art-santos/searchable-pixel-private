@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Initialize service with workspace context
-    const knowledgeService = new KnowledgeBaseService(true, workspaceId)
+    const knowledgeService = new KnowledgeBaseService(true)
 
     // Extract and save knowledge
     const result = await knowledgeService.extractAndSaveKnowledge(textDump, workspaceId)

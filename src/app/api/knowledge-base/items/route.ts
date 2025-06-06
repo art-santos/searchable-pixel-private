@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Initialize service with workspace context
-    const knowledgeService = new KnowledgeBaseService(true, workspaceId)
+    const knowledgeService = new KnowledgeBaseService(true)
 
     const filters = {
       tag: tag !== 'all' ? tag || undefined : undefined,
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Initialize service with workspace context
-    const knowledgeService = new KnowledgeBaseService(true, workspaceId)
+    const knowledgeService = new KnowledgeBaseService(true)
 
     // Create item
     const item = await knowledgeService.createItem(workspaceId, content, tag)
@@ -169,12 +169,45 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // Get user auth to verify workspace access
+    const supabase = createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Verify user owns this knowledge item through workspace
+    const { data: item, error: itemError } = await supabase
+      .from('knowledge_base_items')
+      .select(`
+        id,
+        workspace_id,
+        workspaces!inner(
+          id,
+          user_id
+        )
+      `)
+      .eq('id', id)
+      .eq('workspaces.user_id', user.id)
+      .single()
+
+    if (itemError || !item) {
+      return NextResponse.json(
+        { error: 'Knowledge item not found or access denied' },
+        { status: 404 }
+      )
+    }
+
     const knowledgeService = new KnowledgeBaseService(true)
-    const item = await knowledgeService.updateItem(id, content, tag)
+    const updatedItem = await knowledgeService.updateItem(id, content, tag)
 
     return NextResponse.json({
       success: true,
-      data: item
+      data: updatedItem
     })
 
   } catch (error) {
@@ -200,6 +233,39 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json(
         { error: 'Item ID is required' },
         { status: 400 }
+      )
+    }
+
+    // Get user auth to verify workspace access
+    const supabase = createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Verify user owns this knowledge item through workspace
+    const { data: item, error: itemError } = await supabase
+      .from('knowledge_base_items')
+      .select(`
+        id,
+        workspace_id,
+        workspaces!inner(
+          id,
+          user_id
+        )
+      `)
+      .eq('id', id)
+      .eq('workspaces.user_id', user.id)
+      .single()
+
+    if (itemError || !item) {
+      return NextResponse.json(
+        { error: 'Knowledge item not found or access denied' },
+        { status: 404 }
       )
     }
 

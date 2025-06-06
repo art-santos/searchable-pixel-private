@@ -16,7 +16,7 @@ export class KnowledgeBaseService {
   /**
    * Extract knowledge from text dump and save to database
    */
-  async extractAndSaveKnowledge(textDump: string, companyId: string): Promise<{
+  async extractAndSaveKnowledge(textDump: string, workspaceId: string): Promise<{
     extractedItems: KnowledgeItem[]
     extractionResult: ExtractionResult
   }> {
@@ -25,10 +25,10 @@ export class KnowledgeBaseService {
       const extractionResult = await this.extractionEngine.extractFromTextDump(textDump)
       
       // Remove duplicates
-      const deduplicatedItems = await this.removeDuplicates(extractionResult.extractedItems, companyId)
+      const deduplicatedItems = await this.removeDuplicates(extractionResult.extractedItems, workspaceId)
       
       // Save to database
-      const savedItems = await this.batchCreateItems(deduplicatedItems, companyId, extractionResult.batchId)
+      const savedItems = await this.batchCreateItems(deduplicatedItems, workspaceId, extractionResult.batchId)
       
       return {
         extractedItems: savedItems,
@@ -43,13 +43,13 @@ export class KnowledgeBaseService {
   /**
    * Create a single knowledge item (for manual entry)
    */
-  async createItem(companyId: string, content: string, tag: string): Promise<KnowledgeItem> {
+  async createItem(workspaceId: string, content: string, tag: string): Promise<KnowledgeItem> {
     const wordCount = content.trim().split(' ').length
     
     const { data, error } = await this.supabase
       .from('knowledge_base_items')
       .insert({
-        company_id: companyId,
+        workspace_id: workspaceId,
         content: content.trim(),
         tag,
         word_count: wordCount,
@@ -70,13 +70,13 @@ export class KnowledgeBaseService {
    */
   async batchCreateItems(
     extractedItems: ExtractedKnowledge[], 
-    companyId: string, 
+    workspaceId: string, 
     batchId?: string
   ): Promise<KnowledgeItem[]> {
     const userId = (await this.supabase.auth.getUser()).data.user?.id
     
     const itemsToInsert = extractedItems.map(item => ({
-      company_id: companyId,
+      workspace_id: workspaceId,
       content: item.content,
       tag: item.tag,
       word_count: item.content.trim().split(' ').length,
@@ -101,11 +101,11 @@ export class KnowledgeBaseService {
   /**
    * Get knowledge items with filtering
    */
-  async getItems(companyId: string, filters?: KnowledgeFilters): Promise<KnowledgeItem[]> {
+  async getItems(workspaceId: string, filters?: KnowledgeFilters): Promise<KnowledgeItem[]> {
     let query = this.supabase
       .from('knowledge_base_items')
       .select('*')
-      .eq('company_id', companyId)
+      .eq('workspace_id', workspaceId)
       .order('created_at', { ascending: false })
 
     // Apply filters
@@ -176,8 +176,8 @@ export class KnowledgeBaseService {
   /**
    * Get knowledge grouped by tags
    */
-  async getGroupedKnowledge(companyId: string): Promise<GroupedKnowledge> {
-    const items = await this.getItems(companyId)
+  async getGroupedKnowledge(workspaceId: string): Promise<GroupedKnowledge> {
+    const items = await this.getItems(workspaceId)
     
     const grouped: GroupedKnowledge = {
       'company-overview': [],
@@ -205,8 +205,8 @@ export class KnowledgeBaseService {
   /**
    * Calculate knowledge base completeness score
    */
-  async analyzeKnowledgeCompleteness(companyId: string): Promise<CompletenessScore> {
-    const items = await this.getItems(companyId)
+  async analyzeKnowledgeCompleteness(workspaceId: string): Promise<CompletenessScore> {
+    const items = await this.getItems(workspaceId)
     const tagCounts: Record<string, number> = {}
     
     // Count items by tag
@@ -251,9 +251,9 @@ export class KnowledgeBaseService {
    */
   private async removeDuplicates(
     newItems: ExtractedKnowledge[], 
-    companyId: string
+    workspaceId: string
   ): Promise<ExtractedKnowledge[]> {
-    const existingItems = await this.getItems(companyId)
+    const existingItems = await this.getItems(workspaceId)
     
     return newItems.filter(newItem => {
       // Check for exact content match
@@ -325,14 +325,14 @@ export class KnowledgeBaseService {
   /**
    * Get knowledge base statistics
    */
-  async getStatistics(companyId: string): Promise<{
+  async getStatistics(workspaceId: string): Promise<{
     totalItems: number
     totalWords: number
     completenessScore: number
     tagDistribution: Record<string, number>
   }> {
-    const items = await this.getItems(companyId)
-    const completeness = await this.analyzeKnowledgeCompleteness(companyId)
+    const items = await this.getItems(workspaceId)
+    const completeness = await this.analyzeKnowledgeCompleteness(workspaceId)
     
     const tagDistribution: Record<string, number> = {}
     let totalWords = 0

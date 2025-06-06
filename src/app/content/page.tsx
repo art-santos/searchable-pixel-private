@@ -71,8 +71,9 @@ export default function ContentPage() {
   }
 
   return (
+    <>
       <motion.main 
-      className="bg-[#0c0c0c] flex flex-col min-h-screen"
+        className="bg-[#0c0c0c] flex flex-col min-h-screen"
         initial="hidden"
         animate="visible"
         variants={containerVariants}
@@ -176,5 +177,6 @@ export default function ContentPage() {
           animation: workspaceFlip 2s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
         }
       `}</style>
-    )
-  } 
+    </>
+  )
+} 
