@@ -47,8 +47,14 @@ export async function POST(req: NextRequest) {
 
     const billingPrefs = userProfile?.billing_preferences || {}
 
-    // Check if user has disabled this type of tracking/billing
-    if (usageType === 'ai_logs') {
+    // Check if user is admin - admins bypass all restrictions
+    const isAdmin = userSubscription?.is_admin
+    if (isAdmin) {
+      console.log('👑 Admin user detected, bypassing all plan limits and billing restrictions')
+    }
+
+    // Check if user has disabled this type of tracking/billing (but not for admins)
+    if (usageType === 'ai_logs' && !isAdmin) {
       // Check if AI logs tracking is completely disabled
       if (billingPrefs.ai_logs_enabled === false) {
         return NextResponse.json({ 
@@ -84,7 +90,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Allow admin users to test usage tracking even without a subscription
-    if (userSubscription?.is_admin) {
+    if (isAdmin) {
       console.log('👑 Admin user detected, allowing usage tracking without subscription requirement')
     } else if (!userSubscription?.subscription_id || userSubscription.subscription_status !== 'active') {
       return NextResponse.json({ error: 'No active subscription found' }, { status: 400 })
@@ -99,8 +105,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No active billing period found' }, { status: 400 })
     }
 
-    // Check spending limits before processing
-    if (usageType === 'ai_logs') {
+    // Check spending limits before processing (but not for admins)
+    if (usageType === 'ai_logs' && !isAdmin) {
       const potentialOverage = Math.max(0, (billingPeriod.ai_logs_used + quantity) - billingPeriod.ai_logs_included)
       
       if (potentialOverage > 0) {
@@ -148,6 +154,8 @@ export async function POST(req: NextRequest) {
           })
         }
       }
+    } else if (usageType === 'ai_logs' && isAdmin) {
+      console.log('👑 Admin user: Bypassing spending limit checks for AI logs')
     }
 
     // Calculate overage based on usage type
@@ -174,9 +182,9 @@ export async function POST(req: NextRequest) {
     if (overage > 0 && billingPrefs.auto_billing_enabled !== false) {
       console.log(`📊 Reporting ${overage} ${usageType} overage to Stripe for user ${user.id}`)
       
-      // For admin users without subscription, mock the Stripe reporting
-      if (userSubscription?.is_admin && !userSubscription?.subscription_id) {
-        console.log(`🧪 Admin test: Mocking Stripe usage report for ${overage} ${usageType}`)
+      // For admin users, always mock the Stripe reporting (don't charge admins)
+      if (isAdmin) {
+        console.log(`👑 Admin test: Mocking Stripe usage report for ${overage} ${usageType} (no billing for admins)`)
         stripeReported = true
       } else {
         // Report usage to Stripe for real subscribers

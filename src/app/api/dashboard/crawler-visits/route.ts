@@ -66,10 +66,24 @@ export async function GET(request: Request) {
 
     console.log(`[Dashboard API] Using date range from: ${startDate.toISOString()}`)
 
+    // Check if user is admin and has payment method
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('is_admin, stripe_customer_id, subscription_plan, subscription_status')
+      .eq('id', userId)
+      .single()
+
+    const isAdmin = userProfile?.is_admin || false
+    // User has payment method if they have a Stripe customer ID AND active subscription
+    const hasPaymentMethod = !!(userProfile?.stripe_customer_id && userProfile?.subscription_status === 'active')
+    const subscriptionPlan = userProfile?.subscription_plan || 'free'
+
+    console.log(`[Dashboard API] User status - Admin: ${isAdmin}, Has Card: ${hasPaymentMethod}, Plan: ${subscriptionPlan}, Status: ${userProfile?.subscription_status}`)
+
     // Build the query with date filtering, filtered by workspace
     let query = supabase
       .from('crawler_visits')
-      .select('timestamp, crawler_name, crawler_company')
+      .select('timestamp, crawler_name, crawler_company', { count: 'exact' }) // Add count to see total
       .gte('timestamp', startDate.toISOString())
       .order('timestamp', { ascending: true })
 
@@ -81,23 +95,98 @@ export async function GET(request: Request) {
       query = query.eq('crawler_name', crawler)
     }
 
-    const { data: visits, error: visitsError } = await query
+    // Determine if we should apply limits
+    let shouldLimitData = false
+    let rowLimit = 999999 // Default to essentially unlimited
 
-    if (visitsError) {
-      console.error('Error fetching crawler visits:', visitsError)
-      // If table doesn't exist yet, return empty data
-      if (visitsError.code === '42P01') {
-        return NextResponse.json({
-          chartData: [],
-          availableCrawlers: [],
-          totalCrawls: 0,
-          timeframe
-        })
+    if (isAdmin) {
+      // Admin users: ALWAYS unlimited, no card required
+      console.log('[Dashboard API] 👑 Admin user: No limits applied')
+      shouldLimitData = false
+    } else if (hasPaymentMethod) {
+      // Any user with payment method: Unlimited viewing
+      console.log('[Dashboard API] 💳 User has payment method: No limits applied')
+      shouldLimitData = false
+    } else {
+      // Users without payment method: Apply plan limits
+      shouldLimitData = true
+      switch (subscriptionPlan) {
+        case 'visibility':
+          rowLimit = 250
+          break
+        case 'plus':
+          rowLimit = 500
+          break
+        case 'pro':
+          rowLimit = 1000
+          break
+        default:
+          rowLimit = 0 // Free plan sees no data
       }
-      return NextResponse.json({ error: 'Failed to fetch visits' }, { status: 500 })
+      console.log(`[Dashboard API] 🚫 No payment method: Limiting to ${rowLimit} rows based on ${subscriptionPlan} plan`)
     }
 
-    console.log(`[Dashboard API] Found ${visits?.length || 0} visits for workspace ${workspaceId}`)
+    // Apply the appropriate data fetching strategy
+    let allVisits: any[] = []
+    
+    if (shouldLimitData && rowLimit > 0) {
+      // Limited users: single query with their plan limit
+      const { data: visits, error: visitsError } = await query.limit(rowLimit)
+      
+      if (visitsError) {
+        console.error('Error fetching crawler visits:', visitsError)
+        if (visitsError.code === '42P01') {
+          return NextResponse.json({
+            chartData: [],
+            availableCrawlers: [],
+            totalCrawls: 0,
+            timeframe
+          })
+        }
+        return NextResponse.json({ error: 'Failed to fetch visits' }, { status: 500 })
+      }
+      
+      allVisits = visits || []
+      console.log(`[Dashboard API] Limited user: Retrieved ${allVisits.length} visits (capped at ${rowLimit})`)
+      
+    } else {
+      // Unlimited users (admin or has payment method): Fetch ALL data using pagination
+      console.log('[Dashboard API] Starting paginated fetch for unlimited user...')
+      
+      // First, get the total count
+      const { count, error: countError } = await query.select('*', { count: 'exact', head: true })
+      
+      if (countError) {
+        console.error('Error getting count:', countError)
+        return NextResponse.json({ error: 'Failed to count visits' }, { status: 500 })
+      }
+      
+      console.log(`[Dashboard API] Total records to fetch: ${count}`)
+      
+      // Fetch data in chunks of 1000 (Supabase's limit)
+      const chunkSize = 1000
+      const totalChunks = Math.ceil((count || 0) / chunkSize)
+      
+      for (let i = 0; i < totalChunks; i++) {
+        const start = i * chunkSize
+        const end = start + chunkSize - 1
+        
+        const { data: chunk, error: chunkError } = await query.range(start, end)
+        
+        if (chunkError) {
+          console.error(`Error fetching chunk ${i + 1}/${totalChunks}:`, chunkError)
+          return NextResponse.json({ error: 'Failed to fetch all visits' }, { status: 500 })
+        }
+        
+        allVisits = allVisits.concat(chunk || [])
+        console.log(`[Dashboard API] Fetched chunk ${i + 1}/${totalChunks}: ${chunk?.length} records (total so far: ${allVisits.length})`)
+      }
+      
+      console.log(`[Dashboard API] ✅ Successfully fetched all ${allVisits.length} visits`)
+    }
+
+    const visits = allVisits
+    console.log(`[Dashboard API] Processing ${visits.length} visits for workspace ${workspaceId}`)
 
     // Aggregate visits by time period
     const timeAggregates = new Map<string, number>()

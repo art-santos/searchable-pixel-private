@@ -219,6 +219,64 @@ export async function POST(request: Request) {
       }
     }
 
+    // Check if user is admin, has payment method, and current usage
+    const { data: userProfile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('is_admin, billing_preferences, stripe_customer_id, subscription_plan, subscription_status')
+      .eq('id', userId)
+      .single()
+
+    const isAdmin = userProfile?.is_admin || false
+    const hasPaymentMethod = !!(userProfile?.stripe_customer_id && userProfile?.subscription_status === 'active')
+    const billingPrefs = userProfile?.billing_preferences || {}
+    const subscriptionPlan = userProfile?.subscription_plan || 'free'
+    
+    console.log(`[Crawler API] User status - Admin: ${isAdmin}, Has Card: ${hasPaymentMethod}, Plan: ${subscriptionPlan}`)
+
+    // Admin users bypass everything
+    if (isAdmin) {
+      console.log('[Crawler API] 👑 Admin user detected, bypassing all billing restrictions')
+    }
+
+    // Check if tracking is disabled (but not for admins)
+    if (!isAdmin && billingPrefs.ai_logs_enabled === false) {
+      console.warn('[Crawler API] ⚠️ AI logs tracking disabled for user, skipping events')
+      return NextResponse.json({
+        success: false,
+        processed: 0,
+        message: 'AI crawler tracking is disabled for your account',
+        reason: 'tracking_disabled'
+      })
+    }
+
+    // Check current usage against plan limits (but not for admins or users with payment method)
+    if (!isAdmin && !hasPaymentMethod) {
+      // Get current billing period to check usage
+      const { data: billingPeriod } = await supabaseAdmin
+        .rpc('get_current_billing_period', { p_user_id: userId })
+        .single()
+
+      if (billingPeriod) {
+        const currentUsage = billingPeriod.ai_logs_used || 0
+        const planLimit = billingPeriod.ai_logs_included || 0
+
+        console.log(`[Crawler API] Current usage: ${currentUsage}/${planLimit}`)
+
+        if (currentUsage >= planLimit) {
+          console.warn('[Crawler API] 🚫 User has reached plan limit without payment method')
+          return NextResponse.json({
+            success: false,
+            processed: 0,
+            message: `You've reached your ${subscriptionPlan} plan limit of ${planLimit} crawler logs. Add a payment method to continue tracking.`,
+            reason: 'plan_limit_reached',
+            action_needed: 'add_payment_method',
+            current_usage: currentUsage,
+            plan_limit: planLimit
+          })
+        }
+      }
+    }
+
     console.log(`[Crawler API] 💾 About to insert ${processedEvents.length} events into database`)
 
     // Insert crawler visits
@@ -233,6 +291,44 @@ export async function POST(request: Request) {
       }
       
       console.log('[Crawler API] ✅ Successfully inserted crawler visits')
+
+      // Track usage for billing
+      if (!isAdmin) {
+        try {
+          // Users with payment method: Always track usage (they can go into overage)
+          // Users without payment method: Already blocked above if at limit
+          if (hasPaymentMethod) {
+            console.log('[Crawler API] 💳 User has payment method: Tracking usage for billing')
+          }
+
+          // Track the usage in the billing system
+          const { error: trackError } = await supabaseAdmin
+            .rpc('track_usage_event', {
+              p_user_id: userId,
+              p_event_type: 'ai_log_tracked',
+              p_amount: processedEvents.length,
+              p_metadata: {
+                source: 'crawler_events_api',
+                crawlers: [...new Set(processedEvents.map(e => e.crawler_name))],
+                domains: [...new Set(processedEvents.map(e => e.domain))],
+                has_payment_method: hasPaymentMethod
+              }
+            })
+
+          if (trackError) {
+            console.error('[Crawler API] ⚠️ Usage tracking failed:', trackError)
+          } else {
+            console.log('[Crawler API] ✅ Usage tracking successful for', processedEvents.length, 'events')
+            
+            // If user has payment method, they'll be billed for overages
+            // If user doesn't have payment method, they won't reach here if over limit
+          }
+        } catch (error) {
+          console.error('[Crawler API] ⚠️ Usage tracking error:', error)
+        }
+      } else {
+        console.log('[Crawler API] 👑 Admin user: Skipping usage tracking/billing')
+      }
     } else {
       console.log('[Crawler API] ⚠️ No events to insert (all filtered out)')
     }
