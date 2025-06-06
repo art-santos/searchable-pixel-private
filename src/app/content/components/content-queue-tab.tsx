@@ -2,16 +2,14 @@
 
 import { useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { Calendar, Sparkles, RefreshCw } from 'lucide-react'
+import { Calendar, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useWorkspace } from '@/contexts/WorkspaceContext'
 import { mockQueuedArticles, type QueuedArticle } from '../data/mock-articles'
 
-interface ContentQueueTabProps {
-  onSwitchToKnowledge: () => void
-}
+interface ContentQueueTabProps {}
 
-export function ContentQueueTab({ onSwitchToKnowledge }: ContentQueueTabProps) {
+export function ContentQueueTab({}: ContentQueueTabProps) {
   const { currentWorkspace, switching } = useWorkspace()
   const shouldReduceMotion = useReducedMotion()
 
@@ -72,25 +70,16 @@ export function ContentQueueTab({ onSwitchToKnowledge }: ContentQueueTabProps) {
             Content queue is empty
           </h3>
           <p className="text-[#888] text-lg leading-relaxed mb-6">
-            AI-generated content suggestions will appear here based on your knowledge base and market analysis.
+            Your content pipeline and scheduled articles will appear here.
           </p>
-          <div className="flex flex-col gap-3">
-            <Button
-              onClick={onSwitchToKnowledge}
-              className="bg-white text-black hover:bg-[#f5f5f5] px-6 py-2.5 text-sm font-medium transition-all duration-200 hover:scale-105"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Add Company Knowledge
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleGenerateSuggestions}
-              className="border-[#333] text-[#999] hover:text-white hover:bg-[#1a1a1a] px-6 py-2.5 text-sm transition-all duration-200"
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Generate Suggestions
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            onClick={handleGenerateSuggestions}
+            className="border-[#333] text-[#999] hover:text-white hover:bg-[#1a1a1a] px-6 py-2.5 text-sm transition-all duration-200"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh Queue
+          </Button>
         </motion.div>
       </div>
     </div>

@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useWorkspace } from "@/contexts/WorkspaceContext"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { BarChart3, FileText, Zap, HelpCircle, Rocket, ArrowRight, TrendingUp, Settings } from "lucide-react"
+import { BarChart3, FileText, Bot, HelpCircle, Rocket, ArrowRight, Activity, Settings } from "lucide-react"
 import Link from "next/link"
 
 interface UserProfile {
@@ -14,11 +14,10 @@ interface UserProfile {
   workspace_name: string | null
 }
 
-interface VisibilityScore {
-  id: string
-  total_score: number
-  created_at: string
-  status: string
+interface CrawlerStats {
+  total_visits: number
+  unique_crawlers: number
+  last_crawl_date: string | null
 }
 
 export function WelcomeCard() {
@@ -26,8 +25,8 @@ export function WelcomeCard() {
   const { currentWorkspace } = useWorkspace()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const [visibilityScore, setVisibilityScore] = useState<VisibilityScore | null>(null)
-  const [loadingScore, setLoadingScore] = useState(true)
+  const [crawlerStats, setCrawlerStats] = useState<CrawlerStats | null>(null)
+  const [loadingStats, setLoadingStats] = useState(true)
   const shouldReduceMotion = useReducedMotion()
   const controls = useAnimation()
   
@@ -63,39 +62,57 @@ export function WelcomeCard() {
     fetchProfile()
   }, [user, supabase])
 
-  // Fetch latest visibility score
+  // Fetch crawler attribution stats
   useEffect(() => {
-    const fetchVisibilityScore = async () => {
+    const fetchCrawlerStats = async () => {
       if (!user || !supabase || !currentWorkspace) {
-        setLoadingScore(false)
+        setLoadingStats(false)
         return
       }
 
       try {
+        // Get crawler stats from last 30 days
+        const thirtyDaysAgo = new Date()
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
         const { data, error } = await supabase
-          .from('max_visibility_runs')
-          .select('id, total_score, created_at, status')
-          .eq('triggered_by', user.id)
+          .from('crawler_visits')
+          .select('crawler_name, timestamp')
           .eq('workspace_id', currentWorkspace.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
+          .gte('timestamp', thirtyDaysAgo.toISOString())
 
         if (error) {
-          console.error('Error fetching visibility score:', error)
-          setVisibilityScore(null)
+          console.error('Error fetching crawler stats:', error)
+          setCrawlerStats(null)
         } else {
-          // Get the first result or null if no results
-          setVisibilityScore(data && data.length > 0 ? data[0] : null)
+          if (data && data.length > 0) {
+            const uniqueCrawlers = new Set(data.map(visit => visit.crawler_name)).size
+            const lastCrawlDate = data.reduce((latest, visit) => {
+              return new Date(visit.timestamp) > new Date(latest) ? visit.timestamp : latest
+            }, data[0].timestamp)
+
+            setCrawlerStats({
+              total_visits: data.length,
+              unique_crawlers: uniqueCrawlers,
+              last_crawl_date: lastCrawlDate
+            })
+          } else {
+            setCrawlerStats({
+              total_visits: 0,
+              unique_crawlers: 0,
+              last_crawl_date: null
+            })
+          }
         }
       } catch (err) {
-        console.error('Error in visibility score fetch:', err)
-        setVisibilityScore(null)
+        console.error('Error in crawler stats fetch:', err)
+        setCrawlerStats(null)
       } finally {
-        setLoadingScore(false)
+        setLoadingStats(false)
       }
     }
 
-    fetchVisibilityScore()
+    fetchCrawlerStats()
   }, [user, supabase, currentWorkspace])
 
   useEffect(() => {
@@ -113,22 +130,20 @@ export function WelcomeCard() {
     })
   }, [controls, shouldReduceMotion])
 
-  // Generate welcome message based on visibility score
-  const getWelcomeMessage = (score: number | null) => {
-    if (score === null) {
-      return "Ready to analyze your AEO performance? Run your first visibility scan to get started."
+  // Generate welcome message based on crawler activity
+  const getWelcomeMessage = (stats: CrawlerStats | null) => {
+    if (!stats || stats.total_visits === 0) {
+      return "Ready to track AI crawler activity? Your attribution insights will appear here once crawlers visit your site."
     }
     
-    if (score < 30) {
-      return "Your AEO foundation needs attention, but that's exactly why you're here."
-    } else if (score < 50) {
-      return "You're making progress with solid elements and clear improvement areas."
-    } else if (score < 70) {
-      return "Your AEO strategy is working well. Let's fine-tune the remaining gaps."
-    } else if (score < 85) {
-      return "Strong AEO structure across the board with optimization opportunities ahead."
+    if (stats.total_visits < 10) {
+      return "Great start! You're seeing initial AI crawler activity. More data will improve your attribution insights."
+    } else if (stats.total_visits < 50) {
+      return "Building momentum! Your site is attracting regular AI crawler attention across multiple platforms."
+    } else if (stats.total_visits < 200) {
+      return "Strong AI crawler engagement! You're getting consistent attention from various AI platforms."
     } else {
-      return "Outstanding AEO performance. You're in the top tier of LLM visibility."
+      return "Excellent AI crawler attribution! Your content is being heavily referenced by AI systems."
     }
   }
 
@@ -138,10 +153,10 @@ export function WelcomeCard() {
     return profile?.first_name || "there"
   }
 
-  // Format the last scan date
-  const getLastScanDate = () => {
-    if (!visibilityScore) return null
-    return new Date(visibilityScore.created_at).toLocaleDateString('en-US', {
+  // Format the last crawl date
+  const getLastCrawlDate = () => {
+    if (!crawlerStats?.last_crawl_date) return null
+    return new Date(crawlerStats.last_crawl_date).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
@@ -150,30 +165,30 @@ export function WelcomeCard() {
 
   const quickActions = [
     { 
-      icon: BarChart3, 
-      label: "Visibility Scoring", 
-      desc: visibilityScore ? "Run a new AEO analysis" : "Analyze your AEO performance", 
-      href: "/visibility",
+      icon: Activity, 
+      label: "Crawler Attribution", 
+      desc: crawlerStats?.total_visits ? "View detailed attribution insights" : "Monitor AI crawler activity", 
+      href: "/dashboard",
       primary: true
     },
     { 
-      icon: FileText, 
-      label: "Content Library", 
-      desc: "Browse published content", 
-      href: "/content",
+      icon: BarChart3, 
+      label: "Analytics Dashboard", 
+      desc: "View crawler trends and stats", 
+      href: "/dashboard",
       primary: false
     },
     { 
-      icon: Zap, 
-      label: "Content Queue", 
-      desc: "Manage your pipeline", 
-      href: "/queue",
+      icon: FileText, 
+      label: "Reports", 
+      desc: "Generate attribution reports", 
+      href: "/content",
       primary: false
     },
     { 
       icon: Settings, 
       label: "Workspace Settings", 
-      desc: "Manage API keys & settings", 
+      desc: "Manage API keys & tracking", 
       href: currentWorkspace ? `/dashboard/${currentWorkspace.id}/settings` : "#",
       primary: false
     },
@@ -193,32 +208,28 @@ export function WelcomeCard() {
               Welcome back, {getDisplayName()}
             </h1>
             <p className="text-[#888] text-lg leading-relaxed mb-4 max-w-2xl">
-              {getWelcomeMessage(visibilityScore?.total_score || null)}
+              {getWelcomeMessage(crawlerStats)}
             </p>
             
-            {/* Visibility Score Badge or Empty State */}
+            {/* Crawler Stats Badge or Empty State */}
             <div className="inline-flex items-center gap-3 mb-6">
-              {loadingScore ? (
+              {loadingStats ? (
                 <div className="flex items-center gap-2 bg-[#111] border border-[#1a1a1a] rounded-sm px-3 py-2">
                   <div className="w-2 h-2 bg-[#333] rounded-full animate-pulse"></div>
                   <span className="text-sm text-[#666] font-mono tracking-tight">
-                    Loading score...
+                    Loading activity...
                   </span>
                 </div>
-              ) : visibilityScore ? (
+              ) : crawlerStats && crawlerStats.total_visits > 0 ? (
                 <>
                   <div className="flex items-center gap-2 bg-[#111] border border-[#1a1a1a] rounded-sm px-3 py-2">
-                    <div className={`w-2 h-2 rounded-full ${
-                      visibilityScore.total_score >= 70 ? 'bg-green-400' :
-                      visibilityScore.total_score >= 50 ? 'bg-yellow-400' :
-                      'bg-red-400'
-                    }`}></div>
+                    <div className="w-2 h-2 rounded-full bg-blue-400"></div>
                     <span className="text-sm text-white font-mono tracking-tight">
-                      Visibility Score: {Math.round(visibilityScore.total_score)}%
+                      {crawlerStats.total_visits} visits • {crawlerStats.unique_crawlers} AI crawlers
                     </span>
                   </div>
                   <div className="text-xs text-[#666] font-mono tracking-tight">
-                    Last scan: {getLastScanDate()}
+                    Last activity: {getLastCrawlDate()}
                   </div>
                   <Button 
                     variant="outline" 
@@ -226,7 +237,7 @@ export function WelcomeCard() {
                     className="bg-transparent border-[#333] text-[#888] hover:text-white hover:border-[#444] h-8 px-3 text-xs font-mono tracking-tight"
                     asChild
                   >
-                    <Link href="/visibility" className="flex items-center gap-1">
+                    <Link href="/dashboard" className="flex items-center gap-1">
                       View Details
                       <ArrowRight className="w-3 h-3" />
                     </Link>
@@ -235,9 +246,9 @@ export function WelcomeCard() {
               ) : (
                 <>
                   <div className="flex items-center gap-2 bg-[#111] border border-[#1a1a1a] border-dashed rounded-sm px-3 py-2">
-                    <TrendingUp className="w-4 h-4 text-[#666]" />
+                    <Bot className="w-4 h-4 text-[#666]" />
                     <span className="text-sm text-[#666] font-mono tracking-tight">
-                      No visibility data yet
+                      No crawler activity yet
                     </span>
                   </div>
                   <Button 
@@ -246,8 +257,8 @@ export function WelcomeCard() {
                     className="bg-transparent border-[#333] text-[#888] hover:text-white hover:border-[#444] h-8 px-3 text-xs font-mono tracking-tight"
                     asChild
                   >
-                    <Link href="/visibility" className="flex items-center gap-1">
-                      Run First Scan
+                    <Link href="/dashboard" className="flex items-center gap-1">
+                      Set Up Tracking
                       <ArrowRight className="w-3 h-3" />
                     </Link>
                   </Button>
@@ -316,7 +327,7 @@ export function WelcomeCard() {
                 </Link>
               </div>
               <div className="text-xs text-[#666] font-mono tracking-tight">
-                {visibilityScore ? `Last scan: ${getLastScanDate()}` : 'Ready to get started'}
+                {crawlerStats?.total_visits ? `${crawlerStats.total_visits} AI crawler visits (30d)` : 'Ready to track AI crawlers'}
               </div>
             </div>
           </div>

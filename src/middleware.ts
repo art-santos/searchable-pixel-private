@@ -281,7 +281,6 @@ function isProtectedRoute(pathname: string): boolean {
     '/profile',
     '/settings',
     '/api-keys',
-    '/visibility',
     '/content',
     '/domains',
     '/analytics'

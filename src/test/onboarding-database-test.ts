@@ -15,17 +15,22 @@ const mockUser = {
 
 // Test onboarding data
 const testOnboardingData: OnboardingData = {
-  workspaceName: 'Test Company',
-  userEmail: 'test@example.com',
-  analyticsProvider: 'ga4',
-  domain: 'https://example.com',
-  isAnalyticsConnected: true,
-  keywords: ['AI automation', 'business intelligence', 'workflow optimization'],
-  businessOffering: 'We provide AI-powered business automation solutions that help enterprises streamline their operations and improve efficiency through intelligent workflow management.',
-  knownFor: 'Leading enterprise AI platform with focus on automation and analytics',
-  competitors: ['competitor1.com', 'competitor2.com', 'acme-corp.com'],
-  knowledgeBase: 'Additional context about our business offerings, target market, and competitive advantages in the AI automation space.',
-  cms: 'nextjs'
+  profileData: {
+    first_name: 'John',
+    last_name: 'Doe', 
+    company_name: 'Test Company',
+    role: 'CEO',
+    domain: 'test.com'
+  },
+  analyticsData: {
+    provider: 'google',
+    domain: 'test.com'
+  },
+  contentData: {
+    cms: 'wordpress',
+    keywords: ['AI', 'automation', 'analytics'],
+    competitors: ['competitor1.com', 'competitor2.com']
+  }
 }
 
 // Test questions (simulating AEO question generation)

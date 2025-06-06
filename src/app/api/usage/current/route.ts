@@ -194,32 +194,6 @@ export async function GET() {
       }
     }
 
-    // Get actual visibility scans from max_visibility_runs within current billing period
-    const { data: visibilityScans, error: scansError } = await serviceSupabase
-      .from('max_visibility_runs')
-      .select(`
-        id, 
-        created_at, 
-        status, 
-        question_count,
-        triggered_by,
-        company_id
-      `)
-      .eq('triggered_by', user.id)
-      .gte('created_at', billingPeriod.period_start)
-      .lte('created_at', billingPeriod.period_end)
-
-    let totalScansThisPeriod = 0
-    let maxScansThisPeriod = 0
-    let dailyScansThisPeriod = 0
-
-    if (!scansError && visibilityScans) {
-      totalScansThisPeriod = visibilityScans.length
-      // All scans from max_visibility_runs are MAX scans
-      maxScansThisPeriod = visibilityScans.length
-      dailyScansThisPeriod = 0 // No daily scans from this table
-    }
-
     // Get actual AI crawler logs - check crawler_visits table since that's what's actually used
     const { data: crawlerVisits, error: crawlerVisitsError } = await serviceSupabase
       .from('crawler_visits')
@@ -403,9 +377,9 @@ export async function GET() {
         analyticsOnlyMode: billingPrefs.analytics_only_mode === true
       },
       scans: {
-        maxScansUsed: maxScansThisPeriod,
-        dailyScansUsed: dailyScansThisPeriod,
-        totalScansUsed: totalScansThisPeriod,
+        maxScansUsed: 0,
+        dailyScansUsed: 0,
+        totalScansUsed: 0,
         unlimitedMax: ['plus', 'pro'].includes(billingPeriod.plan_type),
         dailyAllowed: true // All plans get daily scans
       },

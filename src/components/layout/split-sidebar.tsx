@@ -9,7 +9,7 @@ import {
   LayoutDashboardIcon,
   SearchIcon,
   SettingsIcon,
-  GlobeIcon,
+  Activity,
   KeyIcon,
   HelpCircleIcon,
   FileTextIcon,
@@ -87,17 +87,17 @@ export function SplitSidebar() {
             </SidebarMenuButton>
           </Link>
 
-          <Link href="/visibility" className="w-full flex justify-center">
+          <Link href="/dashboard" className="w-full flex justify-center">
             <SidebarMenuButton 
-              tooltip="Visibility"
+              tooltip="AI Attribution"
               className={cn(
                 "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
-                pathname === "/visibility" 
+                pathname === "/attribution" 
                   ? "bg-[#222222] text-white border border-[#333333] selected-button"
                   : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
               )}
             >
-              <GlobeIcon className="h-6 w-6 icon-rotate" />
+              <Activity className="h-6 w-6 icon-rotate" />
             </SidebarMenuButton>
           </Link>
 

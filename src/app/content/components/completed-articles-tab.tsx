@@ -3,19 +3,17 @@
 import { useState, useEffect } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import { FileText, Sparkles } from 'lucide-react'
+import { FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useWorkspace } from '@/contexts/WorkspaceContext'
 import { useArticles } from '@/hooks/useArticles'
 
 interface CompletedArticlesTabProps {
   searchQuery: string
-  onSwitchToKnowledge: () => void
 }
 
 export function CompletedArticlesTab({ 
-  searchQuery, 
-  onSwitchToKnowledge 
+  searchQuery
 }: CompletedArticlesTabProps) {
   const router = useRouter()
   const { currentWorkspace, switching } = useWorkspace()
@@ -139,18 +137,9 @@ export function CompletedArticlesTab({
             <p className="text-[#888] text-lg leading-relaxed mb-6">
               {searchQuery 
                 ? `No articles match "${searchQuery}". Try a different search term.`
-                : 'Your completed articles will appear here. Start by building your knowledge base to generate intelligent content suggestions.'
+                : 'Your completed articles will appear here once you start creating content.'
               }
             </p>
-            {!searchQuery && (
-              <Button
-                onClick={onSwitchToKnowledge}
-                className="bg-white text-black hover:bg-[#f5f5f5] px-6 py-2.5 text-sm font-medium transition-all duration-200 hover:scale-105"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Build Knowledge Base
-              </Button>
-            )}
           </motion.div>
         </div>
       </div>

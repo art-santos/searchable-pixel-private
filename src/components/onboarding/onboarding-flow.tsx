@@ -51,7 +51,6 @@ interface ContentData {
   cms: string
   keywords: string[]
   competitors: string[]
-  knowledgeBase: string
 }
 
 const providers = [
@@ -94,8 +93,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [contentData, setContentData] = useState<ContentData>({
     cms: '',
     keywords: [],
-    competitors: [],
-    knowledgeBase: ''
+    competitors: []
   })
 
   const [newKeyword, setNewKeyword] = useState('')
@@ -271,7 +269,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       case 'analytics':
         return analyticsData.provider && analyticsData.domain
       case 'content':
-        return contentData.keywords.length > 0 || contentData.knowledgeBase
+        return contentData.keywords.length > 0
       default:
         return false
     }
@@ -674,20 +672,6 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                         ))}
                       </div>
                       <p className="text-[#666] text-xs">Benchmarks visibility score.</p>
-                    </div>
-
-                    {/* Knowledge Base */}
-                    <div>
-                      <label className="block text-sm font-medium text-white mb-2">
-                        Knowledge Dump (Optional)
-                      </label>
-                      <Textarea
-                        value={contentData.knowledgeBase}
-                        onChange={(e) => setContentData(prev => ({ ...prev, knowledgeBase: e.target.value }))}
-                        placeholder="Paste any relevant content, docs, or context about your business..."
-                        className="bg-[#1a1a1a] border-[#333] text-white min-h-[100px]"
-                      />
-                      <p className="text-[#666] text-xs mt-1">Gives agents domain context.</p>
                     </div>
                   </div>
 

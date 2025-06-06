@@ -3,8 +3,8 @@ import { useWorkspace } from '@/contexts/WorkspaceContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
 
-// Example hook for fetching workspace-filtered data
-export function useWorkspaceVisibilityRuns() {
+// Hook for workspace-filtered crawler visits
+export function useWorkspaceCrawlerVisits() {
   const { user } = useAuth()
   const { currentWorkspace } = useWorkspace()
   const [data, setData] = useState<any[]>([])
@@ -23,74 +23,19 @@ export function useWorkspaceVisibilityRuns() {
 
       try {
         const supabase = createClient()
-        const { data: runs, error: queryError } = await supabase
-          .from('max_visibility_runs')
+        const { data: visits, error: queryError } = await supabase
+          .from('crawler_visits')
           .select('*')
-          .eq('triggered_by', user.id)
           .eq('workspace_id', currentWorkspace.id)
-          .order('created_at', { ascending: false })
+          .order('timestamp', { ascending: false })
 
         if (queryError) {
           throw queryError
         }
 
-        setData(runs || [])
+        setData(visits || [])
       } catch (err) {
-        console.error('Error fetching workspace visibility runs:', err)
-        setError(err instanceof Error ? err.message : 'Unknown error')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-
-    // Listen for workspace changes and refetch data
-    const handleWorkspaceChange = () => {
-      fetchData()
-    }
-
-    window.addEventListener('workspaceChanged', handleWorkspaceChange)
-    return () => window.removeEventListener('workspaceChanged', handleWorkspaceChange)
-  }, [user, currentWorkspace])
-
-  return { data, loading, error, refetch: () => fetchData() }
-}
-
-// Example hook for workspace-filtered content articles
-export function useWorkspaceContent() {
-  const { user } = useAuth()
-  const { currentWorkspace } = useWorkspace()
-  const [data, setData] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!user || !currentWorkspace) {
-        setLoading(false)
-        return
-      }
-
-      setLoading(true)
-      setError(null)
-
-      try {
-        const supabase = createClient()
-        const { data: articles, error: queryError } = await supabase
-          .from('content_articles')
-          .select('*')
-          .eq('created_by', user.id)
-          .eq('workspace_id', currentWorkspace.id)
-          .order('created_at', { ascending: false })
-
-        if (queryError) {
-          throw queryError
-        }
-
-        setData(articles || [])
-      } catch (err) {
-        console.error('Error fetching workspace content:', err)
+        console.error('Error fetching workspace crawler visits:', err)
         setError(err instanceof Error ? err.message : 'Unknown error')
       } finally {
         setLoading(false)
@@ -181,25 +126,16 @@ export function useWorkspaceTable<T = any>(
   return { data, loading, error, refetch: () => setLoading(true) }
 }
 
-// Hook for workspace-specific visibility runs
-export function useWorkspaceVisibilityRuns() {
+// Hook for workspace-specific crawler visits
+export function useWorkspaceCrawlerStats() {
   return useWorkspaceTable(
-    'max_visibility_runs',
-    'id, total_score, created_at, status',
-    { status: 'completed' }
+    'crawler_visits',
+    'id, crawler_name, timestamp, page_url, user_agent, geographic_data',
+    {}
   )
 }
 
-// Hook for workspace-specific content articles  
-export function useWorkspaceContent() {
-  return useWorkspaceTable(
-    'content_articles',
-    'id, title, content_preview, category, created_at, status, word_count',
-    { status: 'published' }
-  )
-}
-
-// Hook for workspace-specific AI crawler logs
+// Hook for workspace-specific AI crawler logs (for billing)
 export function useWorkspaceCrawlerLogs() {
   return useWorkspaceTable(
     'ai_crawler_logs', 

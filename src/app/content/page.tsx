@@ -7,12 +7,10 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { useCompany } from '@/hooks/useCompany'
 import { CompletedArticlesTab } from './components/completed-articles-tab'
 import { ContentQueueTab } from './components/content-queue-tab'
-import { KnowledgeBaseTab } from './components/knowledge-base-tab'
 
 const tabs = [
   { id: 'completed', label: 'Completed Articles' },
-  { id: 'queue', label: 'Content Queue' },
-  { id: 'knowledge', label: 'Knowledge Base' }
+  { id: 'queue', label: 'Content Queue' }
 ]
 
 export default function ContentPage() {
@@ -50,10 +48,6 @@ export default function ContentPage() {
         ease: [0.16, 1, 0.3, 1]
       }
     }
-  }
-
-  const handleSwitchToKnowledge = () => {
-    setActiveTab('knowledge')
   }
 
   // Show loading spinner while auth or company is loading
@@ -116,19 +110,12 @@ export default function ContentPage() {
             {activeTab === 'completed' && (
               <CompletedArticlesTab 
                 searchQuery={searchQuery}
-                onSwitchToKnowledge={handleSwitchToKnowledge}
               />
           )}
 
         {activeTab === 'queue' && (
-              <ContentQueueTab 
-                onSwitchToKnowledge={handleSwitchToKnowledge}
-              />
+              <ContentQueueTab />
         )}
-
-        {activeTab === 'knowledge' && (
-              <KnowledgeBaseTab />
-            )}
           </motion.div>
         </AnimatePresence>
       </div>

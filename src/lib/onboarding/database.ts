@@ -3,27 +3,30 @@ import { User } from '@supabase/supabase-js'
 import { Tables, TablesInsert } from '../../../supabase/supabase'
 
 export interface OnboardingData {
-  // User data
-  userName?: string  // Add the user's actual name from onboarding
+  // Profile data
+  profileData: {
+    first_name?: string
+    last_name?: string
+    company_name?: string
+    role?: string
+    team_size?: string
+    use_case?: string
+    domain?: string
+  }
   
-  // Workspace data
-  workspaceName: string
-  userEmail: string
+  // Analytics/tracking data
+  analyticsData?: {
+    provider?: 'google' | 'plausible' | 'vercel'
+    tracking_id?: string
+    domain?: string
+  }
   
-  // Analytics data
-  analyticsProvider?: 'vercel' | 'ga4' | 'plausible' | null
-  domain: string
-  isAnalyticsConnected: boolean
-  
-  // Content data
-  keywords: string[]
-  businessOffering: string
-  knownFor: string
-  competitors: string[]
-  knowledgeBase?: string
-  
-  // CMS data
-  cms?: string
+  // Content preferences
+  contentData?: {
+    cms?: string
+    keywords?: string[]
+    competitors?: string[]
+  }
 }
 
 /**
