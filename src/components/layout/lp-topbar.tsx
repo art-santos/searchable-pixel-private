@@ -144,7 +144,7 @@ export function LPTopBar() {
               Sign in
             </Button>
           </Link>
-          <Link href="/signup">
+          <Link href="/waitlist">
             <Button 
               className="auth-button-primary bg-[#0c0c0c]/80 text-white border border-[#2f2f2f] hover:bg-[#0c0c0c]/90 hover:border-[#3f3f3f] text-sm md:text-base px-3 py-1.5 md:px-4 md:py-2"
             >
@@ -231,7 +231,7 @@ export function LPTopBar() {
                 Sign in
               </Link>
               <Link 
-                href="/signup" 
+                href="/waitlist" 
                 onClick={closeMobileMenu}
                 className="block bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333333] hover:border-[#444444] px-4 py-3 text-white text-center transition-all duration-200 ease-out hover:transform hover:scale-105"
               >

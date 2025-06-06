@@ -3,6 +3,156 @@ import { isAiCrawler } from "@/lib/ai"
 import { createClient } from '@/lib/supabase/middleware'
 import { checkRouteAccess } from '@/lib/subscription/route-config'
 import { PlanType } from '@/lib/subscription/config'
+import { createClient as createServerClient } from '@/lib/supabase/server'
+
+// Cache for API key to avoid frequent DB lookups
+let cachedApiKey: string | null = null
+let cacheExpiry: number = 0
+
+async function getSystemApiKey(): Promise<string | null> {
+  try {
+    // Check cache first
+    if (cachedApiKey && Date.now() < cacheExpiry) {
+      return cachedApiKey
+    }
+    
+    const supabase = await createServerClient()
+    
+    // First, try to get an existing API key for the admin user
+    const { data: adminProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('is_admin', true)
+      .limit(1)
+      .single()
+    
+    if (!adminProfile) {
+      console.error('[CRAWLER-TRACKING] No admin user found')
+      return null
+    }
+    
+    // Check for existing workspace API key
+    const { data: workspaces } = await supabase
+      .from('workspaces')
+      .select('id')
+      .eq('user_id', adminProfile.id)
+      .eq('is_primary', true)
+      .single()
+    
+    if (workspaces) {
+      const { data: apiKey } = await supabase
+        .from('workspace_api_keys')
+        .select('api_key')
+        .eq('workspace_id', workspaces.id)
+        .eq('name', 'System Crawler Tracking')
+        .eq('is_active', true)
+        .single()
+      
+      if (apiKey) {
+        cachedApiKey = apiKey.api_key
+        cacheExpiry = Date.now() + 3600000 // Cache for 1 hour
+        return cachedApiKey
+      }
+    }
+    
+    // Fall back to user API key
+    const { data: userApiKey } = await supabase
+      .from('api_keys')
+      .select('key')
+      .eq('user_id', adminProfile.id)
+      .eq('name', 'System Crawler Tracking')
+      .eq('is_active', true)
+      .single()
+    
+    if (userApiKey) {
+      cachedApiKey = userApiKey.key
+      cacheExpiry = Date.now() + 3600000 // Cache for 1 hour
+      return cachedApiKey
+    }
+    
+    console.warn('[CRAWLER-TRACKING] No system API key found')
+    return null
+  } catch (error) {
+    console.error('[CRAWLER-TRACKING] Error getting API key:', error)
+    return null
+  }
+}
+
+// Track crawler visits using the system's own API
+async function trackCrawlerVisit(request: NextRequest, userAgent: string) {
+  try {
+    const apiKey = await getSystemApiKey()
+    if (!apiKey) {
+      console.warn('[CRAWLER-TRACKING] No API key available, skipping tracking')
+      return
+    }
+    
+    // Extract crawler info
+    const crawlerInfo = getCrawlerInfo(userAgent)
+    if (!crawlerInfo) return
+    
+    const event = {
+      url: request.url,
+      userAgent: userAgent,
+      crawler: crawlerInfo,
+      timestamp: new Date().toISOString(),
+      metadata: {
+        method: request.method,
+        pathname: request.nextUrl.pathname,
+        host: request.nextUrl.host
+      }
+    }
+    
+    // Send to our own API
+    const apiUrl = process.env.NODE_ENV === 'development' 
+      ? 'http://localhost:3000/api/crawler-events'
+      : `${request.nextUrl.origin}/api/crawler-events`
+    
+    // Use fetch without await to avoid blocking the response
+    fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ events: [event] })
+    }).then(response => {
+      if (response.ok) {
+        console.log('[CRAWLER-TRACKING] Successfully tracked:', crawlerInfo.name, request.nextUrl.pathname)
+      } else {
+        console.error('[CRAWLER-TRACKING] Failed with status:', response.status)
+      }
+    }).catch(err => {
+      console.error('[CRAWLER-TRACKING] Failed to track:', err)
+    })
+    
+  } catch (error) {
+    console.error('[CRAWLER-TRACKING] Error:', error)
+  }
+}
+
+// Simplified crawler detection
+function getCrawlerInfo(userAgent: string) {
+  const crawlers = {
+    'GPTBot': { name: 'GPTBot', company: 'OpenAI', category: 'ai-training' },
+    'ChatGPT-User': { name: 'ChatGPT-User', company: 'OpenAI', category: 'ai-assistant' },
+    'Claude-Web': { name: 'Claude-Web', company: 'Anthropic', category: 'ai-assistant' },
+    'ClaudeBot': { name: 'ClaudeBot', company: 'Anthropic', category: 'ai-training' },
+    'PerplexityBot': { name: 'PerplexityBot', company: 'Perplexity', category: 'ai-search' },
+    'Google-Extended': { name: 'Google-Extended', company: 'Google', category: 'ai-training' },
+    'Bingbot': { name: 'Bingbot', company: 'Microsoft', category: 'search-ai' },
+    'FacebookBot': { name: 'FacebookBot', company: 'Meta', category: 'social-ai' },
+    'Bytespider': { name: 'Bytespider', company: 'ByteDance', category: 'ai-training' },
+  }
+  
+  for (const [key, info] of Object.entries(crawlers)) {
+    if (userAgent.includes(key)) {
+      return info
+    }
+  }
+  
+  return null
+}
 
 export async function middleware(request: NextRequest) {
   try {
@@ -13,12 +163,21 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next();
     }
     
+    // Skip tracking for API routes to avoid loops
+    if (pathname.startsWith('/api/')) {
+      const { supabase, response } = createClient(request)
+      await supabase.auth.getSession()
+      return response
+    }
+    
     const { supabase, response } = createClient(request)
     await supabase.auth.getSession()
     
     const ua = request.headers.get("user-agent") ?? "";
     if (isAiCrawler(ua)) {
       console.log("[AI-CRAWLER]", ua, request.nextUrl.pathname);
+      // Actually track the crawler visit (non-blocking)
+      trackCrawlerVisit(request, ua)
     }
 
     const { data: { session } } = await supabase.auth.getSession();

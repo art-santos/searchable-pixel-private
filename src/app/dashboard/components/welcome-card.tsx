@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useWorkspace } from "@/contexts/WorkspaceContext"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { BarChart3, FileText, Zap, ExternalLink, BookOpen, HelpCircle, Rocket, ArrowRight, TrendingUp } from "lucide-react"
+import { BarChart3, FileText, Zap, HelpCircle, Rocket, ArrowRight, TrendingUp, Settings } from "lucide-react"
 import Link from "next/link"
 
 interface UserProfile {
@@ -171,11 +171,10 @@ export function WelcomeCard() {
       primary: false
     },
     { 
-      icon: BookOpen, 
-      label: "Documentation", 
-      desc: "Learn best practices", 
-      href: "https://docs.split.dev",
-      external: true,
+      icon: Settings, 
+      label: "Workspace Settings", 
+      desc: "Manage API keys & settings", 
+      href: currentWorkspace ? `/dashboard/${currentWorkspace.id}/settings` : "#",
       primary: false
     },
   ]
@@ -271,55 +270,27 @@ export function WelcomeCard() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1, duration: 0.3 }}
                 >
-                  {action.external ? (
-                    <a
-                      href={action.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`group block p-4 bg-[#111] border border-[#1a1a1a] hover:border-[#333] hover:bg-[#151515] transition-all duration-200 rounded-sm ${
-                        action.primary ? 'md:col-span-2' : ''
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-[#1a1a1a] rounded-sm flex items-center justify-center group-hover:bg-[#222] transition-colors">
-                          <action.icon className="w-4 h-4 text-[#666] group-hover:text-white transition-colors" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-sm font-medium text-white group-hover:text-white transition-colors font-mono tracking-tight">
-                              {action.label}
-                            </h3>
-                            <ExternalLink className="w-3 h-3 text-[#666] group-hover:text-[#888] transition-colors" />
-                          </div>
-                          <p className="text-xs text-[#666] group-hover:text-[#888] transition-colors">
-                            {action.desc}
-                          </p>
-                        </div>
+                  <Link
+                    href={action.href}
+                    className={`group block p-4 bg-[#111] border border-[#1a1a1a] hover:border-[#333] hover:bg-[#151515] transition-all duration-200 rounded-sm ${
+                      action.primary ? 'md:col-span-2' : ''
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-[#1a1a1a] rounded-sm flex items-center justify-center group-hover:bg-[#222] transition-colors">
+                        <action.icon className="w-4 h-4 text-[#666] group-hover:text-white transition-colors" />
                       </div>
-                    </a>
-                  ) : (
-                    <Link
-                      href={action.href}
-                      className={`group block p-4 bg-[#111] border border-[#1a1a1a] hover:border-[#333] hover:bg-[#151515] transition-all duration-200 rounded-sm ${
-                        action.primary ? 'md:col-span-2' : ''
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-[#1a1a1a] rounded-sm flex items-center justify-center group-hover:bg-[#222] transition-colors">
-                          <action.icon className="w-4 h-4 text-[#666] group-hover:text-white transition-colors" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-medium text-white group-hover:text-white transition-colors font-mono tracking-tight mb-1">
-                            {action.label}
-                          </h3>
-                          <p className="text-xs text-[#666] group-hover:text-[#888] transition-colors">
-                            {action.desc}
-                          </p>
-                        </div>
-                        <ArrowRight className="w-3 h-3 text-[#444] group-hover:text-[#666] transition-colors mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-medium text-white group-hover:text-white transition-colors font-mono tracking-tight mb-1">
+                          {action.label}
+                        </h3>
+                        <p className="text-xs text-[#666] group-hover:text-[#888] transition-colors">
+                          {action.desc}
+                        </p>
                       </div>
-                    </Link>
-                  )}
+                      <ArrowRight className="w-3 h-3 text-[#444] group-hover:text-[#666] transition-colors mt-0.5" />
+                    </div>
+                  </Link>
                 </motion.div>
               ))}
             </div>

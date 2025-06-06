@@ -1,6 +1,34 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { cookies } from 'next/headers'
+import { createClient } from '@supabase/supabase-js'
+import crypto from 'crypto'
+
+// Initialize Supabase admin client for server-side operations
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_KEY!,
+  {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    }
+  }
+)
+
+// Hash API key for secure storage
+function hashApiKey(key: string): string {
+  return crypto.createHash('sha256').update(key).digest('hex')
+}
+
+interface ApiKeyValidation {
+  user_id: string
+  workspace_id: string | null
+  is_valid: boolean
+  key_type: 'workspace' | 'user'
+  permissions: {
+    crawler_tracking?: boolean
+    read_data?: boolean
+  }
+}
 
 export async function GET(request: Request) {
   try {
@@ -29,17 +57,15 @@ export async function GET(request: Request) {
       )
     }
     
-    // Validate API key
-    const cookieStore = await cookies()
-    const supabase = await createClient()
+    // Hash the API key for validation
+    const keyHash = hashApiKey(apiKey)
     
-    const { data: keyData, error: keyError } = await supabase
-      .from('api_keys')
-      .select('id, user_id, name')
-      .eq('key', apiKey)
-      .single()
+    // Validate API key using the new function that checks both workspace and user keys
+    const { data: keyData, error: keyError } = await supabaseAdmin
+      .rpc('validate_any_api_key', { p_key_hash: keyHash })
+      .single<ApiKeyValidation>()
     
-    if (keyError || !keyData) {
+    if (keyError || !keyData || !keyData.is_valid) {
       return NextResponse.json(
         { 
           status: 'error',
@@ -49,10 +75,62 @@ export async function GET(request: Request) {
       )
     }
     
-    // Get user profile info
-    const { data: profile, error: profileError } = await supabase
+    // Get workspace details based on key type
+    let workspaceInfo = null
+    let keyName = null
+    
+    if (keyData.key_type === 'workspace') {
+      // Get workspace details
+      const { data: workspace, error: workspaceError } = await supabaseAdmin
+        .from('workspaces')
+        .select('workspace_name, domain')
+        .eq('id', keyData.workspace_id)
+        .single()
+      
+      if (workspace && !workspaceError) {
+        workspaceInfo = {
+          workspace: workspace.workspace_name,
+          domain: workspace.domain
+        }
+      }
+      
+      // Get key name
+      const { data: apiKeyRecord } = await supabaseAdmin
+        .from('workspace_api_keys')
+        .select('name')
+        .eq('key_hash', keyHash)
+        .single()
+      
+      keyName = apiKeyRecord?.name || 'Workspace API Key'
+    } else {
+      // Get user profile info for user keys
+      const { data: profile, error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .select('workspace_name, domain')
+        .eq('id', keyData.user_id)
+        .single()
+      
+      if (profile && !profileError) {
+        workspaceInfo = {
+          workspace: profile.workspace_name || 'Primary Workspace',
+          domain: profile.domain || null
+        }
+      }
+      
+      // Get key name
+      const { data: apiKeyRecord } = await supabaseAdmin
+        .from('api_keys')
+        .select('name')
+        .eq('key_hash', keyHash)
+        .single()
+      
+      keyName = apiKeyRecord?.name || 'User API Key'
+    }
+    
+    // Get user's subscription plan info
+    const { data: profile } = await supabaseAdmin
       .from('profiles')
-      .select('workspace_name, domain')
+      .select('subscription_plan')
       .eq('id', keyData.user_id)
       .single()
     
@@ -61,9 +139,12 @@ export async function GET(request: Request) {
       status: 'ok',
       connection: {
         authenticated: true,
-        keyName: keyData.name,
-        workspace: profile?.workspace_name || 'Unknown',
-        domain: profile?.domain || null
+        keyName: keyName,
+        keyType: keyData.key_type,
+        workspace: workspaceInfo?.workspace || 'Unknown',
+        domain: workspaceInfo?.domain || null,
+        plan: profile?.subscription_plan || 'free',
+        permissions: keyData.permissions
       },
       timestamp: new Date().toISOString()
     })

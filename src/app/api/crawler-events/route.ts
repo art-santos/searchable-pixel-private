@@ -33,10 +33,15 @@ function hashApiKey(key: string): string {
   return crypto.createHash('sha256').update(key).digest('hex')
 }
 
-interface ApiKeyData {
+interface ApiKeyValidation {
   user_id: string
-  domains: string[] | null
+  workspace_id: string | null
   is_valid: boolean
+  key_type: 'workspace' | 'user'
+  permissions: {
+    crawler_tracking?: boolean
+    read_data?: boolean
+  }
 }
 
 export async function POST(request: Request) {
@@ -57,15 +62,12 @@ export async function POST(request: Request) {
     const keyHash = hashApiKey(apiKey)
     
     console.log('[Crawler API] 🔑 API Key received:', apiKey.substring(0, 20) + '...')
-    console.log('[Crawler API] 🔑 FULL API Key received:', JSON.stringify(apiKey))
-    console.log('[Crawler API] 🔑 API Key length:', apiKey.length)
     console.log('[Crawler API] 🔒 Key hash:', keyHash.substring(0, 16) + '...')
-    console.log('[Crawler API] 🔒 FULL Key hash:', keyHash)
 
-    // Validate API key and get user info
+    // Validate API key using the new function that checks both workspace and user keys
     const { data: keyData, error: keyError } = await supabaseAdmin
-      .rpc('validate_api_key', { key_hash: keyHash })
-      .single<ApiKeyData>()
+      .rpc('validate_any_api_key', { p_key_hash: keyHash })
+      .single<ApiKeyValidation>()
 
     console.log('[Crawler API] 🔍 Key validation result:', { keyData, keyError })
 
@@ -77,11 +79,22 @@ export async function POST(request: Request) {
       )
     }
 
+    // Check if the key has crawler tracking permission
+    if (!keyData.permissions?.crawler_tracking) {
+      console.error('[Crawler API] ❌ API key does not have crawler tracking permission')
+      return NextResponse.json(
+        { error: 'API key does not have permission to track crawler events' },
+        { status: 403 }
+      )
+    }
+
     const userId = keyData.user_id
-    const allowedDomains = keyData.domains || []
+    const workspaceId = keyData.workspace_id
+    const keyType = keyData.key_type
     
     console.log('[Crawler API] ✅ Valid API key for user:', userId)
-    console.log('[Crawler API] 🌐 Allowed domains:', allowedDomains)
+    console.log('[Crawler API] 🏢 Workspace:', workspaceId)
+    console.log('[Crawler API] 🔑 Key type:', keyType)
 
     // Parse request body
     const body = await request.json()
@@ -97,27 +110,7 @@ export async function POST(request: Request) {
       )
     }
 
-    console.log(`[Crawler API] 📊 Received ${events.length} events for user ${userId}`)
-
-    // Get user's primary workspace for assigning tracked visits (optional for backward compatibility)
-    let workspaceId = null
-    try {
-      const { data: primaryWorkspace, error: workspaceError } = await supabaseAdmin
-        .from('workspaces')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('is_primary', true)
-        .single()
-
-      if (primaryWorkspace && !workspaceError) {
-        workspaceId = primaryWorkspace.id
-        console.log('[Crawler API] 🏢 Using primary workspace:', workspaceId)
-      } else {
-        console.warn('[Crawler API] ⚠️ No primary workspace found, tracking without workspace assignment')
-      }
-    } catch (error) {
-      console.warn('[Crawler API] ⚠️ Workspace lookup failed, continuing without workspace:', error)
-    }
+    console.log(`[Crawler API] 📊 Received ${events.length} events for ${keyType} key`)
 
     // Process events
     const processedEvents = []
@@ -159,16 +152,11 @@ export async function POST(request: Request) {
         path,
         crawler: crawlerName
       })
-      
-      // Validate domain if restrictions are set
-      if (allowedDomains.length > 0 && !allowedDomains.includes(domain)) {
-        console.warn(`[Crawler API] ⚠️ Domain ${domain} not allowed for this API key. Allowed: ${allowedDomains.join(', ')}`)
-        continue
-      }
 
       // Prepare event for insertion
       const crawlerVisit = {
         user_id: userId,
+        workspace_id: workspaceId, // Always use the workspace from the key
         domain: domain,
         path: path,
         crawler_name: crawlerName,
@@ -180,11 +168,6 @@ export async function POST(request: Request) {
         response_time_ms: event.responseTimeMs,
         country: event.country,
         metadata: event.metadata
-      }
-
-      // Add workspace_id only if we have one (for backward compatibility)
-      if (workspaceId) {
-        crawlerVisit.workspace_id = workspaceId
       }
 
       processedEvents.push(crawlerVisit)
@@ -309,6 +292,8 @@ export async function POST(request: Request) {
               p_amount: processedEvents.length,
               p_metadata: {
                 source: 'crawler_events_api',
+                key_type: keyType,
+                workspace_id: workspaceId,
                 crawlers: [...new Set(processedEvents.map(e => e.crawler_name))],
                 domains: [...new Set(processedEvents.map(e => e.domain))],
                 has_payment_method: hasPaymentMethod
@@ -373,7 +358,9 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       processed: processedEvents.length,
-      message: `Successfully processed ${processedEvents.length} crawler events`
+      message: `Successfully processed ${processedEvents.length} crawler events`,
+      workspace_id: workspaceId,
+      key_type: keyType
     })
 
   } catch (error) {
@@ -390,6 +377,7 @@ export async function GET() {
   return NextResponse.json({
     status: 'ok',
     message: 'Split Analytics Crawler Events API',
-    version: '0.1.0'
+    version: '0.2.0',
+    features: ['workspace_keys', 'user_keys', 'permissions']
   })
 } 

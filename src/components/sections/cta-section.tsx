@@ -70,7 +70,7 @@ export default function CTASection() {
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
           <a
-            href="/signup"
+            href="/waitlist"
             className="w-full sm:w-auto inline-flex items-center justify-center bg-[#0c0c0c] px-5 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base font-semibold text-white transition-all hover:bg-[#161616] hover:scale-105 rounded-lg shadow-lg border border-[#2f2f2f] hover:border-[#3f3f3f] group"
           >
             Get your site ranked
