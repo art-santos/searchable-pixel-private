@@ -179,13 +179,6 @@ export function WelcomeCard() {
       primary: false
     },
     { 
-      icon: FileText, 
-      label: "Reports", 
-      desc: "Generate attribution reports", 
-      href: "/content",
-      primary: false
-    },
-    { 
       icon: Settings, 
       label: "Workspace Settings", 
       desc: "Manage API keys & tracking", 

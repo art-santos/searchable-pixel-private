@@ -12,7 +12,6 @@ import {
   Activity,
   KeyIcon,
   HelpCircleIcon,
-  FileTextIcon,
 } from "lucide-react"
 import Image from 'next/image'
 
@@ -98,20 +97,6 @@ export function SplitSidebar() {
               )}
             >
               <Activity className="h-6 w-6 icon-rotate" />
-            </SidebarMenuButton>
-          </Link>
-
-          <Link href="/content" className="w-full flex justify-center">
-            <SidebarMenuButton 
-              tooltip="Content"
-              className={cn(
-                "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
-                pathname === "/content" 
-                  ? "bg-[#222222] text-white border border-[#333333] selected-button" 
-                  : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
-              )}
-            >
-              <FileTextIcon className="h-6 w-6 icon-rotate" />
             </SidebarMenuButton>
           </Link>
         </SidebarContent>

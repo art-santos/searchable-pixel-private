@@ -1,67 +1,90 @@
 export const PLANS = {
   free: { order: 0, name: 'Free', value: 'free' },
-  visibility: { order: 1, name: 'Visibility', value: 'visibility' },
-  plus: { order: 2, name: 'Plus', value: 'plus' },
-  pro: { order: 3, name: 'Pro', value: 'pro' }
+  plus: { order: 1, name: 'Plus', value: 'plus' },
+  pro: { order: 2, name: 'Pro', value: 'pro' },
+  enterprise: { order: 3, name: 'Enterprise', value: 'enterprise' }
 } as const
 
 export type PlanType = keyof typeof PLANS
 
 export const LIMITS = {
   free: {
-    scans: { max: 4, period: 'month' as const },
-    scanType: 'basic' as const,
-    articles: { max: 0, period: 'month' as const },
     domains: { max: 1 },
-    dataRetention: 90, // days
-  },
-  visibility: {
-    scans: { max: 30, period: 'month' as const },
-    scanType: 'basic' as const,
-    articles: { max: 0, period: 'month' as const },
-    domains: { max: 1 },
-    dataRetention: 180,
+    dataRetention: 30, // days
+    crawlerLogs: -1, // unlimited
+    snapshots: { max: 0, period: 'month' as const },
+    attributionCredits: { included: 0, price: 0.25 },
+    aiAttribution: false,
   },
   plus: {
-    scans: { max: -1, period: 'month' as const }, // unlimited
-    scanType: 'max' as const,
-    articles: { max: 10, period: 'month' as const },
     domains: { max: 1 },
-    dataRetention: 360,
+    dataRetention: 30, // 30-day AI crawler logs
+    crawlerLogs: -1, // unlimited
+    snapshots: { max: 10, period: 'month' as const },
+    attributionCredits: { included: 0, price: 0.25 },
+    aiAttribution: true,
+    basicInsights: true,
   },
   pro: {
-    scans: { max: -1, period: 'month' as const },
-    scanType: 'max' as const,
-    articles: { max: 30, period: 'month' as const },
-    domains: { max: 3 },
+    domains: { max: 1 },
+    dataRetention: 90, // 90-day AI crawler logs
+    crawlerLogs: -1, // unlimited
+    snapshots: { max: 50, period: 'month' as const },
+    attributionCredits: { included: 500, price: 0.15 },
+    aiAttribution: true,
+    advancedInsights: true,
+    slackAlerts: true,
+    apiAccess: true,
+  },
+  enterprise: {
+    domains: { max: 1 },
     dataRetention: -1, // unlimited
+    crawlerLogs: -1, // unlimited
+    snapshots: { max: -1, period: 'month' as const }, // unlimited
+    attributionCredits: { included: 'custom', price: 0.10 },
+    aiAttribution: true,
+    advancedInsights: true,
+    crmIntegrations: true,
+    prioritySupport: true,
+    customModels: true,
+    sla: true,
+    apiAccess: true,
   },
 } as const
 
 export const FEATURES = {
-  // Scanning features
-  'basic-scan': ['free', 'visibility', 'plus', 'pro'],
-  'max-scan': ['plus', 'pro'],
-  'bulk-scan': ['pro'],
+  // Core AI attribution features
+  'ai-attribution': ['plus', 'pro', 'enterprise'],
+  'basic-insights': ['plus'],
+  'advanced-insights': ['pro', 'enterprise'],
+  'visitor-leads': ['pro', 'enterprise'], // RB2B-style feature (not yet implemented)
   
-  // Content features
-  'view-content': ['free', 'visibility', 'plus', 'pro'],
-  'generate-content': ['plus', 'pro'],
-  'premium-content': ['pro'],
-  
-  // Analytics features
-  'basic-analytics': ['free', 'visibility', 'plus', 'pro'],
-  'citation-analysis': ['visibility', 'plus', 'pro'],
-  'competitor-analysis': ['plus', 'pro'],
-  'custom-reports': ['pro'],
+  // Snapshots feature (not yet implemented)
+  'snapshots': ['plus', 'pro', 'enterprise'],
   
   // Platform features
-  'webhooks': ['pro'],
-  'priority-support': ['plus', 'pro'],
-  'multi-domain': ['pro'],
+  'slack-alerts': ['pro', 'enterprise'],
+  'api-access': ['pro', 'enterprise'],
+  'crm-integrations': ['enterprise'],
+  'priority-support': ['enterprise'],
+  'custom-models': ['enterprise'],
+  'sla': ['enterprise'],
+  'multi-domain': ['pro', 'enterprise'], // through add-ons
 } as const
 
 export type FeatureType = keyof typeof FEATURES
+
+// Attribution credit pack pricing
+export const CREDIT_PACKS = {
+  small: { credits: 100, price: 25 },
+  medium: { credits: 500, price: 100 },
+  large: { credits: 2000, price: 300 }
+} as const
+
+// Helper to get subscription limits for a plan
+export function getSubscriptionLimits(plan: PlanType) {
+  return LIMITS[plan]
+}
 
 // Helper to check if a plan has access to a feature
 export function hasFeatureAccess(plan: PlanType, feature: FeatureType): boolean {
@@ -87,8 +110,19 @@ export function getUpgradePath(currentPlan: PlanType): PlanType[] {
 }
 
 // Helper to format limit display
-export function formatLimit(limit: number): string {
+export function formatLimit(limit: number | string): string {
   if (limit === -1) return 'Unlimited'
   if (limit === 0) return 'Not available'
+  if (typeof limit === 'string') return limit
   return limit.toString()
+}
+
+// Helper to calculate attribution credit overage cost
+export function calculateAttributionOverage(used: number, included: number | string, plan: PlanType): number {
+  if (typeof included === 'string') return 0 // Custom plans
+  if (used <= included) return 0
+  
+  const overage = used - included
+  const pricePerCredit = LIMITS[plan].attributionCredits.price as number
+  return overage * pricePerCredit
 } 

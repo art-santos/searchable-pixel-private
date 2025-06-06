@@ -41,69 +41,43 @@ export async function POST(request: NextRequest) {
 
     for (const subscription of subscriptionsToReset) {
       try {
-        // Calculate new billing period
-        const newPeriodStart = new Date(subscription.billing_period_end)
-        const newPeriodEnd = new Date(newPeriodStart)
-        newPeriodEnd.setMonth(newPeriodEnd.getMonth() + 1)
+        // Calculate overage costs for the billing period
+        const aiLogsUsed = subscription.ai_logs_used || 0
+        const aiLogsIncluded = subscription.ai_logs_included || 0
+        const aiLogsOverage = Math.max(0, aiLogsUsed - aiLogsIncluded)
 
-        // Calculate overage charges
-        let overageAmount = 0
-        const articlesUsed = subscription.article_credits_used || 0
-        const articlesIncluded = subscription.article_credits_included || 0
-        const articlesPurchased = subscription.article_credits_purchased || 0
-        const totalArticlesAllowed = articlesIncluded + articlesPurchased
+        // Calculate total overage cost
+        const totalOverageCost = aiLogsOverage * 0.008 // $0.008 per AI log
 
-        if (articlesUsed > totalArticlesAllowed) {
-          const overageArticles = articlesUsed - totalArticlesAllowed
-          overageAmount += overageArticles * 1000 // $10 per article in cents
-        }
-
-        // Log billing cycle completion event
-        await supabase.rpc('track_usage_event', {
-          p_user_id: subscription.user_id,
-          p_event_type: 'billing_cycle_reset',
-          p_amount: 1,
-          p_metadata: {
-            previous_period_start: subscription.billing_period_start,
-            previous_period_end: subscription.billing_period_end,
-            articles_used: articlesUsed,
-            overage_amount_cents: overageAmount
+        // Create billing summary
+        const billingSummary = {
+          period_start: subscription.period_start,
+          period_end: subscription.period_end,
+          plan_type: subscription.plan_type,
+          ai_logs_used: aiLogsUsed,
+          ai_logs_overage: aiLogsOverage,
+          total_overage_cost_cents: Math.round(totalOverageCost * 100),
+          user_id: subscription.user_id
           }
-        })
 
         // Reset usage counters for new billing period
-        const { error: updateError } = await supabase
+        const { error: resetError } = await supabase
           .from('subscription_usage')
           .update({
-            billing_period_start: newPeriodStart.toISOString(),
-            billing_period_end: newPeriodEnd.toISOString(),
-            next_billing_date: newPeriodEnd.toISOString(),
-            
-            // Reset usage counters
-            article_credits_used: 0,
-            max_scans_used: 0,
-            daily_scans_used: 0,
-            
-            // Carry over purchased add-ons (they persist)
-            // article_credits_purchased stays the same
-            // domains_purchased stays the same
-            
-            // Store overage amount for billing
-            overage_amount_cents: overageAmount,
-            
-            updated_at: new Date().toISOString()
+            ai_logs_used: 0,
+            updated_at: 'NOW()'
           })
           .eq('id', subscription.id)
 
-        if (updateError) {
-          console.error(`Error updating subscription ${subscription.id}:`, updateError)
+        if (resetError) {
+          console.error(`Error updating subscription ${subscription.id}:`, resetError)
           results.errors++
           continue
         }
 
         // Send usage alerts if user is approaching limits
         const newUsagePercentage = {
-          articles: totalArticlesAllowed > 0 ? (articlesUsed / totalArticlesAllowed) * 100 : 0,
+          articles: (subscription.articles_used / (subscription.articles_included + subscription.articles_purchased)) * 100,
           domains: (subscription.domains_used / (subscription.domains_included + subscription.domains_purchased)) * 100
         }
 

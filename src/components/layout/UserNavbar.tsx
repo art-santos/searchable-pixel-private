@@ -17,9 +17,7 @@ export function UserNavbar() {
   
   const navItems = [
     { name: 'Dashboard', href: '/dashboard' },
-    { name: 'Content', href: '/content' },
-    { name: 'Analytics', href: '/analytics' },
-    { name: 'Projects', href: '/projects' },
+    { name: 'Settings', href: '/settings' },
   ]
   
   return (

@@ -59,9 +59,9 @@ interface PricingPlan {
   annualPrice: number
   features: string[]
   limits: {
-    scans: string
-    articles: number
+    crawlerLogs: string
     domains: number
+    retention: string
   }
   recommended?: boolean
 }
@@ -71,7 +71,6 @@ interface UserProfile {
   first_name?: string | null
   last_name?: string | null
   workspace_name?: string | null
-  domain?: string | null
   email?: string | null
   created_by?: string
   updated_by?: string
@@ -98,14 +97,6 @@ interface UsageData {
     current_overage_cents: number
     remaining_cents: number
   }
-  articles: {
-    included: number
-    used: number
-    purchased: number
-    remaining: number
-    percentage: number
-    note?: string
-  }
   domains: {
     included: number
     used: number
@@ -125,13 +116,6 @@ interface UsageData {
     analyticsOnlyMode?: boolean
     trackingEnabled?: boolean
   }
-  scans: {
-    maxScansUsed: number
-    dailyScansUsed: number
-    totalScansUsed: number
-    unlimitedMax: boolean
-    dailyAllowed: boolean
-  }
   recentEvents: any[]
   addOns: any[]
   notifications?: Array<{
@@ -146,64 +130,66 @@ interface UsageData {
 
 const pricingPlans: PricingPlan[] = [
   {
-    id: 'visibility',
-    name: 'Visibility',
-    price: 40,
-    annualPrice: 32,
-    features: [
-      '1 domain tracking',
-      'Daily visibility scans',
-      'Citation analysis',
-      '250 AI crawler logs/month',
-      'Email alerts'
-    ],
-    limits: {
-      scans: 'Daily',
-      articles: 0,
-      domains: 1
-    }
-  },
-  {
     id: 'plus',
     name: 'Plus',
-    price: 200,
-    annualPrice: 160,
+    price: 99,
+    annualPrice: 79,
     features: [
-      '1 domain tracking',
-      '10 monthly AI articles',
-      'MAX visibility scans',
-      '500 AI crawler logs/month',
-      'Competitor benchmarking',
-      'Keyword trend analysis',
-      'Priority support',
-      'Extra domains: +$100/month each'
+      '1 domain/project included',
+      '30-day AI crawler logs',
+      '10 Snapshots/month',
+      'No included attribution credits',
+      'Attribution credits: $0.25 each',
+      'Basic AI visibility tracking',
+      '+$100/mo per additional domain'
     ],
     limits: {
-      scans: 'Unlimited',
-      articles: 10,
-      domains: 1
-    },
-    recommended: true
+      crawlerLogs: 'Unlimited',
+      domains: 1,
+      retention: '30 days'
+    }
   },
   {
     id: 'pro',
     name: 'Pro',
-    price: 1000,
-    annualPrice: 800,
+    price: 299,
+    annualPrice: 239,
     features: [
-      '1 domain tracking',
-      '30 monthly AI articles',
-      'Unlimited MAX scans',
-      '1,000 AI crawler logs/month',
-      'Multi-brand tracking',
-      'Premium support',
-      'API access',
-      'Extra domains: +$100/month each'
+      '1 domain/project included',
+      '90-day AI crawler logs',
+      '50 Snapshots/month',
+      '500 attribution credits included',
+      'Extra credits: $0.15 each',
+      'Slack alerts + API access',
+      'Attribution and insights',
+      '+$100/mo per additional domain'
     ],
     limits: {
-      scans: 'Unlimited',
-      articles: 30,
-      domains: 1
+      crawlerLogs: 'Unlimited',
+      domains: 1,
+      retention: '90 days'
+    },
+    recommended: true
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    price: 0, // Custom pricing
+    annualPrice: 0,
+    features: [
+      '1 domain/project included',
+      'Unlimited AI crawler logs',
+      'Unlimited Snapshots',
+      'Custom attribution credits/month',
+      'Full attribution breakdown',
+      'CRM/API integrations',
+      'Priority support, custom models, SLAs',
+      '+$100/mo per additional domain'
+    ],
+    limits: {
+      crawlerLogs: 'Unlimited',
+      domains: 1,
+      retention: 'Unlimited'
     }
   }
 ]
@@ -249,10 +235,9 @@ export default function SettingsPage() {
   const [usageData, setUsageData] = useState<UsageData | null>(null)
   const [loadingUsage, setLoadingUsage] = useState(true)
   
-  // Add-on state
-  const [extraArticles, setExtraArticles] = useState(0)
+  // Add-on state - only domains now (no articles)
   const [extraDomains, setExtraDomains] = useState(0)
-  const [addOnChanges, setAddOnChanges] = useState<{ articles: number, domains: number } | null>(null)
+  const [addOnChanges, setAddOnChanges] = useState<{ domains: number } | null>(null)
   const [isUpdatingAddOns, setIsUpdatingAddOns] = useState(false)
   
   // API Keys state
@@ -389,7 +374,7 @@ export default function SettingsPage() {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('first_name, workspace_name, domain, profile_picture_url')
+          .select('first_name, workspace_name, profile_picture_url')
           .eq('id', user.id)
           .single()
 
@@ -728,14 +713,6 @@ export default function SettingsPage() {
         period: 'month',
         nextBilling: null,
         usage: {
-          scans: { 
-            maxScansUsed: 0, 
-            dailyScansUsed: 0, 
-            totalScansUsed: 0, 
-            unlimitedMax: false, 
-            dailyAllowed: true 
-          },
-          articles: { used: 0, limit: 0, remaining: 0, percentage: 0, note: 'Loading...' },
           domains: { used: 0, limit: 1, remaining: 1, percentage: 0 },
           aiLogs: { 
             included: 0, 
@@ -744,9 +721,9 @@ export default function SettingsPage() {
             percentage: 0, 
             overage: 0, 
             overageCost: 0 
+          }
         }
       }
-    }
     }
 
     // Use actual subscription plan (currentPlan) instead of usage data plan
@@ -766,8 +743,6 @@ export default function SettingsPage() {
         period: 'forever',
         nextBilling: null,
         usage: {
-          scans: usageData.scans,
-          articles: usageData.articles,
           domains: usageData.domains,
           aiLogs: usageData.aiLogs
         }
@@ -787,8 +762,6 @@ export default function SettingsPage() {
         day: 'numeric' 
       }),
       usage: {
-        scans: usageData.scans,
-        articles: usageData.articles,
         domains: usageData.domains,
         aiLogs: usageData.aiLogs
       }
@@ -811,7 +784,6 @@ export default function SettingsPage() {
       if (!basePlan) return
 
       const addOnCosts = {
-        extraArticles: extraArticles * 10, // $10 per article
         extraDomains: extraDomains * 100   // $100 per domain
       }
 
@@ -822,9 +794,8 @@ export default function SettingsPage() {
           planId,
           isAnnual: isAnnualBilling,
           customerId: stripeCustomerId,
-          customerEmail: workspace.email,
+          customerEmail: user?.email || '',
           addOns: {
-            extraArticles,
             extraDomains
           }
         })
@@ -905,13 +876,10 @@ export default function SettingsPage() {
   }
 
   // Handle add-on changes
-  const handleAddOnChange = (type: 'articles' | 'domains', value: number) => {
-    if (type === 'articles') {
-      setExtraArticles(value)
-      setAddOnChanges({ articles: value, domains: extraDomains })
-    } else {
+  const handleAddOnChange = (type: 'domains', value: number) => {
+    if (type === 'domains') {
       setExtraDomains(value)
-      setAddOnChanges({ articles: extraArticles, domains: value })
+      setAddOnChanges({ domains: value })
     }
   }
 
@@ -919,7 +887,6 @@ export default function SettingsPage() {
     if (!addOnChanges) return
     
     // Reset sliders to current values  
-    setExtraArticles(addOnChanges.articles)
     setExtraDomains(addOnChanges.domains)
     setAddOnChanges(null)
   }
@@ -952,9 +919,6 @@ export default function SettingsPage() {
         console.log('✅ Successfully updated extra domains')
       }
 
-      // Handle extra articles (when feature is available)
-      // Feature disabled for now - removing to prevent linter errors
-      
       // Reset changes state
       setAddOnChanges(null)
       showToast('Add-ons updated successfully!')
@@ -973,10 +937,8 @@ export default function SettingsPage() {
   // Initialize add-ons from usage data
   useEffect(() => {
     if (usageData?.addOns) {
-      const articlesAddon = usageData.addOns.find(addon => addon.add_on_type === 'extra_articles')
       const domainsAddon = usageData.addOns.find(addon => addon.add_on_type === 'extra_domains')
       
-      setExtraArticles(articlesAddon?.quantity || 0)
       setExtraDomains(domainsAddon?.quantity || 0)
     }
   }, [usageData])
@@ -1681,19 +1643,6 @@ export default function SettingsPage() {
                                     </div>
                                   </div>
                                 </div>
-
-                                {/* Extra Articles - Coming Soon */}
-                                <div className="flex items-center justify-between py-4 border-b border-[#1a1a1a]">
-                                  <div>
-                                    <div className="font-medium text-white font-mono tracking-tight text-sm">Extra Articles</div>
-                                    <div className="text-xs text-[#666] font-mono tracking-tight">$10 per article per month</div>
-                                  </div>
-                                  <div className="flex items-center gap-4">
-                                    <span className="text-xs bg-[#222] text-[#666] px-2 py-1 rounded-sm border border-[#333] font-mono tracking-tight">
-                                      Coming Soon
-                              </span>
-                            </div>
-                                </div>
                               </div>
                             </div>
                           )}
@@ -1804,26 +1753,28 @@ export default function SettingsPage() {
                                 </div>
                           </div>
 
-                              {/* Visibility Scans */}
+                              {/* AI Crawler Attribution */}
                               <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
-                          <div>
-                                  <div className="font-medium text-white font-mono tracking-tight text-sm">Visibility Scans</div>
+                                <div>
+                                  <div className="font-medium text-white font-mono tracking-tight text-sm">AI Crawler Attribution</div>
                                   <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
-                                    {usageData?.scans?.unlimitedMax ? 'Unlimited' : 'Daily scans only'}
-                            </div>
+                                    Unlimited crawler tracking and attribution
+                                  </div>
                                 </div>
                                 <div className="flex items-center gap-6">
                                   <div className="text-right">
-                                    <div className="font-medium text-white font-mono tracking-tight text-sm">{usageData?.scans?.totalScansUsed || 0} this month</div>
+                                    <div className="font-medium text-white font-mono tracking-tight text-sm">
+                                      {usageData?.aiLogs?.used || 0} logs this month
+                                    </div>
                                   </div>
                                   <div className="w-24 h-1 bg-[#1a1a1a] rounded-sm">
-                              <div 
+                                    <div 
                                       className="h-full bg-[#444] rounded-sm transition-all"
-                                      style={{ width: usageData?.scans?.unlimitedMax ? '100%' : '25%' }}
-                              />
-                            </div>
+                                      style={{ width: '100%' }}
+                                    />
+                                  </div>
                                 </div>
-                          </div>
+                              </div>
                         </div>
                       </div>
 

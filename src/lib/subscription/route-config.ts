@@ -10,14 +10,6 @@ export interface RouteConfig {
 
 // Define protected routes and their requirements
 export const ROUTE_ACCESS: RouteConfig[] = [
-  // Content routes - Plus and Pro only
-  {
-    path: '/content',
-    requiredPlan: 'plus',
-    feature: 'generate-content',
-    softBlock: false, // Hard block for content generation
-  },
-  
   // Domain management - Pro only
   {
     path: '/domains/manage',
@@ -51,20 +43,6 @@ export const ROUTE_ACCESS: RouteConfig[] = [
     path: '/settings/webhooks',
     requiredPlan: 'pro',
     feature: 'webhooks',
-    softBlock: false,
-  },
-  
-  // Blog management - Plus and Pro
-  {
-    path: '/blog/new',
-    requiredPlan: 'plus',
-    feature: 'generate-content',
-    softBlock: false,
-  },
-  {
-    path: '/blog/generate',
-    requiredPlan: 'plus',
-    feature: 'generate-content',
     softBlock: false,
   },
 ]

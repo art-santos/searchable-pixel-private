@@ -1,200 +1,163 @@
 import { createClient } from '@/lib/supabase/client'
-import { createServiceClient } from '@/lib/supabase/service'
-import { LIMITS, PlanType } from './config'
+import { PlanType, getSubscriptionLimits } from './config'
 
 export interface UsageData {
-  scansUsed: number
-  scansLimit: number
-  scansRemaining: number
-  articlesUsed: number
-  articlesLimit: number
-  articlesRemaining: number
-  lastScanReset: Date
-  lastArticlesReset: Date
-}
-
-export interface UsageEvent {
-  id?: string
-  user_id: string
-  event_type: 'scan' | 'article' | 'api_call'
-  event_subtype?: 'basic_scan' | 'max_scan' | 'standard_article' | 'premium_article'
-  metadata?: Record<string, any>
-  created_at?: string
+  crawlerVisitsUsed: number
+  crawlerVisitsRemaining: number
+  domainsUsed: number
+  domainsRemaining: number
+  isOverLimit: boolean
+  plan: PlanType
 }
 
 /**
- * Check if user can perform an action based on their limits
+ * Check if user can perform an action based on their usage
  */
-export async function checkLimit(
+export async function checkUsageLimit(
   userId: string,
-  feature: 'scan' | 'article',
-  count: number = 1
-): Promise<{ allowed: boolean; remaining: number; limit: number }> {
+  action: 'crawler-visit' | 'domain'
+): Promise<{ allowed: boolean; reason?: string; usage?: UsageData }> {
   const supabase = createClient()
   
-  if (!supabase) {
-    console.error('Supabase client not initialized')
-    return { allowed: false, remaining: 0, limit: 0 }
-  }
-  
-  // Get user's profile with plan, usage, and admin status
+  try {
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select('subscription_plan, monthly_scans_used, monthly_articles_used, is_admin')
+      .select('subscription_plan, is_admin')
     .eq('id', userId)
     .single()
   
-  if (error || !profile) {
-    console.error('Error fetching user profile:', error)
-    return { allowed: false, remaining: 0, limit: 0 }
+    if (error) {
+      return { allowed: false, reason: 'Could not fetch user profile' }
   }
   
-  // Admin override: admins have unlimited access
+    // Admins have unlimited access
   if (profile.is_admin) {
-    return { allowed: true, remaining: -1, limit: -1 }
+      return { allowed: true }
   }
   
-  const plan = (profile.subscription_plan || 'free') as PlanType
-  const limits = LIMITS[plan]
-  
-  if (feature === 'scan') {
-    const limit = limits.scans.max
-    const used = profile.monthly_scans_used || 0
-    const allowed = limit === -1 || (used + count) <= limit
-    const remaining = limit === -1 ? -1 : Math.max(0, limit - used)
+    const userPlan = (profile.subscription_plan || 'free') as PlanType
+    const limits = getSubscriptionLimits(userPlan)
+
+    // Get current usage
+    const usage = await getUserUsage(userId)
     
-    return { allowed, remaining, limit }
-  } else {
-    const limit = limits.articles.max
-    const used = profile.monthly_articles_used || 0
-    const allowed = limit === -1 || (used + count) <= limit
-    const remaining = limit === -1 ? -1 : Math.max(0, limit - used)
-    
-    return { allowed, remaining, limit }
+    if (!usage) {
+      return { allowed: false, reason: 'Could not fetch usage data' }
+    }
+
+    // Check specific action limits
+    switch (action) {
+      case 'crawler-visit':
+        // No limit on crawler visits - they're just tracked
+        return { allowed: true, usage }
+      
+      case 'domain':
+        if (usage.domainsUsed >= limits.domains.max) {
+          return { 
+            allowed: false, 
+            reason: `Domain limit reached (${limits.domains.max})`,
+            usage 
+          }
+        }
+        return { allowed: true, usage }
+      
+      default:
+        return { allowed: false, reason: 'Unknown action' }
+    }
+
+  } catch (error) {
+    console.error('Error checking usage limit:', error)
+    return { allowed: false, reason: 'Internal error checking usage' }
   }
 }
 
 /**
- * Track usage for a feature
- * Note: This function uses the service client for secure server-side operations
+ * Track usage for billing and limits
  */
 export async function trackUsage(
   userId: string,
-  eventType: 'scan' | 'article',
-  eventSubtype?: UsageEvent['event_subtype'],
-  metadata?: Record<string, any>
+  action: 'crawler-visit' | 'domain',
+  amount: number = 1
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = createServiceClient()
+  const supabase = createClient()
   
   try {
-    // Check if user is admin first (admins bypass limits)
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', userId)
-      .single()
-    
-    // If not admin, check limits
-    if (!profile?.is_admin) {
-      const { allowed } = await checkLimit(userId, eventType)
-      if (!allowed) {
-        return { success: false, error: 'Usage limit exceeded' }
-      }
-    }
-    
-    // Record the usage event
-    const { error: eventError } = await supabase
+    // For now, just track in usage events table
+    const { error } = await supabase
       .from('usage_events')
       .insert({
         user_id: userId,
-        event_type: eventType,
-        event_subtype: eventSubtype,
-        metadata: metadata || {}
+        event_type: action.replace('-', '_'),
+        amount: amount,
+        billable: false, // Crawler visits aren't billable, domains might be
+        metadata: {
+          tracked_at: new Date().toISOString()
+        }
       })
     
-    if (eventError) {
-      console.error('Error recording usage event:', eventError)
-    }
-    
-    // Increment the counter using the database function (track even for admins for analytics)
-    const { error: incrementError } = await supabase
-      .rpc('increment_usage', {
-        p_user_id: userId,
-        p_feature: eventType,
-        p_count: 1
-      })
-    
-    if (incrementError) {
-      console.error('Error incrementing usage:', incrementError)
-      return { success: false, error: 'Failed to update usage counter' }
+    if (error) {
+      console.error('Error tracking usage:', error)
+      return { success: false, error: error.message }
     }
     
     return { success: true }
+
   } catch (error) {
-    console.error('Error tracking usage:', error)
-    return { success: false, error: 'Failed to track usage' }
+    console.error('Error in trackUsage:', error)
+    return { success: false, error: 'Internal error' }
   }
 }
 
 /**
- * Get user's current usage data
+ * Get current usage data for a user
  */
 export async function getUserUsage(userId: string): Promise<UsageData | null> {
   const supabase = createClient()
   
-  if (!supabase) {
-    console.error('Supabase client not initialized')
-    return null
-  }
-  
+  try {
   const { data: profile, error } = await supabase
     .from('profiles')
-    .select(`
-      subscription_plan,
-      monthly_scans_used,
-      monthly_articles_used,
-      last_scan_reset_at,
-      last_articles_reset_at,
-      is_admin
-    `)
+      .select('subscription_plan, is_admin')
     .eq('id', userId)
     .single()
   
-  if (error || !profile) {
-    console.error('Error fetching usage data:', error)
+    if (error) {
+      console.error('Error fetching profile for usage:', error)
     return null
   }
   
-  // Admin override: admins have unlimited usage
-  if (profile.is_admin) {
+    const userPlan = (profile.subscription_plan || 'free') as PlanType
+    const limits = getSubscriptionLimits(userPlan)
+
+    // Get actual domain count
+    const { data: domains, error: domainsError } = await supabase
+      .from('domains')
+      .select('id')
+      .eq('user_id', userId)
+
+    const domainsUsed = domains?.length || 0
+
+    // Get crawler visits (just for display, not limited)
+    const { data: crawlerVisits, error: crawlerError } = await supabase
+      .from('crawler_visits')
+      .select('id')
+      .eq('user_id', userId)
+      .gte('timestamp', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()) // Last 30 days
+
+    const crawlerVisitsUsed = crawlerVisits?.length || 0
+
     return {
-      scansUsed: profile.monthly_scans_used || 0,
-      scansLimit: -1, // Unlimited
-      scansRemaining: -1, // Unlimited
-      articlesUsed: profile.monthly_articles_used || 0,
-      articlesLimit: -1, // Unlimited
-      articlesRemaining: -1, // Unlimited
-      lastScanReset: new Date(profile.last_scan_reset_at),
-      lastArticlesReset: new Date(profile.last_articles_reset_at)
+      crawlerVisitsUsed,
+      crawlerVisitsRemaining: 999999, // Unlimited
+      domainsUsed,
+      domainsRemaining: Math.max(0, limits.domains.max - domainsUsed),
+      isOverLimit: domainsUsed > limits.domains.max,
+      plan: userPlan
     }
-  }
-  
-  const plan = (profile.subscription_plan || 'free') as PlanType
-  const limits = LIMITS[plan]
-  
-  return {
-    scansUsed: profile.monthly_scans_used || 0,
-    scansLimit: limits.scans.max,
-    scansRemaining: limits.scans.max === -1 
-      ? -1 
-      : Math.max(0, limits.scans.max - (profile.monthly_scans_used || 0)),
-    articlesUsed: profile.monthly_articles_used || 0,
-    articlesLimit: limits.articles.max,
-    articlesRemaining: limits.articles.max === -1
-      ? -1
-      : Math.max(0, limits.articles.max - (profile.monthly_articles_used || 0)),
-    lastScanReset: new Date(profile.last_scan_reset_at),
-    lastArticlesReset: new Date(profile.last_articles_reset_at)
+
+  } catch (error) {
+    console.error('Error getting user usage:', error)
+    return null
   }
 }
 
@@ -284,7 +247,7 @@ export async function getScanHistory(
     .single()
   
   const plan = (profile?.subscription_plan || 'free') as PlanType
-  const retentionDays = LIMITS[plan].dataRetention
+  const retentionDays = getSubscriptionLimits(plan).dataRetention
   
   let query = supabase
     .from('scan_history')
@@ -318,7 +281,7 @@ export async function getScanHistory(
  * This should be called from a secure server-side context
  */
 export async function resetMonthlyUsage(): Promise<void> {
-  const supabase = createServiceClient()
+  const supabase = createClient()
   
   const { error } = await supabase.rpc('reset_monthly_usage')
   
@@ -334,7 +297,7 @@ export async function resetMonthlyUsage(): Promise<void> {
  * This should be called from a secure server-side context
  */
 export async function cleanupOldData(): Promise<void> {
-  const supabase = createServiceClient()
+  const supabase = createClient()
   
   const { error } = await supabase.rpc('cleanup_old_data')
   

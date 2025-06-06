@@ -8,10 +8,6 @@ interface BillingPeriod {
   usage_id: string
   period_start: string
   period_end: string
-  article_credits_included: number
-  article_credits_used: number
-  article_credits_purchased: number
-  article_credits_remaining: number
   domains_included: number
   domains_used: number
   domains_purchased: number
@@ -19,8 +15,6 @@ interface BillingPeriod {
   ai_logs_included: number
   ai_logs_used: number
   ai_logs_remaining: number
-  max_scans_used: number
-  daily_scans_used: number
   plan_type: string
   plan_status: string
   stripe_subscription_id: string | null
@@ -75,7 +69,6 @@ export async function GET() {
       // If the billing period plan doesn't match the actual plan, update it
       if (billingPeriod.plan_type !== actualPlan) {
         // Update the billing period with correct plan and limits
-        const planCredits = actualPlan === 'visibility' ? 0 : actualPlan === 'plus' ? 10 : actualPlan === 'pro' ? 30 : 0
         const planDomains = actualPlan === 'pro' ? 3 : 1
         const planAiLogs = actualPlan === 'free' ? 100 : actualPlan === 'visibility' ? 250 : actualPlan === 'plus' ? 500 : actualPlan === 'pro' ? 1000 : 100
         
@@ -83,7 +76,6 @@ export async function GET() {
           .from('subscription_usage')
           .update({
             plan_type: actualPlan,
-            article_credits_included: planCredits,
             domains_included: planDomains,
             ai_logs_included: planAiLogs,
             stripe_subscription_id: userSubscription?.subscription_id || null,
@@ -346,14 +338,6 @@ export async function GET() {
           ? Math.max(0, effectiveSpendingLimit - (billingPeriod.overage_amount_cents || 0))
           : null // No remaining limit if no spending limit is configured
       },
-      articles: {
-        included: 0, // Not implemented yet
-        used: 0,
-        purchased: 0,
-        remaining: 0,
-        percentage: 0,
-        note: "Article generation coming soon"
-      },
       domains: {
         included: billingPeriod.domains_included || 1,
         used: actualDomainsUsed,
@@ -375,13 +359,6 @@ export async function GET() {
         trackingEnabled: billingPrefs.ai_logs_enabled !== false,
         billingBlocked: billingPeriod.overage_blocked === true,
         analyticsOnlyMode: billingPrefs.analytics_only_mode === true
-      },
-      scans: {
-        maxScansUsed: 0,
-        dailyScansUsed: 0,
-        totalScansUsed: 0,
-        unlimitedMax: ['plus', 'pro'].includes(billingPeriod.plan_type),
-        dailyAllowed: true // All plans get daily scans
       },
       recentEvents: recentEvents || [],
       addOns: addOns || [],

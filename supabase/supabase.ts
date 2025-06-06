@@ -349,11 +349,7 @@ export type Database = {
           email: string | null
           first_name: string | null
           id: string
-          last_articles_reset_at: string | null
           last_name: string | null
-          last_scan_reset_at: string | null
-          monthly_articles_used: number | null
-          monthly_scans_used: number | null
           phone_number: string | null
           profile_picture_url: string | null
           stripe_customer_id: string | null
@@ -371,11 +367,7 @@ export type Database = {
           email?: string | null
           first_name?: string | null
           id: string
-          last_articles_reset_at?: string | null
           last_name?: string | null
-          last_scan_reset_at?: string | null
-          monthly_articles_used?: number | null
-          monthly_scans_used?: number | null
           phone_number?: string | null
           profile_picture_url?: string | null
           stripe_customer_id?: string | null
@@ -393,11 +385,7 @@ export type Database = {
           email?: string | null
           first_name?: string | null
           id?: string
-          last_articles_reset_at?: string | null
           last_name?: string | null
-          last_scan_reset_at?: string | null
-          monthly_articles_used?: number | null
-          monthly_scans_used?: number | null
           phone_number?: string | null
           profile_picture_url?: string | null
           stripe_customer_id?: string | null

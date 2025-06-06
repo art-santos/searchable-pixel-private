@@ -3,6 +3,12 @@ import { User } from '@supabase/supabase-js'
 import { Tables, TablesInsert } from '../../../supabase/supabase'
 
 export interface OnboardingData {
+  // User and workspace data
+  userEmail: string
+  userName?: string
+  workspaceName: string
+  domain: string
+  
   // Profile data
   profileData: {
     first_name?: string
@@ -11,7 +17,6 @@ export interface OnboardingData {
     role?: string
     team_size?: string
     use_case?: string
-    domain?: string
   }
   
   // Analytics/tracking data
@@ -52,16 +57,10 @@ export async function saveOnboardingData(
       email: onboardingData.userEmail,
       first_name: onboardingData.userName || onboardingData.userEmail.split('@')[0], // Use actual name if provided, fallback to email stem
       workspace_name: onboardingData.workspaceName,
-      domain: onboardingData.domain,
       created_by: user.id,
       updated_by: user.id,
       onboarding_completed: false, // Will be set to true after AEO analysis
       onboarding_completed_at: null,
-      // Initialize usage tracking
-      monthly_scans_used: 1, // Count this first scan
-      monthly_articles_used: 0,
-      last_scan_reset_at: new Date().toISOString(),
-      last_articles_reset_at: new Date().toISOString(),
     }
 
     console.log('👤 Upserting profile for user:', user.id)
@@ -150,6 +149,23 @@ export async function saveOnboardingData(
     
     console.log('✅ Company created successfully with ID:', companyResult.id)
     const companyId = companyResult.id
+
+    // Initialize subscription usage tracking
+    const { error: usageError } = await supabase
+      .from('subscription_usage')
+      .insert({
+        user_id: user.id,
+        plan_type: 'free',
+        billing_period_start: new Date().toISOString(),
+        billing_period_end: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
+        next_billing_date: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
+        domains_included: 1,
+        domains_used: 1, // Count the primary domain
+        ai_logs_included: 100,
+        ai_logs_used: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
 
     console.log('🎉 Onboarding data save completed successfully')
     return { 
