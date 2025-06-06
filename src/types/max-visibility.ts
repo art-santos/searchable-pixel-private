@@ -553,6 +553,7 @@ export type AssessmentStatus = 'pending' | 'running' | 'completed' | 'failed' | 
 
 export interface MaxAssessmentRequest {
   triggered_by?: string  // User ID who triggered the assessment
+  workspace_id?: string  // Workspace ID for data isolation
   company: {
     id: string
     name: string

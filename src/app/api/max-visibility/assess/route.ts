@@ -21,36 +21,60 @@ export async function POST(request: NextRequest) {
     // Parse request body (simplified format)
     const body = await request.json()
     const assessmentType = body.type || body.assessment_type || 'max'
+    const workspaceId = body.workspaceId
     
-    console.log('🚀 Starting assessment with type:', assessmentType, 'for user:', user.id)
+    console.log('🚀 Starting assessment with type:', assessmentType, 'for user:', user.id, 'workspace:', workspaceId)
 
-    // Get user profile to find company domain
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('workspace_name, domain')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError || !profile?.domain) {
-      console.error('❌ Profile lookup failed:', profileError)
+    if (!workspaceId) {
       return NextResponse.json(
         { 
           success: false,
           data: null,
-          error: 'Company domain not found in profile' 
+          error: 'Workspace ID is required' 
         },
         { status: 400 }
       )
     }
 
-    console.log('✅ Found user profile:', profile.workspace_name, profile.domain)
+    // Get workspace to verify access and get domain
+    const { data: workspace, error: workspaceError } = await supabase
+      .from('workspaces')
+      .select('id, workspace_name, domain')
+      .eq('id', workspaceId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (workspaceError || !workspace) {
+      console.error('❌ Workspace lookup failed:', workspaceError)
+      return NextResponse.json(
+        { 
+          success: false,
+          data: null,
+          error: 'Workspace not found or access denied' 
+        },
+        { status: 404 }
+      )
+    }
+
+    if (!workspace.domain) {
+      return NextResponse.json(
+        { 
+          success: false,
+          data: null,
+          error: 'Workspace domain not configured' 
+        },
+        { status: 400 }
+      )
+    }
+
+    console.log('✅ Found workspace:', workspace.workspace_name, workspace.domain)
 
     // Find or create company based on domain
     let company = null
     let { data: existingCompany, error: companyError } = await supabase
       .from('companies')
       .select('id, company_name, root_url')
-      .or(`root_url.eq.${profile.domain},root_url.eq.https://${profile.domain},root_url.eq.http://${profile.domain}`)
+      .or(`root_url.eq.${workspace.domain},root_url.eq.https://${workspace.domain},root_url.eq.http://${workspace.domain}`)
       .single()
 
     if (companyError || !existingCompany) {
@@ -59,8 +83,8 @@ export async function POST(request: NextRequest) {
       const { data: newCompany, error: createError } = await supabase
         .from('companies')
         .insert({
-          company_name: profile.workspace_name || 'Unknown Company',
-          root_url: profile.domain.startsWith('http') ? profile.domain : `https://${profile.domain}`,
+          company_name: workspace.workspace_name || 'Unknown Company',
+          root_url: workspace.domain.startsWith('http') ? workspace.domain : `https://${workspace.domain}`,
           created_by: user.id
         })
         .select()
@@ -89,14 +113,15 @@ export async function POST(request: NextRequest) {
     const assessmentRequest = {
       type: assessmentType,
       triggered_by: user.id,
+      workspace_id: workspaceId,
       company: {
         id: company.id,
         name: company.company_name,
-        domain: profile.domain
+        domain: workspace.domain
       }
     }
 
-    console.log('📊 Starting MAX visibility assessment...')
+    console.log('📊 Starting MAX visibility assessment for workspace...')
 
     // Initialize pipeline
     const pipeline = new MaxVisibilityPipeline()
@@ -106,6 +131,7 @@ export async function POST(request: NextRequest) {
       .from('max_visibility_runs')
       .insert({
         company_id: company.id,
+        workspace_id: workspaceId,
         status: 'pending',
         total_score: 0,
         mention_rate: 0,

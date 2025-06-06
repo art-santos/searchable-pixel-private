@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { FileText, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useWorkspace } from '@/contexts/WorkspaceContext'
-import { mockCompletedArticles, type Article } from '../data/mock-articles'
+import { useArticles } from '@/hooks/useArticles'
 
 interface CompletedArticlesTabProps {
   searchQuery: string
@@ -23,6 +23,9 @@ export function CompletedArticlesTab({
   const [currentPage, setCurrentPage] = useState(1)
   const articlesPerPage = 9
 
+  // Use the articles hook
+  const { articles, totalCount, isLoading, loadArticles } = useArticles()
+
   const cardVariants = shouldReduceMotion ? {
     hidden: { opacity: 1, y: 0 },
     visible: { opacity: 1, y: 0 }
@@ -38,26 +41,28 @@ export function CompletedArticlesTab({
     }
   }
 
-  // Filter articles
-  const filteredArticles = mockCompletedArticles.filter(article => 
-    article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    article.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    article.primaryKeyword.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    article.metaDescription.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  // Load articles with search query and pagination
+  useEffect(() => {
+    if (currentWorkspace?.id) {
+      const offset = (currentPage - 1) * articlesPerPage
+      loadArticles({
+        search: searchQuery,
+        status: 'published',
+        limit: articlesPerPage,
+        offset
+      })
+    }
+  }, [currentWorkspace?.id, searchQuery, currentPage, loadArticles])
 
-  // Pagination logic
-  const totalPages = Math.ceil(filteredArticles.length / articlesPerPage)
-  const startIndex = (currentPage - 1) * articlesPerPage
-  const endIndex = startIndex + articlesPerPage
-  const currentArticles = filteredArticles.slice(startIndex, endIndex)
+  // Calculate pagination
+  const totalPages = Math.ceil(totalCount / articlesPerPage)
 
   // Reset to page 1 when search changes
   useEffect(() => {
     setCurrentPage(1)
   }, [searchQuery])
 
-  const handleViewArticle = (articleId: number) => {
+  const handleViewArticle = (articleId: string) => {
     router.push(`/content/article/${articleId}`)
   }
 
@@ -104,7 +109,19 @@ export function CompletedArticlesTab({
     )
   }
 
-  if (currentArticles.length === 0) {
+  // Show loading state when fetching articles
+  if (isLoading && articles.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent text-white mx-auto mb-4" />
+          <p className="text-sm text-[#666]">Loading articles...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (articles.length === 0 && !isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto px-6">
@@ -117,18 +134,23 @@ export function CompletedArticlesTab({
               <FileText className="w-12 h-12 text-[#666]" />
             </div>
             <h3 className="text-2xl font-bold text-white mb-3">
-              No articles yet
+              {searchQuery ? 'No articles found' : 'No articles yet'}
             </h3>
             <p className="text-[#888] text-lg leading-relaxed mb-6">
-              Your completed articles will appear here. Start by building your knowledge base to generate intelligent content suggestions.
+              {searchQuery 
+                ? `No articles match "${searchQuery}". Try a different search term.`
+                : 'Your completed articles will appear here. Start by building your knowledge base to generate intelligent content suggestions.'
+              }
             </p>
-            <Button
-              onClick={onSwitchToKnowledge}
-              className="bg-white text-black hover:bg-[#f5f5f5] px-6 py-2.5 text-sm font-medium transition-all duration-200 hover:scale-105"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Build Knowledge Base
-            </Button>
+            {!searchQuery && (
+              <Button
+                onClick={onSwitchToKnowledge}
+                className="bg-white text-black hover:bg-[#f5f5f5] px-6 py-2.5 text-sm font-medium transition-all duration-200 hover:scale-105"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                Build Knowledge Base
+              </Button>
+            )}
           </motion.div>
         </div>
       </div>
@@ -139,7 +161,7 @@ export function CompletedArticlesTab({
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="flex-1 overflow-auto px-6 pb-6">
         <div className="grid grid-cols-3 gap-6 w-full">
-          {currentArticles.map((article, index) => (
+          {articles.map((article, index) => (
             <motion.div
               key={article.id}
               variants={cardVariants}
@@ -155,11 +177,11 @@ export function CompletedArticlesTab({
                     {article.title}
                   </h3>
                   <div className="text-xs text-[#666] ml-2 flex-shrink-0">
-                    {article.readTime}
+                    {article.read_time}
                   </div>
                 </div>
                 <p className="text-[#888] text-xs leading-4 line-clamp-3">
-                  {article.contentPreview}
+                  {article.content_preview}
                 </p>
                 <div className="flex items-center justify-between pt-2">
                   <span className="text-xs px-2 py-1 bg-[#1a1a1a] text-[#999] rounded">

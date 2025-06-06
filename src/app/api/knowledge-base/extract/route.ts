@@ -2,15 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { KnowledgeBaseService } from '@/lib/knowledge-base/service'
 import { KnowledgeExtractionEngine } from '@/lib/knowledge-base/extraction-engine'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 
 // POST /api/knowledge-base/extract
 export async function POST(request: NextRequest) {
   try {
-    const { textDump, companyId } = await request.json()
+    const { textDump, workspaceId } = await request.json()
 
-    if (!textDump || !companyId) {
+    if (!textDump || !workspaceId) {
       return NextResponse.json(
-        { error: 'Text dump and company ID are required' },
+        { error: 'Text dump and workspace ID are required' },
         { status: 400 }
       )
     }
@@ -30,11 +31,37 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Initialize service
-    const knowledgeService = new KnowledgeBaseService(true) // Use service role for API
+    // Get user auth to verify workspace access
+    const supabase = createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Verify user has access to this workspace
+    const { data: workspace, error: workspaceError } = await supabase
+      .from('workspaces')
+      .select('id')
+      .eq('id', workspaceId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (workspaceError || !workspace) {
+      return NextResponse.json(
+        { error: 'Workspace not found or access denied' },
+        { status: 404 }
+      )
+    }
+
+    // Initialize service with workspace context
+    const knowledgeService = new KnowledgeBaseService(true, workspaceId)
 
     // Extract and save knowledge
-    const result = await knowledgeService.extractAndSaveKnowledge(textDump, companyId)
+    const result = await knowledgeService.extractAndSaveKnowledge(textDump, workspaceId)
 
     return NextResponse.json({
       success: true,

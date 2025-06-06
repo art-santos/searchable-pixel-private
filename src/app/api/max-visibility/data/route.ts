@@ -58,8 +58,10 @@ function generateTopicsFromResponses(responses: any[], mentionedResponses: any[]
 export async function GET(request: NextRequest) {
   try {
     const supabase = createClient()
+    const { searchParams } = new URL(request.url)
+    const workspaceId = searchParams.get('workspaceId')
     
-    console.log('📊 MAX Visibility data endpoint called')
+    console.log('📊 MAX Visibility data endpoint called with workspaceId:', workspaceId)
 
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -73,32 +75,46 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ User authenticated:', user.id)
 
-    // Get user profile to find company domain
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('workspace_name, domain')
-      .eq('id', user.id)
+    if (!workspaceId) {
+      return NextResponse.json(
+        { error: 'Workspace ID is required' },
+        { status: 400 }
+      )
+    }
+
+    // Verify user has access to this workspace
+    const { data: workspace, error: workspaceError } = await supabase
+      .from('workspaces')
+      .select('id, workspace_name, domain')
+      .eq('id', workspaceId)
+      .eq('user_id', user.id)
       .single()
 
-    console.log('📋 Profile lookup result:', { profile, error: profileError })
+    if (workspaceError || !workspace) {
+      console.log('❌ Workspace not found or access denied')
+      return NextResponse.json(
+        { error: 'Workspace not found or access denied' },
+        { status: 404 }
+      )
+    }
 
-    if (profileError || !profile || !profile.domain) {
-      console.log('❌ Profile incomplete or missing domain')
+    console.log('✅ Workspace found:', workspace.workspace_name, workspace.domain)
+
+    // Get the workspace's company by matching domain
+    if (!workspace.domain) {
+      console.log('❌ Workspace has no domain configured')
       return NextResponse.json({
         success: true,
         data: null,
-        message: 'Profile incomplete. Please set up your workspace name and domain in settings.'
+        message: 'Please configure a domain for this workspace in settings.'
       })
     }
 
-    console.log('✅ Profile found with domain:', profile.domain)
-
-    // Get the user's company by matching domain to root_url
-    // Handle cases where root_url might have protocol prefix (https://) and domain might not
-    const domainToMatch = profile.domain
-    const domainWithProtocol = `https://${profile.domain}`
-    const domainWithWww = `www.${profile.domain}`
-    const domainWithProtocolAndWww = `https://www.${profile.domain}`
+    // Get the company associated with this workspace's domain
+    const domainToMatch = workspace.domain
+    const domainWithProtocol = `https://${workspace.domain}`
+    const domainWithWww = `www.${workspace.domain}`
+    const domainWithProtocolAndWww = `https://www.${workspace.domain}`
 
     console.log('🔍 Trying to match domains:', { 
       domainToMatch, 
@@ -160,15 +176,7 @@ export async function GET(request: NextRequest) {
     console.log('🏢 Company lookup result:', { company, error: companyError })
 
     if (companyError || !company) {
-      console.log('❌ No company found for domain:', profile.domain)
-      
-      // Let's try a broader search to see what companies exist
-      const { data: allCompanies, error: allCompaniesError } = await supabase
-        .from('companies')
-        .select('id, company_name, root_url')
-        .limit(5)
-      
-      console.log('🔍 Sample companies in database:', { allCompanies, error: allCompaniesError })
+      console.log('❌ No company found for domain:', workspace.domain)
       
       return NextResponse.json({
         success: true,
@@ -179,8 +187,8 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ Company found:', company.id, company.company_name)
 
-    // Get the latest completed MAX Visibility assessment WITH competitors
-    console.log(`🔍 Looking for latest completed assessment with competitors for company ${company.id}`)
+    // Get the latest completed MAX Visibility assessment for this workspace
+    console.log(`🔍 Looking for latest completed assessment for workspace ${workspaceId}`)
     
     // First, find assessment IDs that have competitors using service role
     const supabaseService = createServiceRoleClient()
@@ -192,7 +200,7 @@ export async function GET(request: NextRequest) {
     const assessmentIdsWithCompetitors = [...new Set(assessmentsWithCompetitors?.map(c => c.run_id) || [])]
     console.log('📋 Assessment IDs that have competitors (SERVICE ROLE):', assessmentIdsWithCompetitors)
     
-    // Then get the latest assessment that has competitors
+    // Then get the latest assessment that has competitors for this workspace
     let assessment = null
     if (assessmentIdsWithCompetitors.length > 0) {
       const { data: latestAssessmentWithCompetitors, error: assessmentError } = await supabase
@@ -200,6 +208,7 @@ export async function GET(request: NextRequest) {
         .select(`
           id,
           company_id,
+          workspace_id,
           status,
           total_score,
           mention_rate,
@@ -209,7 +218,7 @@ export async function GET(request: NextRequest) {
           created_at,
           updated_at
         `)
-        .eq('company_id', company.id)
+        .eq('workspace_id', workspaceId)
         .eq('status', 'completed')
         .in('id', assessmentIdsWithCompetitors)
         .order('created_at', { ascending: false })
@@ -218,7 +227,7 @@ export async function GET(request: NextRequest) {
       console.log('📊 Assessment WITH competitors lookup result:', { 
         count: latestAssessmentWithCompetitors?.length || 0, 
         error: assessmentError,
-        companyId: company.id 
+        workspaceId 
       })
 
       if (latestAssessmentWithCompetitors && latestAssessmentWithCompetitors.length > 0) {
@@ -236,6 +245,7 @@ export async function GET(request: NextRequest) {
       .select(`
         id,
         company_id,
+        workspace_id,
         status,
         total_score,
         mention_rate,
@@ -245,7 +255,7 @@ export async function GET(request: NextRequest) {
         created_at,
         updated_at
       `)
-      .eq('company_id', company.id)
+      .eq('workspace_id', workspaceId)
       .eq('status', 'completed')
       .order('created_at', { ascending: false })
       .limit(1)
@@ -403,18 +413,18 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Calculate cumulative competitive data across ALL completed assessments
-    console.log(`🔍 Calculating cumulative share of voice across all assessments for company ${company.id}`)
+    // Calculate cumulative competitive data across ALL completed assessments FOR THIS WORKSPACE
+    console.log(`🔍 Calculating cumulative share of voice across all assessments for workspace ${workspaceId}`)
     
-    // Get ALL completed assessments for this company
+    // Get ALL completed assessments for this workspace (not just company)
     const { data: allCompanyAssessments, error: allAssessmentsError } = await supabase
       .from('max_visibility_runs')
       .select('id, total_score, mention_rate, created_at')
-      .eq('company_id', company.id)
+      .eq('workspace_id', workspaceId)  // ✅ Filter by workspace, not company
       .eq('status', 'completed')
       .order('created_at', { ascending: false })
     
-    console.log(`📊 Found ${allCompanyAssessments?.length || 0} completed assessments for cumulative calculation`)
+    console.log(`📊 Found ${allCompanyAssessments?.length || 0} completed assessments for this workspace for cumulative calculation`)
     
     // DEBUG: Log assessment details
     if (allCompanyAssessments && allCompanyAssessments.length > 0) {
@@ -424,7 +434,7 @@ export async function GET(request: NextRequest) {
       })
     }
     
-    // Get ALL competitors from ALL assessments for this company
+    // Get ALL competitors from ALL assessments for this workspace
     const allAssessmentIds = allCompanyAssessments?.map(a => a.id) || []
     let allCompetitorsData = []
     
@@ -629,7 +639,7 @@ export async function GET(request: NextRequest) {
       console.log(`   ${index + 1}. ${comp.name} (Rank ${comp.rank}) - ${comp.isUser ? 'USER' : 'COMPETITOR'}`)
     })
 
-    // Get all assessments for this company in the last 30 days
+    // Get all assessments for this workspace in the last 30 days
     const todayForChart = new Date(); // Renamed to avoid conflict if 'today' is used elsewhere later
     const thirtyDaysAgo = new Date(todayForChart);
     thirtyDaysAgo.setDate(todayForChart.getDate() - 30);
@@ -637,7 +647,7 @@ export async function GET(request: NextRequest) {
     const { data: chartAssessments } = await supabase
       .from('max_visibility_runs')
       .select('id, total_score, created_at')
-      .eq('company_id', company.id) // 'company' must be in scope here
+      .eq('workspace_id', workspaceId) // ✅ Filter by workspace, not company
       .eq('status', 'completed')
       .gte('created_at', thirtyDaysAgo.toISOString())
       .order('created_at', { ascending: false });

@@ -5,7 +5,6 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { ChevronRight, Database, Upload, FileText, Globe, Sparkles } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 import { useKnowledgeBase } from '@/hooks/useKnowledgeBase'
-import { useCompany } from '@/hooks/useCompany'
 import { KnowledgeTable } from '@/components/knowledge-base/knowledge-table'
 import { useWorkspace } from '@/contexts/WorkspaceContext'
 
@@ -26,21 +25,20 @@ const availableTags = [
 export function KnowledgeBaseTab() {
   const { currentWorkspace, switching } = useWorkspace()
   const shouldReduceMotion = useReducedMotion()
-  const { company, isLoading: companyLoading } = useCompany()
   const knowledgeBase = useKnowledgeBase()
   const [newKnowledgeContent, setNewKnowledgeContent] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 25
 
-  // Load knowledge items when component mounts or company changes
+  // Load knowledge items when component mounts or workspace changes
   useEffect(() => {
-    if (company?.id) {
-      knowledgeBase.loadItems(company.id, { 
+    if (currentWorkspace?.id) {
+      knowledgeBase.loadItems(currentWorkspace.id, { 
         tag: undefined,
         search: undefined
       })
     }
-  }, [company?.id])
+  }, [currentWorkspace?.id])
 
   // Pagination logic
   const totalPages = Math.ceil(knowledgeBase.items.length / itemsPerPage)
@@ -95,19 +93,10 @@ export function KnowledgeBaseTab() {
       return
     }
     
-    if (companyLoading) {
+    if (!currentWorkspace?.id) {
       toast({
-        title: 'Please wait',
-        description: 'Company is still being set up. Please try again in a moment.',
-        variant: 'default'
-      })
-      return
-    }
-    
-    if (!company?.id) {
-      toast({
-        title: 'Company not found',
-        description: 'Please refresh the page to complete your workspace setup.',
+        title: 'No workspace selected',
+        description: 'Please select a workspace to add knowledge items.',
         variant: 'destructive'
       })
       return
@@ -115,7 +104,7 @@ export function KnowledgeBaseTab() {
 
     try {
       // Use AI-powered extraction instead of manual categorization
-      await knowledgeBase.extractFromText(company.id, newKnowledgeContent)
+      await knowledgeBase.extractFromText(currentWorkspace.id, newKnowledgeContent)
       setNewKnowledgeContent('')
       
       toast({

@@ -1,26 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { KnowledgeBaseService } from '@/lib/knowledge-base/service'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 
 // GET /api/knowledge-base/items - Get knowledge items with filtering
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const companyId = searchParams.get('companyId')
+    const workspaceId = searchParams.get('workspaceId')
     const tag = searchParams.get('tag')
     const search = searchParams.get('search')
     const limit = searchParams.get('limit')
     const offset = searchParams.get('offset')
 
-    if (!companyId) {
+    if (!workspaceId) {
       return NextResponse.json(
-        { error: 'Company ID is required' },
+        { error: 'Workspace ID is required' },
         { status: 400 }
       )
     }
 
-    // Initialize service
-    const knowledgeService = new KnowledgeBaseService(true)
+    // Get user auth to verify workspace access
+    const supabase = createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Verify user has access to this workspace
+    const { data: workspace, error: workspaceError } = await supabase
+      .from('workspaces')
+      .select('id')
+      .eq('id', workspaceId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (workspaceError || !workspace) {
+      return NextResponse.json(
+        { error: 'Workspace not found or access denied' },
+        { status: 404 }
+      )
+    }
+
+    // Initialize service with workspace context
+    const knowledgeService = new KnowledgeBaseService(true, workspaceId)
 
     const filters = {
       tag: tag !== 'all' ? tag || undefined : undefined,
@@ -29,8 +56,8 @@ export async function GET(request: NextRequest) {
       offset: offset ? parseInt(offset) : undefined
     }
 
-    const items = await knowledgeService.getItems(companyId, filters)
-    const statistics = await knowledgeService.getStatistics(companyId)
+    const items = await knowledgeService.getItems(workspaceId, filters)
+    const statistics = await knowledgeService.getStatistics(workspaceId)
 
     return NextResponse.json({
       success: true,
@@ -56,20 +83,46 @@ export async function GET(request: NextRequest) {
 // POST /api/knowledge-base/items - Create a knowledge item
 export async function POST(request: NextRequest) {
   try {
-    const { companyId, content, tag } = await request.json()
+    const { workspaceId, content, tag } = await request.json()
 
-    if (!companyId || !content || !tag) {
+    if (!workspaceId || !content || !tag) {
       return NextResponse.json(
-        { error: 'Company ID, content, and tag are required' },
+        { error: 'Workspace ID, content, and tag are required' },
         { status: 400 }
       )
     }
 
-    // Initialize service
-    const knowledgeService = new KnowledgeBaseService(true)
+    // Get user auth to verify workspace access
+    const supabase = createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Verify user has access to this workspace
+    const { data: workspace, error: workspaceError } = await supabase
+      .from('workspaces')
+      .select('id')
+      .eq('id', workspaceId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (workspaceError || !workspace) {
+      return NextResponse.json(
+        { error: 'Workspace not found or access denied' },
+        { status: 404 }
+      )
+    }
+
+    // Initialize service with workspace context
+    const knowledgeService = new KnowledgeBaseService(true, workspaceId)
 
     // Create item
-    const item = await knowledgeService.createItem(companyId, content, tag)
+    const item = await knowledgeService.createItem(workspaceId, content, tag)
 
     return NextResponse.json({
       success: true,

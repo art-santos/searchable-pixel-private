@@ -644,50 +644,56 @@ export default function SettingsPage() {
 
   // Unified function to save all general settings (workspace + profile)
   const handleSaveSettings = async () => {
-    if (!user || !supabase || !currentWorkspace) return
+    if (!user || !currentWorkspace) return
 
     setIsLoading(true)
     try {
-      // Save profile data
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user.id,
-          first_name: profile?.first_name,
-          updated_by: user.id
+      // First update user profile settings (first name, avatar, etc)
+      const profileResponse = await fetch('/api/settings/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          first_name: profile?.first_name || '',
+          profile_picture_url: profile?.profile_picture_url
         })
+      })
 
-      if (profileError) {
-        console.error('Error updating profile:', profileError)
-        showToast('Failed to save profile settings')
-        return
+      if (!profileResponse.ok) {
+        const error = await profileResponse.json()
+        throw new Error(error.error || 'Failed to update profile')
       }
 
-      // Save workspace data
-      const { error: workspaceError } = await supabase
-        .from('workspaces')
-        .update({
+      // Then update workspace settings (name, domain)
+      const workspaceResponse = await fetch('/api/settings/workspace', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspaceId: currentWorkspace.id,
           workspace_name: workspaceSettings.name,
-          domain: workspaceSettings.domain,
-          updated_by: user.id
+          domain: workspaceSettings.domain
         })
-        .eq('id', currentWorkspace.id)
+      })
 
-      if (workspaceError) {
-        console.error('Error updating workspace:', workspaceError)
-        showToast('Failed to save workspace settings')
-        return
+      if (!workspaceResponse.ok) {
+        const error = await workspaceResponse.json()
+        throw new Error(error.error || 'Failed to update workspace')
       }
 
-      // Update local profile state
-      setProfile((prev: UserProfile | null) => ({
-        ...prev,
-        first_name: profile?.first_name
-      }))
+      // Update local state with response data
+      const profileData = await profileResponse.json()
+      const workspaceData = await workspaceResponse.json()
+
+      setProfile(profileData.data)
+      
+      // Emit workspace change event if name or domain changed
+      if (workspaceSettings.name !== currentWorkspace.workspace_name || 
+          workspaceSettings.domain !== currentWorkspace.domain) {
+        window.dispatchEvent(new Event('workspaceChanged'))
+      }
 
       showToast('Settings saved successfully')
-    } catch (err) {
-      console.error('Error saving settings:', err)
+    } catch (error) {
+      console.error('Error saving settings:', error)
       showToast('Failed to save settings')
     } finally {
       setIsLoading(false)

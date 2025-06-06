@@ -87,8 +87,8 @@ export async function GET(request: Request) {
       .gte('timestamp', startDate.toISOString())
       .order('timestamp', { ascending: true })
 
-    // Filter by workspace first, fall back to user for backward compatibility
-    query = query.or(`workspace_id.eq.${workspaceId},and(workspace_id.is.null,user_id.eq.${userId})`)
+    // Filter strictly by workspace - no fallback to prevent data bleeding
+    query = query.eq('workspace_id', workspaceId)
 
     // Filter by specific crawler if not 'all'
     if (crawler !== 'all') {

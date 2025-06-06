@@ -202,7 +202,19 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
 
   // Load all data in parallel
   const loadAllData = useCallback(async (showLoading = true, useCache = false) => {
-    console.log('📊 Loading all visibility data...', { showLoading, useCache })
+    console.log('📊 Loading all visibility data...', { showLoading, useCache, workspaceId: currentWorkspace?.id })
+    
+    // Guard: Don't load if no workspace is selected
+    if (!currentWorkspace?.id) {
+      console.log('⏸️ No workspace selected, skipping data load')
+      setState(prev => ({ 
+        ...prev, 
+        isLoading: false, 
+        isInitialLoading: false,
+        error: null 
+      }))
+      return
+    }
     
     if (showLoading) {
       setState(prev => ({ ...prev, isLoading: true, error: null }))
@@ -242,42 +254,65 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
       // Check responses
 
       // Process all responses
-      if (visibilityResponse.success && visibilityResponse.data) {
-        const newData = {
-          visibility: visibilityResponse.data,
-          citations: citationsResponse.success && citationsResponse.data ? citationsResponse.data.citations : [],
-          gaps: gapsResponse.success && gapsResponse.data ? gapsResponse.data.gaps : [],
-          insights: insightsResponse.success ? insightsResponse.data : null,
-          competitors: visibilityResponse.data.competitive.competitors || [],
-          lastUpdated: visibilityResponse.data.last_updated,
-          scanType: visibilityResponse.data.scan_type
+      if (visibilityResponse.success) {
+        if (visibilityResponse.data) {
+          // Has data - normal flow
+          const newData = {
+            visibility: visibilityResponse.data,
+            citations: citationsResponse.success && citationsResponse.data ? citationsResponse.data.citations : [],
+            gaps: gapsResponse.success && gapsResponse.data ? gapsResponse.data.gaps : [],
+            insights: insightsResponse.success ? insightsResponse.data : null,
+            competitors: visibilityResponse.data.competitive.competitors || [],
+            lastUpdated: visibilityResponse.data.last_updated,
+            scanType: visibilityResponse.data.scan_type
+          }
+
+          // Update state
+          setState(prev => ({
+            ...prev,
+            data: newData.visibility,
+            citations: newData.citations,
+            gaps: newData.gaps,
+            insights: newData.insights,
+            competitors: newData.competitors,
+            hasData: true,
+            lastUpdated: newData.lastUpdated,
+            scanType: newData.scanType,
+            isLoading: false,
+            isInitialLoading: false,
+            error: null,
+            featureAccess: featureAccessResponse.success && featureAccessResponse.data ? {
+              hasMaxAccess: featureAccessResponse.data.has_max_access,
+              features: featureAccessResponse.data.features
+            } : prev.featureAccess
+          }))
+
+          // Save to cache
+          saveToCache(newData)
+          console.log('✅ Data loaded and cached successfully')
+        } else {
+          // No data - empty workspace (not an error)
+          console.log('📭 No visibility data found for this workspace - showing empty state')
+          setState(prev => ({
+            ...prev,
+            data: null,
+            citations: [],
+            gaps: [],
+            insights: null,
+            competitors: [],
+            hasData: false,
+            lastUpdated: null,
+            scanType: null,
+            isLoading: false,
+            isInitialLoading: false,
+            error: null, // Important: no error for empty state
+            featureAccess: featureAccessResponse.success && featureAccessResponse.data ? {
+              hasMaxAccess: featureAccessResponse.data.has_max_access,
+              features: featureAccessResponse.data.features
+            } : prev.featureAccess
+          }))
+          console.log('✅ Empty state set successfully')
         }
-
-        // Update state with fresh data
-
-        // Update state
-        setState(prev => ({
-          ...prev,
-          data: newData.visibility,
-          citations: newData.citations,
-          gaps: newData.gaps,
-          insights: newData.insights,
-          competitors: newData.competitors,
-          hasData: true,
-          lastUpdated: newData.lastUpdated,
-          scanType: newData.scanType,
-          isLoading: false,
-          isInitialLoading: false,
-          error: null,
-          featureAccess: featureAccessResponse.success && featureAccessResponse.data ? {
-            hasMaxAccess: featureAccessResponse.data.has_max_access,
-            features: featureAccessResponse.data.features
-          } : prev.featureAccess
-        }))
-
-        // Save to cache
-        saveToCache(newData)
-        console.log('✅ Data loaded and cached successfully')
       } else {
         console.error('❌ Failed to load visibility data:', visibilityResponse.error)
         setState(prev => ({
@@ -296,7 +331,7 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
         error: 'Failed to load visibility data'
       }))
     }
-  }, [loadFromCache, saveToCache])
+  }, [currentWorkspace?.id, loadFromCache, saveToCache])
 
   // Load initial data (can use cache)
   const loadInitialData = useCallback(async () => {
@@ -310,6 +345,11 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
 
   // Load citations data
   const loadCitations = useCallback(async (filters?: Record<string, any>) => {
+    if (!currentWorkspace?.id) {
+      console.log('⏸️ No workspace selected, skipping citations load')
+      return
+    }
+
     setState(prev => ({ ...prev, isLoadingCitations: true, citationsError: null }))
 
     try {
@@ -336,10 +376,15 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
         citationsError: 'Failed to load citations'
       }))
     }
-  }, [])
+  }, [currentWorkspace?.id])
 
   // Load gaps data
   const loadGaps = useCallback(async (filters?: Record<string, any>) => {
+    if (!currentWorkspace?.id) {
+      console.log('⏸️ No workspace selected, skipping gaps load')
+      return
+    }
+
     setState(prev => ({ ...prev, isLoadingGaps: true, gapsError: null }))
 
     try {
@@ -366,10 +411,15 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
         gapsError: 'Failed to load gaps analysis'
       }))
     }
-  }, [])
+  }, [currentWorkspace?.id])
 
   // Load insights data
   const loadInsights = useCallback(async () => {
+    if (!currentWorkspace?.id) {
+      console.log('⏸️ No workspace selected, skipping insights load')
+      return
+    }
+
     setState(prev => ({ ...prev, isLoadingInsights: true, insightsError: null }))
 
     try {
@@ -396,7 +446,7 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
         insightsError: 'Failed to load insights'
       }))
     }
-  }, [])
+  }, [currentWorkspace?.id])
 
   // Smooth progress animation function
   const animateProgressTo = useCallback((targetProgress: number) => {
@@ -526,9 +576,17 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
               }
             }))
             
-            console.log('🧹 Clearing all caches to ensure fresh data...')
+            console.log('🧹 Clearing all caches to ensure fresh data after assessment completion...')
+            // Clear ALL visibility cache entries
+            const keysToRemove: string[] = []
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i)
+              if (key && key.startsWith('visibility_data_cache_')) {
+                keysToRemove.push(key)
+              }
+            }
+            keysToRemove.forEach(key => localStorage.removeItem(key))
             maxVisibilityApi.clearCache()
-            localStorage.removeItem(getVisibilityCacheKey(currentWorkspace?.id))
             
             console.log('🔄 Calling loadAllData to refresh after completion...')
             // Force fresh data load
@@ -775,7 +833,24 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
 
   // Clear cache function
   const clearCache = useCallback(() => {
-    localStorage.removeItem(getVisibilityCacheKey(currentWorkspace?.id))
+    console.log('🧹 Clearing all visibility cache...')
+    
+    // Clear ALL localStorage entries that start with 'visibility_data_cache_'
+    const keysToRemove: string[] = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith('visibility_data_cache_')) {
+        keysToRemove.push(key)
+      }
+    }
+    keysToRemove.forEach(key => {
+      console.log(`🗑️ Removing cache key: ${key}`)
+      localStorage.removeItem(key)
+    })
+    
+    // Clear API client cache
+    maxVisibilityApi.clearCache()
+    
     setState(prev => ({
       ...prev,
       data: null,
@@ -787,12 +862,19 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
     }))
   }, [currentWorkspace?.id])
 
-  // Initial data loading - only when workspace is available
+
+
+  // Single effect to handle workspace changes and data loading
   useEffect(() => {
-    if (subscription && currentWorkspace) {
-      loadFeatureAccess()
-      loadInitialData()
-    } else if (!currentWorkspace) {
+    console.log('🔄 Workspace effect triggered:', { workspaceId: currentWorkspace?.id, subscription: !!subscription })
+    
+    if (!subscription) {
+      console.log('⏳ No subscription yet, skipping data load')
+      return
+    }
+
+    if (!currentWorkspace) {
+      console.log('🧹 No workspace selected, clearing data')
       // Clear data when no workspace is selected
       setState(prev => ({
         ...prev,
@@ -804,25 +886,94 @@ export function useMaxVisibility(): UseMaxVisibilityReturn {
         hasData: false,
         isInitialLoading: false
       }))
+      return
     }
-  }, [subscription, currentWorkspace, loadFeatureAccess, loadInitialData])
 
-  // Listen for workspace changes and refresh data
-  useEffect(() => {
-    const handleWorkspaceChange = () => {
-      if (currentWorkspace) {
-        console.log('🔄 Workspace changed, refreshing visibility data...')
-        refresh()
+    // Handle workspace change
+    console.log('🔄 Workspace changed, switching to:', currentWorkspace.id)
+    
+    // IMPORTANT: Set the workspace ID on the API client FIRST
+    maxVisibilityApi.setWorkspaceId(currentWorkspace.id)
+    
+    // Clear all state immediately
+    setState(prevState => ({
+      ...prevState,
+      data: null,
+      citations: [],
+      gaps: [],
+      insights: null,
+      competitors: [],
+      hasData: false,
+      lastUpdated: null,
+      scanType: null,
+      isInitialLoading: true,
+      isLoading: false,
+      isRefreshing: false,
+      error: null,
+      currentAssessment: {
+        id: null,
+        status: null,
+        progress: 0,
+        stage: undefined,
+        message: undefined,
+        error: undefined,
+        company: undefined
+      }
+    }))
+    
+    // Clear ALL visibility cache entries to prevent cross-workspace contamination
+    console.log('🧹 Clearing ALL visibility cache entries to prevent cross-workspace data...')
+    
+    // Clear all localStorage entries that start with 'visibility_data_cache_'
+    const keysToRemove: string[] = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith('visibility_data_cache_')) {
+        keysToRemove.push(key)
+      }
+    }
+    keysToRemove.forEach(key => {
+      console.log(`🗑️ Removing cache key: ${key}`)
+      localStorage.removeItem(key)
+    })
+    
+    // Clear API client cache (this also clears based on the NEW workspace ID)
+    maxVisibilityApi.clearCache()
+    
+    // Clear any active polling
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current)
+      pollIntervalRef.current = null
+    }
+    pollCountRef.current = 0
+    
+    // Reset animated progress
+    animatedProgressRef.current = 0
+    setAnimatedProgress(0)
+    
+    // Cancel any pending animation frames
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+      animationFrameRef.current = undefined
+    }
+
+    // Load feature access and initial data for new workspace
+    const loadWorkspaceData = async () => {
+      try {
+        // Small delay to ensure cache clearing completes
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+        console.log('📊 Loading fresh data for workspace:', currentWorkspace.id)
+        await loadFeatureAccess()
+        await loadInitialData()
+        console.log('✅ Workspace data loaded successfully')
+      } catch (error) {
+        console.error('❌ Error loading workspace data:', error)
       }
     }
 
-    // Listen for the custom workspace change event
-    window.addEventListener('workspaceChanged', handleWorkspaceChange)
-    
-    return () => {
-      window.removeEventListener('workspaceChanged', handleWorkspaceChange)
-    }
-  }, [currentWorkspace, refresh])
+    loadWorkspaceData()
+  }, [currentWorkspace?.id, subscription, loadFeatureAccess, loadInitialData])
 
   // Cleanup polling on unmount
   useEffect(() => {

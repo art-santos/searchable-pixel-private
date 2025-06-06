@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { KnowledgeItem, KnowledgeFilters } from '@/lib/knowledge-base/types'
 import { toast } from '@/components/ui/use-toast'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
 
 interface KnowledgeBaseStatistics {
   totalItems: number
@@ -17,11 +18,11 @@ interface UseKnowledgeBaseResult {
   isExtracting: boolean
   
   // Operations
-  loadItems: (companyId: string, filters?: KnowledgeFilters) => Promise<void>
-  createItem: (companyId: string, content: string, tag: string) => Promise<void>
+  loadItems: (workspaceId: string, filters?: KnowledgeFilters) => Promise<void>
+  createItem: (workspaceId: string, content: string, tag: string) => Promise<void>
   updateItem: (id: string, content: string, tag: string) => Promise<void>
   deleteItem: (id: string) => Promise<void>
-  extractFromText: (companyId: string, textDump: string) => Promise<void>
+  extractFromText: (workspaceId: string, textDump: string) => Promise<void>
   estimateExtraction: (text: string) => Promise<{ estimatedItemCount: number; wordCount: number }>
   
   // Filters
@@ -30,6 +31,7 @@ interface UseKnowledgeBaseResult {
 }
 
 export function useKnowledgeBase(): UseKnowledgeBaseResult {
+  const { currentWorkspace } = useWorkspace()
   const [items, setItems] = useState<KnowledgeItem[]>([])
   const [statistics, setStatistics] = useState<KnowledgeBaseStatistics | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -37,11 +39,11 @@ export function useKnowledgeBase(): UseKnowledgeBaseResult {
   const [filters, setFilters] = useState<KnowledgeFilters>({})
 
   // Load knowledge items with filters
-  const loadItems = useCallback(async (companyId: string, newFilters?: KnowledgeFilters) => {
+  const loadItems = useCallback(async (workspaceId: string, newFilters?: KnowledgeFilters) => {
     setIsLoading(true)
     try {
       const queryParams = new URLSearchParams({
-        companyId,
+        workspaceId,
         ...(newFilters?.tag && newFilters.tag !== 'all' && { tag: newFilters.tag }),
         ...(newFilters?.search && { search: newFilters.search }),
         ...(newFilters?.limit && { limit: newFilters.limit.toString() }),
@@ -71,12 +73,12 @@ export function useKnowledgeBase(): UseKnowledgeBaseResult {
   }, [])
 
   // Create a single knowledge item
-  const createItem = useCallback(async (companyId: string, content: string, tag: string) => {
+  const createItem = useCallback(async (workspaceId: string, content: string, tag: string) => {
     try {
       const response = await fetch('/api/knowledge-base/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyId, content, tag })
+        body: JSON.stringify({ workspaceId, content, tag })
       })
 
       const result = await response.json()
@@ -94,7 +96,7 @@ export function useKnowledgeBase(): UseKnowledgeBaseResult {
       })
 
       // Refresh statistics
-      await loadItems(companyId, filters)
+      await loadItems(workspaceId, filters)
       
     } catch (error) {
       console.error('Error creating knowledge item:', error)
@@ -176,15 +178,15 @@ export function useKnowledgeBase(): UseKnowledgeBaseResult {
   }, [])
 
   // Extract knowledge from text dump
-  const extractFromText = useCallback(async (companyId: string, textDump: string) => {
+  const extractFromText = useCallback(async (workspaceId: string, textDump: string) => {
     setIsExtracting(true)
     try {
-      console.log('Starting knowledge extraction for company:', companyId, 'Text length:', textDump.length)
+      console.log('Starting knowledge extraction for workspace:', workspaceId, 'Text length:', textDump.length)
       
       const response = await fetch('/api/knowledge-base/extract', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyId, textDump })
+        body: JSON.stringify({ workspaceId, textDump })
       })
 
       const result = await response.json()
@@ -207,7 +209,7 @@ export function useKnowledgeBase(): UseKnowledgeBaseResult {
       })
 
       // Refresh the full list to get updated statistics
-      await loadItems(companyId, filters)
+      await loadItems(workspaceId, filters)
       
       return result.data
       
@@ -216,7 +218,7 @@ export function useKnowledgeBase(): UseKnowledgeBaseResult {
         error,
         message: (error as Error).message,
         stack: (error as Error).stack,
-        companyId,
+        workspaceId,
         textLength: textDump.length
       })
       toast({

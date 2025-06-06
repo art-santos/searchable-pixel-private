@@ -122,9 +122,18 @@ class MaxVisibilityApiClient {
   private supabase = createClient()
   private cache = new Map<string, { data: any; expires: number }>()
   private readonly cacheDuration = 5 * 60 * 1000 // 5 minutes
+  private workspaceId: string | null = null
+
+  // Set the current workspace ID for all subsequent requests
+  setWorkspaceId(workspaceId: string | null): void {
+    this.workspaceId = workspaceId
+    // Clear cache when workspace changes
+    this.clearCache()
+  }
 
   private getCacheKey(endpoint: string, params?: Record<string, any>): string {
-    const paramString = params ? JSON.stringify(params) : ''
+    const fullParams = { ...params, workspaceId: this.workspaceId }
+    const paramString = fullParams ? JSON.stringify(fullParams) : ''
     return `${endpoint}:${paramString}`
   }
 
@@ -150,7 +159,12 @@ class MaxVisibilityApiClient {
     params?: Record<string, any>
   ): Promise<MaxVisibilityApiResponse<T>> {
     try {
-      const cacheKey = this.getCacheKey(endpoint, params)
+      // Include workspaceId in params if set
+      const fullParams = this.workspaceId 
+        ? { ...params, workspaceId: this.workspaceId }
+        : params
+
+      const cacheKey = this.getCacheKey(endpoint, fullParams)
       const cached = this.getCached<T>(cacheKey)
       
       if (cached) {
@@ -163,8 +177,8 @@ class MaxVisibilityApiClient {
       }
 
       const url = new URL(`/api/max-visibility${endpoint}`, window.location.origin)
-      if (params) {
-        Object.entries(params).forEach(([key, value]) => {
+      if (fullParams) {
+        Object.entries(fullParams).forEach(([key, value]) => {
           url.searchParams.append(key, String(value))
         })
       }
@@ -224,6 +238,13 @@ class MaxVisibilityApiClient {
 
   // Main visibility data endpoint
   async getVisibilityData(timeframe?: string): Promise<MaxVisibilityApiResponse<VisibilityData>> {
+    if (!this.workspaceId) {
+      return {
+        data: null,
+        error: 'No workspace selected',
+        success: false
+      }
+    }
     return this.makeRequest<VisibilityData>('/data', { method: 'GET' }, 
       timeframe ? { timeframe } : undefined
     )
@@ -231,13 +252,21 @@ class MaxVisibilityApiClient {
 
   // Trigger a new assessment/scan
   async triggerAssessment(type: 'lite' | 'max' = 'lite'): Promise<MaxVisibilityApiResponse<{ assessment_id: string }>> {
+    if (!this.workspaceId) {
+      return {
+        data: null,
+        error: 'No workspace selected',
+        success: false
+      }
+    }
     // For now, use a simplified approach that matches the existing API pattern
     // This will be handled by the assess endpoint on the server side
     return this.makeRequest<{ assessment_id: string }>('/assess', {
       method: 'POST',
       body: JSON.stringify({ 
         type,
-        assessment_type: type 
+        assessment_type: type,
+        workspaceId: this.workspaceId 
       })
     })
   }

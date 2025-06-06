@@ -64,8 +64,8 @@ export async function GET(request: Request) {
       .select('crawler_name, crawler_company, timestamp', { count: 'exact' })
       .gte('timestamp', startDate.toISOString())
 
-    // Apply workspace filtering
-    query = query.or(`workspace_id.eq.${workspaceId},and(workspace_id.is.null,user_id.eq.${userId})`)
+    // Apply strict workspace filtering - no fallback to prevent data bleeding
+    query = query.eq('workspace_id', workspaceId)
 
     // Determine if we should apply limits
     let shouldLimitData = false

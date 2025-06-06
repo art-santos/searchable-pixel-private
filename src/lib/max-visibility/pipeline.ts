@@ -1316,6 +1316,7 @@ RESPOND IN VALID JSON FORMAT ONLY:
       .from('max_visibility_runs')
       .insert({
         company_id: request.company.id || request.company.name,
+        workspace_id: request.workspace_id,
         triggered_by: request.triggered_by,
         status: 'running',
         total_score: 0,
