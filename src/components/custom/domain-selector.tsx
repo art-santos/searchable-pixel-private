@@ -34,6 +34,7 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
   const [faviconUrl, setFaviconUrl] = useState<string>('/images/split-icon-white.svg')
   const [subscription, setSubscription] = useState<any>(null)
   const [showWorkspaceCreationDialog, setShowWorkspaceCreationDialog] = useState(false)
+  const [usageData, setUsageData] = useState<any>(null)
 
   // Get display domain from current workspace or fallback
   const getDisplayDomain = () => {
@@ -43,24 +44,52 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
     return "your-domain.com"
   }
 
-  // Fetch subscription data
+  // Fetch subscription and usage data
   useEffect(() => {
-    const fetchSubscription = async () => {
+    const fetchData = async () => {
       if (!user) return
 
       try {
-        const subscriptionResponse = await fetch('/api/user/subscription')
+        const [subscriptionResponse, usageResponse] = await Promise.all([
+          fetch('/api/user/subscription'),
+          fetch('/api/usage/current')
+        ])
+        
         if (subscriptionResponse.ok) {
           const subscriptionData = await subscriptionResponse.json()
           setSubscription(subscriptionData)
         }
+        
+        if (usageResponse.ok) {
+          const usageData = await usageResponse.json()
+          setUsageData(usageData)
+        }
       } catch (err) {
-        console.error('Error fetching subscription:', err)
+        console.error('Error fetching data:', err)
       }
     }
 
-    fetchSubscription()
+    fetchData()
   }, [user])
+
+  // Refresh usage data when workspaces change (to update available slots)
+  useEffect(() => {
+    const refreshUsageData = async () => {
+      if (!user) return
+      
+      try {
+        const usageResponse = await fetch('/api/usage/current')
+        if (usageResponse.ok) {
+          const newUsageData = await usageResponse.json()
+          setUsageData(newUsageData)
+        }
+      } catch (err) {
+        console.error('Error refreshing usage data:', err)
+      }
+    }
+
+    refreshUsageData()
+  }, [workspaces, user])
 
   // Load favicon when current workspace changes
   useEffect(() => {
@@ -94,6 +123,17 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
     // Refresh workspaces list
     await refreshWorkspaces()
     
+    // Also refresh usage data to update available slots
+    try {
+      const usageResponse = await fetch('/api/usage/current')
+      if (usageResponse.ok) {
+        const newUsageData = await usageResponse.json()
+        setUsageData(newUsageData)
+      }
+    } catch (err) {
+      console.error('Error refreshing usage data:', err)
+    }
+    
     // The workspaces array from context should now be updated
     // We need to wait a bit for React state to update
     setTimeout(() => {
@@ -124,6 +164,26 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
   }
 
   const AddIcon = getAddDomainIcon()
+
+  // Calculate available slots for empty workspace placeholders
+  const getAvailableSlots = () => {
+    if (!usageData?.addOns) return 0
+    const domainsAddon = usageData.addOns.find((addon: any) => addon.add_on_type === 'extra_domains')
+    const billingSlots = domainsAddon?.quantity || 0
+    const extraWorkspaces = workspaces.filter(ws => !ws.is_primary).length
+    return Math.max(0, billingSlots - extraWorkspaces)
+  }
+
+  const availableSlots = getAvailableSlots()
+
+  // Debug logging for admin
+  console.log('Domain Selector Debug:', {
+    workspaces: workspaces.length,
+    extraWorkspaces: workspaces.filter(ws => !ws.is_primary).length,
+    usageData: usageData?.addOns,
+    availableSlots,
+    canAddDomains
+  })
 
   return (
     <div className="flex items-start">
@@ -220,7 +280,27 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
             </DropdownMenuItem>
           )}
           
-          {showAddButton && (
+          {/* Empty slots for available billing capacity */}
+          {availableSlots > 0 && canAddDomains && Array.from({ length: availableSlots }, (_, i) => (
+            <DropdownMenuItem 
+              key={`empty-slot-${i}`}
+              className="hover:bg-[#222222] cursor-pointer rounded-none border border-dashed border-[#444] m-1"
+              onClick={() => setShowWorkspaceCreationDialog(true)}
+            >
+              <div className="flex items-center gap-2 w-full opacity-60">
+                <div className="w-4 h-4 flex items-center justify-center">
+                  <Plus className="w-3 h-3 text-[#666]" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm text-[#666]">Available slot</div>
+                  <div className="text-xs text-[#555]">Click to add workspace</div>
+                </div>
+                <span className="text-xs text-[#555] bg-[#2a2a2a] px-1.5 py-0.5 rounded">Empty</span>
+              </div>
+            </DropdownMenuItem>
+          ))}
+          
+          {showAddButton && !canAddDomains && (
             <>
               <DropdownMenuSeparator className="bg-[#333333]" />
               <DropdownMenuItem 

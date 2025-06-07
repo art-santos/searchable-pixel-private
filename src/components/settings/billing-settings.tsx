@@ -16,7 +16,7 @@ interface BillingSettingsProps {
 
 export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: BillingSettingsProps) {
   const { user } = useAuth()
-  const [billingTab, setBillingTab] = useState<'overview' | 'usage' | 'settings'>('overview')
+  const [billingTab, setBillingTab] = useState<'plans' | 'usage' | 'settings'>('plans')
   const [currentPlan, setCurrentPlan] = useState('free')
   const [stripeCustomerId, setStripeCustomerId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -30,6 +30,67 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
   const [savingPreferences, setSavingPreferences] = useState(false)
   const [preferencesSaveMessage, setPreferencesSaveMessage] = useState('')
   const [highlightedSection, setHighlightedSection] = useState<string | null>(null)
+  const [visitorCredits, setVisitorCredits] = useState(3750) // Current slider value
+  const [currentVisitorCredits, setCurrentVisitorCredits] = useState(3750) // Current subscription amount
+  const [isUpdatingCredits, setIsUpdatingCredits] = useState(false)
+
+  // Get base credits included in current plan
+  const getBaseCreditsForPlan = (planType: string) => {
+    switch (planType) {
+      case 'visibility': return 0
+      case 'plus': return 3750
+      case 'pro': return 15000
+      default: return 0 // free plan
+    }
+  }
+
+  const baseCredits = getBaseCreditsForPlan(currentPlan)
+  const isVisibilityPlan = currentPlan === 'visibility' || currentPlan === 'free'
+
+  // Tiered pricing calculation
+  const calculateCreditCost = (credits: number) => {
+    if (credits <= baseCredits) return 0
+    
+    const additionalCredits = credits - baseCredits
+    let cost = 0
+    
+    // Tier 1: 1-2500 additional credits at $0.25 each
+    if (additionalCredits > 0) {
+      const tier1Credits = Math.min(additionalCredits, 2500)
+      cost += tier1Credits * 0.25
+    }
+    
+    // Tier 2: 2501-7500 additional credits at $0.20 each  
+    if (additionalCredits > 2500) {
+      const tier2Credits = Math.min(additionalCredits - 2500, 5000)
+      cost += tier2Credits * 0.20
+    }
+    
+    // Tier 3: 7501+ additional credits at $0.15 each
+    if (additionalCredits > 7500) {
+      const tier3Credits = additionalCredits - 7500
+      cost += tier3Credits * 0.15
+    }
+    
+    return Math.round(cost)
+  }
+
+  // Get current price per credit for display
+  const getCurrentPricePerCredit = (credits: number) => {
+    if (credits <= baseCredits) return 0
+    
+    const additionalCredits = credits - baseCredits
+    if (additionalCredits <= 2500) return 0.25
+    if (additionalCredits <= 7500) return 0.20
+    return 0.15
+  }
+
+  // Update credits when plan changes
+  useEffect(() => {
+    const planBaseCredits = getBaseCreditsForPlan(currentPlan)
+    setVisitorCredits(planBaseCredits)
+    setCurrentVisitorCredits(planBaseCredits)
+  }, [currentPlan])
 
   // Fetch subscription data on mount
   useEffect(() => {
@@ -64,7 +125,10 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
         const response = await fetch('/api/workspaces')
         if (response.ok) {
           const data = await response.json()
+          console.log('Workspaces fetched:', data) // Debug log
           setWorkspaces(data.workspaces || [])
+        } else {
+          console.error('Failed to fetch workspaces:', response.status)
         }
       } catch (error) {
         console.error('Error fetching workspaces:', error)
@@ -76,13 +140,47 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
     }
   }, [user])
 
+  // Refresh workspaces when usage data changes
+  useEffect(() => {
+    const fetchWorkspaces = async () => {
+      try {
+        const response = await fetch('/api/workspaces')
+        if (response.ok) {
+          const data = await response.json()
+          setWorkspaces(data.workspaces || [])
+        }
+      } catch (error) {
+        console.error('Error fetching workspaces:', error)
+      }
+    }
+
+    if (user && usageData) {
+      fetchWorkspaces()
+    }
+  }, [user, usageData])
+
   // Initialize add-ons from usage data
   useEffect(() => {
     if (usageData?.addOns) {
-      const domainsAddon = usageData.addOns.find(addon => addon.add_on_type === 'extra_domains')
-      setExtraDomains(domainsAddon?.quantity || 0)
+      const domainsAddon = usageData.addOns.find((addon: any) => addon.add_on_type === 'extra_domains')
+      const backendSlots = domainsAddon?.quantity || 0
+      console.log('Syncing extraDomains from backend:', backendSlots)
+      setExtraDomains(backendSlots)
     }
   }, [usageData])
+
+  // Auto-sync billing slots for admin accounts with workspace mismatch
+  useEffect(() => {
+    if (workspaces.length > 0 && usageData) {
+      const extraWorkspaceCount = workspaces.filter(ws => !ws.is_primary).length
+      
+      // If we have extra workspaces but no billing slots, auto-sync for admin accounts
+      if (extraWorkspaceCount > 0 && extraDomains === 0) {
+        console.log('Admin account detected: auto-syncing billing slots', { extraWorkspaceCount, extraDomains })
+        setExtraDomains(extraWorkspaceCount)
+      }
+    }
+  }, [workspaces, extraDomains, usageData])
 
   // Function to save billing preferences
   const saveBillingPreferences = async (preferences: any) => {
@@ -170,8 +268,10 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
     if (extraDomains === 0) return
     
     const extraWorkspaces = workspaces.filter(ws => !ws.is_primary)
+    const minRequiredSlots = extraWorkspaces.length
     
-    if (extraWorkspaces.length === 0) {
+    // Only allow removal if we have more domain slots than required for existing workspaces
+    if (extraDomains > minRequiredSlots) {
       setIsUpdatingAddOns(true)
       try {
         const response = await fetch('/api/billing/manage-addons', {
@@ -180,12 +280,12 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
           body: JSON.stringify({
             action: extraDomains === 1 ? 'remove' : 'update',
             addonType: 'extra_domains',
-            quantity: Math.max(0, extraDomains - 1)
+            quantity: Math.max(minRequiredSlots, extraDomains - 1)
           })
         })
         
         if (response.ok) {
-          setExtraDomains(Math.max(0, extraDomains - 1))
+          setExtraDomains(Math.max(minRequiredSlots, extraDomains - 1))
           showToast('Domain slot removed!')
           onRefreshUsage()
         } else {
@@ -197,6 +297,11 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
       } finally {
         setIsUpdatingAddOns(false)
       }
+    } else if (extraDomains === minRequiredSlots) {
+      showToast(`Cannot remove slot - you need ${minRequiredSlots} slot${minRequiredSlots === 1 ? '' : 's'} for your ${extraWorkspaces.length} extra workspace${extraWorkspaces.length === 1 ? '' : 's'}.`)
+    } else {
+      showToast('Insufficient slots detected. Auto-syncing...')
+      setExtraDomains(minRequiredSlots)
     }
   }
 
@@ -313,6 +418,40 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
     }
   }
 
+  const handleUpdateCredits = async () => {
+    if (visitorCredits === currentVisitorCredits) return
+
+    setIsUpdatingCredits(true)
+    try {
+      // TODO: Connect to actual API endpoint for credit updates
+      const response = await fetch('/api/billing/update-credits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          credits: visitorCredits
+        })
+      })
+
+      if (response.ok) {
+        setCurrentVisitorCredits(visitorCredits)
+        showToast(`Visitor credits updated to ${visitorCredits.toLocaleString()}!`)
+        await onRefreshUsage()
+      } else {
+        const error = await response.json()
+        showToast(error.error || 'Failed to update credits')
+      }
+    } catch (error) {
+      console.error('Error updating credits:', error)
+      showToast('Failed to update credits')
+    } finally {
+      setIsUpdatingCredits(false)
+    }
+  }
+
+  const handleCancelCreditChanges = () => {
+    setVisitorCredits(currentVisitorCredits)
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -420,14 +559,14 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                       <div>
                         <div className="font-medium text-white font-mono tracking-tight text-sm">Extra Workspaces</div>
                         <div className="text-xs text-[#666] font-mono tracking-tight">
-                          $100 per workspace per month • {workspaceCounts.total} total ({workspaceCounts.extra} extra)
+                          $100 per slot per month • {extraDomains} slots purchased • {workspaceCounts.extra} workspaces using slots
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-3">
                           <Button
                             onClick={handleRemoveDomain}
-                            disabled={extraDomains === 0 || isUpdatingAddOns}
+                            disabled={extraDomains === 0 || extraDomains <= workspaceCounts.extra || isUpdatingAddOns}
                             size="sm"
                             variant="outline"
                             className="w-8 h-8 p-0 border-[#333] font-mono"
@@ -435,7 +574,7 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                             <Minus className="w-4 h-4" />
                           </Button>
                           <span className="text-white font-medium min-w-[2rem] text-center font-mono tracking-tight text-sm">
-                            {workspaceCounts.extra}
+                            {extraDomains}
                           </span>
                           <Button
                             onClick={handleAddDomain}
@@ -449,11 +588,115 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                         </div>
                         <div className="text-right min-w-[5rem]">
                           <div className="font-medium text-white font-mono tracking-tight text-sm">
-                            {workspaceCounts.extra > 0 ? `+$${workspaceCounts.extra * 100}` : '$0'}
+                            {extraDomains > 0 ? `+$${extraDomains * 100}` : '$0'}
                           </div>
                           <div className="text-xs text-[#666] font-mono tracking-tight">per month</div>
                         </div>
                       </div>
+                    </div>
+
+                    {/* Visitor Credits */}
+                    <div className="py-4 border-b border-[#1a1a1a]">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <div className="font-medium text-white font-mono tracking-tight text-sm">Visitor Credits</div>
+                          <div className="text-xs text-[#666] font-mono tracking-tight">
+                            {isVisibilityPlan 
+                              ? 'Upgrade to Plus or Pro to access visitor identification'
+                              : getCurrentPricePerCredit(visitorCredits) > 0 
+                                ? `$${getCurrentPricePerCredit(visitorCredits).toFixed(2)} per additional credit • ${visitorCredits.toLocaleString()} credits per month`
+                                : `${visitorCredits.toLocaleString()} credits included in plan`
+                            }
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-medium text-white font-mono tracking-tight text-sm">
+                            {isVisibilityPlan 
+                              ? '—'
+                              : calculateCreditCost(visitorCredits) > 0 
+                                ? `+$${calculateCreditCost(visitorCredits)}`
+                                : '$0'
+                            }
+                          </div>
+                          <div className="text-xs text-[#666] font-mono tracking-tight">per month</div>
+                        </div>
+                      </div>
+                      
+                      {isVisibilityPlan ? (
+                        /* Upgrade CTA for Visibility/Free plans */
+                        <div className="text-center py-8 border border-dashed border-[#333] rounded-lg">
+                          <div className="w-12 h-12 bg-[#1a1a1a] rounded-sm flex items-center justify-center mx-auto mb-3">
+                            <span className="text-xl">👥</span>
+                          </div>
+                          <h4 className="text-sm font-medium text-white mb-2 font-mono tracking-tight">Visitor Identification</h4>
+                          <p className="text-xs text-[#666] mb-4 max-w-xs mx-auto font-mono tracking-tight">
+                            Track and identify your website visitors with our advanced analytics
+                          </p>
+                          <Button 
+                            onClick={() => setShowPricingModal(true)}
+                            className="bg-white text-black hover:bg-[#f5f5f5] h-8 px-4 font-mono tracking-tight text-xs"
+                          >
+                            Upgrade Plan
+                          </Button>
+                        </div>
+                      ) : (
+                        /* Credit Slider for Plus/Pro plans */
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between text-xs text-[#666] font-mono tracking-tight">
+                            <span>{baseCredits.toLocaleString()} (included)</span>
+                            <span>{currentPlan === 'pro' ? '25,000' : '15,000'}</span>
+                          </div>
+                          <div className="relative">
+                            <input
+                              type="range"
+                              min={baseCredits}
+                              max={currentPlan === 'pro' ? 25000 : 15000}
+                              step="250"
+                              value={visitorCredits}
+                              onChange={(e) => setVisitorCredits(Number(e.target.value))}
+                              className="w-full h-2 bg-[#1a1a1a] rounded-lg appearance-none cursor-pointer
+                                [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
+                                [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer
+                                [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[#333]
+                                [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:bg-white 
+                                [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-none"
+                              style={{
+                                background: `linear-gradient(to right, #333 0%, #333 ${((visitorCredits - baseCredits) / ((currentPlan === 'pro' ? 25000 : 15000) - baseCredits)) * 100}%, #1a1a1a ${((visitorCredits - baseCredits) / ((currentPlan === 'pro' ? 25000 : 15000) - baseCredits)) * 100}%, #1a1a1a 100%)`
+                              }}
+                            />
+                          </div>
+                          <div className="flex items-center justify-center">
+                            <span className="text-white font-medium font-mono tracking-tight text-sm">
+                              {visitorCredits.toLocaleString()} credits
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Upgrade Button - shows when credits changed from current */}
+                      {!isVisibilityPlan && visitorCredits !== currentVisitorCredits && (
+                        <div className="flex items-center gap-3 mt-4 pt-4 border-t border-[#1a1a1a]">
+                          <Button
+                            onClick={handleCancelCreditChanges}
+                            variant="outline"
+                            size="sm"
+                            className="border-[#333] text-[#666] hover:text-white font-mono tracking-tight text-xs"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            onClick={handleUpdateCredits}
+                            disabled={isUpdatingCredits}
+                            size="sm"
+                            className="bg-white text-black hover:bg-[#f5f5f5] font-mono tracking-tight text-xs"
+                          >
+                            {isUpdatingCredits ? (
+                              <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                            ) : null}
+                            {visitorCredits > currentVisitorCredits ? 'Upgrade' : 'Downgrade'} Credits
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

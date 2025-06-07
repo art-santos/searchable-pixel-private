@@ -78,41 +78,65 @@ export default function AttributionPage() {
     
     try {
       if (timeframe === 'Last 24 hours') {
-        // Get hourly data for the most recent day with data (June 7, 2025)
+        // Get data for the last 24 hours from now
+        const endTime = new Date()
+        const startTime = new Date(endTime.getTime() - 24 * 60 * 60 * 1000)
+        
+        console.log('24h chart: Fetching data from', startTime.toISOString(), 'to', endTime.toISOString())
+        
         const { data: hourlyData, error } = await supabase
           .from('crawler_visits')
           .select('created_at')
           .eq('workspace_id', currentWorkspace.id)
-          .gte('created_at', '2025-06-07T00:00:00Z')
-          .lt('created_at', '2025-06-08T00:00:00Z')
+          .gte('created_at', startTime.toISOString())
+          .lt('created_at', endTime.toISOString())
         
         if (error) throw error
         
+        console.log('24h chart: Found', hourlyData?.length || 0, 'visits')
+        
         // Create hourly buckets for the last 24 hours
         const hourlyBuckets: Record<string, number> = {}
+        const hourLabels: Record<string, string> = {}
+        const currentHour = endTime.getHours()
         
-        // Initialize all hours with 0
-        for (let i = 0; i < 24; i++) {
-          const hourKey = i.toString().padStart(2, '0')
+        // Initialize 24 hours going backwards from current time
+        for (let i = 23; i >= 0; i--) {
+          const timeSlot = new Date(endTime.getTime() - i * 60 * 60 * 1000)
+          const hourKey = `hour_${23 - i}` // 0 = oldest, 23 = newest
+          const displayTime = timeSlot.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false 
+          }).slice(0, 5) // Get "HH:MM" format
+          
           hourlyBuckets[hourKey] = 0
+          hourLabels[hourKey] = displayTime
         }
         
-        // Count actual data
+        // Count actual data into the correct hour buckets
         hourlyData?.forEach(visit => {
-          const hour = new Date(visit.created_at).getUTCHours()
-          const hourKey = hour.toString().padStart(2, '0')
-          hourlyBuckets[hourKey]++
+          const visitTime = new Date(visit.created_at)
+          const hoursFromEnd = Math.floor((endTime.getTime() - visitTime.getTime()) / (60 * 60 * 1000))
+          
+          // Only count visits within the last 24 hours
+          if (hoursFromEnd >= 0 && hoursFromEnd < 24) {
+            const hourKey = `hour_${23 - hoursFromEnd}`
+            hourlyBuckets[hourKey]++
+          }
         })
         
-        // Convert to chart data
+        // Convert to chart data (chronological order)
         for (let i = 0; i < 24; i++) {
-          const hourKey = i.toString().padStart(2, '0')
+          const hourKey = `hour_${i}`
           data.push({
-            date: `${hourKey}:00`,
+            date: hourLabels[hourKey],
             crawls: hourlyBuckets[hourKey],
-            isCurrentPeriod: i === 23 // Last hour is current
+            isCurrentPeriod: i === 23 // Most recent hour is current
           })
         }
+        
+        console.log('24h chart: Generated', data.length, 'data points')
         
       } else if (timeframe === 'Last 7 days') {
         // Get daily data for June 1-7, 2025
@@ -199,11 +223,20 @@ export default function AttributionPage() {
       
     } catch (error) {
       console.error('Error fetching chart data:', error)
-      // Fallback to empty data
+      // Fallback to empty data with proper time labels
       if (timeframe === 'Last 24 hours') {
+        const endTime = new Date()
+        
         for (let i = 0; i < 24; i++) {
+          const timeSlot = new Date(endTime.getTime() - (23 - i) * 60 * 60 * 1000)
+          const displayTime = timeSlot.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false 
+          }).slice(0, 5)
+          
           data.push({
-            date: `${i.toString().padStart(2, '0')}:00`,
+            date: displayTime,
             crawls: 0,
             isCurrentPeriod: i === 23
           })
