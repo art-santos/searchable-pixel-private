@@ -22,7 +22,7 @@ export function PricingStep({ isAnnual, setIsAnnual, onSelectPlan }: PricingStep
       <div className="text-center space-y-2">
         <h2 className="text-xl font-medium text-white">Choose Your Plan</h2>
         <p className="text-sm text-[#888]">
-          Your analysis is complete! Select a plan to unlock your full visibility insights.
+          Track AI visibility. Attribute real traffic. Enrich what matters.
         </p>
       </div>
 
@@ -56,7 +56,7 @@ export function PricingStep({ isAnnual, setIsAnnual, onSelectPlan }: PricingStep
         {PRICING_PLANS.map((plan) => (
           <div
             key={plan.id}
-            className={`bg-[#1a1a1a] p-6 relative ${
+            className={`bg-[#1a1a1a] p-6 relative rounded-lg ${
               plan.isRecommended 
                 ? 'border-2 border-white' 
                 : 'border border-[#333]'
@@ -64,15 +64,18 @@ export function PricingStep({ isAnnual, setIsAnnual, onSelectPlan }: PricingStep
           >
             {plan.isRecommended && (
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <div className="bg-white text-black px-3 py-1 text-xs font-medium">
+                <div className="bg-white text-black px-3 py-1 text-xs font-medium rounded">
                   RECOMMENDED
                 </div>
               </div>
             )}
             
             <div className="text-center mb-6">
-              <h3 className="text-lg font-medium text-white mb-1">{plan.name}</h3>
-              <p className="text-xs text-[#888] mb-3">{plan.description}</p>
+              <div className="flex items-center justify-center gap-2 mb-2">
+                {plan.badge && <span className="text-lg">{plan.badge}</span>}
+                <h3 className="text-lg font-medium text-white">{plan.name}</h3>
+              </div>
+              <p className="text-xs text-[#888] mb-4 leading-relaxed">{plan.description}</p>
               <div className="text-3xl font-bold text-white mb-1">
                 ${isAnnual ? plan.annualPrice : plan.monthlyPrice}
               </div>
@@ -81,16 +84,22 @@ export function PricingStep({ isAnnual, setIsAnnual, onSelectPlan }: PricingStep
             
             <div className="space-y-3 mb-6">
               {plan.features.map((feature, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-white" />
-                  <span className="text-sm text-white">{feature}</span>
+                <div key={index} className="flex items-start gap-2">
+                  {feature.startsWith('❌') ? (
+                    <span className="text-red-400 text-sm mt-0.5">❌</span>
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4 text-white mt-0.5 flex-shrink-0" />
+                  )}
+                  <span className={`text-sm ${feature.startsWith('❌') ? 'text-red-400' : 'text-white'}`}>
+                    {feature.replace('❌ ', '')}
+                  </span>
                 </div>
               ))}
             </div>
 
             <Button
               onClick={onSelectPlan}
-              className={`w-full h-10 text-sm font-medium ${plan.buttonStyle}`}
+              className={`w-full h-10 text-sm font-medium rounded-lg ${plan.buttonStyle}`}
             >
               {plan.buttonText}
             </Button>

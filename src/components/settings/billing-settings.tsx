@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
-import { Loader2, Plus, Minus, Globe, Zap } from 'lucide-react'
+import { Loader2, Plus, Minus, Globe, Zap, X, CheckCircle2 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
-import { useWorkspace } from '@/contexts/WorkspaceContext'
+import { PRICING_PLANS } from '@/components/onboarding/utils/onboarding-constants'
 
 interface BillingSettingsProps {
   usageData: any
@@ -13,52 +14,9 @@ interface BillingSettingsProps {
   onRefreshUsage: () => Promise<void>
 }
 
-const pricingPlans = [
-  {
-    id: 'plus',
-    name: 'Plus',
-    price: 99,
-    annualPrice: 79,
-    features: [
-      '1 domain included',
-      '30-day crawler data',
-      '10 snapshots/month',
-      'AI attribution tracking',
-      'Basic insights',
-      '+$100/mo per extra domain'
-    ],
-    limits: {
-      crawlerLogs: 'Unlimited',
-      domains: 1,
-      retention: '30 days'
-    }
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: 299,
-    annualPrice: 239,
-    features: [
-      '1 domain included',
-      '90-day crawler data',
-      '50 snapshots/month',
-      '500 attribution credits',
-      'Slack alerts + API access',
-      'Advanced insights',
-      '+$100/mo per extra domain'
-    ],
-    limits: {
-      crawlerLogs: 'Unlimited',
-      domains: 1,
-      retention: '90 days'
-    },
-    recommended: true
-  }
-]
-
 export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: BillingSettingsProps) {
   const { user } = useAuth()
-  const [billingTab, setBillingTab] = useState<'plans' | 'usage' | 'settings'>('plans')
+  const [billingTab, setBillingTab] = useState<'overview' | 'usage' | 'settings'>('overview')
   const [currentPlan, setCurrentPlan] = useState('free')
   const [stripeCustomerId, setStripeCustomerId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -266,11 +224,11 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
       }
     }
     
-    const plan = pricingPlans.find(p => p.id === planType) || pricingPlans[1]
+    const plan = PRICING_PLANS.find(p => p.id === planType) || PRICING_PLANS[1]
     
     return {
       name: plan.name,
-      price: isAnnualBilling ? plan.annualPrice : plan.price,
+      price: isAnnualBilling ? plan.annualPrice : plan.monthlyPrice,
       period: 'month',
       nextBilling: new Date(usageData.billingPeriod.end).toLocaleDateString('en-US', { 
         year: 'numeric', 
@@ -281,6 +239,79 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
   }
 
   const billingPlan = getBillingData()
+
+  const handlePlanChange = async (planId: string) => {
+    if (planId === 'free') {
+      // Handle downgrade through Stripe Customer Portal
+      setShowPricingModal(false)
+      await handleManageSubscription()
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId,
+          isAnnual: isAnnualBilling,
+          customerId: stripeCustomerId,
+          customerEmail: user?.email || '',
+          addOns: {
+            extraDomains
+          }
+        })
+      })
+
+      const { url, error } = await response.json()
+      
+      if (error) {
+        console.error('Error creating checkout session:', error)
+        return
+      }
+
+      // Close modal before redirecting
+      setShowPricingModal(false)
+      
+      // Redirect to Stripe Checkout
+      window.location.href = url
+    } catch (error) {
+      console.error('Error:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleManageSubscription = async () => {
+    if (!stripeCustomerId) {
+      console.error('No Stripe customer ID found')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/stripe/create-portal-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId: stripeCustomerId })
+      })
+
+      const { url, error } = await response.json()
+      
+      if (error) {
+        console.error('Error creating portal session:', error)
+        return
+      }
+
+      // Redirect to Stripe Customer Portal
+      window.location.href = url
+    } catch (error) {
+      console.error('Error:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -588,6 +619,165 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
           </div>
         </div>
       )}
+
+      {/* Pricing Modal */}
+      <AnimatePresence>
+        {showPricingModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-6"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto"
+            >
+              {/* Modal Header */}
+              <div className="sticky top-0 bg-[#0a0a0a] border-b border-[#1a1a1a] p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-medium text-white">Choose Your Plan</h2>
+                    <p className="text-sm text-[#666] mt-1">Track AI visibility. Attribute real traffic. Enrich what matters.</p>
+                  </div>
+                  <button
+                    onClick={() => setShowPricingModal(false)}
+                    className="text-[#666] hover:text-white transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Billing Toggle */}
+                <div className="flex items-center justify-center mt-6">
+                  <span className={`text-sm mr-3 ${!isAnnualBilling ? 'text-white' : 'text-[#666]'}`}>Monthly</span>
+                  <button
+                    onClick={() => setIsAnnualBilling(!isAnnualBilling)}
+                    className={`relative w-12 h-6 rounded-full transition-colors ${
+                      isAnnualBilling ? 'bg-[#1a1a1a] border border-[#333]' : 'bg-[#333]'
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                        isAnnualBilling ? 'translate-x-7' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                  <span className={`text-sm ml-3 ${isAnnualBilling ? 'text-white' : 'text-[#666]'}`}>
+                    Annual
+                    <span className="text-xs text-[#888] ml-1">(save 20%)</span>
+                  </span>
+                </div>
+              </div>
+              
+              {/* Pricing Plans */}
+              <div className="p-6">
+                <div className="grid grid-cols-3 gap-6">
+                  {PRICING_PLANS.map((plan) => (
+                    <div
+                      key={plan.id}
+                      className={`relative bg-[#0c0c0c] border rounded-lg p-6 ${
+                        plan.isRecommended ? 'border-white' : 'border-[#333]'
+                      }`}
+                    >
+                      {plan.isRecommended && (
+                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                          <div className="bg-white text-black px-3 py-1 text-xs font-medium rounded">
+                            RECOMMENDED
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="text-center mb-6">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <h3 className="text-lg font-medium text-white">{plan.name}</h3>
+                        </div>
+                        <p className="text-xs text-[#666] mb-4 leading-relaxed">{plan.description}</p>
+                        <div className="flex items-end justify-center gap-1 mt-3">
+                          <span className="text-3xl font-semibold text-white">
+                            ${isAnnualBilling ? plan.annualPrice : plan.monthlyPrice}
+                          </span>
+                          <span className="text-[#666] mb-1">/month</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 mb-6">
+                        {plan.features.map((feature, index) => {
+                          // Check if this feature contains visitor credits numbers
+                          const hasCredits = feature.includes('3,750') || feature.includes('15,000')
+                          
+                          if (hasCredits) {
+                            const parts = feature.split(/(\d{1,2},\d{3})/)
+                            return (
+                              <div key={index} className="flex items-start gap-3">
+                                <div className="w-1.5 h-1.5 bg-[#666] rounded-full mt-2 flex-shrink-0" />
+                                <span className="text-sm text-[#ccc] flex items-center gap-1">
+                                  {parts.map((part, partIndex) => {
+                                    if (part.match(/\d{1,2},\d{3}/)) {
+                                      return (
+                                        <span key={partIndex} className="bg-[#1a1a1a] text-white px-2 py-1 text-xs rounded border border-[#333]">
+                                          {part}
+                                        </span>
+                                      )
+                                    }
+                                    return part
+                                  })}
+                                </span>
+                              </div>
+                            )
+                          }
+                          
+                          return (
+                            <div key={index} className="flex items-start gap-3">
+                              <div className="w-1.5 h-1.5 bg-[#666] rounded-full mt-2 flex-shrink-0" />
+                              <span className="text-sm text-[#ccc]">
+                                {feature}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      <Button
+                        onClick={() => handlePlanChange(plan.id)}
+                        className={`w-full h-10 text-sm font-medium ${
+                          currentPlan === plan.id
+                            ? 'bg-[#333] text-white cursor-default border border-[#555]'
+                            : plan.buttonStyle
+                        }`}
+                        disabled={currentPlan === plan.id || isLoading}
+                      >
+                        {isLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : currentPlan === plan.id ? (
+                          'Current Plan'
+                        ) : (
+                          plan.buttonText
+                        )}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Free Plan Option */}
+                {currentPlan !== 'free' && (
+                  <div className="text-center mt-8">
+                    <button
+                      onClick={() => handlePlanChange('free')}
+                      className="text-[#666] text-sm hover:text-white transition-colors"
+                      disabled={isLoading}
+                    >
+                      Continue with free tier (limited features)
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 } 

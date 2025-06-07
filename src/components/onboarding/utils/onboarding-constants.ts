@@ -38,50 +38,57 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     id: 'visibility',
     name: 'Visibility',
-    description: 'Track your AI presence',
-    monthlyPrice: 40,
-    annualPrice: 32,
+    description: 'Track AI visibility across all major models.',
+    monthlyPrice: 100,
+    annualPrice: 80,
     features: [
-      'Daily visibility scans',
-      'Citation analysis',
-      'Single domain tracking',
-      'Email alerts'
+      'Unlimited AI crawler tracking',
+      'Bot activity monitoring',
+      'Access to Snapshots',
+      'Basic analytics dashboard'
     ],
     buttonText: 'Start Visibility',
-    buttonStyle: 'bg-[#333] hover:bg-[#444] text-white'
+    buttonStyle: 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white border border-[#333]',
+    badge: '🟢',
+    badgeColor: 'bg-green-500'
   },
   {
     id: 'plus',
     name: 'Plus',
-    description: 'Scale your AI visibility',
+    description: 'Everything in Visibility, plus visitor identification.',
     monthlyPrice: 200,
     annualPrice: 160,
     features: [
-      'Daily MAX visibility scans',
-      '10 monthly AI articles',
-      'Competitor benchmarking',
-      'Keyword trend analysis',
-      'Priority support'
+      'Everything in Visibility',
+      'Includes 3,750 monthly visitor credits',
+      'Real-time visitor feed',
+      'Slack/email alerts',
+      'CSV export'
     ],
     isRecommended: true,
     buttonText: 'Start Plus',
-    buttonStyle: 'bg-[#1a1a1a] hover:bg-[#333] border border-[#333] hover:border-[#444] text-white'
+    buttonStyle: 'bg-white hover:bg-[#f5f5f5] text-black',
+    badge: '🟡',
+    badgeColor: 'bg-yellow-500'
   },
   {
     id: 'pro',
     name: 'Pro',
-    description: 'Full-stack AEO powerhouse',
-    monthlyPrice: 1000,
-    annualPrice: 800,
+    description: 'Everything in Visibility, plus advanced features.',
+    monthlyPrice: 800,
+    annualPrice: 640,
     features: [
-      'Everything in Plus',
-      '30 premium articles',
-      'Unlimited MAX scans',
-      'Multi-brand tracking',
-      'Up to 3 domains'
+      'Everything in Visibility',
+      'Includes 15,000 monthly visitor credits',
+      'Advanced filtering',
+      'Multi-domain support (3 included)',
+      'Lead scoring + routing',
+      'Priority support'
     ],
     buttonText: 'Start Pro',
-    buttonStyle: 'bg-[#333] hover:bg-[#444] text-white'
+    buttonStyle: 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white border border-[#333]',
+    badge: '🔴',
+    badgeColor: 'bg-red-500'
   }
 ]
 

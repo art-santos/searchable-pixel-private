@@ -101,12 +101,12 @@ export function SplitSidebar() {
             </SidebarMenuButton>
           </Link>
 
-          <Link href="/dashboard" className="w-full flex justify-center">
+          <Link href="/dashboard/attribution" className="w-full flex justify-center">
             <SidebarMenuButton 
               tooltip="AI Attribution"
               className={cn(
                 "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
-                pathname === "/attribution" 
+                pathname.startsWith("/dashboard/attribution") 
                   ? "bg-[#222222] text-white border border-[#333333] selected-button"
                   : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
               )}

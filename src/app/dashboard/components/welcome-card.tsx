@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { BarChart3, FileText, Bot, HelpCircle, Rocket, ArrowRight, Activity, Settings } from "lucide-react"
 import Link from "next/link"
+import { ConnectAnalyticsDialog } from "./connect-analytics-dialog"
 
 interface UserProfile {
   first_name: string | null
@@ -27,6 +28,7 @@ export function WelcomeCard() {
   const [loading, setLoading] = useState(true)
   const [crawlerStats, setCrawlerStats] = useState<CrawlerStats | null>(null)
   const [loadingStats, setLoadingStats] = useState(true)
+  const [showConnectDialog, setShowConnectDialog] = useState(false)
   const shouldReduceMotion = useReducedMotion()
   const controls = useAnimation()
   
@@ -248,12 +250,12 @@ export function WelcomeCard() {
                     variant="outline" 
                     size="sm"
                     className="bg-transparent border-[#333] text-[#888] hover:text-white hover:border-[#444] h-8 px-3 text-xs font-mono tracking-tight"
-                    asChild
+                    onClick={() => setShowConnectDialog(true)}
                   >
-                    <Link href="/dashboard" className="flex items-center gap-1">
+                    <div className="flex items-center gap-1">
                       Set Up Tracking
                       <ArrowRight className="w-3 h-3" />
-                    </Link>
+                    </div>
                   </Button>
                 </>
               )}
@@ -326,6 +328,11 @@ export function WelcomeCard() {
           </div>
         </motion.div>
       </CardContent>
+
+      <ConnectAnalyticsDialog 
+        open={showConnectDialog}
+        onOpenChange={setShowConnectDialog}
+      />
     </Card>
   )
 } 

@@ -75,4 +75,6 @@ export interface PricingPlan {
   isRecommended?: boolean
   buttonText: string
   buttonStyle: string
+  badge?: string
+  badgeColor?: string
 } 
