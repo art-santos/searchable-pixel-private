@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useSearchParams } from 'next/navigation'
-import { Globe, CreditCard, Key } from 'lucide-react'
+import { Globe, CreditCard, Key, Zap } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useWorkspace } from '@/contexts/WorkspaceContext'
 import { NotificationBannerList } from "@/components/ui/notification-banner"
@@ -11,6 +11,7 @@ import { GeneralSettings } from '@/components/settings/general-settings'
 import { APIKeysSettings } from '@/components/settings/api-keys-settings'
 import { BillingSettings } from '@/components/settings/billing-settings'
 import { SettingsModals } from '@/components/settings/settings-modals'
+import { TrackingPixelSetup } from '@/components/dashboard/tracking-pixel-setup'
 
 interface UsageData {
   billingPeriod: {
@@ -124,6 +125,7 @@ export default function SettingsPage() {
 
   const sections = [
     { id: 'general', label: 'General', icon: Globe },
+    { id: 'tracking-pixel', label: 'Tracking Pixel', icon: Zap },
     { id: 'api-keys', label: 'API Keys', icon: Key },
     { id: 'billing', label: 'Billing', icon: CreditCard }
   ]
@@ -185,6 +187,11 @@ export default function SettingsPage() {
                   usageData={usageData}
                   onRefreshUsage={fetchUsageData}
                 />
+              )}
+
+              {/* Tracking Pixel Setup */}
+              {activeSection === 'tracking-pixel' && (
+                <TrackingPixelSetup />
               )}
 
               {/* API Keys Settings */}

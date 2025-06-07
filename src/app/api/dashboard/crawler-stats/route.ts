@@ -8,7 +8,14 @@ export async function GET(request: Request) {
     // Get authenticated user (same pattern as other working endpoints)
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
+    console.log('🔍 [Crawler Stats API] Auth check:', {
+      hasUser: !!user,
+      userId: user?.id,
+      authError: authError?.message
+    })
+    
     if (authError || !user) {
+      console.error('🔍 [Crawler Stats API] Authentication failed:', authError)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -20,10 +27,11 @@ export async function GET(request: Request) {
     const workspaceId = url.searchParams.get('workspaceId') // Add workspace filtering
     
     if (!workspaceId) {
+      console.error('🔍 [Crawler Stats API] Missing workspace ID')
       return NextResponse.json({ error: 'Workspace ID required' }, { status: 400 })
     }
     
-    console.log(`[Crawler Stats API] Fetching crawler stats for workspace: ${workspaceId}, timeframe: ${timeframe}`)
+    console.log(`🔍 [Crawler Stats API] Fetching crawler stats for workspace: ${workspaceId}, timeframe: ${timeframe}`)
     
     // Calculate date range based on timeframe
     let startDate = new Date()
@@ -42,7 +50,7 @@ export async function GET(request: Request) {
         startDate.setHours(startDate.getHours() - 24)
     }
 
-    console.log(`[Crawler Stats API] Using date range from: ${startDate.toISOString()}`)
+    console.log(`🔍 [Crawler Stats API] Using date range from: ${startDate.toISOString()}`)
 
     // Check if user is admin and has payment method
     const { data: userProfile } = await supabase
@@ -51,12 +59,20 @@ export async function GET(request: Request) {
       .eq('id', userId)
       .single()
 
+    console.log('🔍 [Crawler Stats API] User profile:', {
+      profileFound: !!userProfile,
+      isAdmin: userProfile?.is_admin,
+      hasStripeId: !!userProfile?.stripe_customer_id,
+      subscriptionPlan: userProfile?.subscription_plan,
+      subscriptionStatus: userProfile?.subscription_status
+    })
+
     const isAdmin = userProfile?.is_admin || false
     // User has payment method if they have a Stripe customer ID AND active subscription
     const hasPaymentMethod = !!(userProfile?.stripe_customer_id && userProfile?.subscription_status === 'active')
     const subscriptionPlan = userProfile?.subscription_plan || 'free'
 
-    console.log(`[Crawler Stats API] User status - Admin: ${isAdmin}, Has Card: ${hasPaymentMethod}, Plan: ${subscriptionPlan}, Status: ${userProfile?.subscription_status}`)
+    console.log(`🔍 [Crawler Stats API] User status - Admin: ${isAdmin}, Has Card: ${hasPaymentMethod}, Plan: ${subscriptionPlan}, Status: ${userProfile?.subscription_status}`)
 
     // Build query with appropriate limits
     let query = supabase
@@ -66,6 +82,8 @@ export async function GET(request: Request) {
 
     // Apply strict workspace filtering - no fallback to prevent data bleeding
     query = query.eq('workspace_id', workspaceId)
+
+    console.log('🔍 [Crawler Stats API] Built query for crawler_visits table with workspace filter:', workspaceId)
 
     // Determine if we should apply limits
     let shouldLimitData = false
@@ -106,26 +124,31 @@ export async function GET(request: Request) {
       const { data: visits, error } = await query.limit(rowLimit)
       
       if (error) {
-        console.error('Error fetching crawler visits:', error)
+        console.error('🔍 [Crawler Stats API] Error fetching crawler visits:', error)
         return NextResponse.json({ error: 'Failed to fetch crawler data' }, { status: 500 })
       }
       
       allVisits = visits || []
-      console.log(`[Crawler Stats API] Limited user: Retrieved ${allVisits.length} visits (capped at ${rowLimit})`)
+      console.log(`🔍 [Crawler Stats API] Limited user: Retrieved ${allVisits.length} visits (capped at ${rowLimit})`)
+      console.log(`🔍 [Crawler Stats API] Sample visits:`, allVisits.slice(0, 3).map(v => ({ 
+        crawler_name: v.crawler_name, 
+        crawler_company: v.crawler_company, 
+        timestamp: v.timestamp 
+      })))
       
     } else {
       // Unlimited users (admin or has payment method): Fetch ALL data using pagination
-      console.log('[Crawler Stats API] Starting paginated fetch for unlimited user...')
+      console.log('🔍 [Crawler Stats API] Starting paginated fetch for unlimited user...')
       
       // First, get the total count
       const { count, error: countError } = await query.select('*', { count: 'exact', head: true })
       
       if (countError) {
-        console.error('Error getting count:', countError)
+        console.error('🔍 [Crawler Stats API] Error getting count:', countError)
         return NextResponse.json({ error: 'Failed to count visits' }, { status: 500 })
       }
       
-      console.log(`[Crawler Stats API] Total records to fetch: ${count}`)
+      console.log(`🔍 [Crawler Stats API] Total records to fetch: ${count}`)
       
       // Fetch data in chunks of 1000 (Supabase's limit)
       const chunkSize = 1000
@@ -138,21 +161,27 @@ export async function GET(request: Request) {
         const { data: chunk, error: chunkError } = await query.range(start, end)
         
         if (chunkError) {
-          console.error(`Error fetching chunk ${i + 1}/${totalChunks}:`, chunkError)
+          console.error(`🔍 [Crawler Stats API] Error fetching chunk ${i + 1}/${totalChunks}:`, chunkError)
           return NextResponse.json({ error: 'Failed to fetch all visits' }, { status: 500 })
         }
         
         allVisits = allVisits.concat(chunk || [])
-        console.log(`[Crawler Stats API] Fetched chunk ${i + 1}/${totalChunks}: ${chunk?.length} records (total so far: ${allVisits.length})`)
+        console.log(`🔍 [Crawler Stats API] Fetched chunk ${i + 1}/${totalChunks}: ${chunk?.length} records (total so far: ${allVisits.length})`)
       }
       
-      console.log(`[Crawler Stats API] ✅ Successfully fetched all ${allVisits.length} visits`)
+      console.log(`🔍 [Crawler Stats API] ✅ Successfully fetched all ${allVisits.length} visits`)
+      console.log(`🔍 [Crawler Stats API] Sample visits:`, allVisits.slice(0, 3).map(v => ({ 
+        crawler_name: v.crawler_name, 
+        crawler_company: v.crawler_company, 
+        timestamp: v.timestamp 
+      })))
     }
 
     const visits = allVisits
-    console.log(`[Crawler Stats API] Processing ${visits.length} visits for workspace ${workspaceId}`)
+    console.log(`🔍 [Crawler Stats API] Processing ${visits.length} visits for workspace ${workspaceId}`)
 
     if (!visits || visits.length === 0) {
+      console.log(`🔍 [Crawler Stats API] No visits found for workspace ${workspaceId} in timeframe ${timeframe}`)
       return NextResponse.json({
         crawlers: [],
         totalCrawls: 0
@@ -337,7 +366,7 @@ export async function GET(request: Request) {
     // Sort by crawls descending
     crawlerData.sort((a, b) => b.crawls - a.crawls)
 
-    console.log(`[Crawler Stats API] Returning ${totalVisits} total crawls across ${crawlerData.length} crawlers`)
+    console.log(`🔍 [Crawler Stats API] Returning ${totalVisits} total crawls across ${crawlerData.length} crawlers`)
 
     return NextResponse.json({
       crawlers: crawlerData,
@@ -345,7 +374,7 @@ export async function GET(request: Request) {
     })
 
   } catch (error) {
-    console.error('Error in crawler stats API:', error)
+    console.error('🔍 [Crawler Stats API] Error in crawler stats API:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 } 

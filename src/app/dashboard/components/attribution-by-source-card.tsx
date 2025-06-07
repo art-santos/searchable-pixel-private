@@ -103,9 +103,15 @@ export function AttributionBySourceCard() {
 
   const fetchCrawlerData = async () => {
     if (!currentWorkspace) {
+      console.log('🔍 [fetchCrawlerData] No currentWorkspace available')
       setIsLoading(false)
       return
     }
+
+    console.log('🔍 [fetchCrawlerData] Starting fetch with:', {
+      workspaceId: currentWorkspace.id,
+      timeframe: timeframe
+    })
 
     setIsLoading(true)
     setError(null)
@@ -122,24 +128,44 @@ export function AttributionBySourceCard() {
       const sessionResult = await supabase?.auth.getSession()
       const session = sessionResult?.data?.session
       
-      const response = await fetch(`/api/dashboard/crawler-stats?timeframe=${timeframeMap[timeframe]}&workspaceId=${currentWorkspace.id}`, {
+      console.log('🔍 [fetchCrawlerData] Session info:', {
+        hasSession: !!session,
+        hasAccessToken: !!session?.access_token,
+        userId: session?.user?.id
+      })
+      
+      const apiUrl = `/api/dashboard/crawler-stats?timeframe=${timeframeMap[timeframe]}&workspaceId=${currentWorkspace.id}`
+      console.log('🔍 [fetchCrawlerData] Making API call to:', apiUrl)
+      
+      const response = await fetch(apiUrl, {
         headers: {
           'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
         }
       })
       
+      console.log('🔍 [fetchCrawlerData] API response status:', response.status)
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch crawler data')
+        const errorText = await response.text()
+        console.error('🔍 [fetchCrawlerData] API error response:', errorText)
+        throw new Error(`API request failed: ${response.status} - ${errorText}`)
       }
       
       const data = await response.json()
+      console.log('🔍 [fetchCrawlerData] API response data:', {
+        totalCrawls: data.totalCrawls,
+        crawlersCount: data.crawlers?.length,
+        crawlers: data.crawlers?.map((c: any) => ({ name: c.name, company: c.company, crawls: c.crawls }))
+      })
       
       // Check if user has any data
       if (data.totalCrawls > 0) {
+        console.log('🔍 [fetchCrawlerData] Setting connected state with data')
         setIsConnected(true)
         setCrawlerData(data.crawlers)
         setTotalCrawls(data.totalCrawls)
       } else {
+        console.log('🔍 [fetchCrawlerData] No data found, showing empty state')
         setIsConnected(false)
         // Use placeholder data for empty state preview
         setCrawlerData([
@@ -186,11 +212,12 @@ export function AttributionBySourceCard() {
         ])
       }
     } catch (err) {
-      console.error('Error fetching crawler data:', err)
+      console.error('🔍 [fetchCrawlerData] Error:', err)
       setError('Failed to load crawler data')
       setIsConnected(false)
     } finally {
       setIsLoading(false)
+      console.log('🔍 [fetchCrawlerData] Fetch completed')
     }
   }
 
