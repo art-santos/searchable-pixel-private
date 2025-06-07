@@ -1,0 +1,419 @@
+/**
+ * Split Analytics Admin Styles
+ */
+
+/* Main admin container */
+.split-analytics-admin {
+    max-width: 1200px;
+    margin: 0;
+}
+
+/* Header section */
+.split-analytics-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    padding: 20px;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+.split-analytics-logo h2 {
+    margin: 0;
+    color: #1e1e1e;
+    font-size: 24px;
+}
+
+.split-analytics-logo .description {
+    margin: 5px 0 0 0;
+    color: #646970;
+}
+
+.split-analytics-status {
+    text-align: right;
+}
+
+.status-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.status-indicator.status-active {
+    background-color: #00a32a;
+}
+
+.status-indicator.status-inactive {
+    background-color: #dba617;
+}
+
+.split-analytics-status strong {
+    font-size: 16px;
+}
+
+.split-analytics-status p {
+    margin: 5px 0 0 0;
+    color: #646970;
+    font-size: 13px;
+}
+
+/* Overview stats */
+.split-analytics-overview {
+    background: #fff;
+    padding: 20px;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+.split-analytics-overview h3 {
+    margin: 0 0 15px 0;
+    color: #1e1e1e;
+}
+
+.split-analytics-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+}
+
+.stat-box {
+    text-align: center;
+    padding: 15px;
+    background: #f6f7f7;
+    border-radius: 4px;
+    border: 1px solid #dcdcde;
+}
+
+.stat-number {
+    font-size: 28px;
+    font-weight: bold;
+    color: #1e1e1e;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: #646970;
+    margin-top: 5px;
+}
+
+/* Main content layout */
+.split-analytics-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 20px;
+}
+
+.split-analytics-main {
+    background: #fff;
+    padding: 20px;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+.split-analytics-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Settings form */
+.split-analytics-actions {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #dcdcde;
+}
+
+/* Test connection result */
+#test_result {
+    min-height: 0;
+}
+
+#test_result.success {
+    color: #00a32a;
+    font-weight: 500;
+}
+
+#test_result.error {
+    color: #d63638;
+    font-weight: 500;
+}
+
+#test_result.loading {
+    color: #646970;
+}
+
+/* Sidebar widgets */
+.split-analytics-sidebar .postbox {
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+.split-analytics-sidebar .postbox h3 {
+    font-size: 14px;
+    margin: 0;
+    padding: 12px 16px;
+    background: #f6f7f7;
+    border-bottom: 1px solid #dcdcde;
+}
+
+.split-analytics-sidebar .postbox .inside {
+    padding: 16px;
+}
+
+/* Crawler list */
+.crawler-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.crawler-company {
+    margin-bottom: 15px;
+}
+
+.crawler-company:last-child {
+    margin-bottom: 0;
+}
+
+.crawler-company h4 {
+    margin: 0 0 8px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e1e1e;
+}
+
+.crawler-company ul {
+    margin: 0;
+    padding-left: 15px;
+}
+
+.crawler-company li {
+    margin: 3px 0;
+    font-size: 12px;
+    color: #646970;
+}
+
+/* Quick actions */
+.quick-actions {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.quick-actions li {
+    margin-bottom: 10px;
+}
+
+.quick-actions li:last-child {
+    margin-bottom: 0;
+}
+
+.quick-actions .button {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+}
+
+/* System info table */
+.system-info {
+    width: 100%;
+    font-size: 12px;
+}
+
+.system-info td {
+    padding: 5px 0;
+    border-bottom: 1px solid #f0f0f1;
+}
+
+.system-info td:first-child {
+    font-weight: 500;
+    color: #646970;
+    width: 40%;
+}
+
+.system-info td:last-child {
+    color: #1e1e1e;
+}
+
+/* Status indicators */
+.status-good {
+    color: #00a32a;
+    font-weight: 500;
+}
+
+.status-error {
+    color: #d63638;
+    font-weight: 500;
+}
+
+.status-warning {
+    color: #dba617;
+    font-weight: 500;
+}
+
+/* Recent crawlers table */
+.recent-crawlers {
+    width: 100%;
+    font-size: 12px;
+}
+
+.recent-crawlers td {
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f1;
+    vertical-align: top;
+}
+
+.recent-crawlers td:first-child {
+    width: 60%;
+}
+
+.recent-crawlers td:last-child {
+    text-align: right;
+    color: #646970;
+}
+
+/* Dashboard widget styles */
+.split-analytics-widget {
+    font-size: 13px;
+}
+
+.split-analytics-widget-error,
+.split-analytics-widget-empty {
+    text-align: center;
+    padding: 20px;
+    color: #646970;
+}
+
+.split-analytics-widget-error h4,
+.split-analytics-widget-empty h4 {
+    margin: 0 0 10px 0;
+    color: #1e1e1e;
+}
+
+.split-analytics-summary {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #dcdcde;
+}
+
+.split-analytics-summary h4 {
+    margin: 0;
+    font-size: 14px;
+    color: #1e1e1e;
+}
+
+.split-analytics-widget-footer {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #dcdcde;
+    text-align: center;
+}
+
+.split-analytics-widget-footer p {
+    margin: 0;
+    font-size: 12px;
+}
+
+.split-analytics-widget-footer a {
+    text-decoration: none;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .split-analytics-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 15px;
+    }
+    
+    .split-analytics-status {
+        text-align: center;
+    }
+    
+    .split-analytics-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .split-analytics-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .split-analytics-stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-box {
+        padding: 10px;
+    }
+    
+    .stat-number {
+        font-size: 24px;
+    }
+}
+
+/* Loading animation */
+.split-analytics-loading {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #0073aa;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Notices */
+.split-analytics-notice {
+    margin: 15px 0;
+    padding: 12px;
+    border-left: 4px solid #0073aa;
+    background: #f0f6fc;
+}
+
+.split-analytics-notice.success {
+    border-left-color: #00a32a;
+    background: #f0f6fc;
+}
+
+.split-analytics-notice.error {
+    border-left-color: #d63638;
+    background: #fcf0f1;
+}
+
+.split-analytics-notice.warning {
+    border-left-color: #dba617;
+    background: #fcf9e8;
+}
+
+/* Form enhancements */
+.split-analytics-field-group {
+    margin-bottom: 20px;
+}
+
+.split-analytics-field-group:last-child {
+    margin-bottom: 0;
+}
+
+/* Toggle button for API key */
+#toggle_api_key {
+    font-size: 12px;
+    height: 24px;
+    line-height: 22px;
+    padding: 0 8px;
+} 
