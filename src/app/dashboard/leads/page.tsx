@@ -6,7 +6,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useWorkspace } from '@/contexts/WorkspaceContext'
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, X, ExternalLink, Building, MapPin, Calendar, Mail, Linkedin } from 'lucide-react'
+import { Button } from "@/components/ui/button"
+import { Loader2, X, ExternalLink, Building, MapPin, Calendar, Mail, Linkedin, Copy, CheckCircle, AlertCircle, Code, Globe, Users, TrendingUp, Activity } from 'lucide-react'
 import Image from 'next/image'
 
 interface Lead {
@@ -38,6 +39,16 @@ interface LeadStats {
   topModelCount: number
   mostCrawledPage: string
   topTopic: string
+}
+
+interface ConnectionStatus {
+  connected: boolean
+  workspace: {
+    id: string
+    domain: string
+  }
+  lastConnection: string | null
+  eventCount: number
 }
 
 // Mock data for MVP - replace with actual API calls
@@ -127,24 +138,44 @@ const mockStats: LeadStats = {
 
 export default function LeadsPage() {
   const { user } = useAuth()
-  const { switching } = useWorkspace()
+  const { currentWorkspace, switching } = useWorkspace()
   const [leads, setLeads] = useState<Lead[]>([])
   const [stats, setStats] = useState<LeadStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus | null>(null)
+  const [checkingConnection, setCheckingConnection] = useState(false)
+  const [scriptCopied, setScriptCopied] = useState(false)
+  const [testingTracking, setTestingTracking] = useState(false)
 
-  // Fetch leads data
+  // Check connection status
+  const checkConnection = async () => {
+    if (!currentWorkspace?.id) return
+    
+    setCheckingConnection(true)
+    try {
+      const response = await fetch(`/api/tracking/status?workspace=${currentWorkspace.id}`)
+      if (response.ok) {
+        const data = await response.json()
+        setConnectionStatus(data)
+      }
+    } catch (error) {
+      console.error('Error checking connection:', error)
+    } finally {
+      setCheckingConnection(false)
+    }
+  }
+
+  // Fetch leads data (will only run if connected)
   const fetchLeads = async () => {
+    if (!connectionStatus?.connected) return
+    
     setLoading(true)
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/leads')
-      // const data = await response.json()
-      
-      // Using mock data for MVP
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API delay
-      setLeads(mockLeads)
-      setStats(mockStats)
+      // TODO: Replace with actual API call that fetches real visitor data
+      // For now, we'll show empty state until real data is flowing
+      setLeads([])
+      setStats(null)
     } catch (error) {
       console.error('Error fetching leads:', error)
     } finally {
@@ -152,11 +183,67 @@ export default function LeadsPage() {
     }
   }
 
+  // Copy tracking script to clipboard
+  const copyTrackingScript = async () => {
+    if (!currentWorkspace?.id) return
+    
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
+    const script = `<script src="${baseUrl.replace(/\/$/, '')}/api/tracking/script?workspace=${currentWorkspace.id}"></script>`
+    
+    try {
+      await navigator.clipboard.writeText(script)
+      setScriptCopied(true)
+      setTimeout(() => setScriptCopied(false), 2000)
+    } catch (error) {
+      console.error('Failed to copy script:', error)
+    }
+  }
+
+  // Test tracking without installing script
+  const testTrackingNow = async () => {
+    if (!currentWorkspace?.id) return
+    
+    setTestingTracking(true)
+    try {
+      const response = await fetch('/api/tracking/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          workspaceId: currentWorkspace.id
+        })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Test tracking successful:', data)
+        
+        // Refresh connection status after test
+        setTimeout(() => {
+          checkConnection()
+        }, 1000)
+      } else {
+        console.error('Test tracking failed:', await response.text())
+      }
+    } catch (error) {
+      console.error('Test tracking error:', error)
+    } finally {
+      setTestingTracking(false)
+    }
+  }
+
   useEffect(() => {
-    if (user) {
+    if (user && currentWorkspace) {
+      checkConnection()
+    }
+  }, [user, currentWorkspace])
+
+  useEffect(() => {
+    if (connectionStatus?.connected) {
       fetchLeads()
     }
-  }, [user])
+  }, [connectionStatus])
 
   // Format relative time
   const formatRelativeTime = (timestamp: string) => {
@@ -217,39 +304,14 @@ export default function LeadsPage() {
       <div className="mx-auto max-w-[1600px]">
         {/* Header */}
         <div className="mb-6 md:mb-8 pt-6">
-          <h1 className="text-xl md:text-2xl font-medium text-white mb-2">Leads</h1>
-          <p className="text-[#666] text-sm">AI-attributed visitors enriched from model crawls. Updated in real time.</p>
+          <h1 className="text-xl md:text-2xl font-medium text-white mb-2">Visitor Intelligence</h1>
+          <p className="text-[#666] text-sm">Identify and track companies visiting your website in real-time.</p>
         </div>
 
-        {/* Stats Bar */}
-        {stats && !loading && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-[#1a1a1a] border border-[#222222] rounded-lg px-4 py-3">
-              <div className="text-sm text-[#666] mb-1">Leads Today</div>
-              <div className="text-white font-medium">{stats.leadsToday}</div>
-            </div>
-            
-            <div className="bg-[#1a1a1a] border border-[#222222] rounded-lg px-4 py-3">
-              <div className="text-sm text-[#666] mb-1">Top Model</div>
-              <div className="text-white font-medium">{stats.topModel} ({stats.topModelCount})</div>
-            </div>
-            
-            <div className="bg-[#1a1a1a] border border-[#222222] rounded-lg px-4 py-3">
-              <div className="text-sm text-[#666] mb-1">Most Crawled Page</div>
-              <div className="text-white font-medium">{stats.mostCrawledPage}</div>
-            </div>
-            
-            <div className="bg-[#1a1a1a] border border-[#222222] rounded-lg px-4 py-3">
-              <div className="text-sm text-[#666] mb-1">Top Topic</div>
-              <div className="text-white font-medium">"{stats.topTopic}"</div>
-            </div>
-          </div>
-        )}
-
-        {/* Leads Table */}
-        <Card className="bg-[#1a1a1a] border-[#222222]">
-          <CardContent className="p-0">
-            {switching ? (
+        {/* Connection Status or Leads Content */}
+        {switching ? (
+          <Card className="bg-[#1a1a1a] border-[#222222]">
+            <CardContent className="p-0">
               <div className="flex items-center justify-center h-64">
                 <div className="text-center">
                   <div className="w-8 h-8 mx-auto mb-3">
@@ -263,298 +325,315 @@ export default function LeadsPage() {
                   <p className="text-[#666] text-sm">Switching workspace...</p>
                 </div>
               </div>
-            ) : loading ? (
-              <div className="flex items-center justify-center h-64">
-                <Loader2 className="w-6 h-6 animate-spin text-[#666]" />
+            </CardContent>
+          </Card>
+        ) : checkingConnection ? (
+          <Card className="bg-[#1a1a1a] border-[#222222]">
+            <CardContent className="flex items-center justify-center h-64">
+              <div className="text-center">
+                <Loader2 className="w-6 h-6 animate-spin text-[#666] mx-auto mb-3" />
+                <p className="text-[#666] text-sm">Checking connection status...</p>
               </div>
-            ) : leads.length === 0 ? (
-              /* Empty State */
-              <div className="flex items-center justify-center h-64">
-                <div className="text-center max-w-sm">
-                  <div className="w-16 h-16 mx-auto mb-4 grid grid-cols-4 gap-1 opacity-40">
-                    {[...Array(16)].map((_, i) => (
-                      <div key={i} className="w-3 h-3 bg-[#333] rounded-sm" />
-                    ))}
+            </CardContent>
+          </Card>
+        ) : !connectionStatus?.connected ? (
+          <Card className="bg-[#1a1a1a] border-[#222222]">
+            <CardContent className="p-8">
+              <div className="max-w-3xl mx-auto text-center">
+                {/* Header */}
+                <div className="mb-6">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-[#222222] rounded-full flex items-center justify-center">
+                    <Code className="w-8 h-8 text-[#666]" />
                   </div>
-                  <h4 className="text-white font-medium mb-2">No LLM leads yet</h4>
-                  <p className="text-[#666] text-sm leading-relaxed">
-                    Once AI models like ChatGPT or Perplexity visit your site and we detect attribution data, you'll see them here.
+                  <h2 className="text-2xl font-bold text-white mb-2">Connect Your Website</h2>
+                  <p className="text-[#666] text-lg">
+                    Add our tracking script to start identifying and enriching your website visitors
                   </p>
                 </div>
-              </div>
-            ) : (
-              /* Leads Table */
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="border-b border-[#222222]">
-                    <tr>
-                      <th className="text-left py-3 px-4 text-xs font-medium text-[#666] uppercase tracking-wider">Time</th>
-                      <th className="text-left py-3 px-4 text-xs font-medium text-[#666] uppercase tracking-wider">Model</th>
-                      <th className="text-left py-3 px-4 text-xs font-medium text-[#666] uppercase tracking-wider">Visitor</th>
-                      <th className="text-left py-3 px-4 text-xs font-medium text-[#666] uppercase tracking-wider">Page</th>
-                      <th className="text-left py-3 px-4 text-xs font-medium text-[#666] uppercase tracking-wider">Query</th>
-                      <th className="text-left py-3 px-4 text-xs font-medium text-[#666] uppercase tracking-wider">Confidence</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {leads.map((lead, index) => {
-                      const modelInfo = getModelInfo(lead.model)
-                      const confidenceBadge = getConfidenceBadge(lead.confidence)
+
+                {/* Benefits */}
+                <div className="grid md:grid-cols-3 gap-6 mb-8">
+                  <div className="text-center">
+                    <div className="w-12 h-12 mx-auto mb-3 bg-green-500/10 rounded-lg flex items-center justify-center">
+                      <Users className="w-6 h-6 text-green-400" />
+                    </div>
+                    <h3 className="text-white font-medium mb-1">Visitor Identification</h3>
+                    <p className="text-[#666] text-sm">Identify companies visiting your website in real-time</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-12 h-12 mx-auto mb-3 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                      <Building className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <h3 className="text-white font-medium mb-1">Company Enrichment</h3>
+                    <p className="text-[#666] text-sm">Get detailed company data and contact information</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-12 h-12 mx-auto mb-3 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                      <TrendingUp className="w-6 h-6 text-purple-400" />
+                    </div>
+                    <h3 className="text-white font-medium mb-1">Lead Intelligence</h3>
+                    <p className="text-[#666] text-sm">Track visitor behavior and engagement patterns</p>
+                  </div>
+                </div>
+
+                {/* Installation Instructions */}
+                <div className="bg-[#0c0c0c] border border-[#333333] rounded-lg p-6 mb-6">
+                  <div className="text-left">
+                    <h3 className="text-white font-medium mb-4 flex items-center gap-2">
+                      <span className="bg-green-500/20 text-green-400 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold">1</span>
+                      Copy the tracking script
+                    </h3>
+                    <div className="bg-[#1a1a1a] border border-[#333333] rounded p-4 mb-4 overflow-x-auto">
+                      <pre className="text-green-400 text-sm font-mono whitespace-pre-wrap break-all">
+                        {currentWorkspace ? 
+                          `<script src="${(process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '')}/api/tracking/script?workspace=${currentWorkspace.id}"></script>`
+                          : 'Loading...'
+                        }
+                      </pre>
+                    </div>
+                    <Button 
+                      onClick={copyTrackingScript}
+                      disabled={!currentWorkspace}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {scriptCopied ? (
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copy Script
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="bg-[#0c0c0c] border border-[#333333] rounded-lg p-6 mb-6">
+                  <div className="text-left">
+                    <h3 className="text-white font-medium mb-4 flex items-center gap-2">
+                      <span className="bg-green-500/20 text-green-400 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold">2</span>
+                      Add to your website
+                    </h3>
+                    <p className="text-[#666] mb-4">
+                      Paste the script into the <code className="bg-[#1a1a1a] px-2 py-1 rounded text-green-400">&lt;head&gt;</code> section of your website, just before the closing <code className="bg-[#1a1a1a] px-2 py-1 rounded text-green-400">&lt;/head&gt;</code> tag.
+                    </p>
+                    <div className="text-[#666] text-sm space-y-2">
+                      <p><strong className="text-white">For HTML sites:</strong> Add directly to your HTML template</p>
+                      <p><strong className="text-white">For WordPress:</strong> Use a header/footer plugin or theme editor</p>
+                      <p><strong className="text-white">For React/Next.js:</strong> Add to your _document.js or layout component</p>
+                      <p><strong className="text-white">For other platforms:</strong> Check your platform's documentation for adding custom scripts</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-[#0c0c0c] border border-[#333333] rounded-lg p-6">
+                  <div className="text-left">
+                    <h3 className="text-white font-medium mb-4 flex items-center gap-2">
+                      <span className="bg-green-500/20 text-green-400 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold">3</span>
+                      Test or verify connection
+                    </h3>
+                    <p className="text-[#666] mb-4">
+                      You can test the tracking system directly from the dashboard, or after installing the script, visit your website to verify it's working.
+                    </p>
+                    
+                    <div className="space-y-3">
+                      {/* Test Now Button */}
+                      <Button 
+                        onClick={testTrackingNow}
+                        disabled={testingTracking}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        {testingTracking ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Testing...
+                          </>
+                        ) : (
+                          <>
+                            <Activity className="w-4 h-4 mr-2" />
+                            Test Tracking Now
+                          </>
+                        )}
+                      </Button>
                       
-                      return (
-                        <motion.tr
-                          key={lead.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          className="border-b border-[#222222] hover:bg-[#1f2029] transition-colors cursor-pointer"
-                          onClick={() => handleLeadClick(lead)}
-                        >
-                          <td className="py-3 px-4 text-sm text-[#666]">
-                            {formatRelativeTime(lead.timestamp)}
-                          </td>
-                          
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-2">
-                              <div className="w-5 h-5 flex-shrink-0">
-                                <Image
-                                  src={modelInfo.logo}
-                                  alt={modelInfo.name}
-                                  width={20}
-                                  height={20}
-                                  className="w-full h-full object-contain"
-                                />
-                              </div>
-                              <span className="text-sm text-white">{modelInfo.name}</span>
-                            </div>
-                          </td>
-                          
-                          <td className="py-3 px-4">
-                            <div>
-                              <div className="text-sm text-white font-medium">
-                                {lead.fullName || 'Anonymous'}
-                              </div>
-                              {lead.company && (
-                                <div className="text-xs text-[#666]">{lead.company}</div>
-                              )}
-                            </div>
-                          </td>
-                          
-                          <td className="py-3 px-4 text-sm text-[#888] font-mono">
-                            {lead.pageVisited}
-                          </td>
-                          
-                          <td className="py-3 px-4 text-sm text-[#d1d1d6] max-w-xs">
-                            <div className="truncate">
-                              {lead.inferredQuery || '—'}
-                            </div>
-                          </td>
-                          
-                          <td className="py-3 px-4">
-                            <Badge className={`${confidenceBadge.bg} ${confidenceBadge.text} border-none capitalize`}>
-                              {lead.confidence}
-                            </Badge>
-                          </td>
-                        </motion.tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
+                      {/* Check Connection Button */}
+                      <Button 
+                        onClick={checkConnection}
+                        disabled={checkingConnection}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        {checkingConnection ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Checking...
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircle className="w-4 h-4 mr-2" />
+                            Check Connection Status
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    
+                    <div className="mt-4 text-sm text-[#666]">
+                      <p><strong className="text-white">Test Now:</strong> Simulates a visitor to test the system</p>
+                      <p><strong className="text-white">Check Status:</strong> Verifies if real tracking is working</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          /* Connected State - Show Dashboard */
+          <>
+            {/* Connection Status Banner */}
+            <div className="mb-6 bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="w-5 h-5 text-green-400" />
+                <div className="flex-1">
+                  <p className="text-green-400 font-medium">Tracking Connected</p>
+                  <p className="text-green-300/70 text-sm">
+                    {connectionStatus.eventCount} events tracked • Last activity: {connectionStatus.lastConnection ? formatRelativeTime(connectionStatus.lastConnection) : 'Never'}
+                  </p>
+                </div>
+                <Button 
+                  onClick={checkConnection}
+                  disabled={checkingConnection}
+                  variant="outline"
+                  size="sm"
+                  className="border-green-500/30 text-green-400 hover:bg-green-500/10"
+                >
+                  {checkingConnection ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Refresh'}
+                </Button>
+              </div>
+            </div>
+
+            {/* Stats Bar */}
+            {stats && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-[#1a1a1a] border border-[#222222] rounded-lg px-4 py-3">
+                  <div className="text-sm text-[#666] mb-1">Visitors Today</div>
+                  <div className="text-white font-medium">{stats.leadsToday}</div>
+                </div>
+                
+                <div className="bg-[#1a1a1a] border border-[#222222] rounded-lg px-4 py-3">
+                  <div className="text-sm text-[#666] mb-1">Top Company</div>
+                  <div className="text-white font-medium">{stats.topModel}</div>
+                </div>
+                
+                <div className="bg-[#1a1a1a] border border-[#222222] rounded-lg px-4 py-3">
+                  <div className="text-sm text-[#666] mb-1">Most Visited Page</div>
+                  <div className="text-white font-medium">{stats.mostCrawledPage}</div>
+                </div>
+                
+                <div className="bg-[#1a1a1a] border border-[#222222] rounded-lg px-4 py-3">
+                  <div className="text-sm text-[#666] mb-1">Active Sessions</div>
+                  <div className="text-white font-medium">Live</div>
+                </div>
               </div>
             )}
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* Lead Detail Drawer */}
-      <AnimatePresence>
-        {selectedLead && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
-              onClick={handleCloseDrawer}
-            />
-            
-            {/* Drawer */}
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed right-0 top-0 h-full w-96 bg-[#1a1a1a] border-l border-[#222222] z-50 overflow-y-auto"
-            >
-              {/* Header */}
-              <div className="p-6 border-b border-[#222222]">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h2 className="text-lg font-medium text-white mb-1">
-                      {selectedLead.fullName || 'Anonymous Visitor'}
-                    </h2>
-                    <p className="text-sm text-[#666]">
-                      {formatRelativeTime(selectedLead.timestamp)}
-                    </p>
+            {/* Leads Table */}
+            <Card className="bg-[#1a1a1a] border-[#222222]">
+              <CardContent className="p-0">
+                {loading ? (
+                  <div className="flex items-center justify-center h-64">
+                    <Loader2 className="w-6 h-6 animate-spin text-[#666]" />
                   </div>
-                  <button
-                    onClick={handleCloseDrawer}
-                    className="p-2 hover:bg-[#222222] rounded-lg transition-colors"
-                  >
-                    <X className="w-4 h-4 text-[#666]" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Content */}
-              <div className="p-6 space-y-6">
-                {/* Model & Query */}
-                <div>
-                  <h3 className="text-sm font-medium text-white mb-3">Detection Info</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-6 h-6">
-                        <Image
-                          src={getModelInfo(selectedLead.model).logo}
-                          alt={getModelInfo(selectedLead.model).name}
-                          width={24}
-                          height={24}
-                          className="w-full h-full object-contain"
-                        />
+                ) : leads.length === 0 ? (
+                  /* Empty State */
+                  <div className="flex items-center justify-center h-64">
+                    <div className="text-center max-w-sm">
+                      <div className="w-16 h-16 mx-auto mb-4 grid grid-cols-4 gap-1 opacity-40">
+                        {[...Array(16)].map((_, i) => (
+                          <div key={i} className="w-3 h-3 bg-[#333] rounded-sm" />
+                        ))}
                       </div>
-                      <div>
-                        <div className="text-sm text-white">{getModelInfo(selectedLead.model).name}</div>
-                        <div className="text-xs text-[#666]">AI Model</div>
-                      </div>
-                    </div>
-                    
-                    {selectedLead.inferredQuery && (
-                      <div>
-                        <div className="text-xs text-[#666] mb-1">Inferred Query</div>
-                        <div className="text-sm text-[#d1d1d6]">"{selectedLead.inferredQuery}"</div>
-                      </div>
-                    )}
-                    
-                    <div>
-                      <div className="text-xs text-[#666] mb-1">Page Visited</div>
-                      <div className="text-sm text-white font-mono">{selectedLead.pageVisited}</div>
-                    </div>
-                    
-                    <div>
-                      <div className="text-xs text-[#666] mb-1">Confidence</div>
-                      <Badge className={`${getConfidenceBadge(selectedLead.confidence).bg} ${getConfidenceBadge(selectedLead.confidence).text} border-none capitalize`}>
-                        {selectedLead.confidence}
-                      </Badge>
+                      <h4 className="text-white font-medium mb-2">No visitors yet</h4>
+                      <p className="text-[#666] text-sm leading-relaxed">
+                        Visitors will appear here once your tracking script starts collecting data from your website.
+                      </p>
                     </div>
                   </div>
-                </div>
-
-                {/* Contact Info */}
-                <div>
-                  <h3 className="text-sm font-medium text-white mb-3">Contact Information</h3>
-                  <div className="space-y-3">
-                    {selectedLead.email && (
-                      <div className="flex items-center gap-3">
-                        <Mail className="w-4 h-4 text-[#666]" />
-                        <div>
-                          <div className="text-sm text-white">{selectedLead.email}</div>
-                          <div className="text-xs text-[#666]">Email</div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {selectedLead.linkedinUrl && (
-                      <div className="flex items-center gap-3">
-                        <Linkedin className="w-4 h-4 text-[#666]" />
-                        <div className="flex-1">
-                          <a 
-                            href={selectedLead.linkedinUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-green-400 hover:text-green-300 transition-colors flex items-center gap-1"
-                          >
-                            LinkedIn Profile
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                          <div className="text-xs text-[#666]">Social</div>
-                        </div>
-                      </div>
-                    )}
+                ) : (
+                  /* Leads Table */
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="border-b border-[#222222]">
+                        <tr>
+                          <th className="text-left py-3 px-4 text-xs font-medium text-[#666] uppercase tracking-wider">Time</th>
+                          <th className="text-left py-3 px-4 text-xs font-medium text-[#666] uppercase tracking-wider">Location</th>
+                          <th className="text-left py-3 px-4 text-xs font-medium text-[#666] uppercase tracking-wider">Company</th>
+                          <th className="text-left py-3 px-4 text-xs font-medium text-[#666] uppercase tracking-wider">Page</th>
+                          <th className="text-left py-3 px-4 text-xs font-medium text-[#666] uppercase tracking-wider">Device</th>
+                          <th className="text-left py-3 px-4 text-xs font-medium text-[#666] uppercase tracking-wider">IP Address</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {leads.map((lead, index) => {
+                          return (
+                            <motion.tr
+                              key={lead.id}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: index * 0.1 }}
+                              className="border-b border-[#222222] hover:bg-[#1f2029] transition-colors cursor-pointer"
+                              onClick={() => handleLeadClick(lead)}
+                            >
+                              <td className="py-3 px-4 text-sm text-[#666]">
+                                {formatRelativeTime(lead.timestamp)}
+                              </td>
+                              
+                              <td className="py-3 px-4">
+                                <div className="text-sm text-white">
+                                  {lead.location || 'Unknown'}
+                                </div>
+                              </td>
+                              
+                              <td className="py-3 px-4">
+                                <div>
+                                  <div className="text-sm text-white font-medium">
+                                    {lead.company || 'Unknown Company'}
+                                  </div>
+                                  {lead.confidence && (
+                                    <div className="text-xs text-[#666]">{lead.confidence} confidence</div>
+                                  )}
+                                </div>
+                              </td>
+                              
+                              <td className="py-3 px-4 text-sm text-[#888] font-mono">
+                                {lead.pageVisited}
+                              </td>
+                              
+                              <td className="py-3 px-4 text-sm text-[#d1d1d6]">
+                                <div className="text-sm text-white">
+                                  Desktop
+                                </div>
+                              </td>
+                              
+                              <td className="py-3 px-4">
+                                <code className="text-xs text-[#666] font-mono">
+                                  {lead.ipAddress || 'Unknown'}
+                                </code>
+                              </td>
+                            </motion.tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
                   </div>
-                </div>
-
-                {/* Professional Info */}
-                <div>
-                  <h3 className="text-sm font-medium text-white mb-3">Professional Information</h3>
-                  <div className="space-y-3">
-                    {selectedLead.company && (
-                      <div className="flex items-center gap-3">
-                        <Building className="w-4 h-4 text-[#666]" />
-                        <div>
-                          <div className="text-sm text-white">{selectedLead.company}</div>
-                          <div className="text-xs text-[#666]">Company</div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {selectedLead.jobTitle && (
-                      <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 text-[#666] flex items-center justify-center">
-                          <div className="w-2 h-2 bg-[#666] rounded-full"></div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-white">{selectedLead.jobTitle}</div>
-                          <div className="text-xs text-[#666]">Role</div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {selectedLead.location && (
-                      <div className="flex items-center gap-3">
-                        <MapPin className="w-4 h-4 text-[#666]" />
-                        <div>
-                          <div className="text-sm text-white">{selectedLead.location}</div>
-                          <div className="text-xs text-[#666]">Location</div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Session Data */}
-                <div>
-                  <h3 className="text-sm font-medium text-white mb-3">Session Details</h3>
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-4">
-                      {selectedLead.sessionDuration && (
-                        <div>
-                          <div className="text-xs text-[#666] mb-1">Duration</div>
-                          <div className="text-sm text-white">{Math.floor(selectedLead.sessionDuration / 60)}m {selectedLead.sessionDuration % 60}s</div>
-                        </div>
-                      )}
-                      
-                      {selectedLead.pagesViewed && (
-                        <div>
-                          <div className="text-xs text-[#666] mb-1">Pages</div>
-                          <div className="text-sm text-white">{selectedLead.pagesViewed}</div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {selectedLead.ipAddress && (
-                      <div>
-                        <div className="text-xs text-[#666] mb-1">IP Address</div>
-                        <div className="text-sm text-white font-mono">{selectedLead.ipAddress}</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+                )}
+              </CardContent>
+            </Card>
           </>
         )}
-      </AnimatePresence>
+      </div>
 
       {/* Workspace Switching Overlay */}
       {switching && (
