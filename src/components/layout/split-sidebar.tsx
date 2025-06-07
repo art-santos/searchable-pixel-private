@@ -13,6 +13,7 @@ import {
   KeyIcon,
   HelpCircleIcon,
   Users,
+  Camera,
 } from "lucide-react"
 import Image from 'next/image'
 
@@ -87,6 +88,20 @@ export function SplitSidebar() {
             </SidebarMenuButton>
           </Link>
 
+          <Link href="/dashboard/attribution" className="w-full flex justify-center">
+            <SidebarMenuButton 
+              tooltip="AI Attribution"
+              className={cn(
+                "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
+                pathname.startsWith("/dashboard/attribution") 
+                  ? "bg-[#222222] text-white border border-[#333333] selected-button"
+                  : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
+              )}
+            >
+              <Activity className="h-6 w-6 icon-rotate" />
+            </SidebarMenuButton>
+          </Link>
+
           <Link href="/dashboard/leads" className="w-full flex justify-center">
             <SidebarMenuButton 
               tooltip="Leads"
@@ -101,17 +116,17 @@ export function SplitSidebar() {
             </SidebarMenuButton>
           </Link>
 
-          <Link href="/dashboard/attribution" className="w-full flex justify-center">
+          <Link href="/dashboard/snapshot" className="w-full flex justify-center">
             <SidebarMenuButton 
-              tooltip="AI Attribution"
+              tooltip="Snapshot"
               className={cn(
                 "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
-                pathname.startsWith("/dashboard/attribution") 
+                pathname === "/dashboard/snapshot" 
                   ? "bg-[#222222] text-white border border-[#333333] selected-button"
                   : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
               )}
             >
-              <Activity className="h-6 w-6 icon-rotate" />
+              <Camera className="h-6 w-6 icon-rotate" />
             </SidebarMenuButton>
           </Link>
         </SidebarContent>
