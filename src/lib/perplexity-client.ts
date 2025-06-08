@@ -25,6 +25,7 @@ interface VisibilityTest {
   citedDomains: string[];
   competitors: string[]; // Domain names for backward compatibility
   competitorNames: string[]; // Actual product/tool names
+  competitorDomains: string[]; // Mapped domains for competitor products
   citationSnippet: string | null; // How the target is mentioned
   reasoning: string;
   topCitations: any[]; // Only top 5, not full response
@@ -136,7 +137,8 @@ export async function testVisibilityWithPerplexity(
       citedDomains: [],
       competitors: [],
       competitorNames: [],
-      citationSnippet: null,
+      competitorDomains: [],
+      citationSnippet: 'Search failed - no AI response available',
       reasoning: 'Search failed after retries',
       topCitations: [],
       apiCallDuration: duration,
@@ -145,6 +147,7 @@ export async function testVisibilityWithPerplexity(
   }
 
   const citations = searchResult.citations || [];
+  const aiAnswer = searchResult.answer || '';
   const lowerTarget = targetDomain.toLowerCase();
 
   // Helper function to safely extract and normalize hostname
@@ -169,10 +172,33 @@ export async function testVisibilityWithPerplexity(
   // Debug: Log first few citations
   console.log(`🔍 First 3 citations:`, citations.slice(0, 3).map(c => ({ url: c.url, title: c.title })));
 
-  // === PART 1: CITATION ANALYSIS (how is target mentioned?) ===
+  // === PART 1: CITATION SNIPPET CAPTURE (for all questions) ===
   
-  // Get the AI answer content for analysis
-  const aiAnswer = citations[0]?.snippet || ''; // AI answer is stored as snippet
+  // ALWAYS capture citation snippet from AI answer (not just when target found)
+  let citationSnippet = null;
+  if (aiAnswer && aiAnswer.length > 0) {
+    // Extract first 1-2 sentences or first 200 characters
+    const sentences = aiAnswer.split(/[.!?]+/).filter(s => s.trim().length > 20);
+    if (sentences.length >= 2) {
+      citationSnippet = (sentences[0] + '.' + sentences[1] + '.').trim();
+    } else if (sentences.length >= 1) {
+      citationSnippet = (sentences[0] + '.').trim();
+    } else {
+      // Fallback to first 200 characters
+      citationSnippet = aiAnswer.substring(0, 200).trim() + '...';
+    }
+    
+    // Ensure reasonable length (50-300 characters)
+    if (citationSnippet.length > 300) {
+      citationSnippet = citationSnippet.substring(0, 297) + '...';
+    }
+    
+    console.log(`📄 Captured citation snippet (${citationSnippet.length} chars):`, citationSnippet.substring(0, 100) + '...');
+  } else {
+    citationSnippet = 'No AI response content available';
+  }
+
+  // === PART 2: TARGET VISIBILITY ANALYSIS ===
   
   // Check if target brand is mentioned in the AI answer
   const targetBrandLower = targetBrandName.toLowerCase();
@@ -181,29 +207,11 @@ export async function testVisibilityWithPerplexity(
   
   let targetFound = false;
   let targetPosition = null;
-  let citationSnippet = null;
   
   if (brandMentionIndex !== -1) {
     targetFound = true;
     targetPosition = 1; // AI mentioned the brand in its answer
-    
-    // Extract the paragraph or section that mentions the target
-    const sentences = aiAnswer.split(/[.!?]+/);
-    const mentionSentence = sentences.find(sentence => 
-      sentence.toLowerCase().includes(targetBrandLower)
-    );
-    
-    if (mentionSentence) {
-      citationSnippet = mentionSentence.trim() + '.';
-    } else {
-      // Fallback: extract 200 characters around the mention
-      const start = Math.max(0, brandMentionIndex - 100);
-      const end = Math.min(aiAnswer.length, brandMentionIndex + 200);
-      citationSnippet = aiAnswer.substring(start, end).trim();
-    }
-    
-    console.log(`🎯 Target "${targetBrandName}" found in AI answer`);
-    console.log(`📄 Citation snippet captured:`, citationSnippet.substring(0, 150) + '...');
+    console.log(`🎯 Target "${targetBrandName}" found in AI answer at position 1`);
   } else {
     // Check if any search result URLs contain the target domain
     for (let i = 0; i < citations.length; i++) {
@@ -213,48 +221,52 @@ export async function testVisibilityWithPerplexity(
       if (hostname && (hostname.includes(normalizedTarget) || normalizedTarget.includes(hostname))) {
         targetFound = true;
         targetPosition = i + 1;
-        citationSnippet = `Search result from ${hostname}: ${citation.title}`;
         console.log(`🎯 Target found via domain match at position ${targetPosition}: ${hostname}`);
         break;
       }
     }
   }
 
-  // === PART 2: COMPETITOR EXTRACTION (what tools are recommended?) ===
+  // === PART 3: COMPETITOR EXTRACTION AND DOMAIN MAPPING ===
   
-  // Use the AI answer for competitor analysis (this is where the actual content is)
-  console.log(`📝 Using AI answer for competitor analysis`);
-  console.log(`📝 AI answer length:`, aiAnswer.length);
+  console.log(`📝 AI answer length: ${aiAnswer.length} chars`);
   console.log(`📝 AI answer preview:`, aiAnswer.substring(0, 300) + '...');
 
-  // Extract competitor product names from the AI answer
-  const competitorNames = aiAnswer.length > 0 
+  // Extract competitor product names from the AI answer (limit to top 5)
+  const rawCompetitorNames = aiAnswer.length > 0 
     ? await extractCompetitorsFromSnippets([aiAnswer], targetBrandName)
     : [];
   
-  // === PART 3: DOMAIN ANALYSIS (for backward compatibility) ===
+  const competitorNames = rawCompetitorNames.slice(0, 5); // Limit to top 5
+  console.log(`🏆 Limited competitor names to top 5:`, competitorNames);
+
+  // === PART 4: COMPETITOR DOMAIN MAPPING ===
   
-  // Extract all domains for legacy compatibility
-  const allDomains = citations
+  // Map competitor names to their likely domains
+  const competitorDomains = await mapCompetitorsToDomains(competitorNames);
+  console.log(`🌐 Mapped competitor domains:`, competitorDomains);
+
+  // === PART 5: CITED DOMAINS (separate from competitors) ===
+  
+  // Extract all domains from citations (this is separate from competitor domains)
+  const citedDomains = citations
     .map((citation: any) => extractHostname(citation.url))
     .filter(Boolean);
 
-  console.log(`🌐 Extracted domains:`, allDomains);
+  console.log(`📚 Cited domains from search results:`, citedDomains);
 
-  // Extract competitor domains (not matching target)
-  const competitors = allDomains
+  // Legacy competitors field (domains that cited but aren't the target)
+  const legacyCompetitors = citedDomains
     .filter((domain: string) => {
       return !domain.includes(normalizedTarget) && !normalizedTarget.includes(domain);
     })
     .slice(0, 5);
 
-  const citedDomains = allDomains;
-
   // Store only top 5 citations to save space
   const topCitations = citations.slice(0, 5).map((citation: any) => ({
     url: citation.url,
     title: citation.title?.substring(0, 200), // Truncate titles
-    snippet: citation.snippet?.substring(0, 300), // Include snippet
+    snippet: citationSnippet, // Use the captured snippet
     rank: citation.rank
   }));
 
@@ -262,12 +274,13 @@ export async function testVisibilityWithPerplexity(
     targetFound,
     position: targetPosition,
     citedDomains,
-    competitors, // Domain-based competitors (legacy)
-    competitorNames, // AI-extracted product names (new)
-    citationSnippet,
+    competitors: legacyCompetitors, // Legacy field (cited domains minus target)
+    competitorNames, // AI-extracted product names (limited to 5)
+    competitorDomains, // Mapped domains for competitor products
+    citationSnippet, // Always captured now
     reasoning: targetFound
       ? `Target found at position ${targetPosition}. Citation: "${citationSnippet?.substring(0, 100)}..."`
-      : `Target not found in search results. AI identified competitors: ${competitorNames.slice(0, 3).join(', ')}`,
+      : `Target not found. AI mentioned competitors: ${competitorNames.slice(0, 3).join(', ')}. Top cited domains: ${citedDomains.slice(0, 3).join(', ')}`,
     topCitations,
     apiCallDuration: duration,
     retryCount
@@ -275,6 +288,7 @@ export async function testVisibilityWithPerplexity(
 
   console.log(`📋 Visibility test result:`, {
     ...result,
+    citationSnippet: `"${result.citationSnippet?.substring(0, 50)}..."`,
     topCitations: `${result.topCitations.length} citations`
   });
   
@@ -346,4 +360,121 @@ JSON array of competitor product names:`.trim();
     console.error('❌ Competitor extraction failed:', error.message);
     return [];
   }
+}
+
+// Map competitor product names to their likely domains
+async function mapCompetitorsToDomains(competitorNames: string[]): Promise<string[]> {
+  if (!competitorNames.length) {
+    return [];
+  }
+
+  console.log(`🗺️ Mapping ${competitorNames.length} competitors to domains:`, competitorNames);
+
+  const domains: string[] = [];
+  
+  // Common domain mapping patterns
+  const commonMappings: Record<string, string> = {
+    // Financial/Banking
+    'brex': 'brex.com',
+    'stripe': 'stripe.com', 
+    'mercury': 'mercury.com',
+    'silicon valley bank': 'svb.com',
+    'chase': 'chase.com',
+    'bank of america': 'bankofamerica.com',
+    
+    // AI/Research Tools
+    'semantic scholar': 'semanticscholar.org',
+    'research rabbit': 'researchrabbit.ai',
+    'zotero': 'zotero.org',
+    'mendeley': 'mendeley.com',
+    'pubmed': 'pubmed.ncbi.nlm.nih.gov',
+    'litmaps': 'litmaps.com',
+    'paperpile': 'paperpile.com',
+    'endnote': 'endnote.com',
+    
+    // Project Management  
+    'asana': 'asana.com',
+    'trello': 'trello.com',
+    'monday.com': 'monday.com',
+    'notion': 'notion.so',
+    'clickup': 'clickup.com',
+    'jira': 'atlassian.com',
+    
+    // General Business Tools
+    'salesforce': 'salesforce.com',
+    'hubspot': 'hubspot.com',
+    'slack': 'slack.com',
+    'microsoft teams': 'microsoft.com',
+    'zoom': 'zoom.us',
+    'google workspace': 'workspace.google.com'
+  };
+
+  for (const competitor of competitorNames) {
+    const lowerName = competitor.toLowerCase().trim();
+    
+    // Check for exact mapping first
+    if (commonMappings[lowerName]) {
+      domains.push(commonMappings[lowerName]);
+      console.log(`  ✅ Mapped "${competitor}" → ${commonMappings[lowerName]}`);
+      continue;
+    }
+    
+    // Check for partial matches
+    let found = false;
+    for (const [key, domain] of Object.entries(commonMappings)) {
+      if (lowerName.includes(key) || key.includes(lowerName)) {
+        domains.push(domain);
+        console.log(`  ✅ Partial match "${competitor}" → ${domain} (via "${key}")`);
+        found = true;
+        break;
+      }
+    }
+    
+    if (!found) {
+      // Heuristic: try converting product name to domain
+      const heuristicDomain = generateHeuristicDomain(competitor);
+      if (heuristicDomain) {
+        domains.push(heuristicDomain);
+        console.log(`  🔮 Heuristic "${competitor}" → ${heuristicDomain}`);
+      } else {
+        console.log(`  ❓ No mapping found for "${competitor}"`);
+      }
+    }
+  }
+
+  // Remove duplicates and limit to 10
+  const uniqueDomains = [...new Set(domains)].slice(0, 10);
+  console.log(`🗺️ Final mapped domains:`, uniqueDomains);
+  
+  return uniqueDomains;
+}
+
+// Generate a heuristic domain from a product name
+function generateHeuristicDomain(productName: string): string | null {
+  if (!productName || productName.length < 3) {
+    return null;
+  }
+  
+  // Clean the product name
+  const cleaned = productName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '') // Remove special chars
+    .replace(/\s+/g, '') // Remove spaces
+    .trim();
+  
+  // Skip very common words that aren't likely to be domains
+  const skipWords = ['the', 'and', 'for', 'with', 'tool', 'app', 'software', 'platform', 'system', 'service'];
+  if (skipWords.includes(cleaned) || cleaned.length < 3) {
+    return null;
+  }
+  
+  // Generate potential domain
+  const domain = `${cleaned}.com`;
+  
+  // Basic validation: must be reasonable length
+  if (domain.length > 30 || domain.length < 6) {
+    return null;
+  }
+  
+  return domain;
 } 

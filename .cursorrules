@@ -7,7 +7,7 @@
 - Use `pnpm run` for scripts
 
 ## Environment Variables
-- Use `SUPABASE_SERVICE_KEY` (not `SUPABASE_SERVICE_ROLE_KEY`)
+- Use `SUPABASE_SERVICE_ROLE_KEY` (not `SUPABASE_SERVICE_ROLE_KEY`)
 - Keep client-safe keys in `.env.local`
 - Keep sensitive keys in `.env.server`
 

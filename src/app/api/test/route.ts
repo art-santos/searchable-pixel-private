@@ -4,7 +4,7 @@ export async function GET(req: NextRequest) {
   // Log all environment variables for debugging
   console.log('Environment variables:');
   console.log('NEXT_PUBLIC_SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Not set');
-  console.log('SUPABASE_SERVICE_KEY:', process.env.SUPABASE_SERVICE_KEY ? 'Set' : 'Not set');
+  console.log('SUPABASE_SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Set' : 'Not set');
   console.log('APIFY_API_TOKEN:', process.env.APIFY_API_TOKEN ? 'Set' : 'Not set');
   
   return NextResponse.json({ 

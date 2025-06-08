@@ -198,7 +198,7 @@ await trackCrawler(config, {
    - Create setup wizard
 
 3. **Production Deployment**
-   - Set SUPABASE_SERVICE_KEY env var
+   - Set SUPABASE_SERVICE_ROLE_KEY env var
    - Configure production API endpoint in package
    - Set up monitoring
 
@@ -211,7 +211,7 @@ await trackCrawler(config, {
 
 ```env
 # For API endpoint
-SUPABASE_SERVICE_KEY=your_service_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_key
 
 # For NPM package users
 SPLIT_API_KEY=split_live_xxxxx

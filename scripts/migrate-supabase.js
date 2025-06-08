@@ -13,7 +13,7 @@ async function main() {
   console.log('Starting Supabase migration...');
   
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   
   if (!supabaseUrl) {
     console.error('Error: NEXT_PUBLIC_SUPABASE_URL environment variable is not set');
@@ -21,7 +21,7 @@ async function main() {
   }
   
   if (!supabaseServiceKey) {
-    console.error('Error: SUPABASE_SERVICE_KEY environment variable is not set');
+    console.error('Error: SUPABASE_SERVICE_ROLE_KEY environment variable is not set');
     process.exit(1);
   }
   

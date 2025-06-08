@@ -46,13 +46,13 @@ export function createClient() {
  * WARNING: This should only be used for trusted server-side operations
  */
 export function createServiceRoleClient() {
-  if (!process.env.SUPABASE_SERVICE_KEY) {
-    throw new Error('SUPABASE_SERVICE_KEY is not set')
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set')
   }
 
   return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_KEY,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
     {
       auth: {
         autoRefreshToken: false,

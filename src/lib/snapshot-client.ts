@@ -208,33 +208,75 @@ export async function checkUserRateLimit(userId: string): Promise<{
 }
 
 /**
- * Trigger snapshot processing (calls Edge Function)
+ * Trigger snapshot processing (calls processing API for specific snapshot)
  */
-export async function triggerSnapshotProcessing(userId?: string): Promise<{
+export async function triggerSnapshotProcessing(userId?: string, requestId?: string): Promise<{
   success: boolean;
   message?: string;
   error?: string;
 }> {
+  console.log('🔄 triggerSnapshotProcessing called');
+  console.log(`   User ID: ${userId || 'undefined'}`);
+  console.log(`   Request ID: ${requestId || 'undefined (will process oldest pending)'}`);
+  
   try {
-    const response = await fetch('/api/process-snapshot', {
+    const requestBody = { 
+      user_id: userId,
+      request_id: requestId // Include specific request ID if provided
+    };
+    console.log('📋 Request body for processing trigger:', JSON.stringify(requestBody, null, 2));
+    
+    // Debug environment variables
+    console.log('🔍 Environment variables check:');
+    console.log(`   NEXT_PUBLIC_SITE_URL: ${process.env.NEXT_PUBLIC_SITE_URL || 'not set'}`);
+    console.log(`   VERCEL_URL: ${process.env.VERCEL_URL || 'not set'}`);
+    console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
+    
+    // Construct absolute URL for server-side fetch
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+                   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
+                   'http://localhost:3000';
+    
+    const processUrl = `${baseUrl}/api/process-snapshot`;
+    console.log('🌐 Making fetch request to:', processUrl);
+    console.log(`   Base URL: ${baseUrl}`);
+    console.log(`   Full URL: ${processUrl}`);
+    
+    const response = await fetch(processUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ user_id: userId })
+      body: JSON.stringify(requestBody)
     });
 
+    console.log('📡 Processing API response received:');
+    console.log(`   Status: ${response.status} ${response.statusText}`);
+    console.log(`   OK: ${response.ok}`);
+    console.log(`   Headers:`, Object.fromEntries(response.headers.entries()));
+    
     const data = await response.json();
+    console.log('📊 Response data:', JSON.stringify(data, null, 2));
 
     if (!response.ok) {
-      return { success: false, error: data.error || 'Processing failed' };
+      console.error('❌ Processing API failed:', data);
+      return { 
+        success: false, 
+        error: data.error || `HTTP ${response.status}: ${response.statusText}`,
+        message: data.details || 'Processing API returned error'
+      };
     }
 
+    console.log('✅ Processing trigger successful');
     return { 
       success: true, 
       message: data.message || 'Processing started successfully' 
     };
   } catch (error: any) {
+    console.error('❌ triggerSnapshotProcessing error:', error.message);
+    console.error('   Stack:', error.stack);
+    console.error('   Name:', error.name);
+    console.error('   Cause:', error.cause);
     return { success: false, error: error.message };
   }
 }

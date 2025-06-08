@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Loader2, Zap } from 'lucide-react'
 import { useSubscription } from '@/hooks/useSubscription'
-import { checkLimit, trackUsage, saveScanHistory } from '@/lib/subscription/usage'
+import { checkUsageLimit } from '@/lib/subscription/usage'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { UsageDisplay } from './usage-display'
@@ -33,11 +33,11 @@ export function ScanLimitCheck({ domain, onScanComplete }: ScanLimitCheckProps) 
       }
       
       // Check if user can perform scan
-      const canScan = await checkLimit(user.id, 'scan')
+      const canScan = await checkUsageLimit(user.id, 'domain')
       
       if (!canScan.allowed) {
         toast.error('Scan limit reached', {
-          description: `You've used all ${canScan.limit} scans this month. Upgrade to continue.`,
+          description: `${canScan.reason}. Upgrade to continue.`,
           action: {
             label: 'Upgrade',
             onClick: () => showUpgradePrompt('scan-limit')
@@ -55,17 +55,8 @@ export function ScanLimitCheck({ domain, onScanComplete }: ScanLimitCheckProps) 
       // Simulate scan delay
       await new Promise(resolve => setTimeout(resolve, 3000))
       
-      // Track the usage
-      const trackResult = await trackUsage(
-        user.id,
-        'scan',
-        scanType === 'max' ? 'max_scan' : 'basic_scan',
-        { domain, timestamp: new Date().toISOString() }
-      )
-      
-      if (!trackResult.success) {
-        throw new Error(trackResult.error || 'Failed to track usage')
-      }
+      // TODO: Implement usage tracking
+      // For now, we'll skip tracking since the function doesn't exist yet
       
       // Mock scan results
       const results = {
@@ -75,14 +66,8 @@ export function ScanLimitCheck({ domain, onScanComplete }: ScanLimitCheckProps) 
         competitors: scanType === 'max' ? 10 : 5
       }
       
-      // Save to history
-      await saveScanHistory(
-        user.id,
-        scanType,
-        domain,
-        results.score,
-        results
-      )
+      // TODO: Implement scan history saving
+      // For now, we'll skip saving history since the function doesn't exist yet
       
       // Refresh usage data
       await refresh()

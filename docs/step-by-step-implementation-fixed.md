@@ -302,7 +302,7 @@ FIRECRAWL_API_KEY=your_firecrawl_key_here
 ```env
 # Sensitive keys (server/Edge Functions only)
 SUPABASE_URL=your_supabase_url
-SUPABASE_SERVICE_KEY=your_service_role_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 OPENAI_API_KEY=your_openai_key_here
 PERPLEXITY_API_KEY=your_perplexity_key_here
 FIRECRAWL_API_KEY=your_firecrawl_key_here
@@ -359,7 +359,7 @@ const supabaseAnon = createClient(
 // For testing only - use service key (would be in Edge Function in production)
 const supabaseService = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 async function testSupabase() {
@@ -520,7 +520,7 @@ export const supabaseClient = createClient(
 // Server client for Edge Functions (service key)
 export const supabaseServer = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 export async function checkRateLimit(userId: string): Promise<{
@@ -969,7 +969,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const supabaseServer = createClient(
   Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_KEY')!
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
 export default async function handler(req: Request) {

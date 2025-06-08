@@ -1,29 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServiceRoleClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
+  console.log('🚀 Process snapshot API called');
+  
   try {
     const body = await request.json();
+    const { user_id, request_id } = body;
+    console.log('📥 Request body:', { user_id, request_id });
     
-    // Call the Supabase Edge Function
-    const edgeFunctionUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/process-snapshot`;
-    
-    const response = await fetch(edgeFunctionUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body)
+    if (!user_id) {
+      return NextResponse.json(
+        { error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Use service role client for edge function invocation
+    const supabase = createServiceRoleClient();
+    console.log('🔧 Supabase service role client created');
+              
+    // Call the edge function to process snapshots
+    console.log('📡 Invoking edge function...');
+    const { data, error } = await supabase.functions.invoke('process-snapshot', {
+      body: { user_id, request_id }
     });
 
-    const data = await response.json();
+    console.log('📨 Edge function raw response:', { data, error });
+
+    if (error) {
+      console.error('❌ Edge function error:', error);
+      console.error('   Error details:', JSON.stringify(error, null, 2));
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: error.message 
+        },
+        { status: 500 }
+      );
+    }
+
+    console.log('✅ Edge function response:', data);
     
-    return NextResponse.json(data, { status: response.status });
+    return NextResponse.json({ 
+      success: true,
+      message: data?.message || 'Processing started',
+      requestId: data?.requestId || request_id,
+      processedCount: data?.processedCount || 0
+    });
+    
   } catch (error: any) {
-    console.error('❌ API route error:', error);
-    
+    console.error('❌ Process snapshot error:', error);
+    console.error('   Stack:', error.stack);
     return NextResponse.json(
-      { error: error.message || 'Failed to process snapshot' },
+      { 
+        success: false, 
+        error: error.message 
+      },
       { status: 500 }
     );
   }

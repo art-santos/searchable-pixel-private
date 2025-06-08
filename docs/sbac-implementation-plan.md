@@ -165,7 +165,7 @@ export async function resetMonthlyUsage() {
 ### Environment Variables Needed:
 ```env
 CRON_SECRET_TOKEN=your-secret-token-for-cron-jobs
-SUPABASE_SERVICE_KEY=your-supabase-service-role-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 ```
 
 ## Phase 3: Middleware & Route Protection ✅

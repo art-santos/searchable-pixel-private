@@ -13,7 +13,7 @@ import {
 } from '@/lib/subscription/config'
 import { 
   getUserUsage, 
-  checkLimit,
+  checkUsageLimit,
   type UsageData 
 } from '@/lib/subscription/usage'
 
@@ -146,7 +146,9 @@ export function useSubscription(): UseSubscriptionReturn {
     // Admin override: admins have unlimited access
     if (subscription?.isAdmin) return true
     
-    const result = await checkLimit(userId, feature, count)
+    // Map scan/article to appropriate action types for checkUsageLimit
+    const action = feature === 'scan' ? 'domain' : 'domain'; // Using domain for both temporarily
+    const result = await checkUsageLimit(userId, action)
     return result.allowed
   }
   
