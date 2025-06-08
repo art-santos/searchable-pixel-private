@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { debugOnboardingState } from '@/lib/debug/onboarding-debug'
 import { 
@@ -12,6 +13,7 @@ import { ONBOARDING_STEPS, STEP_PROGRESS } from '../utils/onboarding-constants'
 
 export function useOnboardingState() {
   const { user } = useAuth()
+  const router = useRouter()
   
   // Core state
   const [showOnboarding, setShowOnboarding] = useState(false)
@@ -264,8 +266,9 @@ export function useOnboardingState() {
     
     setShowOnboarding(false)
     
-    // Reload to ensure clean state
-    window.location.reload()
+    // Navigate to dashboard and refresh data without a full reload
+    router.push('/dashboard')
+    router.refresh()
   }
 
   return {
