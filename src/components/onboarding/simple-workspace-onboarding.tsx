@@ -9,7 +9,7 @@ import { saveOnboardingData } from '@/lib/onboarding/database'
 import { 
   ArrowRight
 } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface SimpleWorkspaceOnboardingProps {
   children: React.ReactNode
@@ -21,6 +21,7 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [checkingStatus, setCheckingStatus] = useState(true)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   
   // Workspace form data
   const [workspaceData, setWorkspaceData] = useState({
@@ -116,10 +117,12 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
     // Validate required fields
     if (!workspaceData.name.trim() || !workspaceData.workspaceName.trim() || !workspaceData.domain.trim()) {
       console.error('❌ ONBOARDING DEBUG: Missing required fields')
+      setErrorMessage('Please fill in all required fields.')
       return
     }
 
     setIsLoading(true)
+    setErrorMessage(null)
 
     try {
       console.log('💾 ONBOARDING DEBUG: About to call saveOnboardingData...')
@@ -153,8 +156,7 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
       if (!result.success) {
         console.error('❌ ONBOARDING DEBUG: Failed to save onboarding data:', result.error)
         console.error('🔍 ONBOARDING DEBUG: Full result object:', result)
-        // Still try to hide onboarding to avoid being stuck
-        setShowOnboarding(false)
+        setErrorMessage(result.error || 'Failed to save workspace information.')
         return
       }
 
@@ -170,8 +172,7 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
         stack: err instanceof Error ? err.stack : undefined,
         name: err instanceof Error ? err.name : undefined
       })
-      // Still hide onboarding to avoid being stuck
-      setShowOnboarding(false)
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to save workspace information.')
     } finally {
       setIsLoading(false)
       console.log('🏁 ONBOARDING DEBUG: Process completed, loading set to false')
@@ -225,10 +226,22 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="bg-[#0c0c0c] border border-[#1a1a1a] rounded-lg p-6"
-          >
+          transition={{ duration: 0.3 }}
+          className="bg-[#0c0c0c] border border-[#1a1a1a] rounded-lg p-6"
+        >
             <div className="space-y-4">
+              <AnimatePresence>
+                {errorMessage && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="p-3 rounded flex items-start gap-2 text-sm bg-red-500/10 border border-red-500/20 text-red-400"
+                  >
+                    {errorMessage}
+                  </motion.div>
+                )}
+              </AnimatePresence>
               <div>
                 <label className="block text-xs text-[#888] mb-2">
                   Your name
