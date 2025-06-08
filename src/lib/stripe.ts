@@ -1,7 +1,27 @@
 import Stripe from 'stripe'
 
+function requireEnvVar(name: string): string {
+  const value = process.env[name]
+  if (!value) {
+    throw new Error(`Environment variable ${name} is required`)
+  }
+  return value
+}
+
+// Load required environment variables
+const STRIPE_SECRET_KEY = requireEnvVar('STRIPE_SECRET_KEY')
+const STRIPE_VISIBILITY_MONTHLY_PRICE_ID = requireEnvVar('STRIPE_VISIBILITY_MONTHLY_PRICE_ID')
+const STRIPE_VISIBILITY_ANNUAL_PRICE_ID = requireEnvVar('STRIPE_VISIBILITY_ANNUAL_PRICE_ID')
+const STRIPE_PLUS_MONTHLY_PRICE_ID = requireEnvVar('STRIPE_PLUS_MONTHLY_PRICE_ID')
+const STRIPE_PLUS_ANNUAL_PRICE_ID = requireEnvVar('STRIPE_PLUS_ANNUAL_PRICE_ID')
+const STRIPE_PRO_MONTHLY_PRICE_ID = requireEnvVar('STRIPE_PRO_MONTHLY_PRICE_ID')
+const STRIPE_PRO_ANNUAL_PRICE_ID = requireEnvVar('STRIPE_PRO_ANNUAL_PRICE_ID')
+const STRIPE_AI_LOGS_METERED_PRICE_ID = requireEnvVar('STRIPE_AI_LOGS_METERED_PRICE_ID')
+const STRIPE_EXTRA_ARTICLES_PRICE_ID = requireEnvVar('STRIPE_EXTRA_ARTICLES_PRICE_ID')
+const STRIPE_EXTRA_DOMAINS_PRICE_ID = requireEnvVar('STRIPE_EXTRA_DOMAINS_PRICE_ID')
+
 // Initialize Stripe
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+export const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: '2024-06-20',
   typescript: true,
 })
@@ -18,12 +38,12 @@ export function formatPrice(amount: number, currency: string = 'usd'): string {
 // Get price ID based on plan and billing period
 export function getPriceId(planId: string, isAnnual: boolean): string | null {
   const priceIds: Record<string, string> = {
-    visibility_monthly: process.env.STRIPE_VISIBILITY_MONTHLY_PRICE_ID!,
-    visibility_annual: process.env.STRIPE_VISIBILITY_ANNUAL_PRICE_ID!,
-    plus_monthly: process.env.STRIPE_PLUS_MONTHLY_PRICE_ID!,
-    plus_annual: process.env.STRIPE_PLUS_ANNUAL_PRICE_ID!,
-    pro_monthly: process.env.STRIPE_PRO_MONTHLY_PRICE_ID!,
-    pro_annual: process.env.STRIPE_PRO_ANNUAL_PRICE_ID!,
+    visibility_monthly: STRIPE_VISIBILITY_MONTHLY_PRICE_ID,
+    visibility_annual: STRIPE_VISIBILITY_ANNUAL_PRICE_ID,
+    plus_monthly: STRIPE_PLUS_MONTHLY_PRICE_ID,
+    plus_annual: STRIPE_PLUS_ANNUAL_PRICE_ID,
+    pro_monthly: STRIPE_PRO_MONTHLY_PRICE_ID,
+    pro_annual: STRIPE_PRO_ANNUAL_PRICE_ID,
   }
 
   const billing = isAnnual ? 'annual' : 'monthly'
@@ -35,7 +55,7 @@ export function getPriceId(planId: string, isAnnual: boolean): string | null {
 // Get metered pricing IDs for usage-based billing (AI logs only)
 export function getMeteredPriceId(type: 'ai_logs'): string | null {
   const meteredPriceIds: Record<string, string> = {
-    ai_logs: process.env.STRIPE_AI_LOGS_METERED_PRICE_ID!,
+    ai_logs: STRIPE_AI_LOGS_METERED_PRICE_ID,
   }
   
   return meteredPriceIds[type] || null
@@ -44,8 +64,8 @@ export function getMeteredPriceId(type: 'ai_logs'): string | null {
 // Get add-on pricing IDs for fixed monthly billing (domains, articles)
 export function getAddOnPriceId(type: 'extra_articles' | 'extra_domains'): string | null {
   const addOnPriceIds: Record<string, string> = {
-    extra_articles: process.env.STRIPE_EXTRA_ARTICLES_PRICE_ID!,
-    extra_domains: process.env.STRIPE_EXTRA_DOMAINS_PRICE_ID!,
+    extra_articles: STRIPE_EXTRA_ARTICLES_PRICE_ID,
+    extra_domains: STRIPE_EXTRA_DOMAINS_PRICE_ID,
   }
   
   return addOnPriceIds[type] || null
@@ -54,14 +74,14 @@ export function getAddOnPriceId(type: 'extra_articles' | 'extra_domains'): strin
 // Map Stripe subscription to our plan names
 export function mapSubscriptionToPlan(subscription: Stripe.Subscription): string {
   const priceId = subscription.items.data[0]?.price.id
-  
+
   const priceMap: Record<string, string> = {
-    [process.env.STRIPE_VISIBILITY_MONTHLY_PRICE_ID!]: 'visibility',
-    [process.env.STRIPE_VISIBILITY_ANNUAL_PRICE_ID!]: 'visibility',
-    [process.env.STRIPE_PLUS_MONTHLY_PRICE_ID!]: 'plus',
-    [process.env.STRIPE_PLUS_ANNUAL_PRICE_ID!]: 'plus',
-    [process.env.STRIPE_PRO_MONTHLY_PRICE_ID!]: 'pro',
-    [process.env.STRIPE_PRO_ANNUAL_PRICE_ID!]: 'pro',
+    [STRIPE_VISIBILITY_MONTHLY_PRICE_ID]: 'visibility',
+    [STRIPE_VISIBILITY_ANNUAL_PRICE_ID]: 'visibility',
+    [STRIPE_PLUS_MONTHLY_PRICE_ID]: 'plus',
+    [STRIPE_PLUS_ANNUAL_PRICE_ID]: 'plus',
+    [STRIPE_PRO_MONTHLY_PRICE_ID]: 'pro',
+    [STRIPE_PRO_ANNUAL_PRICE_ID]: 'pro',
   }
   
   return priceMap[priceId] || 'free'
