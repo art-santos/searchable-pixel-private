@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Dialog,
   DialogContent,
@@ -152,6 +153,7 @@ export function ConnectAnalyticsDialog({
   const [platformVotes, setPlatformVotes] = useState<Record<string, number>>({})
   const [loadingPlatform, setLoadingPlatform] = useState<string | null>(null)
   const { toast } = useToast()
+  const router = useRouter()
 
   // Fetch vote data when dialog opens
   useEffect(() => {
@@ -277,7 +279,7 @@ export function ConnectAnalyticsDialog({
   const handleAICrawlerComplete = () => {
     // Close dialog and refresh page to show new data
     handleClose()
-    window.location.reload()
+    router.refresh()
   }
 
   const handleVote = async (platformId: string, e: React.MouseEvent) => {
