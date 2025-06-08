@@ -1,0 +1,265 @@
+import { getSupabaseClient } from './supabase-client';
+
+export interface SnapshotRequest {
+  id: string;
+  urls: string[];
+  topic: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'timeout';
+  created_at: string;
+  completed_at?: string;
+  error_message?: string;
+}
+
+export interface SnapshotSummary {
+  id: string;
+  url: string;
+  visibility_score: number;
+  mentions_count: number;
+  total_questions: number;
+  top_competitors: string[];
+  insights: string[];
+  insights_summary: string;
+  created_at: string;
+}
+
+export interface VisibilityResult {
+  id: string;
+  url: string;
+  target_found: boolean;
+  position: number | null;
+  cited_domains: string[];
+  reasoning_summary: string;
+  citation_snippet: string | null;
+  competitor_names: string[];
+  api_call_duration_ms: number;
+  tested_at: string;
+}
+
+/**
+ * Create a new snapshot request
+ */
+export async function createSnapshotRequest(
+  urls: string[], 
+  topic: string, 
+  userId?: string
+): Promise<{ success: boolean; requestId?: string; error?: string }> {
+  try {
+    console.log('📋 Creating snapshot request:', { urls, topic, userId });
+    
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('snapshot_requests')
+      .insert({
+        user_id: userId,
+        urls,
+        topic,
+        status: 'pending'
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('❌ Failed to create snapshot request:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ Created snapshot request:', data.id);
+    return { success: true, requestId: data.id };
+  } catch (error: any) {
+    console.error('❌ Error creating snapshot request:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get snapshot request status and basic info
+ */
+export async function getSnapshotStatus(requestId: string): Promise<{
+  success: boolean;
+  request?: SnapshotRequest;
+  error?: string;
+}> {
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('snapshot_requests')
+      .select('*')
+      .eq('id', requestId)
+      .single();
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, request: data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get snapshot results and summaries
+ */
+export async function getSnapshotResults(requestId: string): Promise<{
+  success: boolean;
+  summaries?: SnapshotSummary[];
+  results?: VisibilityResult[];
+  error?: string;
+}> {
+  try {
+    const supabase = getSupabaseClient();
+    
+    // Get summaries
+    const { data: summaries, error: summariesError } = await supabase
+      .from('snapshot_summaries')
+      .select('*')
+      .eq('request_id', requestId)
+      .order('created_at', { ascending: true });
+
+    if (summariesError) {
+      return { success: false, error: summariesError.message };
+    }
+
+    // Get detailed results
+    const { data: results, error: resultsError } = await supabase
+      .from('visibility_results')
+      .select('*')
+      .eq('request_id', requestId)
+      .order('tested_at', { ascending: true });
+
+    if (resultsError) {
+      return { success: false, error: resultsError.message };
+    }
+
+    return { 
+      success: true, 
+      summaries: summaries || [], 
+      results: results || [] 
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get user's recent snapshot requests
+ */
+export async function getUserSnapshots(userId: string, limit: number = 10): Promise<{
+  success: boolean;
+  requests?: SnapshotRequest[];
+  error?: string;
+}> {
+  try {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('snapshot_requests')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, requests: data || [] };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Check if user has available rate limit quota
+ */
+export async function checkUserRateLimit(userId: string): Promise<{
+  success: boolean;
+  allowed?: boolean;
+  requestsToday?: number;
+  limit?: number;
+  error?: string;
+}> {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from('user_rate_limits')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('day', today)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // Not found is OK
+      return { success: false, error: error.message };
+    }
+
+    const requestsToday = data?.requests_count || 0;
+    const limit = 5; // Free tier limit
+
+    return {
+      success: true,
+      allowed: requestsToday < limit,
+      requestsToday,
+      limit
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Trigger snapshot processing (calls Edge Function)
+ */
+export async function triggerSnapshotProcessing(userId?: string): Promise<{
+  success: boolean;
+  message?: string;
+  error?: string;
+}> {
+  try {
+    const response = await fetch('/api/process-snapshot', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ user_id: userId })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return { success: false, error: data.error || 'Processing failed' };
+    }
+
+    return { 
+      success: true, 
+      message: data.message || 'Processing started successfully' 
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Get live snapshot processing status with polling
+ */
+export function pollSnapshotStatus(
+  requestId: string,
+  onUpdate: (request: SnapshotRequest) => void,
+  intervalMs: number = 2000
+): () => void {
+  const interval = setInterval(async () => {
+    const { success, request } = await getSnapshotStatus(requestId);
+    
+    if (success && request) {
+      onUpdate(request);
+      
+      // Stop polling when completed or failed
+      if (['completed', 'failed'].includes(request.status)) {
+        clearInterval(interval);
+      }
+    }
+  }, intervalMs);
+
+  // Return cleanup function
+  return () => clearInterval(interval);
+} 

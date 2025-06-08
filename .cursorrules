@@ -1,0 +1,34 @@
+# Cursor Rules for Split Snapshot MVP
+
+## Package Management
+- Always use `pnpm` for package management, never `npm` or `yarn`
+- Use `pnpm install` instead of `npm install`
+- Use `pnpm add` instead of `npm install package`
+- Use `pnpm run` for scripts
+
+## Environment Variables
+- Use `SUPABASE_SERVICE_KEY` (not `SUPABASE_SERVICE_ROLE_KEY`)
+- Keep client-safe keys in `.env.local`
+- Keep sensitive keys in `.env.server`
+
+## Database
+- All database operations should use Supabase
+- Use proper TypeScript types for database operations
+- Always handle errors from database operations
+
+## Code Style
+- Use TypeScript for all new files
+- Prefer async/await over promises
+- Use proper error handling with try/catch
+- Include comprehensive logging for debugging
+
+## API Integration
+- Use proper retry logic with exponential backoff
+- Handle rate limiting gracefully
+- Store only necessary data to minimize costs
+- Include timeout handling for external API calls
+
+## File Naming
+- Use kebab-case for files and directories
+- Use PascalCase for React components
+- Use camelCase for functions and variables 
