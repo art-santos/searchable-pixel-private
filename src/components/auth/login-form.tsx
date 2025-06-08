@@ -6,7 +6,14 @@ import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { motion, AnimatePresence } from "framer-motion"
-import { CheckCircle2, XCircle, AlertCircle, Eye, EyeOff } from "lucide-react"
+import { CheckCircle2, XCircle, AlertCircle, Eye, EyeOff, Mail } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 type NotificationType = "error" | "success" | "info" | null;
 
@@ -26,6 +33,8 @@ export function LoginForm({
   const [showPassword, setShowPassword] = useState(false)
   const [notificationType, setNotificationType] = useState<NotificationType>(null)
   const [notificationMessage, setNotificationMessage] = useState<string | null>(null)
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false)
+  const [resetEmailSent, setResetEmailSent] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -139,7 +148,7 @@ export function LoginForm({
   }
 
   const handleForgotPassword = async () => {
-    if (!email) {
+    if (!email.trim()) {
       showNotification("error", "Please enter your email address first")
       return
     }
@@ -149,6 +158,8 @@ export function LoginForm({
       return
     }
 
+    setIsLoading(true)
+
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`
@@ -156,16 +167,74 @@ export function LoginForm({
 
       if (error) {
         showNotification("error", error.message)
+        setIsLoading(false)
       } else {
-        showNotification("success", "Password reset email sent! Check your inbox.")
+        setResetEmailSent(true)
+        setShowForgotPasswordModal(true)
+        setNotificationMessage(null) // Clear any existing notifications
+        setIsLoading(false)
       }
     } catch (err: any) {
-      showNotification("error", "Failed to send reset email")
+      showNotification("error", "Failed to send reset email. Please try again.")
+      setIsLoading(false)
     }
+  }
+
+  const closeForgotPasswordModal = () => {
+    setShowForgotPasswordModal(false)
+    setResetEmailSent(false)
   }
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
+      {/* Forgot Password Modal */}
+      <Dialog open={showForgotPasswordModal} onOpenChange={closeForgotPasswordModal}>
+        <DialogContent className="bg-[#161616] border-[#333333] text-white max-w-md">
+          <DialogHeader>
+            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-green-500/10 rounded-full">
+              <Mail className="w-6 h-6 text-green-400" />
+            </div>
+            <DialogTitle className="text-center text-white">
+              Check Your Email
+            </DialogTitle>
+            <DialogDescription className="text-center text-gray-400">
+              We've sent a password reset link to <span className="text-white font-medium">{email}</span>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <p className="text-sm text-blue-400">
+                <strong>Next steps:</strong>
+              </p>
+              <ul className="mt-2 text-sm text-gray-300 space-y-1">
+                <li>• Check your email inbox (and spam folder)</li>
+                <li>• Click the "Reset Password" button in the email</li>
+                <li>• Enter your new password on the reset page</li>
+                <li>• You'll be automatically signed in</li>
+              </ul>
+            </div>
+            
+            <div className="flex gap-3">
+              <Button 
+                onClick={closeForgotPasswordModal}
+                className="flex-1 bg-white hover:bg-gray-100 text-[#0c0c0c]"
+              >
+                Got it
+              </Button>
+              <Button 
+                onClick={handleForgotPassword}
+                variant="outline"
+                className="flex-1 border-[#333333] bg-transparent text-gray-300 hover:bg-[#333333] hover:text-white"
+                disabled={isLoading}
+              >
+                {isLoading ? "Sending..." : "Resend Email"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
