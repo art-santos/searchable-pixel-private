@@ -38,12 +38,27 @@ export async function POST(request: Request) {
       }
     }
 
-    // Construct proper base URL with scheme
+    // Construct and validate base URL
     const requestUrl = new URL(request.url)
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `${requestUrl.protocol}//${requestUrl.host}`
-    
-    // Ensure the base URL has a proper scheme
-    const normalizedBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`
+    const envBaseUrl = process.env.NEXT_PUBLIC_BASE_URL
+    let normalizedBaseUrl: string
+
+    if (!envBaseUrl) {
+      console.warn(
+        `NEXT_PUBLIC_BASE_URL is not set. Falling back to https://${requestUrl.host}`
+      )
+      normalizedBaseUrl = `https://${requestUrl.host}`
+    } else {
+      const maybeWithScheme = envBaseUrl.startsWith('http')
+        ? envBaseUrl
+        : `https://${envBaseUrl}`
+
+      try {
+        normalizedBaseUrl = new URL(maybeWithScheme).origin
+      } catch {
+        throw new Error(`Invalid NEXT_PUBLIC_BASE_URL: ${envBaseUrl}`)
+      }
+    }
 
     // Create setup intent for payment method with Link support
     const setupIntent = await stripe.setupIntents.create({
