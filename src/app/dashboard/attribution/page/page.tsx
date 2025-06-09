@@ -40,6 +40,12 @@ export default function AttributionByPagePage() {
     
     setIsLoading(true)
     try {
+      const timeframeMap: Record<TimeframeOption, string> = {
+        'Last 24 hours': 'last24h',
+        'Last 7 days': 'last7d',
+        'Last 30 days': 'last30d'
+      }
+      
       // Auto-detect user's timezone
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
       

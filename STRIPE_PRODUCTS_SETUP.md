@@ -22,7 +22,6 @@ Copy these exact configurations into your Stripe Dashboard to match the new pric
 - 7-day crawl history  
 - 10 snapshots/month
 - Email alerts (first crawl only)
-- 7-day free trial
 
 ---
 
@@ -158,7 +157,7 @@ STRIPE_EDGE_ALERTS_PRICE_ID=price_abc123edge_alerts
 
 ### Plan Mapping Changes:
 - ❌ **No Free Plan** - Removed completely
-- ✅ **Starter replaces Free** - $30/mo with 7-day trial
+- ✅ **Starter replaces Free** - $30/mo, immediate billing
 - ✅ **Pro simplified** - No visitor credits complexity  
 - ✅ **Team gets multi-workspace** - 5 workspaces included
 
@@ -168,8 +167,7 @@ STRIPE_EDGE_ALERTS_PRICE_ID=price_abc123edge_alerts
 - **Add-on domains**: Available for Pro & Team plans
 
 ### Trial Configuration:
-- **Starter Plan**: 7-day free trial
-- **Pro & Team**: No trial (immediate billing)
+- **All Plans**: No trial (immediate billing)
 
 ---
 
@@ -179,7 +177,7 @@ STRIPE_EDGE_ALERTS_PRICE_ID=price_abc123edge_alerts
 - [ ] Both monthly and annual prices for each plan  
 - [ ] 2 add-on products created
 - [ ] Price IDs copied to environment variables
-- [ ] Starter plan configured with 7-day trial
+- [ ] All plans configured for immediate billing
 - [ ] Test checkout sessions work
 - [ ] Webhook endpoints handle new plan names
 - [ ] Team plan workspace limits enforced

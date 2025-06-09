@@ -27,7 +27,7 @@ pro       - $800/mo - Unlimited scans, 30 articles, 15k visitor credits, multi-d
 
 ### New Plans
 ```
-starter - $30/mo  - 1 domain, basic features, 10 snapshots/month, 7-day trial
+starter - $30/mo  - 1 domain, basic features, 10 snapshots/month
 pro     - $100/mo - 1 domain, full features, 50 snapshots/month, API access  
 team    - $400/mo - 5 domains, unlimited snapshots, team access (5 users)
 ```
@@ -248,13 +248,12 @@ export const PRICING_PLANS: PricingPlan[] = [
       '7-day crawl history',
       'Snapshot reports: 10/month',
       'Email alerts (first crawl only)',
-      '7-day free trial'
+      'Immediate billing'
     ],
-    buttonText: 'Start Trial',
+          buttonText: 'Start Starter',
     buttonStyle: 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white border border-[#333]',
     badge: '🧪',
-    badgeColor: 'bg-blue-500',
-    trialDays: 7
+    badgeColor: 'bg-blue-500'
   },
   {
     id: 'pro',
@@ -366,7 +365,7 @@ export const PRICING_PLANS: PricingPlan[] = [
 - ⚠️ Snapshot limits introduced (Starter: 10, Pro: 50, Team: unlimited)
 
 ### New Features
-- ✅ 7-day free trial for Starter plan
+- ✅ Immediate billing for all plans
 - ✅ Team access and collaboration (Team plan)
 - ✅ Edge alerts add-on
 - ✅ Simplified pricing structure
@@ -379,7 +378,7 @@ export const PRICING_PLANS: PricingPlan[] = [
 - **Positive**: Higher entry price point ($30 vs $0)
 - **Positive**: Clearer value proposition per plan
 - **Risk**: Potential churn from free users
-- **Mitigation**: 7-day trial reduces barrier to entry
+- **Mitigation**: Competitive pricing attracts immediate conversions
 
 ### User Experience
 - **Better**: Simpler pricing structure

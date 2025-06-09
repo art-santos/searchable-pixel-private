@@ -26,8 +26,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Set trial for starter plan
-    const trialDays = planId === 'starter' ? 7 : 0
+    // No trial for any plans
+    const trialDays = 0
 
     // Create checkout session using new helper
     const session = await createCheckoutSession({

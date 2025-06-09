@@ -48,14 +48,12 @@ export const PRICING_PLANS: PricingPlan[] = [
       'Total daily crawl count',
       '7-day crawl history',
       'Snapshot reports: 10/month',
-      'Email alerts (first crawl only)',
-      '7-day free trial'
+      'Email alerts (first crawl only)'
     ],
-    buttonText: 'Start 7-Day Trial',
+    buttonText: 'Start Starter',
     buttonStyle: 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white border border-[#333]',
     badge: '🧪',
     badgeColor: 'bg-blue-500',
-    trialDays: 7,
     limitations: [
       'Add-ons available immediately, billed monthly'
     ]

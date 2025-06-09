@@ -474,13 +474,15 @@ export default function AttributionPage() {
             <Card className="h-full bg-[#0c0c0c] border-[#1a1a1a]">
               <CardContent className="p-0 h-full flex flex-col">
                 {/* Graph Header */}
-                <div className="pb-4 pt-4 pl-6 pr-6 border-b border-[#1a1a1a] flex-shrink-0">
+                <CardHeader className="pb-4 pt-4 pl-6 pr-6 flex-shrink-0 border-b border-[#1a1a1a]">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-[#666] mb-1">Total Crawls</p>
-                      <h3 className="text-2xl font-semibold text-white">
-                        {stats?.totalCrawls.toLocaleString() || '0'}
+                      <h3 className="text-lg font-semibold text-white mb-1">
+                        Total Crawls
                       </h3>
+                      <p className="text-sm text-[#666]">
+                        {stats?.totalCrawls.toLocaleString() || '0'} crawls tracked
+                      </p>
                     </div>
                     <TimeframeSelector 
                       title=""
@@ -490,7 +492,7 @@ export default function AttributionPage() {
                       selectorColor="text-[#A7A7A7]"
                     />
                   </div>
-                </div>
+                </CardHeader>
 
                 {/* Graph Content */}
                 <div className="flex-1 p-6">
