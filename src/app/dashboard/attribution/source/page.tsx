@@ -1,41 +1,44 @@
 'use client'
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { motion, useReducedMotion } from "framer-motion"
+import { motion, useReducedMotion, AnimatePresence } from "framer-motion"
 import { TimeframeSelector, TimeframeOption } from "@/components/custom/timeframe-selector"
 import { useState, useEffect } from "react"
 import { useWorkspace } from "@/contexts/WorkspaceContext"
 import { useAuth } from "@/contexts/AuthContext"
-import { Loader2, ArrowLeft, Search, TrendingUp, Activity, Clock, ExternalLink, ArrowRight } from "lucide-react"
+import { Loader2, ArrowLeft, ChevronDown, ExternalLink, Clock } from "lucide-react"
 import Link from "next/link"
-import Image from "next/image"
 
-interface CrawlerCompany {
+interface CrawlerBot {
+  botName: string
   company: string
   totalCrawls: number
-  uniquePaths: number
+  pathsVisited: number
   avgInterval: string
-  crawlers: string[]
+  crawlerCount: number
   lastSeen: string
-  icon?: string
+  pages: Array<{
+    path: string
+    visits: number
+    lastVisit: string
+  }>
 }
 
 export default function AttributionBySourcePage() {
   const shouldReduceMotion = useReducedMotion()
   const [timeframe, setTimeframe] = useState<TimeframeOption>('Last 7 days')
   const { currentWorkspace, switching } = useWorkspace()
-  const { session } = useAuth()
-  const [companies, setCompanies] = useState<CrawlerCompany[]>([])
+  const { supabase } = useAuth()
+  const [bots, setBots] = useState<CrawlerBot[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
+  const [expandedBots, setExpandedBots] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (currentWorkspace) {
-      fetchCompanies()
+      fetchBots()
     }
   }, [timeframe, currentWorkspace])
 
-  const fetchCompanies = async () => {
+  const fetchBots = async () => {
     if (!currentWorkspace) return
     
     setIsLoading(true)
@@ -43,7 +46,7 @@ export default function AttributionBySourcePage() {
       // Auto-detect user's timezone
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
       
-      const response = await fetch(`/api/dashboard/attribution-companies?timeframe=last7d&timezone=${encodeURIComponent(timezone)}&workspaceId=${currentWorkspace.id}`, {
+      const response = await fetch(`/api/dashboard/attribution-bots?timeframe=${timeframeMap[timeframe]}&workspaceId=${currentWorkspace.id}`, {
         headers: {
           'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
         }
@@ -51,10 +54,10 @@ export default function AttributionBySourcePage() {
       
       if (response.ok) {
         const data = await response.json()
-        setCompanies(data.companies || [])
+        setBots(data.bots || [])
       }
     } catch (error) {
-      console.error('Error fetching companies:', error)
+      console.error('Error fetching bots:', error)
     } finally {
       setIsLoading(false)
     }
@@ -81,42 +84,54 @@ export default function AttributionBySourcePage() {
     return `https://www.google.com/s2/favicons?domain=${constructedDomain}&sz=128`
   }
 
-  const cardVariants = shouldReduceMotion 
-    ? { hidden: {}, visible: {} }
-    : {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } }
+  const toggleBotExpansion = (botName: string) => {
+    setExpandedBots(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(botName)) {
+        newSet.delete(botName)
+      } else {
+        newSet.add(botName)
       }
+      return newSet
+    })
+  }
+
+  const formatRelativeTime = (timeStr: string) => {
+    const now = new Date()
+    const time = new Date(timeStr)
+    const diffMs = now.getTime() - time.getTime()
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    
+    if (diffHours < 1) return 'Just now'
+    if (diffHours < 24) return `${diffHours}h ago`
+    const diffDays = Math.floor(diffHours / 24)
+    if (diffDays < 7) return `${diffDays}d ago`
+    return time.toLocaleDateString()
+  }
 
   return (
     <div className="min-h-screen bg-[#0c0c0c] text-white">
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Header with Breadcrumb */}
+        {/* Header */}
         <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={cardVariants}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
           <div className="flex items-center gap-2 mb-4">
             <Link 
               href="/dashboard/attribution" 
-              className="flex items-center gap-2 text-[#888] hover:text-white transition-colors"
+              className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               <span className="text-sm">Back to Overview</span>
             </Link>
           </div>
           
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between">
             <div>
-              <nav className="text-sm text-[#666] mb-2">
-                <Link href="/dashboard/attribution" className="hover:text-white transition-colors">Attribution</Link>
-                <span className="mx-2">></span>
-                <span className="text-white">By Source</span>
-              </nav>
-              <h1 className="text-2xl font-semibold text-white mb-2">BY SOURCE</h1>
-              <p className="text-sm text-[#666]">Top Crawler Companies ({timeframe.toLowerCase()})</p>
+              <h1 className="text-2xl font-semibold text-white mb-1">BY SOURCE</h1>
+              <p className="text-sm text-zinc-500">Crawler bots ({timeframe.toLowerCase()})</p>
             </div>
             <div className="flex items-center gap-4">
               <TimeframeSelector 
@@ -124,9 +139,9 @@ export default function AttributionBySourcePage() {
                 timeframe={timeframe}
                 onTimeframeChange={setTimeframe}
                 titleColor="text-white"
-                selectorColor="text-[#A7A7A7]"
+                selectorColor="text-zinc-400"
               />
-              <button className="text-sm text-[#888] hover:text-white transition-colors font-medium px-4 py-2 rounded-lg border border-[#2a2a2a] hover:border-[#444] bg-[#111] hover:bg-[#1a1a1a]">
+              <button className="text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5 rounded border border-zinc-800 hover:border-zinc-700 bg-zinc-900/50">
                 Export
               </button>
             </div>
@@ -135,100 +150,117 @@ export default function AttributionBySourcePage() {
 
         {switching ? (
           <div className="flex items-center justify-center h-96">
-            <div className="text-center">
-              <div className="w-8 h-8 mx-auto mb-3">
-                <img 
-                  src="/images/split-icon-white.svg" 
-                  alt="Split" 
-                  className="w-full h-full animate-spin"
-                  style={{ animation: 'spin 1s linear infinite' }}
-                />
-              </div>
-              <p className="text-[#666] text-sm">Switching workspace...</p>
-            </div>
+            <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
           </div>
         ) : isLoading ? (
           <div className="flex items-center justify-center h-96">
-            <Loader2 className="w-8 h-8 animate-spin text-[#666]" />
+            <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
           </div>
         ) : (
-          /* Company List */
-          <div className="space-y-4">
-            {companies.map((company, index) => (
-              <motion.div
-                key={company.company}
-                initial="hidden"
-                animate="visible"
-                variants={{
-                  hidden: { opacity: 0, y: 20 },
-                  visible: { 
-                    opacity: 1, 
-                    y: 0, 
-                    transition: { 
-                      duration: 0.3, 
-                      ease: 'easeOut',
-                      delay: index * 0.05 
-                    } 
-                  }
-                }}
-              >
-                <Link href={`/dashboard/attribution/source/${company.company.toLowerCase()}`}>
-                  <Card className="bg-[#0c0c0c] border-[#1a1a1a] hover:border-[#2a2a2a] transition-all duration-200 cursor-pointer group">
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] group-hover:border-[#333] transition-colors">
-                            <div className="relative">
-                              <img 
-                                src={getFaviconForCompany(company.company)}
-                                alt={company.company}
-                                width={20}
-                                height={20}
-                                className="w-5 h-5 object-contain"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement
-                                  target.style.display = 'none'
-                                  const fallback = target.nextElementSibling as HTMLElement
-                                  if (fallback) fallback.style.display = 'block'
-                                }}
-                              />
-                              <div className="w-3 h-3 rounded-full bg-[#666] hidden" />
-                            </div>
-                          </div>
-                          
-                          <div>
-                            <h3 className="text-lg font-semibold text-white mb-1">{company.company}</h3>
-                            <div className="flex items-center gap-6 text-sm text-[#666]">
-                              <span>{company.totalCrawls.toLocaleString()} crawls</span>
-                              <span>•</span>
-                              <span>{company.uniquePaths} paths</span>
-                              <span>•</span>
-                              <span>{company.avgInterval} avg interval</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-4">
-                          <div className="text-right">
-                            <div className="text-sm text-[#888] mb-1">
-                              {company.crawlers.length} crawler{company.crawlers.length !== 1 ? 's' : ''}
-                            </div>
-                            <div className="text-xs text-[#666]">
-                              Last seen: {company.lastSeen}
-                            </div>
-                          </div>
-                          <ArrowRight className="w-5 h-5 text-[#666] group-hover:text-white transition-colors" />
+          <div className="bg-zinc-900/20 border border-zinc-800/50 rounded-lg overflow-hidden">
+            {/* Table Header */}
+            <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-zinc-900/30 border-b border-zinc-800/50 text-xs font-medium text-zinc-400 uppercase tracking-wider">
+              <div className="col-span-4">Bot Name</div>
+              <div className="col-span-2 text-center">Total Crawls</div>
+              <div className="col-span-2 text-center">Paths Visited</div>
+              <div className="col-span-2 text-center">Avg Interval</div>
+              <div className="col-span-2 text-right">Last Seen</div>
+            </div>
+
+            {/* Table Body */}
+            <div className="divide-y divide-zinc-800/30">
+              {bots.map((bot, index) => {
+                const isExpanded = expandedBots.has(bot.botName)
+                
+                return (
+                  <motion.div
+                    key={bot.botName}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.02 }}
+                  >
+                    {/* Main Row */}
+                    <div 
+                      className="grid grid-cols-12 gap-4 px-4 py-3 hover:bg-zinc-900/20 cursor-pointer transition-colors"
+                      onClick={() => toggleBotExpansion(bot.botName)}
+                    >
+                      <div className="col-span-4 flex items-center gap-3">
+                        <ChevronDown 
+                          className={`w-4 h-4 text-zinc-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                        />
+                        <img 
+                          src={getFaviconForCompany(bot.company)}
+                          alt={bot.company}
+                          width={16}
+                          height={16}
+                          className="w-4 h-4 object-contain"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.style.display = 'none'
+                          }}
+                        />
+                        <div>
+                          <div className="text-white text-sm font-medium">{bot.botName}</div>
+                          <div className="text-zinc-500 text-xs">{bot.company}</div>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              </motion.div>
-            ))}
-            
-            {companies.length === 0 && !isLoading && (
+                      <div className="col-span-2 text-center">
+                        <div className="text-white text-sm font-mono">{bot.totalCrawls.toLocaleString()}</div>
+                      </div>
+                      <div className="col-span-2 text-center">
+                        <div className="text-white text-sm font-mono">{bot.pathsVisited}</div>
+                      </div>
+                      <div className="col-span-2 text-center">
+                        <div className="text-zinc-300 text-sm">{bot.avgInterval}</div>
+                      </div>
+                      <div className="col-span-2 text-right">
+                        <div className="text-zinc-400 text-sm">{formatRelativeTime(bot.lastSeen)}</div>
+                      </div>
+                    </div>
+
+                    {/* Expanded Content */}
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="px-4 py-4 bg-zinc-900/10 border-t border-zinc-800/30">
+                            <div className="mb-3">
+                              <h4 className="text-white text-sm font-medium mb-2">Pages Visited</h4>
+                            </div>
+                            <div className="space-y-2 max-h-64 overflow-y-auto">
+                              {bot.pages.map((page, pageIndex) => (
+                                <div key={pageIndex} className="flex items-center justify-between py-2 px-3 bg-zinc-900/30 rounded text-sm">
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <ExternalLink className="w-3 h-3 text-zinc-500 flex-shrink-0" />
+                                    <span className="text-zinc-300 font-mono truncate">{page.path}</span>
+                                  </div>
+                                  <div className="flex items-center gap-4 text-zinc-500">
+                                    <span>{page.visits} visits</span>
+                                    <span className="flex items-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      {formatRelativeTime(page.lastVisit)}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                )
+              })}
+            </div>
+
+            {bots.length === 0 && !isLoading && (
               <div className="text-center py-12">
-                <p className="text-[#666] text-sm">No crawler companies found for this timeframe.</p>
+                <p className="text-zinc-500 text-sm">No crawler bots found for this timeframe.</p>
               </div>
             )}
           </div>

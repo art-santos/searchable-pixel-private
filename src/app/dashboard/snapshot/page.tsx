@@ -445,9 +445,13 @@ export default function SnapshotPage() {
         </div>
 
         <div className="space-y-4">
-          {recentSnapshots.length > 0 ? (
-            recentSnapshots.map((snapshot, index) => {
-              const combinedScore = snapshot.status === 'completed' ? getCombinedScore(snapshot) : null;
+                      {recentSnapshots.length > 0 ? (
+              recentSnapshots.map((snapshot, index) => {
+                // For preview cards, just use the raw database visibility score
+                // Detail page will do more sophisticated weighted calculations
+                const displayScore = snapshot.status === 'completed' ? 
+                  Math.round((snapshot.visibility_score * 0.6) + ((snapshot.calculated_technical_score || snapshot.weighted_aeo_score || snapshot.aeo_score || 0) * 0.4)) : 
+                  0;
               const hostname = getHostname(snapshot.url);
               
               return (
@@ -495,13 +499,13 @@ export default function SnapshotPage() {
                     {/* Score Badge */}
                     {snapshot.status === 'completed' ? (
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border ${
-                        snapshot.visibility_score >= 70 ? 'bg-emerald-400/10 border-emerald-400/30 text-emerald-400' :
-                        snapshot.visibility_score >= 55 ? 'bg-blue-400/10 border-blue-400/30 text-blue-400' :
-                        snapshot.visibility_score >= 40 ? 'bg-amber-400/10 border-amber-400/30 text-amber-400' :
-                        snapshot.visibility_score >= 25 ? 'bg-orange-400/10 border-orange-400/30 text-orange-400' :
+                        displayScore !== null && displayScore >= 70 ? 'bg-emerald-400/10 border-emerald-400/30 text-emerald-400' :
+                        displayScore !== null && displayScore >= 55 ? 'bg-blue-400/10 border-blue-400/30 text-blue-400' :
+                        displayScore !== null && displayScore >= 40 ? 'bg-amber-400/10 border-amber-400/30 text-amber-400' :
+                        displayScore !== null && displayScore >= 25 ? 'bg-orange-400/10 border-orange-400/30 text-orange-400' :
                         'bg-red-400/10 border-red-400/30 text-red-400'
                       }`}>
-                        {snapshot.visibility_score || 0}
+                        {displayScore || 0}
                       </div>
                     ) : (
                       <div className={`text-xs px-2 py-1 rounded-full font-medium ${
@@ -566,7 +570,11 @@ export default function SnapshotPage() {
               </div>
               <div className="text-center">
                 <div className="text-white text-lg font-bold">
-                  {recentSnapshots.filter(s => s.status === 'completed' && getCombinedScore(s)?.score >= 70).length}
+                  {recentSnapshots.filter(s => {
+                    if (s.status !== 'completed') return false;
+                    const score = getCombinedScore(s).score;
+                    return score >= 70;
+                  }).length}
                 </div>
                 <div className="text-[#666] text-xs">High Score</div>
               </div>

@@ -40,6 +40,7 @@ import {
   getVisibilityResults,
   getTechnicalChecklistResults,
   getCombinedScore,
+  calculateTechnicalScoreFromChecklist,
   type EnhancedSnapshotResult,
   type TechnicalIssue,
   type TechnicalRecommendation,
@@ -232,6 +233,16 @@ export default function EnhancedSnapshotReportPage() {
         setRecommendations(recsData);
         setVisibilityResults(visData);
         setChecklistResults(checklistData);
+        
+        // Debug checklist data
+        console.log('Checklist data loaded:', {
+          url: targetSnapshot.url,
+          checklistCount: checklistData.length,
+          passed: checklistData.filter(c => c.passed).length,
+          failed: checklistData.filter(c => !c.passed).length,
+          categories: [...new Set(checklistData.map(c => c.category))],
+          sample: checklistData.slice(0, 5)
+        });
       }
     } catch (err: any) {
       setError(err.message);
@@ -399,39 +410,10 @@ export default function EnhancedSnapshotReportPage() {
     );
   }
 
-  const combinedScore = snapshot.status === 'completed' ? getCombinedScore(snapshot) : null;
+  // Calculate initial combined score
+  let combinedScore = snapshot.status === 'completed' ? getCombinedScore(snapshot, checklistResults) : null;
 
-  // Calculate weighted visibility score function (EXCLUDES brand queries completely)
-  const calculateWeightedVisibilityScore = () => {
-    if (visibilityResults.length === 0) return combinedScore?.breakdown.visibility || 0;
-    
-    // Filter out brand queries completely for a true competitive score
-    const nonBrandResults = visibilityResults.filter(result => {
-      const questionText = result.question_text.toLowerCase();
-      const siteName = snapshot.site_title?.toLowerCase() || '';
-      const urlDomain = new URL(snapshot.url).hostname.toLowerCase().replace('www.', '');
-      
-      // Check if it's a brand query
-      const isBrandQuery = siteName && (
-        questionText.includes(siteName) ||
-        questionText.includes(urlDomain.split('.')[0]) ||
-        questionText.includes('what is ' + siteName) ||
-        questionText.includes('about ' + siteName)
-      );
-      
-      // Exclude brand queries completely
-      return !isBrandQuery;
-    });
-    
-    if (nonBrandResults.length === 0) {
-      // If only brand queries exist, show 0 to indicate no competitive visibility
-      return 0;
-    }
-    
-    // Calculate score based only on non-brand queries
-    const foundResults = nonBrandResults.filter(result => result.target_found);
-    return Math.round((foundResults.length / nonBrandResults.length) * 100);
-  };
+
 
   return (
     <main className="min-h-screen bg-[#0c0c0c]">
@@ -675,11 +657,11 @@ export default function EnhancedSnapshotReportPage() {
               <div className="grid grid-cols-12 gap-12 items-center">
                 {/* Left: Circular Score Display (30% width) */}
                 <div className="col-span-12 lg:col-span-4 flex items-center justify-center">
-                  {(() => {
-                    const weightedVisibilityScore = calculateWeightedVisibilityScore();
-                    const weightedCombinedScore = Math.round((weightedVisibilityScore + combinedScore.breakdown.technical) / 2);
-                    
-                    return (
+                                      {(() => {
+                      // Use the same calculation as preview cards for consistency
+                      const displayScore = Math.round((snapshot.visibility_score * 0.6) + ((snapshot.calculated_technical_score || snapshot.weighted_aeo_score || snapshot.aeo_score || 0) * 0.4));
+                      
+                      return (
                       <div className="relative w-64 h-64">
                         {/* Circular Progress Background */}
                         <svg className="w-64 h-64 transform -rotate-90" viewBox="0 0 100 100">
@@ -700,14 +682,14 @@ export default function EnhancedSnapshotReportPage() {
                             strokeWidth="6"
                             fill="none"
                             strokeDasharray={`${2 * Math.PI * 40}`}
-                            strokeDashoffset={`${2 * Math.PI * 40 * (1 - weightedCombinedScore / 100)}`}
+                            strokeDashoffset={`${2 * Math.PI * 40 * (1 - displayScore / 100)}`}
                             className="text-white transition-all duration-700 ease-out"
                           />
                         </svg>
                         {/* Score Text */}
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="text-center">
-                            <div className="text-5xl font-bold text-white">{weightedCombinedScore}%</div>
+                            <div className="text-5xl font-bold text-white">{displayScore}%</div>
                       </div>
                       </div>
                       </div>
@@ -754,18 +736,19 @@ export default function EnhancedSnapshotReportPage() {
                   {/* Breakdown Grid */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                     {(() => {
-                      const weightedVisibilityScore = calculateWeightedVisibilityScore();
+                      // Use same technical score as preview cards
+                      const technicalScore = snapshot.calculated_technical_score || snapshot.weighted_aeo_score || snapshot.aeo_score || 0;
                       
                       return (
                         <>
                 <div>
                             <div className="text-zinc-500 text-xs uppercase tracking-wider mb-2">AI Visibility</div>
-                            <div className="text-2xl font-semibold text-white">{weightedVisibilityScore}</div>
+                            <div className="text-2xl font-semibold text-white">{snapshot.visibility_score}</div>
                         </div>
                           
                           <div>
                             <div className="text-zinc-500 text-xs uppercase tracking-wider mb-2">Technical Health</div>
-                            <div className="text-2xl font-semibold text-white">{combinedScore.breakdown.technical}</div>
+                            <div className="text-2xl font-semibold text-white">{technicalScore}</div>
                     </div>
               
                           <div>
@@ -839,19 +822,13 @@ export default function EnhancedSnapshotReportPage() {
                 <div className="bg-zinc-900/20 rounded-lg p-8">
                   <div className="grid grid-cols-12 gap-8 items-center">
                     <div className="col-span-12 lg:col-span-5">
-                      {(() => {
-                        const weightedScore = calculateWeightedVisibilityScore();
-                        
-                        return (
-                          <div>
-                            <div className="text-zinc-500 text-xs uppercase tracking-wider mb-2">AI Visibility Performance</div>
-                            <div className="text-6xl font-bold text-white mb-3">{weightedScore}<span className="text-2xl text-zinc-400">%</span></div>
-                            <p className="text-zinc-400 text-sm leading-relaxed">
-                              True competitive visibility across AI search engines. Brand queries completely excluded to show authentic market positioning against competitors.
-                            </p>
+                      <div>
+                        <div className="text-zinc-500 text-xs uppercase tracking-wider mb-2">AI Visibility Performance</div>
+                        <div className="text-6xl font-bold text-white mb-3">{snapshot.visibility_score}<span className="text-2xl text-zinc-400">%</span></div>
+                        <p className="text-zinc-400 text-sm leading-relaxed">
+                          Your content's visibility across AI search engines and how well it competes for attention in your topic area.
+                        </p>
                       </div>
-                        );
-                      })()}
                     </div>
                     
                     <div className="col-span-12 lg:col-span-7">
@@ -1194,30 +1171,15 @@ export default function EnhancedSnapshotReportPage() {
                       
                       <div className="mb-6 p-4 bg-zinc-900/10 rounded-lg border border-zinc-800/50">
                         <p className="text-zinc-400 text-sm leading-relaxed">
-                          This analysis tracks your ranking positions in <span className="text-zinc-300 font-medium">category-specific and comparison queries only</span>. 
-                          Brand queries (where users search specifically for your company name) are excluded to provide a more accurate view of 
-                          your competitive standing in organic topic discussions and comparisons.
+                          This analysis tracks where your content appears in AI search results for questions related to your topic, 
+                          showing your competitive position against other sources.
                         </p>
                 </div>
 
                 <div className="space-y-6">
                         {(() => {
-                          // Filter to only comparison and category queries (exclude brand queries)
-                          const nonBrandResults = visibilityResults.filter(result => {
-                            const questionText = result.question_text.toLowerCase();
-                            const siteName = snapshot.site_title?.toLowerCase() || '';
-                            const urlDomain = new URL(snapshot.url).hostname.toLowerCase().replace('www.', '');
-                            
-                            // Check if it's a brand query
-                            const isBrandQuery = siteName && (
-                              questionText.includes(siteName) ||
-                              questionText.includes(urlDomain.split('.')[0]) ||
-                              questionText.includes('what is ' + siteName) ||
-                              questionText.includes('about ' + siteName)
-                            );
-                            
-                            return !isBrandQuery;
-                          });
+                          // Use all visibility results for consistency
+                          const allResults = visibilityResults;
 
                           return (
                             <>
@@ -1225,17 +1187,17 @@ export default function EnhancedSnapshotReportPage() {
                                 <div className="flex items-center justify-between mb-3">
                                   <span className="text-zinc-400 text-sm">Top 3 Positions</span>
                                   <span className="text-white text-2xl font-bold">
-                                    {nonBrandResults.filter(r => r.position && r.position <= 3).length}
+                                    {allResults.filter(r => r.position && r.position <= 3).length}
                               </span>
                             </div>
                                 <div className="w-full bg-zinc-800/30 rounded-full h-1 mb-2">
                                   <div 
                                     className="bg-white h-1 rounded-full transition-all duration-300" 
-                                    style={{ width: `${nonBrandResults.length > 0 ? (nonBrandResults.filter(r => r.position && r.position <= 3).length / nonBrandResults.length) * 100 : 0}%` }}
+                                    style={{ width: `${allResults.length > 0 ? (allResults.filter(r => r.position && r.position <= 3).length / allResults.length) * 100 : 0}%` }}
                                   />
                             </div>
                                 <div className="text-zinc-500 text-xs">
-                                  of {nonBrandResults.length} non-brand queries
+                                  of {allResults.length} queries
                                 </div>
                               </div>
                               
@@ -1243,17 +1205,17 @@ export default function EnhancedSnapshotReportPage() {
                                 <div className="flex items-center justify-between mb-3">
                                   <span className="text-zinc-400 text-sm">Top 5 Positions</span>
                                   <span className="text-white text-2xl font-bold">
-                                    {nonBrandResults.filter(r => r.position && r.position <= 5).length}
+                                    {allResults.filter(r => r.position && r.position <= 5).length}
                                   </span>
                                 </div>
                                 <div className="w-full bg-zinc-800/30 rounded-full h-1 mb-2">
                                   <div 
                                     className="bg-white h-1 rounded-full transition-all duration-300" 
-                                    style={{ width: `${nonBrandResults.length > 0 ? (nonBrandResults.filter(r => r.position && r.position <= 5).length / nonBrandResults.length) * 100 : 0}%` }}
+                                    style={{ width: `${allResults.length > 0 ? (allResults.filter(r => r.position && r.position <= 5).length / allResults.length) * 100 : 0}%` }}
                                   />
                                 </div>
                                 <div className="text-zinc-500 text-xs">
-                                  of {nonBrandResults.length} non-brand queries
+                                  of {allResults.length} queries
                                 </div>
                               </div>
                               
@@ -1261,14 +1223,14 @@ export default function EnhancedSnapshotReportPage() {
                             <div className="flex items-center justify-between">
                                   <span className="text-zinc-400 text-sm">Average Position</span>
                                   <span className="text-white text-2xl font-bold">
-                                    {nonBrandResults.filter(r => r.position).length > 0 
-                                      ? Math.round(nonBrandResults.filter(r => r.position).reduce((sum, r) => sum + (r.position || 0), 0) / nonBrandResults.filter(r => r.position).length)
+                                    {allResults.filter(r => r.position).length > 0 
+                                      ? Math.round(allResults.filter(r => r.position).reduce((sum, r) => sum + (r.position || 0), 0) / allResults.filter(r => r.position).length)
                                       : 'N/A'
                                     }
                                   </span>
                             </div>
                                 <div className="text-zinc-500 text-xs mt-2">
-                                  across competitive queries
+                                  across all queries
                           </div>
                       </div>
                             </>
@@ -1293,11 +1255,12 @@ export default function EnhancedSnapshotReportPage() {
                         const technicalChecklist = checklistResults;
                         
                         if (technicalChecklist.length === 0) {
+                          const legacyScore = snapshot.weighted_aeo_score || snapshot.aeo_score || 0;
                           return (
                             <div>
                               <div className="text-zinc-500 text-xs uppercase tracking-wider mb-2">Technical Audit</div>
                               <div className="flex items-baseline gap-3 mb-3">
-                                <div className="text-6xl font-bold text-white">{snapshot.weighted_aeo_score || snapshot.aeo_score || 0}<span className="text-2xl text-zinc-400">%</span></div>
+                                <div className="text-6xl font-bold text-white">{legacyScore}<span className="text-2xl text-zinc-400">%</span></div>
                                 <div className="text-zinc-500 text-sm">
                                   (legacy scoring)
                   </div>
@@ -1315,21 +1278,25 @@ export default function EnhancedSnapshotReportPage() {
                         const passedChecks = technicalChecklist.filter(check => check.passed).length;
                         const failedChecks = technicalChecklist.length - passedChecks;
                         
-                        return (
-                          <div>
-                            <div className="text-zinc-500 text-xs uppercase tracking-wider mb-2">{technicalChecklist.length}-Item Technical Audit</div>
-                            <div className="flex items-baseline gap-3 mb-3">
-                              <div className="text-6xl font-bold text-white">{calculatedScore}<span className="text-2xl text-zinc-400">%</span></div>
-                              <div className="text-zinc-500 text-sm">
-                                ({earnedPoints.toFixed(1)}/{totalPossiblePoints} points)
-                              </div>
+                        // Debug technical scoring
+                        console.log('Technical scoring:', {
+                          totalChecks: technicalChecklist.length,
+                          passedChecks,
+                          failedChecks,
+                          totalPossiblePoints,
+                          earnedPoints,
+                          calculatedScore
+                        });
+                        
+                                                  return (
+                            <div>
+                              <div className="text-zinc-500 text-xs uppercase tracking-wider mb-2">Technical Health Performance</div>
+                              <div className="text-6xl font-bold text-white mb-3">{calculatedScore}<span className="text-2xl text-zinc-400">%</span></div>
+                              <p className="text-zinc-400 text-sm leading-relaxed">
+                                How well your page is optimized for AI crawlers with proper structure, accessibility, and technical implementation.
+                              </p>
                             </div>
-                            <p className="text-zinc-400 text-sm leading-relaxed">
-                              {passedChecks} of {technicalChecklist.length} checks passed. 
-                              {failedChecks > 0 && ` ${failedChecks} items need attention to reach 100%.`}
-                            </p>
-                          </div>
-                        );
+                          );
                       })()}
                     </div>
                     
@@ -1337,23 +1304,29 @@ export default function EnhancedSnapshotReportPage() {
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div>
                           <div className="text-zinc-500 text-xs uppercase tracking-wider mb-3">Audit Progress</div>
-                          <div className="text-3xl font-bold text-white mb-2">55</div>
+                          <div className="text-3xl font-bold text-white mb-2">{checklistResults.length || 0}</div>
                           <div className="text-zinc-400 text-sm mb-3">comprehensive checks</div>
                           <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2">
                               <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
-                              <span className="text-zinc-400 text-xs">Content, Technical, Schema</span>
+                              <span className="text-zinc-400 text-xs">
+                                {checklistResults.filter(check => check.passed).length} passed
+                              </span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                              <span className="text-zinc-400 text-xs">AI & Performance</span>
+                              <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                              <span className="text-zinc-400 text-xs">
+                                {checklistResults.filter(check => !check.passed).length} failed
+                              </span>
                             </div>
                           </div>
                         </div>
                         
                         <div>
                           <div className="text-zinc-500 text-xs uppercase tracking-wider mb-3">Category Breakdown</div>
-                          <div className="text-3xl font-bold text-white mb-2">7</div>
+                          <div className="text-3xl font-bold text-white mb-2">
+                            {[...new Set(checklistResults.map(check => check.category))].length || 0}
+                          </div>
                           <div className="text-zinc-400 text-sm mb-3">audit categories</div>
                           <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2">
@@ -1443,8 +1416,8 @@ export default function EnhancedSnapshotReportPage() {
                                        <p className="text-zinc-400 text-sm leading-relaxed">
                                          {getFixSuggestion(check.check_name, check.details, check.passed)}
                                        </p>
-                                     </div>
-                                   )}
+                      </div>
+                    )}
                                 </div>
                               );
                             })}
@@ -1453,10 +1426,10 @@ export default function EnhancedSnapshotReportPage() {
                       );
                     });
                   })()}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
         )}
       </div>
     </main>

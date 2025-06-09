@@ -33,6 +33,9 @@ export interface EnhancedSnapshotResult {
   schema_markup_score?: number;
   ai_optimization_score?: number;
   
+  // Calculated technical score from checklist
+  calculated_technical_score?: number;
+  
   // Issues & Recommendations
   critical_issues_count?: number;
   total_issues_count?: number;
@@ -239,6 +242,21 @@ export async function getEnhancedSnapshots(userId: string): Promise<EnhancedSnap
         });
       }
       
+      // Fetch checklist results for accurate scoring
+      let checklistResults: TechnicalChecklistItem[] = [];
+      if (snapshot.status === 'completed') {
+        checklistResults = await getTechnicalChecklistResults(snapshot.urls[0]);
+      }
+      
+      // Calculate real technical score from checklist if available
+      let technicalScore = 0;
+      if (checklistResults.length > 0) {
+        technicalScore = calculateTechnicalScoreFromChecklist(checklistResults);
+      } else {
+        // Fallback to legacy score
+        technicalScore = technicalData?.weighted_aeo_score || technicalData?.aeo_score || 0;
+      }
+      
       return {
         id: snapshot.id,
         url: snapshot.urls[0],
@@ -264,6 +282,9 @@ export async function getEnhancedSnapshots(userId: string): Promise<EnhancedSnap
         media_accessibility_score: technicalData?.media_accessibility_score,
         schema_markup_score: technicalData?.schema_markup_score,
         ai_optimization_score: technicalData?.ai_optimization_score,
+        
+        // Store calculated technical score
+        calculated_technical_score: technicalScore,
         
         // Issue counts - will be fetched separately if needed
         critical_issues_count: 0,
@@ -551,9 +572,24 @@ export async function getIssueCounts(url: string): Promise<{
 }
 
 /**
- * Get combined score for dashboard display
+ * Calculate technical score from checklist results
  */
-export function getCombinedScore(snapshot: EnhancedSnapshotResult): {
+export function calculateTechnicalScoreFromChecklist(checklistResults: TechnicalChecklistItem[]): number {
+  if (checklistResults.length === 0) return 0;
+  
+  const totalPossiblePoints = checklistResults.reduce((sum, check) => sum + check.weight, 0);
+  const earnedPoints = checklistResults.filter(check => check.passed).reduce((sum, check) => sum + check.weight, 0);
+  return Math.round((earnedPoints / totalPossiblePoints) * 100);
+}
+
+/**
+ * Get combined score for dashboard display - uses checklist-based scoring when available
+ */
+export function getCombinedScore(
+  snapshot: EnhancedSnapshotResult, 
+  checklistResults?: TechnicalChecklistItem[],
+  customVisibilityScore?: number
+): {
   score: number;
   breakdown: {
     visibility: number;
@@ -564,16 +600,26 @@ export function getCombinedScore(snapshot: EnhancedSnapshotResult): {
   const visibilityWeight = 0.6; // 60% weight on visibility
   const technicalWeight = 0.4;  // 40% weight on technical
 
-  // Both scores are already 0-100 percentages
-  // NOTE: visibility_score now excludes brand queries for true competitive visibility
-  const visibilityScore = snapshot.visibility_score || 0;
-  const technicalScore = snapshot.weighted_aeo_score || snapshot.aeo_score || 0;
+  // Use custom visibility score if provided, otherwise use database score
+  const visibilityScore = customVisibilityScore !== undefined ? customVisibilityScore : (snapshot.visibility_score || 0);
+  
+  // Use checklist-based scoring if available, otherwise fall back to legacy scores
+  let technicalScore = 0;
+  if (checklistResults && checklistResults.length > 0) {
+    technicalScore = calculateTechnicalScoreFromChecklist(checklistResults);
+  } else if (snapshot.calculated_technical_score !== undefined) {
+    // Use pre-calculated technical score from enhanced snapshots
+    technicalScore = snapshot.calculated_technical_score;
+  } else {
+    // Fallback to legacy scores only if no other data
+    technicalScore = snapshot.weighted_aeo_score || snapshot.aeo_score || 0;
+  }
   
   const combinedScore = Math.round(
     (visibilityScore * visibilityWeight) + (technicalScore * technicalWeight)
   );
 
-  // Realistic grading scale for competitive AI visibility (brand queries excluded)
+  // Realistic grading scale for competitive AI visibility
   let grade: 'A' | 'B' | 'C' | 'D' | 'F';
   if (combinedScore >= 70) grade = 'A';      // Excellent - very strong competitive AI presence
   else if (combinedScore >= 55) grade = 'B'; // Good - solid competitive AI visibility  
