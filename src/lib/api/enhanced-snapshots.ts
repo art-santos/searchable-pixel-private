@@ -41,6 +41,10 @@ export interface EnhancedSnapshotResult {
   // Scraping Status
   scrape_success?: boolean;
   scrape_error?: string;
+  
+  // Page Metadata
+  site_title?: string;
+  meta_description?: string;
 }
 
 export interface TechnicalIssue {
@@ -82,7 +86,48 @@ export interface VisibilityResult {
   }>;
 }
 
+export interface TechnicalChecklistItem {
+  id: string;
+  check_id: string;
+  check_name: string;
+  category: string;
+  weight: number;
+  passed: boolean;
+  details: string;
+  rule_parameters?: Record<string, any>;
+}
+
 const supabase = createClient()!;
+
+/**
+ * Clean up page titles by removing redundant site names and separators
+ */
+function cleanTitle(title?: string): string | undefined {
+  if (!title) return undefined;
+  
+  // Split by common separators
+  const parts = title.split(/[\|\-\–\—]/).map(part => part.trim());
+  
+  // Remove duplicate parts (case insensitive)
+  const uniqueParts = [];
+  const seen = new Set();
+  
+  for (const part of parts) {
+    const normalizedPart = part.toLowerCase();
+    if (!seen.has(normalizedPart) && part.length > 0) {
+      seen.add(normalizedPart);
+      uniqueParts.push(part);
+    }
+  }
+  
+  // Join with " | " and limit length
+  const cleanedTitle = uniqueParts.join(' | ');
+  
+  // Truncate if too long (keep under 100 characters)
+  return cleanedTitle.length > 100 
+    ? cleanedTitle.substring(0, 97) + '...'
+    : cleanedTitle;
+}
 
 /**
  * Get enhanced snapshot results with combined visibility + technical data
@@ -150,7 +195,7 @@ export async function getEnhancedSnapshots(userId: string): Promise<EnhancedSnap
       // Fetch page content separately
       const { data: pageContent, error: pageError } = await supabase
         .from('page_content')
-        .select('scrape_success, scrape_error')
+        .select('scrape_success, scrape_error, title, meta_description')
         .eq('request_id', snapshot.id)
         .eq('url', snapshot.urls[0])
         .single();
@@ -177,7 +222,9 @@ export async function getEnhancedSnapshots(userId: string): Promise<EnhancedSnap
           technical_health_score,
           media_accessibility_score,
           schema_markup_score,
-          ai_optimization_score
+          ai_optimization_score,
+          title,
+          meta_description
         `)
         .eq('url', snapshot.urls[0])
         .single();
@@ -225,7 +272,11 @@ export async function getEnhancedSnapshots(userId: string): Promise<EnhancedSnap
         
         // Scraping status
         scrape_success: pageContent?.scrape_success,
-        scrape_error: pageContent?.scrape_error
+        scrape_error: pageContent?.scrape_error,
+        
+        // Page metadata (from page_content table) - cleaned up
+        site_title: cleanTitle(pageContent?.title || technicalData?.title),
+        meta_description: pageContent?.meta_description || technicalData?.meta_description
       };
     })
   );
@@ -355,6 +406,65 @@ export async function getVisibilityResults(snapshotId: string): Promise<Visibili
 }
 
 /**
+ * Get comprehensive 55-item checklist results for a specific URL
+ */
+export async function getTechnicalChecklistResults(url: string): Promise<TechnicalChecklistItem[]> {
+  // First get the page ID for this URL
+  const { data: pageData, error: pageError } = await supabase
+    .from('pages')
+    .select('id, analysis_metadata')
+    .eq('url', url)
+    .single();
+
+  if (pageError || !pageData) {
+    console.error('Failed to find page for URL:', url, pageError);
+    return [];
+  }
+
+  // Try to fetch from dedicated checklist table first
+  const { data: checklistData, error: checklistError } = await supabase
+    .from('page_checklist_results')
+    .select(`
+      id,
+      check_id,
+      check_name,
+      category,
+      weight,
+      passed,
+      details,
+      rule_parameters
+    `)
+    .eq('page_id', pageData.id)
+    .order('check_id');
+
+  if (checklistError && checklistError.code !== '42P01') { // 42P01 = table doesn't exist
+    console.error('Failed to fetch checklist results:', checklistError);
+  }
+
+  // If we have checklist data from the table, return it
+  if (checklistData && checklistData.length > 0) {
+    return checklistData;
+  }
+
+  // Fallback: check if checklist results are stored in metadata
+  if (pageData.analysis_metadata?.checklist_results) {
+    return pageData.analysis_metadata.checklist_results.map((item: any, index: number) => ({
+      id: `${pageData.id}-${index}`,
+      check_id: item.id,
+      check_name: item.name,
+      category: item.category,
+      weight: item.weight,
+      passed: item.passed,
+      details: item.details,
+      rule_parameters: item.rule_parameters
+    }));
+  }
+
+  // No checklist results found for this URL (likely an older snapshot)
+  return [];
+}
+
+/**
  * Create a new enhanced snapshot request
  */
 export async function createEnhancedSnapshot(
@@ -454,6 +564,8 @@ export function getCombinedScore(snapshot: EnhancedSnapshotResult): {
   const visibilityWeight = 0.6; // 60% weight on visibility
   const technicalWeight = 0.4;  // 40% weight on technical
 
+  // Both scores are already 0-100 percentages
+  // NOTE: visibility_score now excludes brand queries for true competitive visibility
   const visibilityScore = snapshot.visibility_score || 0;
   const technicalScore = snapshot.weighted_aeo_score || snapshot.aeo_score || 0;
   
@@ -461,12 +573,13 @@ export function getCombinedScore(snapshot: EnhancedSnapshotResult): {
     (visibilityScore * visibilityWeight) + (technicalScore * technicalWeight)
   );
 
+  // Realistic grading scale for competitive AI visibility (brand queries excluded)
   let grade: 'A' | 'B' | 'C' | 'D' | 'F';
-  if (combinedScore >= 90) grade = 'A';
-  else if (combinedScore >= 80) grade = 'B';
-  else if (combinedScore >= 70) grade = 'C';
-  else if (combinedScore >= 60) grade = 'D';
-  else grade = 'F';
+  if (combinedScore >= 70) grade = 'A';      // Excellent - very strong competitive AI presence
+  else if (combinedScore >= 55) grade = 'B'; // Good - solid competitive AI visibility  
+  else if (combinedScore >= 40) grade = 'C'; // Average - some competitive AI mentions
+  else if (combinedScore >= 25) grade = 'D'; // Below average - limited competitive visibility
+  else grade = 'F';                          // Poor - minimal competitive AI presence
 
   return {
     score: combinedScore,

@@ -52,34 +52,20 @@ export async function POST(request: NextRequest) {
     
     console.log(`✅ Snapshot request created with ID: ${requestId}`);
     
-    // Trigger processing for THIS specific snapshot (not queue-based)
-    console.log('🔄 Triggering immediate processing for this snapshot...');
-    try {
-      // Pass the specific request ID instead of relying on queue order
-      const triggerResult = await triggerSnapshotProcessing(userId, requestId);
-      console.log('📡 Processing trigger result:', {
-        success: triggerResult.success,
-        message: triggerResult.message,
-        error: triggerResult.error || 'none'
-      });
-      
-      if (!triggerResult.success) {
-        console.warn('⚠️ Processing trigger failed, but request was created:', triggerResult.error);
-        console.warn('   Details:', triggerResult.message);
-        // Don't fail the whole request if trigger fails - the request is still created
-      } else {
-        console.log('✅ Immediate processing trigger successful');
-      }
-    } catch (triggerError: any) {
-      console.error('❌ Processing trigger exception:', triggerError.message);
-      console.error('   Name:', triggerError.name);
-      console.error('   Stack:', triggerError.stack);
-      console.error('   Cause:', triggerError.cause);
-      console.error('   Constructor:', triggerError.constructor.name);
-      // Don't fail the whole request if trigger fails
-    }
+    // Return immediately and trigger processing in background
+    console.log('🎉 Snapshot API completed successfully - returning immediately');
     
-    console.log('🎉 Snapshot API completed successfully');
+    // Trigger processing in background (don't await)
+    setImmediate(() => {
+      console.log('🔄 Triggering background processing for snapshot:', requestId);
+      triggerSnapshotProcessing(userId, requestId)
+        .then(result => {
+          console.log('✅ Background processing trigger completed:', result);
+        })
+        .catch(error => {
+          console.error('❌ Background processing trigger failed:', error.message);
+        });
+    });
     
     return NextResponse.json({ 
       success: true,
