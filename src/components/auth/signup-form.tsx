@@ -138,22 +138,14 @@ export function SignupForm({
         console.log('✅ SIGNUP SUCCESS:')
         console.log('👤 User created:', data.user?.email)
         console.log('🆔 User ID:', data.user?.id)
-        console.log('🔗 User email confirmed:', data.user?.email_confirmed_at)
-        console.log('📧 Session:', data.session ? 'Session exists' : 'No session')
-        
-        // Show success message
-        showNotification("success", "Account created successfully! Setting up your workspace...")
         
         // Call success callback
         onSignupSuccess?.()
         
-        console.log('🔄 SIGNUP DEBUG: About to redirect to dashboard...')
+        console.log('🔄 SIGNUP DEBUG: Redirecting to create workspace...')
         
-        // Add a small delay to show success message
-        setTimeout(() => {
-          // Redirect to dashboard (SimpleWorkspaceOnboarding will handle onboarding)
-          router.push('/dashboard')
-        }, 1500)
+        // Redirect directly to workspace creation to avoid dashboard flash
+        router.push('/create-workspace')
       } else {
         console.error('❌ SIGNUP DEBUG: No user in response data')
         console.log('📋 SIGNUP DEBUG: Full data object:', data)

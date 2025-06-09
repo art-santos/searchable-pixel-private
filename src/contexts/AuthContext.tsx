@@ -22,52 +22,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Initial session load + Listener
   useEffect(() => {
     if (!supabase) {
-        console.error("AuthContext: Supabase client not available on mount.");
-        setLoading(false);
+      setLoading(false);
       return;
     }
 
-    // Fetch initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const fetchInitialSession = async () => {
+      // Get the initial session and user
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      console.log("Initial session fetched:", session);
-    }).catch((error) => {
-      console.error("Error fetching initial session:", error);
+    }
+    
+    fetchInitialSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log(`Auth state change event: ${event}`);
+        setSession(session);
+        setUser(session?.user ?? null);
         setLoading(false);
-    });
-
-    // Set up the auth state change listener
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log(`Auth state change event: ${event}`, session);
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-
-      // Simplified navigation logic
-      setTimeout(() => {
-          if (event === 'SIGNED_IN' && session?.user) {
-          // If signed in and on the login page, redirect to dashboard
-          if (pathname === '/login') {
-            console.log('SIGNED_IN on login page, redirecting to dashboard');
-            router.push('/dashboard');
-            }
-          } else if (event === 'SIGNED_OUT') {
-          // If signed out, redirect to landing page
-          console.log('SIGNED_OUT, redirecting to landing page');
-          router.push('/');
-          }
-      }, 0);
-    });
+      }
+    );
 
     return () => {
       authListener?.subscription.unsubscribe();
     };
-  }, [supabase, router, pathname]);
+  }, [supabase]);
 
   const value = {
     supabase,

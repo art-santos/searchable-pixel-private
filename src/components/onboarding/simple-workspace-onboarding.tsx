@@ -81,22 +81,23 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
           companyError: companyError?.code
         })
 
-        // Only show onboarding if user is missing name OR workspace name OR company
+        // Check if user is missing critical workspace data
         const hasName = profile?.first_name?.trim()
         const hasWorkspaceName = profile?.workspace_name?.trim()
         const hasCompany = company?.id
-        const shouldShowOnboarding = !hasName || !hasWorkspaceName || !hasCompany
+        
+        // If user is missing ANY of these, redirect to create-workspace page
+        const shouldRedirectToWorkspaceCreation = !hasName || !hasWorkspaceName || !hasCompany
 
-        setShowOnboarding(shouldShowOnboarding)
-
-        // Pre-populate form if we have existing data
-        if (profile) {
-          setWorkspaceData({
-            name: profile.first_name || '',
-            workspaceName: profile.workspace_name || '',
-            domain: profile.domain || (company?.root_url ? new URL(company.root_url).hostname : '')
-          })
+        if (shouldRedirectToWorkspaceCreation) {
+          console.log('User missing workspace data, redirecting to create-workspace page')
+          window.location.href = '/create-workspace'
+          return
         }
+
+        // User has complete workspace - no onboarding needed
+        setShowOnboarding(false)
+
       } catch (err) {
         console.error('Error in onboarding check:', err)
       } finally {
@@ -125,31 +126,21 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
     setErrorMessage(null)
 
     try {
-      console.log('💾 ONBOARDING DEBUG: About to call saveOnboardingData...')
-      console.log('📋 ONBOARDING DEBUG: Payload:', {
+      const onboardingPayload: import('@/lib/onboarding/database').OnboardingData = {
+        userEmail: user.email || '',
         userName: workspaceData.name,
         workspaceName: workspaceData.workspaceName,
-        userEmail: user.email || '',
-        domain: workspaceData.domain, // Use the actual domain entered by user
-        isAnalyticsConnected: false,
-        keywords: [],
-        businessOffering: '',
-        knownFor: '',
-        competitors: []
-      })
+        domain: workspaceData.domain,
+        profileData: {
+          first_name: workspaceData.name
+        },
+      }
+
+      console.log('💾 ONBOARDING DEBUG: About to call saveOnboardingData...')
+      console.log('📋 ONBOARDING DEBUG: Payload:', onboardingPayload)
 
       // Use the proper onboarding data save function
-      const result = await saveOnboardingData(user, {
-        userName: workspaceData.name,
-        workspaceName: workspaceData.workspaceName,
-        userEmail: user.email || '',
-        domain: workspaceData.domain,
-        isAnalyticsConnected: false,
-        keywords: [],
-        businessOffering: '',
-        knownFor: '',
-        competitors: []
-      })
+      const result = await saveOnboardingData(user, onboardingPayload)
 
       console.log('📋 ONBOARDING DEBUG: saveOnboardingData result:', result)
 
@@ -177,10 +168,6 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
       setIsLoading(false)
       console.log('🏁 ONBOARDING DEBUG: Process completed, loading set to false')
     }
-  }
-
-  const handleSkip = () => {
-    setShowOnboarding(false)
   }
 
   const canProceed = () => {
@@ -294,31 +281,17 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
               </div>
             </div>
 
-            <Button
-              onClick={handleComplete}
-              disabled={!canProceed() || isLoading}
-              className="w-full mt-6 bg-[#1a1a1a] hover:bg-[#222] border border-[#333] hover:border-[#444] text-white h-10 text-sm font-medium transition-all duration-200"
-            >
-              {isLoading ? (
-                <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
-              ) : (
-                <>
-                  Get Started
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </>
-              )}
-            </Button>
+            <div className="flex gap-3 mt-6">
+              <Button
+                onClick={handleComplete}
+                className="w-full bg-white text-black text-sm h-9"
+                disabled={isLoading || !canProceed()}
+              >
+                {isLoading ? 'Creating...' : 'Continue'}
+                {!isLoading && <ArrowRight className="w-4 h-4 ml-2" />}
+              </Button>
+            </div>
           </motion.div>
-
-          {/* Skip Option */}
-          <div className="text-center mt-4">
-            <button
-              onClick={handleSkip}
-              className="text-xs text-[#666] hover:text-[#888] transition-colors"
-            >
-              Skip for now
-            </button>
-          </div>
         </div>
       </div>
     </div>

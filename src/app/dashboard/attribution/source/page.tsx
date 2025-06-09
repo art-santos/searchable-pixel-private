@@ -1,12 +1,12 @@
 'use client'
 
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { motion, useReducedMotion } from "framer-motion"
 import { TimeframeSelector, TimeframeOption } from "@/components/custom/timeframe-selector"
 import { useState, useEffect } from "react"
 import { useWorkspace } from "@/contexts/WorkspaceContext"
 import { useAuth } from "@/contexts/AuthContext"
-import { Loader2, ArrowLeft, ArrowRight } from "lucide-react"
+import { Loader2, ArrowLeft, Search, TrendingUp, Activity, Clock, ExternalLink, ArrowRight } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 
@@ -24,9 +24,10 @@ export default function AttributionBySourcePage() {
   const shouldReduceMotion = useReducedMotion()
   const [timeframe, setTimeframe] = useState<TimeframeOption>('Last 7 days')
   const { currentWorkspace, switching } = useWorkspace()
-  const { supabase } = useAuth()
+  const { session } = useAuth()
   const [companies, setCompanies] = useState<CrawlerCompany[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
     if (currentWorkspace) {
@@ -39,16 +40,10 @@ export default function AttributionBySourcePage() {
     
     setIsLoading(true)
     try {
-      const timeframeMap: Record<TimeframeOption, string> = {
-        'Last 24 hours': 'last24h',
-        'Last 7 days': 'last7d',
-        'Last 30 days': 'last30d'
-      }
+      // Auto-detect user's timezone
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
       
-      const sessionResult = await supabase?.auth.getSession()
-      const session = sessionResult?.data?.session
-      
-      const response = await fetch(`/api/dashboard/attribution-companies?timeframe=${timeframeMap[timeframe]}&workspaceId=${currentWorkspace.id}`, {
+      const response = await fetch(`/api/dashboard/attribution-companies?timeframe=last7d&timezone=${encodeURIComponent(timezone)}&workspaceId=${currentWorkspace.id}`, {
         headers: {
           'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
         }

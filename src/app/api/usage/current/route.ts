@@ -39,6 +39,29 @@ export async function GET() {
     // Use service role client for database operations
     const serviceSupabase = createServiceRoleClient()
 
+    // First, ensure the user has a profile record. If not, one is likely being created.
+    // Don't error out, but we can't proceed with usage checks.
+    const { data: profileCheck, error: profileCheckError } = await serviceSupabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .single()
+
+    if (profileCheckError || !profileCheck) {
+      console.warn(`[API /usage/current] Profile for user ${user.id} not found. Onboarding might be in progress.`)
+      // Return a default/empty usage state instead of erroring
+      return NextResponse.json({
+        billingPeriod: null,
+        billingPreferences: {},
+        spendingLimits: {},
+        domains: { included: 1, used: 0, purchased: 0, remaining: 1, percentage: 0 },
+        ai_logs: { included: 100, used: 0, remaining: 100, percentage: 0 },
+        addOns: [],
+        recentEvents: [],
+        notifications: [],
+      })
+    }
+
     // Get user's billing preferences
     const { data: userProfile, error: profileError } = await serviceSupabase
       .from('profiles')

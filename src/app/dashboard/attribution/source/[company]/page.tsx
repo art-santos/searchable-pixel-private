@@ -31,12 +31,13 @@ export default function CompanyCrawlerPage() {
   const shouldReduceMotion = useReducedMotion()
   const [timeframe, setTimeframe] = useState<TimeframeOption>('Last 7 days')
   const { currentWorkspace, switching } = useWorkspace()
-  const { supabase } = useAuth()
+  const { session, supabase } = useAuth()
   const [companyData, setCompanyData] = useState<CompanyData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const params = useParams()
   const company = params.company as string
-
+  const [error, setError] = useState<string | null>(null)
+  
   useEffect(() => {
     if (currentWorkspace && company) {
       fetchCompanyData()
@@ -44,31 +45,32 @@ export default function CompanyCrawlerPage() {
   }, [timeframe, currentWorkspace, company])
 
   const fetchCompanyData = async () => {
-    if (!currentWorkspace || !company) return
+    if (!currentWorkspace) return
     
     setIsLoading(true)
     try {
-      const timeframeMap: Record<TimeframeOption, string> = {
-        'Last 24 hours': 'last24h',
-        'Last 7 days': 'last7d',
-        'Last 30 days': 'last30d'
+      const headers = {
+        'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
       }
       
-      const sessionResult = await supabase?.auth.getSession()
-      const session = sessionResult?.data?.session
-      
-      const response = await fetch(`/api/dashboard/attribution-company-detail?company=${encodeURIComponent(company)}&timeframe=${timeframeMap[timeframe]}&workspaceId=${currentWorkspace.id}`, {
-        headers: {
-          'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
-        }
+      const response = await fetch(`/api/dashboard/attribution/company?company=${encodeURIComponent(company)}&workspaceId=${currentWorkspace.id}`, {
+        headers
       })
       
       if (response.ok) {
         const data = await response.json()
         setCompanyData(data)
+        setError(null)
+      } else if (response.status === 404) {
+        setError('No data found for this company')
+        setCompanyData(null)
+      } else {
+        throw new Error(`HTTP ${response.status}`)
       }
-    } catch (error) {
-      console.error('Error fetching company data:', error)
+    } catch (err) {
+      console.error('Error fetching company data:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load company data')
+      setCompanyData(null)
     } finally {
       setIsLoading(false)
     }
@@ -142,9 +144,9 @@ export default function CompanyCrawlerPage() {
             <div>
               <nav className="text-sm text-[#666] mb-2">
                 <Link href="/dashboard/attribution" className="hover:text-white transition-colors">Attribution</Link>
-                <span className="mx-2">></span>
+                <span className="mx-2">&gt;</span>
                 <Link href="/dashboard/attribution/source" className="hover:text-white transition-colors">By Source</Link>
-                <span className="mx-2">></span>
+                <span className="mx-2">&gt;</span>
                 <span className="text-white">{companyDisplayName}</span>
               </nav>
               

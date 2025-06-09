@@ -22,7 +22,7 @@ export default function AttributionByPagePage() {
   const shouldReduceMotion = useReducedMotion()
   const [timeframe, setTimeframe] = useState<TimeframeOption>('Last 7 days')
   const { currentWorkspace, switching } = useWorkspace()
-  const { supabase } = useAuth()
+  const { session } = useAuth()
   const [pages, setPages] = useState<CrawledPage[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -37,16 +37,10 @@ export default function AttributionByPagePage() {
     
     setIsLoading(true)
     try {
-      const timeframeMap: Record<TimeframeOption, string> = {
-        'Last 24 hours': 'last24h',
-        'Last 7 days': 'last7d',
-        'Last 30 days': 'last30d'
-      }
+      // Auto-detect user's timezone
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
       
-      const sessionResult = await supabase?.auth.getSession()
-      const session = sessionResult?.data?.session
-      
-      const response = await fetch(`/api/dashboard/attribution-pages?timeframe=${timeframeMap[timeframe]}&workspaceId=${currentWorkspace.id}`, {
+      const response = await fetch(`/api/dashboard/attribution-pages?timeframe=last7d&timezone=${encodeURIComponent(timezone)}&workspaceId=${currentWorkspace.id}`, {
         headers: {
           'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
         }

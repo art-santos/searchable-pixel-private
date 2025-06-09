@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { analyzeCrawlResults } from '@/lib/visibility/analyzer'
-import { getCrawlResults } from '@/services/firecrawl-client'
+import { checkCrawlStatus } from '@/services/firecrawl-client'
 
 export async function POST(request: NextRequest) {
   // Get the crawlJobId from the request
@@ -40,18 +40,18 @@ export async function POST(request: NextRequest) {
     }
     
     // Get the crawl results from FireCrawl
-    const crawlResults = await getCrawlResults(crawlJobId)
+    const crawlStatus = await checkCrawlStatus(crawlJobId)
     
-    if (!crawlResults || !crawlResults.results || !crawlResults.results.length) {
+    if (!crawlStatus || !crawlStatus.data || !crawlStatus.data.length) {
       return NextResponse.json({ error: 'No crawl results found' }, { status: 404 })
     }
     
-    // Get the base URL that was crawled
-    const baseUrl = crawlResults.url || crawlResults.results[0].url
+    // Get the base URL from the first result
+    const baseUrl = crawlStatus.data[0]?.url || 'unknown'
     
     // Analyze the results
     const analysisResults = await analyzeCrawlResults(
-      crawlResults.results,
+      crawlStatus.data,
       baseUrl
     )
     

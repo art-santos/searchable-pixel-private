@@ -3,7 +3,9 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useUser } from '@/hooks/use-user'
+import { useAuth } from "@/contexts/AuthContext"
+import { useWorkspace } from "@/contexts/WorkspaceContext"
+import { useState, useEffect } from "react"
 import { getUserInitials } from '@/lib/profile/avatar'
 import {
   LayoutDashboardIcon,
@@ -27,13 +29,98 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarProvider,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarRail,
 } from "@/components/ui/sidebar"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  ChevronRight,
+  BarChart3,
+  Search,
+  FileText,
+  Settings,
+  ChevronsUpDown,
+  LogOut,
+  User,
+  Crown,
+  Sparkles,
+  Eye,
+  Zap,
+  Target,
+  TrendingUp,
+  Globe,
+  Bot,
+  Layers,
+  Gauge,
+  FileSearch,
+  PenTool,
+  Code,
+  Cog,
+  ExternalLink,
+} from "lucide-react"
+
+interface UserProfile {
+  id: string
+  username?: string
+  full_name?: string
+  email?: string
+  profile_picture_url?: string
+  company_domain?: string
+  company_category?: string
+  updated_at?: string
+}
+
 export function SplitSidebar() {
+  const { user, supabase } = useAuth()
+  const { currentWorkspace } = useWorkspace()
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+
   const pathname = usePathname()
-  const { user, profile } = useUser()
+
+  // Fetch user profile when user changes
+  useEffect(() => {
+    if (!user || !supabase) {
+      setProfile(null)
+      return
+    }
+
+    const fetchProfile = async () => {
+      try {
+        const { data: profileData, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error fetching profile:', error)
+        }
+
+        if (profileData) {
+          setProfile(profileData)
+        } else {
+          // If no profile exists yet, create default profile with user ID
+          setProfile({ id: user.id })
+        }
+      } catch (err) {
+        console.error('Error fetching profile:', err)
+      }
+    }
+
+    fetchProfile()
+  }, [user, supabase])
 
   // Generate user initials
   const initials = getUserInitials(

@@ -57,12 +57,13 @@ export default function AttributionPage() {
   const shouldReduceMotion = useReducedMotion()
   const [timeframe, setTimeframe] = useState<TimeframeOption>('Last 7 days')
   const { currentWorkspace, switching } = useWorkspace()
-  const { supabase } = useAuth()
+  const { session, supabase } = useAuth()
   const [stats, setStats] = useState<AttributionStats | null>(null)
   const [crawlerData, setCrawlerData] = useState<CrawlerData[]>([])
   const [pageData, setPageData] = useState<PageData[]>([])
   const [chartData, setChartData] = useState<ChartDataPoint[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (currentWorkspace) {
@@ -258,17 +259,17 @@ export default function AttributionPage() {
         'Last 30 days': 'last30d'
       }
       
-      const sessionResult = await supabase?.auth.getSession()
-      const session = sessionResult?.data?.session
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      
       const headers = {
         'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
       }
       
       // Fetch all data in parallel
       const [statsResponse, crawlerResponse, pagesResponse] = await Promise.all([
-        fetch(`/api/dashboard/attribution-stats?timeframe=${timeframeMap[timeframe]}&workspaceId=${currentWorkspace.id}`, { headers }),
-        fetch(`/api/dashboard/crawler-stats?timeframe=${timeframeMap[timeframe]}&workspaceId=${currentWorkspace.id}`, { headers }),
-        fetch(`/api/dashboard/attribution-pages?timeframe=${timeframeMap[timeframe]}&workspaceId=${currentWorkspace.id}`, { headers })
+        fetch(`/api/dashboard/attribution-stats?timeframe=${timeframeMap[timeframe]}&timezone=${encodeURIComponent(timezone)}&workspaceId=${currentWorkspace.id}`, { headers }),
+        fetch(`/api/dashboard/crawler-stats?timeframe=${timeframeMap[timeframe]}&timezone=${encodeURIComponent(timezone)}&workspaceId=${currentWorkspace.id}`, { headers }),
+        fetch(`/api/dashboard/attribution-pages?timeframe=${timeframeMap[timeframe]}&timezone=${encodeURIComponent(timezone)}&workspaceId=${currentWorkspace.id}`, { headers })
       ])
       
       if (statsResponse.ok) {

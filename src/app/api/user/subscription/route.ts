@@ -11,13 +11,19 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user profile with subscription info
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('subscription_plan, subscription_status, stripe_customer_id')
       .eq('id', user.id)
       .single()
 
-    if (!profile) {
+    if (profileError || !profile) {
+      if (profileError && profileError.code !== 'PGRST116') {
+        // If the error is something other than "no rows", log it
+        console.error('Error fetching user subscription:', profileError)
+      }
+      
+      // If no profile or a "no rows" error, return default free plan
       return NextResponse.json({
         subscriptionPlan: 'free',
         subscriptionStatus: 'active',

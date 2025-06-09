@@ -23,7 +23,7 @@ interface CrawlerData {
 
 export function AttributionBySourceCard() {
   const shouldReduceMotion = useReducedMotion()
-  const { supabase } = useAuth()
+  const { session, supabase } = useAuth()
   const { currentWorkspace, switching } = useWorkspace()
   const [timeframe, setTimeframe] = useState<TimeframeOption>('Last 24 hours')
   const [isConnected, setIsConnected] = useState(false)
@@ -117,22 +117,28 @@ export function AttributionBySourceCard() {
     setError(null)
     
     try {
+      // Check if there's any crawler data for this workspace
+      const crawlerCheckResult = await supabase
+        ?.from('crawler_visits')
+        .select('id')
+        .eq('workspace_id', currentWorkspace.id)
+        .limit(1)
+        .single()
+      
+      if (!crawlerCheckResult?.data) {
+        // No crawler data found - user hasn't set up tracking yet
+        console.log('🔍 [fetchCrawlerData] No crawler data found - showing setup state')
+        setIsConnected(false)
+        setIsLoading(false)
+        return
+      }
+      
       // Map timeframe to API parameter
       const timeframeMap: Record<TimeframeOption, string> = {
         'Last 24 hours': 'last24h',
         'Last 7 days': 'last7d',
         'Last 30 days': 'last30d'
       }
-      
-      // Get the current session token from Supabase
-      const sessionResult = await supabase?.auth.getSession()
-      const session = sessionResult?.data?.session
-      
-      console.log('🔍 [fetchCrawlerData] Session info:', {
-        hasSession: !!session,
-        hasAccessToken: !!session?.access_token,
-        userId: session?.user?.id
-      })
       
       const apiUrl = `/api/dashboard/crawler-stats?timeframe=${timeframeMap[timeframe]}&workspaceId=${currentWorkspace.id}`
       console.log('🔍 [fetchCrawlerData] Making API call to:', apiUrl)

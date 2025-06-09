@@ -11,7 +11,7 @@ import { LinkIcon, TrendingUp, Loader2 } from "lucide-react"
 import { ConnectAnalyticsDialog } from "../connect-analytics-dialog"
 import { useAuth } from "@/contexts/AuthContext"
 import { useWorkspace } from "@/contexts/WorkspaceContext"
-import { Chart } from "./chart"
+
 
 interface CrawlerOption {
   id: string
@@ -27,7 +27,7 @@ interface ChartDataPoint {
 }
 
 export function PageViewCard() {
-  const { supabase } = useAuth()
+  const { session } = useAuth()
   const { currentWorkspace, switching } = useWorkspace()
   const [timeframe, setTimeframe] = useState<TimeframeType>('Last 24 hours')
   const [selectedCrawler, setSelectedCrawler] = useState<string>('all')
@@ -71,10 +71,6 @@ export function PageViewCard() {
     setIsChartVisible(false)
     
     try {
-      // Get the current session token from Supabase
-      const sessionResult = await supabase?.auth.getSession()
-      const session = sessionResult?.data?.session
-      
       // Auto-detect user's timezone
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
       

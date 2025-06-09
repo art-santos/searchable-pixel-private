@@ -41,7 +41,7 @@ export interface OnboardingData {
 export async function saveOnboardingData(
   user: User, 
   onboardingData: OnboardingData
-): Promise<{ success: boolean; companyId?: string; error?: string }> {
+): Promise<{ success: boolean; companyId?: string; workspaceId?: string; error?: string }> {
   const supabase = createClient()
   
   if (!supabase) {
@@ -102,9 +102,19 @@ export async function saveOnboardingData(
     
     if (existingCompany && !checkError) {
       console.log('✅ Found existing company:', existingCompany)
+      
+      // Also check for existing workspace
+      const { data: existingWorkspace } = await supabase
+        .from('workspaces')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_primary', true)
+        .single()
+      
       return { 
         success: true, 
-        companyId: existingCompany.id
+        companyId: existingCompany.id,
+        workspaceId: existingWorkspace?.id
       }
     }
     
@@ -137,9 +147,19 @@ export async function saveOnboardingData(
         
         if (foundCompany && !findError) {
           console.log('✅ Found existing company after duplicate error:', foundCompany.id)
+          
+          // Also check for existing workspace
+          const { data: existingWorkspace } = await supabase
+            .from('workspaces')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('is_primary', true)
+            .single()
+          
           return { 
             success: true, 
-            companyId: foundCompany.id
+            companyId: foundCompany.id,
+            workspaceId: existingWorkspace?.id
           }
         }
       }
@@ -149,6 +169,102 @@ export async function saveOnboardingData(
     
     console.log('✅ Company created successfully with ID:', companyResult.id)
     const companyId = companyResult.id
+
+    // 3. Create or update workspace record - CRITICAL FOR NEW USERS
+    console.log('🏢 Creating/updating workspace for user:', user.id)
+    
+    // Clean domain for workspace (remove protocol)
+    let cleanDomain = onboardingData.domain
+    if (cleanDomain.startsWith('http://')) {
+      cleanDomain = cleanDomain.substring(7)
+    } else if (cleanDomain.startsWith('https://')) {
+      cleanDomain = cleanDomain.substring(8)
+    }
+    
+    // Remove trailing slash if present
+    cleanDomain = cleanDomain.replace(/\/$/, '')
+    
+    // Check if user already has a primary workspace
+    const { data: existingWorkspace, error: workspaceCheckError } = await supabase
+      .from('workspaces')
+      .select('id, domain, workspace_name')
+      .eq('user_id', user.id)
+      .eq('is_primary', true)
+      .single()
+    
+    if (existingWorkspace && !workspaceCheckError) {
+      console.log('✅ Found existing primary workspace:', existingWorkspace)
+      
+      // Update the existing workspace with new data if needed
+      const { error: updateError } = await supabase
+        .from('workspaces')
+        .update({
+          domain: cleanDomain,
+          workspace_name: onboardingData.workspaceName,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingWorkspace.id)
+      
+      if (updateError) {
+        console.error('❌ Error updating workspace:', updateError)
+        return { success: false, error: `Failed to update workspace: ${updateError.message}` }
+      }
+      
+      console.log('✅ Workspace updated successfully')
+    } else {
+      // Create new primary workspace
+      const workspaceData = {
+        user_id: user.id,
+        domain: cleanDomain,
+        workspace_name: onboardingData.workspaceName,
+        is_primary: true
+      }
+      
+      console.log('🏢 Creating new primary workspace:', workspaceData)
+      const { data: newWorkspace, error: createError } = await supabase
+        .from('workspaces')
+        .insert(workspaceData)
+        .select('id')
+        .single()
+      
+      if (createError) {
+        console.error('❌ Error creating workspace:', createError)
+        
+        // Handle duplicate domain constraint
+        if (createError.code === '23505') {
+          console.log('🔍 Domain conflict detected, trying to find existing workspace...')
+          const { data: foundWorkspace, error: findWorkspaceError } = await supabase
+            .from('workspaces')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('domain', cleanDomain)
+            .single()
+          
+          if (foundWorkspace && !findWorkspaceError) {
+            console.log('✅ Found existing workspace with same domain:', foundWorkspace.id)
+            
+            // Update it to be primary
+            const { error: makePrimaryError } = await supabase
+              .from('workspaces')
+              .update({ is_primary: true, workspace_name: onboardingData.workspaceName })
+              .eq('id', foundWorkspace.id)
+            
+            if (makePrimaryError) {
+              console.error('❌ Error making workspace primary:', makePrimaryError)
+              return { success: false, error: `Failed to set workspace as primary: ${makePrimaryError.message}` }
+            }
+            
+            console.log('✅ Existing workspace set as primary')
+          } else {
+            return { success: false, error: `Failed to create workspace: ${createError.message}` }
+          }
+        } else {
+          return { success: false, error: `Failed to create workspace: ${createError.message}` }
+        }
+      } else {
+        console.log('✅ New primary workspace created with ID:', newWorkspace.id)
+      }
+    }
 
     // Initialize subscription usage tracking
     const { error: usageError } = await supabase
@@ -167,10 +283,19 @@ export async function saveOnboardingData(
         updated_at: new Date().toISOString()
       })
 
+    // Get the workspace ID to return
+    const { data: finalWorkspace } = await supabase
+      .from('workspaces')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('is_primary', true)
+      .single()
+    
     console.log('🎉 Onboarding data save completed successfully')
     return { 
       success: true, 
-      companyId
+      companyId,
+      workspaceId: finalWorkspace?.id
     }
 
   } catch (error) {
