@@ -102,10 +102,10 @@ export async function updateSubscriptionStatus({
 }
 
 /**
- * Downgrade user to free plan when subscription is deleted
+ * Cancel user subscription when deleted (no free plan in new model)
  * This is called from webhooks and needs service role access
  */
-export async function downgradeToFreePlan({
+export async function cancelUserSubscription({
   stripeCustomerId,
 }: {
   stripeCustomerId: string
@@ -115,15 +115,15 @@ export async function downgradeToFreePlan({
   const { error } = await supabase
     .from('profiles')
     .update({
-      subscription_status: 'free',
-      subscription_plan: 'free',
+      subscription_status: 'canceled',
+      subscription_plan: 'starter', // Default to starter (they'll need to resubscribe)
       subscription_period_end: null,
       subscription_id: null,
     })
     .eq('stripe_customer_id', stripeCustomerId)
   
   if (error) {
-    console.error('Error downgrading to free plan:', error)
+    console.error('Error canceling user subscription:', error)
   }
 }
 

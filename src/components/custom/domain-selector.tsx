@@ -105,16 +105,32 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
   }, [currentWorkspace])
 
   // Check if user can add domains
-  const canAddDomains = subscription?.subscriptionPlan === 'plus' || subscription?.subscriptionPlan === 'pro'
-  const isFreePlan = !subscription?.subscriptionPlan || subscription?.subscriptionPlan === 'free'
-  const isVisibilityPlan = subscription?.subscriptionPlan === 'visibility'
+  const isTeamPlan = subscription?.subscriptionPlan === 'team'
+  const currentPlan = subscription?.subscriptionPlan || 'starter'
+  
+  // Calculate max workspaces based on plan + add-ons
+  const getMaxWorkspaces = () => {
+    let baseLimit = 1 // Default for starter/pro
+    if (isTeamPlan) {
+      baseLimit = 5 // Team gets 5 included
+    }
+    
+    // Add extra domains from add-ons
+    const domainsAddon = usageData?.usage?.addOns?.find((addon: any) => addon.add_on_type === 'extra_domains' && addon.status === 'active')
+    const extraDomains = domainsAddon?.quantity || 0
+    
+    return baseLimit + extraDomains
+  }
+  
+  const maxWorkspaces = getMaxWorkspaces()
+  const canAddDomains = workspaces.length < maxWorkspaces
 
   const handleAddDomain = () => {
     if (!canAddDomains) {
-      // Redirect to upgrade for free/visibility users
-      router.push('/settings?tab=billing&showUpgrade=true&feature=multi-domain&requiredPlan=plus')
+      // Redirect to upgrade for non-team users
+      router.push('/settings?tab=billing&upgrade=team&feature=multiple-workspaces')
     } else {
-      // Show workspace creation dialog for plus/pro users
+      // Show workspace creation dialog for team users
       setShowWorkspaceCreationDialog(true)
     }
   }
@@ -150,14 +166,14 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
   }
 
   const getAddDomainText = () => {
-    if (isFreePlan || isVisibilityPlan) {
-      return 'Upgrade to Plus to add domains'
+    if (!isTeamPlan) {
+      return 'Upgrade to Team for multiple workspaces'
     }
     return 'Add new workspace'
   }
 
   const getAddDomainIcon = () => {
-    if (isFreePlan || isVisibilityPlan) {
+    if (!isTeamPlan) {
       return Crown
     }
     return Plus
@@ -167,22 +183,22 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
 
   // Calculate available slots for empty workspace placeholders
   const getAvailableSlots = () => {
-    if (!usageData?.addOns) return 0
-    const domainsAddon = usageData.addOns.find((addon: any) => addon.add_on_type === 'extra_domains')
-    const billingSlots = domainsAddon?.quantity || 0
-    const extraWorkspaces = workspaces.filter(ws => !ws.is_primary).length
-    return Math.max(0, billingSlots - extraWorkspaces)
+    const usedWorkspaces = workspaces.length
+    const maxAllowed = maxWorkspaces
+    return Math.max(0, maxAllowed - usedWorkspaces)
   }
 
   const availableSlots = getAvailableSlots()
 
   // Debug logging for admin
   console.log('Domain Selector Debug:', {
+    subscription: subscription?.subscriptionPlan,
+    isTeamPlan,
     workspaces: workspaces.length,
-    extraWorkspaces: workspaces.filter(ws => !ws.is_primary).length,
-    usageData: usageData?.addOns,
+    maxWorkspaces,
     availableSlots,
-    canAddDomains
+    canAddDomains,
+    usageData: usageData?.usage?.addOns
   })
 
   return (

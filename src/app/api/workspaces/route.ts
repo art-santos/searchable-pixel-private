@@ -46,6 +46,71 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Domain and workspace name are required' }, { status: 400 })
     }
 
+    // Check user's subscription plan - only Team plan can have multiple workspaces
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('subscription_plan')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile) {
+      return NextResponse.json({ error: 'Unable to verify subscription' }, { status: 500 })
+    }
+
+    // Check current workspace count
+    const { count: workspaceCount, error: countError } = await supabase
+      .from('workspaces')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+
+    if (countError) {
+      return NextResponse.json({ error: 'Unable to verify workspace count' }, { status: 500 })
+    }
+
+    // Enforce workspace limits based on plan
+    const plan = profile.subscription_plan || 'starter'
+    let maxWorkspaces = 1 // Default for starter
+    let includedWorkspaces = 1 // Base included workspaces
+
+    // Set base limits for each plan
+    if (plan === 'pro') {
+      maxWorkspaces = 1 // Pro gets 1 included
+      includedWorkspaces = 1
+    } else if (plan === 'team') {
+      maxWorkspaces = 5 // Team gets 5 included (1 primary + 4 additional)
+      includedWorkspaces = 5
+    }
+
+    // Check for extra domain add-ons for ALL plans that support them (Pro and Team)
+    if (plan === 'pro' || plan === 'team') {
+      const { data: addOns } = await supabase
+        .from('subscription_add_ons')
+        .select('quantity')
+        .eq('user_id', user.id)
+        .eq('add_on_type', 'extra_domains')
+        .eq('is_active', true)
+        .single()
+      
+      if (addOns?.quantity) {
+        maxWorkspaces += addOns.quantity // Add extra domains beyond base plan
+      }
+    }
+
+    if ((workspaceCount || 0) >= maxWorkspaces) {
+      if (plan === 'team') {
+        return NextResponse.json({ 
+          error: `Team plan includes up to ${maxWorkspaces} workspaces. You've reached the limit.`,
+          requiresUpgrade: false
+        }, { status: 403 })
+      } else {
+        return NextResponse.json({ 
+          error: 'Multiple workspaces require Team plan. Upgrade to create additional workspaces.',
+          requiresUpgrade: true,
+          requiredPlan: 'team'
+        }, { status: 403 })
+      }
+    }
+
     // Check if workspace with this domain already exists for user
     const { data: existing } = await supabase
       .from('workspaces')

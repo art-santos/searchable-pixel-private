@@ -57,27 +57,27 @@ export function WorkspaceCreationDialog({
       const data = await response.json()
 
       if (!response.ok) {
+        if (data.requiresUpgrade) {
+          toast({
+            title: "Upgrade Required",
+            description: data.error,
+            variant: "destructive",
+            action: (
+              <Button
+                size="sm"
+                onClick={() => window.location.href = '/settings?tab=billing&upgrade=team'}
+                className="bg-white text-black"
+              >
+                Upgrade to Team
+              </Button>
+            )
+          })
+          return
+        }
         throw new Error(data.error || 'Failed to create workspace')
       }
 
-      // Then, ensure billing is updated to reflect the new workspace
-      try {
-        const billingResponse = await fetch('/api/billing/manage-addons', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'sync',
-            addonType: 'extra_domains'
-          })
-        })
-
-        if (!billingResponse.ok) {
-          console.warn('Failed to sync billing, but workspace was created successfully')
-        }
-      } catch (billingError) {
-        console.warn('Billing sync failed:', billingError)
-        // Don't fail the whole operation if billing sync fails
-      }
+      // Workspace created successfully - no additional billing sync needed for Team plan
 
       toast({
         title: "Workspace Created!",
@@ -134,7 +134,7 @@ export function WorkspaceCreationDialog({
               Create a new workspace to track a different domain. Each workspace is completely isolated.
             </p>
             <p className="text-xs text-[#666]">
-              💡 This will add $100/month to your subscription.
+              💡 Team plan includes 5 workspaces (1 primary + 4 additional). Pro/Starter plans can purchase extra domains.
             </p>
           </div>
 

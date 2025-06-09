@@ -36,59 +36,104 @@ export const CMS_OPTIONS: CmsOption[] = [
 
 export const PRICING_PLANS: PricingPlan[] = [
   {
-    id: 'visibility',
-    name: 'Visibility',
-    description: 'Track AI visibility across all major models.',
-    monthlyPrice: 100,
-    annualPrice: 80,
+    id: 'starter',
+    name: 'Starter',
+    description: 'Start tracking AI crawler traffic with 10 lines of code',
+    monthlyPrice: 30,
+    annualPrice: 25, // ~17% discount
     features: [
-      'Unlimited AI crawler tracking',
-      'Bot activity monitoring',
-      'Access to Snapshots',
-      'Basic analytics dashboard'
+      '1 domain',
+      'Simple code snippet setup',
+      'Basic crawler tracking',
+      'Total daily crawl count',
+      '7-day crawl history',
+      'Snapshot reports: 10/month',
+      'Email alerts (first crawl only)',
+      '7-day free trial'
     ],
-    buttonText: 'Start Visibility',
+    buttonText: 'Start 7-Day Trial',
     buttonStyle: 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white border border-[#333]',
-    badge: '🟢',
-    badgeColor: 'bg-green-500'
-  },
-  {
-    id: 'plus',
-    name: 'Plus',
-    description: 'Everything in Visibility, plus visitor identification.',
-    monthlyPrice: 200,
-    annualPrice: 160,
-    features: [
-      'Everything in Visibility',
-      'Includes 3,750 monthly visitor credits',
-      'Real-time visitor feed',
-      'Slack/email alerts',
-      'CSV export'
-    ],
-    isRecommended: true,
-    buttonText: 'Start Plus',
-    buttonStyle: 'bg-white hover:bg-[#f5f5f5] text-black',
-    badge: '🟡',
-    badgeColor: 'bg-yellow-500'
+    badge: '🧪',
+    badgeColor: 'bg-blue-500',
+    trialDays: 7,
+    limitations: [
+      'Add-ons available immediately, billed monthly'
+    ]
   },
   {
     id: 'pro',
     name: 'Pro',
-    description: 'Everything in Visibility, plus advanced features.',
-    monthlyPrice: 800,
-    annualPrice: 640,
+    description: 'Full visibility + analytics for serious projects',
+    monthlyPrice: 100,
+    annualPrice: 83, // ~17% discount
     features: [
-      'Everything in Visibility',
-      'Includes 15,000 monthly visitor credits',
-      'Advanced filtering',
-      'Multi-domain support (3 included)',
-      'Lead scoring + routing',
+      '1 domain',
+      'Full crawler breakdown',
+      'Bot name, company, timestamp, page path',
+      '90-day crawl history',
+      'Snapshot reports: 50/month',
+      'Smart alerts (spike detection, bot-specific alerts)',
+      'Page-level crawler logs',
+      'API access',
+      'CSV export',
+      'PDF audit report export'
+    ],
+    isRecommended: true,
+    buttonText: 'Start Pro',
+    buttonStyle: 'bg-white hover:bg-[#f5f5f5] text-black',
+    badge: '⚡️',
+    badgeColor: 'bg-yellow-500'
+  },
+  {
+    id: 'team',
+    name: 'Team',
+    description: 'For agencies & multi-site operations',
+    monthlyPrice: 400,
+    annualPrice: 333, // ~17% discount
+    features: [
+      '5 domains included',
+      'Unlimited snapshots',
+      'All Pro features',
+      'Team access (up to 5 users)',
+      'Slack/Discord alerts',
+      'Workspace analytics (cross-domain rollup)',
+      'Anomaly detection & scheduled reports',
       'Priority support'
     ],
-    buttonText: 'Start Pro',
+    buttonText: 'Start Team',
     buttonStyle: 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white border border-[#333]',
-    badge: '🔴',
-    badgeColor: 'bg-red-500'
+    badge: '🧑‍🤝‍🧑',
+    badgeColor: 'bg-purple-500'
+  }
+]
+
+export const ADD_ON_PRICING = [
+  {
+    id: 'extra_domain',
+    name: 'Extra Domain',
+    description: 'Add an additional domain',
+    price: 100,
+    unit: 'per month',
+    availableFor: ['pro', 'team'],
+    features: [
+      'Monitor additional domain',
+      'Separate analytics dashboard',
+      'Individual crawler tracking'
+    ]
+  },
+  {
+    id: 'edge_alerts',
+    name: 'Edge Alerts',
+    description: 'Real-time webhook alerts for crawler spikes or new bot activity',
+    price: 10,
+    unit: 'per month',
+    availableFor: ['starter', 'pro', 'team'],
+    features: [
+      'Real-time webhook notifications',
+      'Crawler spike detection',
+      'New bot activity alerts',
+      'Custom threshold settings'
+    ]
   }
 ]
 

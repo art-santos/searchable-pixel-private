@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { stripe, mapSubscriptionToPlan, getAddOnPriceId } from '@/lib/stripe'
+import { 
+  stripe, 
+  mapSubscriptionToPlan, 
+  getAddOnPriceId,
+  validateWebhookSignature,
+  hasActiveTrial 
+} from '@/lib/stripe'
 import { 
   updateUserSubscription, 
   updateSubscriptionStatus, 
-  downgradeToFreePlan 
+  cancelUserSubscription 
 } from '@/lib/stripe-profiles'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 
@@ -17,7 +23,7 @@ export async function POST(req: NextRequest) {
   let event: Stripe.Event
 
   try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+    event = validateWebhookSignature(body, signature, webhookSecret)
   } catch (err) {
     console.error('Webhook signature verification failed:', err)
     return NextResponse.json(
@@ -83,8 +89,8 @@ export async function POST(req: NextRequest) {
         console.log('Subscription deleted:', subscription.id)
         console.log('Customer:', subscription.customer)
         
-        // Update user to free plan in the database
-        await downgradeToFreePlan({
+        // Cancel user subscription (no free plan in new model)
+        await cancelUserSubscription({
           stripeCustomerId: subscription.customer as string
         })
         
@@ -148,9 +154,9 @@ async function updateSubscriptionAddOns(subscription: Stripe.Subscription) {
       return
     }
 
-    // Get add-on price IDs for comparison
+    // Get add-on price IDs for comparison (simplified for new model)
     const domainPriceId = getAddOnPriceId('extra_domains')
-    const articlePriceId = getAddOnPriceId('extra_articles')
+    const edgeAlertsPriceId = getAddOnPriceId('edge_alerts')
 
     // Mark all existing add-ons as cancelled first
     await serviceSupabase
@@ -159,16 +165,16 @@ async function updateSubscriptionAddOns(subscription: Stripe.Subscription) {
       .eq('user_id', userId)
       .eq('status', 'active')
 
-    // Process current subscription items
+    // Process current subscription items (simplified for new model)
     for (const item of subscription.items.data) {
-      let addOnType: 'extra_domains' | 'extra_articles' | null = null
+      let addOnType: 'extra_domains' | 'edge_alerts' | null = null
       let unitPriceCents = 0
 
       if (item.price.id === domainPriceId) {
         addOnType = 'extra_domains'
         unitPriceCents = 10000 // $100
-      } else if (item.price.id === articlePriceId) {
-        addOnType = 'extra_articles'
+      } else if (item.price.id === edgeAlertsPriceId) {
+        addOnType = 'edge_alerts'
         unitPriceCents = 1000 // $10
       }
 

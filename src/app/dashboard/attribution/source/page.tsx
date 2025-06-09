@@ -27,10 +27,17 @@ export default function AttributionBySourcePage() {
   const shouldReduceMotion = useReducedMotion()
   const [timeframe, setTimeframe] = useState<TimeframeOption>('Last 7 days')
   const { currentWorkspace, switching } = useWorkspace()
-  const { supabase } = useAuth()
+  const { supabase, session } = useAuth()
   const [bots, setBots] = useState<CrawlerBot[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [expandedBots, setExpandedBots] = useState<Set<string>>(new Set())
+
+  // Map timeframe options to API parameters
+  const timeframeMap: Record<TimeframeOption, string> = {
+    'Last 24 hours': '24h',
+    'Last 7 days': '7d',
+    'Last 30 days': '30d'
+  }
 
   useEffect(() => {
     if (currentWorkspace) {

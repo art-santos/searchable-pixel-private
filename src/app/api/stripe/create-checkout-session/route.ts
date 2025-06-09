@@ -1,40 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe, getPriceId } from '@/lib/stripe'
+import { createCheckoutSession } from '@/lib/stripe'
 
 export async function POST(req: NextRequest) {
   try {
-    const { planId, isAnnual, customerId, customerEmail } = await req.json()
+    const { 
+      planId, 
+      isAnnual = false, 
+      customerId, 
+      customerEmail,
+      addOns = {}
+    } = await req.json()
 
-    // Get the price ID using helper function
-    const priceId = getPriceId(planId, isAnnual)
-
-    if (!priceId) {
+    // Validate required fields
+    if (!planId) {
       return NextResponse.json(
-        { error: 'Invalid plan selected' },
+        { error: 'Plan ID is required' },
         { status: 400 }
       )
     }
 
-    // Create Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      ...(customerId && { customer: customerId }),
-      ...(customerEmail && !customerId && { customer_email: customerEmail }),
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?canceled=true`,
-      metadata: {
-        planId,
-        billing: isAnnual ? 'annual' : 'monthly',
-      },
-      allow_promotion_codes: true,
-      billing_address_collection: 'required',
+    if (!customerEmail && !customerId) {
+      return NextResponse.json(
+        { error: 'Customer email or ID is required' },
+        { status: 400 }
+      )
+    }
+
+    // Set trial for starter plan
+    const trialDays = planId === 'starter' ? 7 : 0
+
+    // Create checkout session using new helper
+    const session = await createCheckoutSession({
+      planId,
+      isAnnual,
+      customerId,
+      customerEmail,
+      addOns,
+      trialDays,
+      successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/settings?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL}/settings?canceled=true`,
     })
 
     return NextResponse.json({ url: session.url })

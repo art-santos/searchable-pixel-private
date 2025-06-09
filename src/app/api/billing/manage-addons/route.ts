@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
 
-    if (!['extra_articles', 'extra_domains'].includes(addonType)) {
+    if (!['extra_domains', 'edge_alerts'].includes(addonType)) {
       return NextResponse.json({ error: 'Invalid addon type' }, { status: 400 })
     }
 
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get the add-on price ID for this addon type (fixed monthly pricing)
-    const priceId = getAddOnPriceId(addonType as 'extra_articles' | 'extra_domains')
+    const priceId = getAddOnPriceId(addonType as 'extra_domains' | 'edge_alerts')
     
     if (!priceId) {
       return NextResponse.json({ error: `No price configured for ${addonType}` }, { status: 400 })
@@ -60,20 +60,35 @@ export async function POST(req: NextRequest) {
 
       if (!billingError && billingPeriod) {
         if (action === 'remove') {
+          // For admin testing, properly remove the add-on
           await serviceSupabase
             .from('subscription_add_ons')
-            .update({ status: 'cancelled' })
+            .update({ 
+              status: 'cancelled',
+              quantity: 0
+            })
             .eq('user_id', user.id)
             .eq('add_on_type', addonType)
             .eq('status', 'active')
+          
+          console.log(`🧪 Admin: Removed ${addonType} add-on from database`)
         } else {
+          const getPriceInCents = (type: string) => {
+            switch (type) {
+              case 'extra_domains': return 10000 // $100  
+              case 'edge_alerts': return 1000 // $10
+              default: return 1000
+            }
+          }
+
+          const unitPrice = getPriceInCents(addonType)
           const addonData = {
             user_id: user.id,
             subscription_usage_id: billingPeriod.usage_id,
             add_on_type: addonType,
             quantity: quantity || 1,
-            unit_price_cents: addonType === 'extra_articles' ? 1000 : 10000,
-            total_price_cents: (quantity || 1) * (addonType === 'extra_articles' ? 1000 : 10000),
+            unit_price_cents: unitPrice,
+            total_price_cents: (quantity || 1) * unitPrice,
             stripe_subscription_item_id: `mock_${Date.now()}`, // Mock Stripe ID for admin
             status: 'active',
             billing_period_start: billingPeriod.period_start,
@@ -236,13 +251,22 @@ export async function POST(req: NextRequest) {
           .eq('status', 'active')
       } else {
         // Create or update add-on record
+        const getPriceInCents = (type: string) => {
+          switch (type) {
+            case 'extra_domains': return 10000 // $100  
+            case 'edge_alerts': return 1000 // $10
+            default: return 1000
+          }
+        }
+
+        const unitPrice = getPriceInCents(addonType)
         const addonData = {
           user_id: user.id,
           subscription_usage_id: billingPeriod.usage_id,
           add_on_type: addonType,
           quantity: quantity || 1,
-          unit_price_cents: addonType === 'extra_articles' ? 1000 : 10000, // $10 or $100
-          total_price_cents: (quantity || 1) * (addonType === 'extra_articles' ? 1000 : 10000),
+          unit_price_cents: unitPrice,
+          total_price_cents: (quantity || 1) * unitPrice,
           stripe_subscription_item_id: result?.id,
           status: 'active',
           billing_period_start: billingPeriod.period_start,
