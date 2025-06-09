@@ -9,6 +9,7 @@ import {
   checkUserRateLimit,
   type SnapshotRequest
 } from '@/lib/snapshot-client'
+import { getEnhancedSnapshots, getCombinedScore, type EnhancedSnapshotResult } from '@/lib/api/enhanced-snapshots'
 
 export default function SnapshotPage() {
   const { user, loading } = useAuth()
@@ -47,7 +48,7 @@ export default function SnapshotPage() {
   
   // History state
   const [showHistory, setShowHistory] = useState(false)
-  const [recentSnapshots, setRecentSnapshots] = useState<SnapshotRequest[]>([])
+  const [recentSnapshots, setRecentSnapshots] = useState<EnhancedSnapshotResult[]>([])
   
   // Rate limiting
   const [rateLimit, setRateLimit] = useState<{
@@ -78,10 +79,13 @@ export default function SnapshotPage() {
   const loadUserData = async () => {
     if (!user?.id) return
     
-    // Load recent snapshots
-    const { success: snapshotsSuccess, requests } = await getUserSnapshots(user.id, 5)
-    if (snapshotsSuccess) {
-      setRecentSnapshots(requests || [])
+    // Load recent enhanced snapshots with scores
+    try {
+      const enhancedSnapshots = await getEnhancedSnapshots(user.id)
+      setRecentSnapshots(enhancedSnapshots.slice(0, 5)) // Take latest 5
+    } catch (error) {
+      console.error('Failed to load enhanced snapshots:', error)
+      setRecentSnapshots([])
     }
     
     // Check rate limit
@@ -135,6 +139,7 @@ export default function SnapshotPage() {
     setError(null)
 
     try {
+      // Immediately redirect to a processing page while the API call happens
       const response = await fetch('/api/snapshots', {
         method: 'POST',
         headers: {
@@ -149,15 +154,16 @@ export default function SnapshotPage() {
       
       const data = await response.json()
       
-      if (response.ok && data.success) {
-        // Navigate to the snapshot processing page
+      if (response.ok && data.success && data.requestId) {
+        // Immediately redirect - don't wait for processing to complete
         window.location.href = `/dashboard/snapshot/${data.requestId}`
+        return
       } else {
         setError(data.error || 'Failed to create snapshot')
+        setIsSubmitting(false)
       }
     } catch (error: any) {
       setError(error.message || 'An unexpected error occurred')
-    } finally {
       setIsSubmitting(false)
     }
   }
@@ -219,6 +225,13 @@ export default function SnapshotPage() {
             animation-iteration-count: 1 !important;
             transition-duration: 0.01ms !important;
           }
+        }
+        
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
       `}</style>
       
@@ -414,12 +427,15 @@ export default function SnapshotPage() {
         )}
       </div>
 
-      {/* History Sidebar */}
-      <div className={`fixed right-0 top-0 h-full w-80 bg-[#181818] border-l border-[#333] p-6 overflow-y-auto transform transition-transform duration-300 ease-out z-50 ${
+      {/* Enhanced History Sidebar */}
+      <div className={`fixed right-0 top-0 h-full w-96 bg-[#181818] border-l border-[#333] p-6 overflow-y-auto transform transition-transform duration-300 ease-out z-50 ${
         showHistory ? 'translate-x-0' : 'translate-x-full'
       }`}>
         <div className="flex items-center justify-between mb-8">
-          <h3 className="text-white font-semibold text-lg tracking-tight">Recent Snapshots</h3>
+          <div>
+            <h3 className="text-white font-semibold text-lg tracking-tight">Recent Snapshots</h3>
+            <p className="text-[#666] text-xs mt-1">{recentSnapshots.length} snapshots found</p>
+          </div>
           <button
             onClick={() => setShowHistory(false)}
             className="flex items-center justify-center w-8 h-8 bg-[#1C1C1C] border border-[#333] rounded-lg hover:bg-[#2A2A2A] transition-colors"
@@ -428,56 +444,135 @@ export default function SnapshotPage() {
           </button>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           {recentSnapshots.length > 0 ? (
-            recentSnapshots.map((snapshot, index) => (
-              <Link
-                key={snapshot.id}
-                href={`/dashboard/snapshot/${snapshot.id}`}
-                className={`block bg-[#1C1C1C] border border-[#333] p-4 hover:bg-[#2A2A2A] hover:border-[#444] transition-all duration-200 ease-out hover:scale-[1.02] transform ${
-                  showHistory ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
-                }`}
-                style={{
-                  transitionDelay: showHistory ? `${index * 50}ms` : '0ms'
-                }}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="text-white font-medium text-sm tracking-tight mb-1">
-                      {snapshot.topic || 'Snapshot Analysis'}
+            recentSnapshots.map((snapshot, index) => {
+              const combinedScore = snapshot.status === 'completed' ? getCombinedScore(snapshot) : null;
+              const hostname = getHostname(snapshot.url);
+              
+              return (
+                <div
+                  key={snapshot.id}
+                  className={`bg-[#1C1C1C] border border-[#333] p-3 hover:bg-[#2A2A2A] hover:border-[#444] transition-all duration-200 ease-out hover:scale-[1.01] transform group ${
+                    showHistory ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
+                  }`}
+                  style={{
+                    transitionDelay: showHistory ? `${index * 50}ms` : '0ms'
+                  }}
+                >
+                  {/* Header with Favicon, Info, and Score */}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="relative flex-shrink-0">
+                        <img
+                          src={`https://www.google.com/s2/favicons?domain=${new URL(snapshot.url).hostname}&sz=128`}
+                          alt=""
+                          className="w-4 h-4 rounded"
+                          onError={(e) => {
+                            e.currentTarget.src = '/images/split-icon-white.svg';
+                          }}
+                        />
+                        {snapshot.status === 'completed' && (
+                          <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-400 rounded-full"></div>
+                        )}
+                        {snapshot.status === 'processing' && (
+                          <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                        )}
+                        {snapshot.status === 'pending' && (
+                          <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-400 rounded-full"></div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-white font-medium text-sm truncate">
+                          {snapshot.topic || 'Snapshot Analysis'}
+                        </div>
+                        <div className="text-[#666] text-xs">
+                          {formatDate(snapshot.created_at)}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-[#666] text-xs">
-                      {snapshot.urls.length} URL{snapshot.urls.length !== 1 ? 's' : ''}
-                    </div>
+                    
+                    {/* Score Badge */}
+                    {snapshot.status === 'completed' ? (
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border ${
+                        snapshot.visibility_score >= 70 ? 'bg-emerald-400/10 border-emerald-400/30 text-emerald-400' :
+                        snapshot.visibility_score >= 55 ? 'bg-blue-400/10 border-blue-400/30 text-blue-400' :
+                        snapshot.visibility_score >= 40 ? 'bg-amber-400/10 border-amber-400/30 text-amber-400' :
+                        snapshot.visibility_score >= 25 ? 'bg-orange-400/10 border-orange-400/30 text-orange-400' :
+                        'bg-red-400/10 border-red-400/30 text-red-400'
+                      }`}>
+                        {snapshot.visibility_score || 0}
+                      </div>
+                    ) : (
+                      <div className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        snapshot.status === 'completed' ? 'bg-emerald-400/10 text-emerald-400 border border-emerald-400/20' :
+                        snapshot.status === 'processing' ? 'bg-blue-400/10 text-blue-400 border border-blue-400/20' :
+                        snapshot.status === 'pending' ? 'bg-amber-400/10 text-amber-400 border border-amber-400/20' :
+                        snapshot.status === 'failed' ? 'bg-red-400/10 text-red-400 border border-red-400/20' :
+                        'bg-[#2A2A2A] text-[#888]'
+                      }`}>
+                        {snapshot.status === 'processing' ? 'Processing...' : 
+                         snapshot.status === 'pending' ? 'Queued' :
+                         snapshot.status === 'failed' ? 'Failed' :
+                         snapshot.status}
+                      </div>
+                    )}
                   </div>
-                  <div className={`text-xs px-2 py-1 rounded-full font-medium ${
-                    snapshot.status === 'completed' ? 'bg-[#2A2A2A] text-[#888]' :
-                    snapshot.status === 'processing' ? 'bg-[#2A2A2A] text-[#888]' :
-                    snapshot.status === 'pending' ? 'bg-[#2A2A2A] text-[#888]' :
-                    'bg-[#2A2A2A] text-[#888]'
-                  }`}>
-                    {snapshot.status}
+
+                  {/* URL with external link */}
+                  <div className="flex items-center justify-between">
+                    <a
+                      href={snapshot.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#888] hover:text-white text-xs font-mono truncate flex-1 mr-2 transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {snapshot.url}
+                    </a>
+                    <Link
+                      href={`/dashboard/snapshot/${snapshot.id}`}
+                      className="text-[#666] hover:text-white transition-colors flex-shrink-0"
+                    >
+                      <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-all duration-200" />
+                    </Link>
                   </div>
                 </div>
-                
-                <div className="text-[#888] text-xs mb-2">
-                  {formatDate(snapshot.created_at)}
-                </div>
-                
-                <div className="text-[#666] text-xs truncate">
-                  {snapshot.urls[0] && getHostname(snapshot.urls[0])}
-                  {snapshot.urls.length > 1 && ` +${snapshot.urls.length - 1} more`}
-                </div>
-              </Link>
-            ))
+              );
+            })
           ) : (
-            <div className="text-center py-12">
-              <div className="text-4xl mb-4">📊</div>
+            <div className="text-center py-16">
+              <div className="w-16 h-16 bg-[#2A2A2A] rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="text-2xl">📊</div>
+              </div>
               <div className="text-white font-medium mb-2 tracking-tight">No snapshots yet</div>
-              <div className="text-[#666] text-sm">Create your first snapshot to get started</div>
+              <div className="text-[#666] text-sm leading-relaxed">
+                Create your first snapshot to start<br />analyzing AI visibility
+              </div>
             </div>
           )}
         </div>
+
+        {/* Footer Stats */}
+        {recentSnapshots.length > 0 && (
+          <div className="mt-8 pt-6 border-t border-[#333]">
+            <div className="text-[#666] text-xs mb-3">Quick Stats</div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center">
+                <div className="text-white text-lg font-bold">
+                  {recentSnapshots.filter(s => s.status === 'completed').length}
+                </div>
+                <div className="text-[#666] text-xs">Completed</div>
+              </div>
+              <div className="text-center">
+                <div className="text-white text-lg font-bold">
+                  {recentSnapshots.filter(s => s.status === 'completed' && getCombinedScore(s)?.score >= 70).length}
+                </div>
+                <div className="text-[#666] text-xs">High Score</div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Overlay for history */}

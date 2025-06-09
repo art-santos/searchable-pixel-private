@@ -393,7 +393,7 @@ async function generateSnapshotSummary(requestId: string): Promise<void> {
     for (const [url, urlResults] of Object.entries(resultsByUrl)) {
       const urlResultsTyped = urlResults as any[];
       
-      // Group by question type for weighted scoring
+      // Group by question type for weighted scoring (EXCLUDE direct/brand queries from main score)
       const directHits = urlResultsTyped.filter((r: any) => r.question_type === 'direct' && r.target_found).length;
       const indirectHits = urlResultsTyped.filter((r: any) => r.question_type === 'indirect' && r.target_found).length;
       const comparisonHits = urlResultsTyped.filter((r: any) => r.question_type === 'comparison' && r.target_found).length;
@@ -402,12 +402,13 @@ async function generateSnapshotSummary(requestId: string): Promise<void> {
       const indirectTotal = urlResultsTyped.filter((r: any) => r.question_type === 'indirect').length;
       const comparisonTotal = urlResultsTyped.filter((r: any) => r.question_type === 'comparison').length;
       
-      // Calculate weighted score using the enhanced formula (10 direct + 20 indirect + 10 comparison = 40 total)
-      const weightedScore = (
-        (directHits / Math.max(directTotal, 1)) * 1 +
-        (indirectHits / Math.max(indirectTotal, 1)) * 2 +
-        (comparisonHits / Math.max(comparisonTotal, 1)) * 3
-      ) / 6; // total weighted prompt "value"
+      // Calculate weighted score using ONLY competitive queries (indirect + comparison) 
+      // Direct queries are brand queries which don't reflect true competitive visibility
+      const competitiveQueries = indirectTotal + comparisonTotal;
+      const competitiveHits = indirectHits + comparisonHits;
+      
+      // Use only competitive (non-brand) queries for true visibility score
+      const weightedScore = competitiveQueries > 0 ? (competitiveHits / competitiveQueries) : 0;
       
       // Scale to 0-100 with scoring bands and apply floor
       let visibilityScore = Math.round(weightedScore * 100);
@@ -421,7 +422,8 @@ async function generateSnapshotSummary(requestId: string): Promise<void> {
       visibilityScore = Math.min(visibilityScore, 100);
       
       const totalQuestions = urlResultsTyped.length;
-      const mentionsCount = directHits + indirectHits + comparisonHits;
+      // Use only competitive mentions for accurate representation
+      const mentionsCount = indirectHits + comparisonHits;
       
       console.log(`📊 Enhanced scoring for ${url}:`, {
         direct: `${directHits}/${directTotal}`,
@@ -431,9 +433,23 @@ async function generateSnapshotSummary(requestId: string): Promise<void> {
         final_score: visibilityScore
       });
       
-      // Collect all competitor names
-      const allCompetitors = urlResultsTyped.flatMap((r: any) => r.competitor_names || []);
-      const topCompetitors = [...new Set(allCompetitors)].slice(0, 5);
+      // Collect and rank competitors by mention rate (excluding brand/direct queries)
+      const competitiveResults = urlResultsTyped.filter((r: any) => 
+        r.question_type === 'indirect' || r.question_type === 'comparison'
+      );
+      
+      const competitorMentions: Record<string, number> = {};
+      competitiveResults.forEach((r: any) => {
+        (r.competitor_names || []).forEach((comp: string) => {
+          competitorMentions[comp] = (competitorMentions[comp] || 0) + 1;
+        });
+      });
+      
+      // Sort competitors by mention count (highest first) and take top 5
+      const topCompetitors = Object.entries(competitorMentions)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5)
+        .map(([name]) => name);
       
       // Generate enhanced insights based on scoring bands and question types
       const insights = [];
@@ -627,9 +643,103 @@ async function storeTechnicalAuditResults(
       }
     }
     
-    // TODO: Link page to snapshot request when audit_runs schema is properly set up
-    // For now, we skip this linking step to avoid foreign key constraint violations
-    console.log(`📋 Page stored successfully (linking skipped for now)`);
+    // Store comprehensive 55-item checklist results
+    if (technicalResult.checklist_results && technicalResult.checklist_results.length > 0) {
+      console.log(`📋 Storing ${technicalResult.checklist_results.length} checklist results...`);
+      
+      const checklistData = technicalResult.checklist_results.map(item => ({
+        page_id: pageId,
+        check_id: item.id,
+        check_name: item.name,
+        category: item.category,
+        weight: item.weight,
+        passed: item.passed,
+        details: item.details,
+        rule_parameters: item.rule_parameters || null
+      }));
+      
+      // First, delete existing checklist results for this page to avoid duplicates
+      const { error: deleteError } = await supabaseServer
+        .from('page_checklist_results')
+        .delete()
+        .eq('page_id', pageId);
+      
+      if (deleteError && deleteError.code !== 'PGRST116') { // PGRST116 = no rows found (ok)
+        console.warn(`⚠️ Could not clear existing checklist results:`, deleteError);
+      }
+      
+      // Insert new checklist results
+      const { error: checklistError } = await supabaseServer
+        .from('page_checklist_results')
+        .insert(checklistData);
+      
+      if (checklistError) {
+        console.error(`❌ Failed to store checklist results:`, checklistError);
+        
+        // If the table doesn't exist, try to create a simpler storage approach
+        if (checklistError.code === '42P01') { // Table doesn't exist
+          console.log(`📋 Checklist table not found, storing as JSON in pages metadata`);
+          
+          // Update the pages table with checklist results in metadata
+          const { error: metadataError } = await supabaseServer
+            .from('pages')
+            .update({
+              analysis_metadata: {
+                ...technicalResult.analysis_metadata,
+                checklist_results: technicalResult.checklist_results
+              }
+            })
+            .eq('id', pageId);
+          
+          if (metadataError) {
+            console.error(`❌ Failed to store checklist in metadata:`, metadataError);
+          } else {
+            console.log(`📋 Stored checklist results in pages metadata as fallback`);
+          }
+        }
+      } else {
+        const passedCount = technicalResult.checklist_results.filter(item => item.passed).length;
+        const totalPoints = technicalResult.checklist_results.reduce((sum, item) => sum + item.weight, 0);
+        const earnedPoints = technicalResult.checklist_results.filter(item => item.passed).reduce((sum, item) => sum + item.weight, 0);
+        
+        console.log(`✅ Stored ${technicalResult.checklist_results.length} checklist results`);
+        console.log(`   ${passedCount}/${technicalResult.checklist_results.length} checks passed (${earnedPoints.toFixed(1)}/${totalPoints} points)`);
+      }
+    }
+    
+    // Store comprehensive audit overview
+    const auditOverview = {
+      page_id: pageId,
+      aeo_score: technicalResult.overall_score,
+      weighted_aeo_score: technicalResult.weighted_score,
+      rendering_mode: technicalResult.rendering_mode,
+      ssr_score_penalty: technicalResult.ssr_score_penalty,
+      total_issues: technicalResult.issues.length,
+      critical_issues: technicalResult.issues.filter(i => i.severity === 'critical').length,
+      warning_issues: technicalResult.issues.filter(i => i.severity === 'warning').length,
+      total_recommendations: technicalResult.recommendations.length,
+      checklist_items_evaluated: technicalResult.analysis_metadata.checklist_items_evaluated || 0,
+      checklist_items_passed: technicalResult.analysis_metadata.checklist_items_passed || 0,
+      total_possible_points: technicalResult.analysis_metadata.total_possible_points || 0,
+      earned_points: technicalResult.analysis_metadata.earned_points || 0,
+      category_scores: technicalResult.category_scores,
+      analysis_metadata: technicalResult.analysis_metadata,
+      analyzed_at: technicalResult.analysis_metadata.analyzed_at
+    };
+    
+    const { error: overviewError } = await supabaseServer
+      .from('page_audit_overview')
+      .upsert(auditOverview, { onConflict: 'page_id' });
+    
+    if (overviewError) {
+      console.error(`❌ Failed to store audit overview:`, overviewError);
+      // If table doesn't exist, just log and continue
+      if (overviewError.code === '42P01') {
+        console.log(`📊 Audit overview table not found, skipping overview storage`);
+      }
+    } else {
+      console.log(`📊 Stored comprehensive audit overview`);
+    }
     
     console.log(`✅ Technical audit results stored successfully`);
     
