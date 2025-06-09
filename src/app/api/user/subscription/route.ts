@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     // Get user profile with subscription info
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('subscription_plan, subscription_status, stripe_customer_id')
+      .select('subscription_plan, subscription_status, stripe_customer_id, is_admin')
       .eq('id', user.id)
       .single()
 
@@ -23,18 +23,23 @@ export async function GET(request: NextRequest) {
         console.error('Error fetching user subscription:', profileError)
       }
       
-      // If no profile or a "no rows" error, return default free plan
+      // If no profile or a "no rows" error, return default starter plan
       return NextResponse.json({
-        subscriptionPlan: 'free',
-        subscriptionStatus: 'active',
-        stripeCustomerId: null
+        subscription_plan: 'starter',
+        subscription_status: 'active',
+        stripe_customer_id: null,
+        is_admin: false
       })
     }
 
+    // Admin users get full access (treat as team plan)
+    const effectivePlan = profile.is_admin ? 'team' : (profile.subscription_plan || 'starter')
+
     return NextResponse.json({
-      subscriptionPlan: profile.subscription_plan || 'free',
-      subscriptionStatus: profile.subscription_status || 'active',
-      stripeCustomerId: profile.stripe_customer_id
+      subscription_plan: effectivePlan,
+      subscription_status: profile.subscription_status || 'active',
+      stripe_customer_id: profile.stripe_customer_id,
+      is_admin: profile.is_admin || false
     })
 
   } catch (error) {

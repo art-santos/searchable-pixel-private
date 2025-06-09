@@ -1,15 +1,29 @@
 import { Button } from "@/components/ui/button"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, Lock } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { getAllowedTimeframes, hasTimeframeAccess, PlanType } from "@/lib/subscription/config"
+import { useAuth } from "@/contexts/AuthContext"
+import { useState, useEffect } from "react"
+
 export type TimeframeOption =
   | "Last 24 hours"
   | "Last 7 days"
   | "Last 30 days"
+  | "Last 90 days"
+  | "Last 365 days"
+
+const ALL_TIMEFRAMES: TimeframeOption[] = [
+  "Last 24 hours",
+  "Last 7 days", 
+  "Last 30 days",
+  "Last 90 days",
+  "Last 365 days"
+]
 
 interface TimeframeSelectorProps {
   timeframe: TimeframeOption
@@ -17,6 +31,7 @@ interface TimeframeSelectorProps {
   title?: string
   titleColor?: string
   selectorColor?: string
+  userPlan?: PlanType
 }
 
 export function TimeframeSelector({ 
@@ -24,8 +39,55 @@ export function TimeframeSelector({
   onTimeframeChange, 
   title = "Page Views",
   titleColor = "text-[#A7A7A7]",
-  selectorColor = "text-white"
+  selectorColor = "text-white",
+  userPlan
 }: TimeframeSelectorProps) {
+  const { user } = useAuth()
+  const [currentPlan, setCurrentPlan] = useState<PlanType>('starter')
+
+  useEffect(() => {
+    const fetchUserPlan = async () => {
+      if (userPlan) {
+        setCurrentPlan(userPlan)
+        return
+      }
+
+      if (user) {
+        try {
+          const response = await fetch('/api/user/subscription')
+          if (response.ok) {
+            const data = await response.json()
+            console.log('[TimeframeSelector] User subscription data:', data)
+            setCurrentPlan(data.subscription_plan || 'starter')
+          } else {
+            console.error('[TimeframeSelector] Failed to fetch subscription:', response.status)
+            setCurrentPlan('starter')
+          }
+        } catch (error) {
+          console.error('[TimeframeSelector] Error fetching user plan:', error)
+          setCurrentPlan('starter')
+        }
+      }
+    }
+
+    fetchUserPlan()
+  }, [user, userPlan])
+
+  const allowedTimeframes = getAllowedTimeframes(currentPlan)
+  
+  // Debug logging
+  console.log('[TimeframeSelector] Current plan:', currentPlan)
+  console.log('[TimeframeSelector] Allowed timeframes:', allowedTimeframes)
+  console.log('[TimeframeSelector] Current timeframe:', timeframe)
+
+  // If current timeframe is not allowed, switch to first allowed one
+  useEffect(() => {
+    if (!hasTimeframeAccess(currentPlan, timeframe)) {
+      console.log('[TimeframeSelector] Switching timeframe from', timeframe, 'to', allowedTimeframes[0])
+      onTimeframeChange(allowedTimeframes[0] as TimeframeOption)
+    }
+  }, [currentPlan, timeframe, allowedTimeframes, onTimeframeChange])
+
   return (
     <div className="space-y-1">
       <h3 className={`text-base font-medium ${titleColor}`}>{title}</h3>
@@ -46,24 +108,36 @@ export function TimeframeSelector({
           align="start"
           alignOffset={0}
         >
-          <DropdownMenuItem 
-            className="hover:bg-[#222222] rounded-none"
-            onClick={() => onTimeframeChange('Last 24 hours')}
-          >
-            <span className="text-sm">Last 24 hours</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem 
-            className="hover:bg-[#222222] rounded-none"
-            onClick={() => onTimeframeChange('Last 7 days')}
-          >
-            <span className="text-sm">Last 7 days</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem 
-            className="hover:bg-[#222222] rounded-none"
-            onClick={() => onTimeframeChange('Last 30 days')}
-          >
-            <span className="text-sm">Last 30 days</span>
-          </DropdownMenuItem>
+          {ALL_TIMEFRAMES.map((option) => {
+            const isAllowed = allowedTimeframes.includes(option)
+            const isSelected = timeframe === option
+            
+            return (
+              <DropdownMenuItem 
+                key={option}
+                className={`hover:bg-[#222222] rounded-none flex items-center justify-between ${
+                  !isAllowed ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                onClick={() => isAllowed && onTimeframeChange(option)}
+                disabled={!isAllowed}
+              >
+                <span className="text-sm">{option}</span>
+                {!isAllowed && <Lock className="h-3 w-3 text-[#666]" />}
+              </DropdownMenuItem>
+            )
+          })}
+          
+          {currentPlan === 'starter' && (
+            <>
+              <div className="border-t border-[#333] my-1" />
+              <div className="px-3 py-2">
+                <p className="text-xs text-[#666] mb-1">Need longer timeframes?</p>
+                <p className="text-xs text-blue-400 hover:text-blue-300 cursor-pointer">
+                  Upgrade to Pro or Team →
+                </p>
+              </div>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

@@ -1,75 +1,74 @@
 export const PLANS = {
-  free: { order: 0, name: 'Free', value: 'free' },
-  plus: { order: 1, name: 'Plus', value: 'plus' },
-  pro: { order: 2, name: 'Pro', value: 'pro' },
-  enterprise: { order: 3, name: 'Enterprise', value: 'enterprise' }
+  starter: { order: 0, name: 'Starter', value: 'starter' },
+  pro: { order: 1, name: 'Pro', value: 'pro' },
+  team: { order: 2, name: 'Team', value: 'team' },
+  admin: { order: 999, name: 'Admin', value: 'admin' }
 } as const
 
 export type PlanType = keyof typeof PLANS
 
 export const LIMITS = {
-  free: {
+  starter: {
     domains: { max: 1 },
-    dataRetention: 30, // days
-    crawlerLogs: -1, // unlimited
-    snapshots: { max: 0, period: 'month' as const },
-    attributionCredits: { included: 0, price: 0.25 },
-    aiAttribution: false,
-  },
-  plus: {
-    domains: { max: 1 },
-    dataRetention: 30, // 30-day AI crawler logs
-    crawlerLogs: -1, // unlimited
+    dataRetention: 1, // Only 24 hours
+    timeframes: ['Last 24 hours'], // Only 24h timeframe
     snapshots: { max: 10, period: 'month' as const },
-    attributionCredits: { included: 0, price: 0.25 },
     aiAttribution: true,
     basicInsights: true,
   },
   pro: {
     domains: { max: 1 },
-    dataRetention: 90, // 90-day AI crawler logs
-    crawlerLogs: -1, // unlimited
+    dataRetention: 365, // Up to 365 days
+    timeframes: ['Last 24 hours', 'Last 7 days', 'Last 30 days', 'Last 90 days', 'Last 365 days'],
     snapshots: { max: 50, period: 'month' as const },
-    attributionCredits: { included: 500, price: 0.15 },
     aiAttribution: true,
     advancedInsights: true,
-    slackAlerts: true,
     apiAccess: true,
   },
-  enterprise: {
-    domains: { max: 1 },
-    dataRetention: -1, // unlimited
-    crawlerLogs: -1, // unlimited
-    snapshots: { max: -1, period: 'month' as const }, // unlimited
-    attributionCredits: { included: 'custom', price: 0.10 },
+  team: {
+    domains: { max: 5 }, // 5 domains included
+    dataRetention: 365, // Up to 365 days
+    timeframes: ['Last 24 hours', 'Last 7 days', 'Last 30 days', 'Last 90 days', 'Last 365 days'],
+    snapshots: { max: 100, period: 'month' as const },
     aiAttribution: true,
     advancedInsights: true,
-    crmIntegrations: true,
-    prioritySupport: true,
-    customModels: true,
-    sla: true,
     apiAccess: true,
+    teamAccess: true,
+    prioritySupport: true,
+  },
+  admin: {
+    domains: { max: -1 }, // Unlimited domains
+    dataRetention: -1, // Unlimited retention
+    timeframes: ['Last 24 hours', 'Last 7 days', 'Last 30 days', 'Last 90 days', 'Last 365 days'],
+    snapshots: { max: -1, period: 'month' as const }, // Unlimited snapshots
+    aiAttribution: true,
+    advancedInsights: true,
+    apiAccess: true,
+    teamAccess: true,
+    prioritySupport: true,
+    adminAccess: true,
   },
 } as const
 
 export const FEATURES = {
   // Core AI attribution features
-  'ai-attribution': ['plus', 'pro', 'enterprise'],
-  'basic-insights': ['plus'],
-  'advanced-insights': ['pro', 'enterprise'],
-  'visitor-leads': ['pro', 'enterprise'], // RB2B-style feature (not yet implemented)
+  'ai-attribution': ['starter', 'pro', 'team', 'admin'],
+  'basic-insights': ['starter', 'pro', 'team', 'admin'],
+  'advanced-insights': ['pro', 'team', 'admin'],
   
-  // Snapshots feature (not yet implemented)
-  'snapshots': ['plus', 'pro', 'enterprise'],
+  // Snapshots feature
+  'snapshots': ['starter', 'pro', 'team', 'admin'],
   
   // Platform features
-  'slack-alerts': ['pro', 'enterprise'],
-  'api-access': ['pro', 'enterprise'],
-  'crm-integrations': ['enterprise'],
-  'priority-support': ['enterprise'],
-  'custom-models': ['enterprise'],
-  'sla': ['enterprise'],
-  'multi-domain': ['pro', 'enterprise'], // through add-ons
+  'api-access': ['pro', 'team', 'admin'],
+  'team-access': ['team', 'admin'],
+  'priority-support': ['team', 'admin'],
+  'multi-domain': ['team', 'admin'], // 5 included for team, unlimited for admin
+  'admin-access': ['admin'],
+  
+  // Timeframe access
+  'extended-timeframes': ['pro', 'team', 'admin'], // 90 days, 365 days
+  'basic-timeframes': ['starter'], // 24 hours only
 } as const
 
 export type FeatureType = keyof typeof FEATURES
@@ -117,12 +116,13 @@ export function formatLimit(limit: number | string): string {
   return limit.toString()
 }
 
-// Helper to calculate attribution credit overage cost
-export function calculateAttributionOverage(used: number, included: number | string, plan: PlanType): number {
-  if (typeof included === 'string') return 0 // Custom plans
-  if (used <= included) return 0
-  
-  const overage = used - included
-  const pricePerCredit = LIMITS[plan].attributionCredits.price as number
-  return overage * pricePerCredit
+// Helper to get allowed timeframes for a plan
+export function getAllowedTimeframes(plan: PlanType): string[] {
+  return LIMITS[plan].timeframes || ['Last 24 hours']
+}
+
+// Helper to check if a plan has access to a specific timeframe
+export function hasTimeframeAccess(plan: PlanType, timeframe: string): boolean {
+  const allowedTimeframes = getAllowedTimeframes(plan)
+  return allowedTimeframes.includes(timeframe)
 } 

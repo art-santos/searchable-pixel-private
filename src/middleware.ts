@@ -166,12 +166,12 @@ export async function middleware(request: NextRequest) {
     // Skip tracking for API routes to avoid loops
     if (pathname.startsWith('/api/')) {
       const { supabase, response } = createClient(request)
-      await supabase.auth.getSession()
+      await supabase.auth.getUser()
       return response
     }
     
     const { supabase, response } = createClient(request)
-    await supabase.auth.getSession()
+    await supabase.auth.getUser()
     
     const ua = request.headers.get("user-agent") ?? "";
     if (isAiCrawler(ua)) {
@@ -180,6 +180,7 @@ export async function middleware(request: NextRequest) {
       trackCrawlerVisit(request, ua)
     }
 
+    const { data: { user } } = await supabase.auth.getUser();
     const { data: { session } } = await supabase.auth.getSession();
 
     // Allow public access to image files

@@ -30,19 +30,24 @@ export async function GET(req: NextRequest) {
       }
     );
     
-    // Check auth
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    // Check auth (secure)
+    const { data: userData, error: userError } = await supabase.auth.getUser();
     
-    if (sessionError) {
+    if (userError) {
       return NextResponse.json({ 
         status: 'error',
-        message: 'Supabase session error',
-        error: sessionError.message
+        message: 'Supabase auth error',
+        error: userError.message
       }, { status: 500 });
     }
     
     // Check if user is authenticated
-    const isAuthenticated = !!sessionData?.session?.user;
+    const isAuthenticated = !!userData?.user;
+    
+    // Get session if authenticated
+    const { data: sessionData } = isAuthenticated ? 
+      await supabase.auth.getSession() : 
+      { data: { session: null } };
     
     // Test database connection
     let dbConnectionStatus = 'Not tested';

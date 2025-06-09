@@ -46,7 +46,7 @@ export const PRICING_PLANS: PricingPlan[] = [
       'Simple code snippet setup',
       'Basic crawler tracking',
       'Total daily crawl count',
-      '7-day crawl history',
+      '24-hour crawl history only',
       'Snapshot reports: 10/month',
       'Email alerts (first crawl only)'
     ],
@@ -68,7 +68,8 @@ export const PRICING_PLANS: PricingPlan[] = [
       '1 domain',
       'Full crawler breakdown',
       'Bot name, company, timestamp, page path',
-      '90-day crawl history',
+      'Up to 365-day crawl history',
+      'Extended timeframes (24h, 7d, 30d, 90d, 365d)',
       'Snapshot reports: 50/month',
       'Smart alerts (spike detection, bot-specific alerts)',
       'Page-level crawler logs',
@@ -90,7 +91,9 @@ export const PRICING_PLANS: PricingPlan[] = [
     annualPrice: 333, // ~17% discount
     features: [
       '5 domains included',
-      'Unlimited snapshots',
+      'Up to 365-day crawl history',
+      'Extended timeframes (24h, 7d, 30d, 90d, 365d)',
+      'Snapshot reports: 100/month',
       'All Pro features',
       'Team access (up to 5 users)',
       'Slack/Discord alerts',

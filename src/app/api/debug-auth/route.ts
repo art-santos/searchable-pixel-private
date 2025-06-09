@@ -25,10 +25,17 @@ export async function GET(request: NextRequest) {
     
     if (supabase) {
       try {
-        // Test a simple query
+        // Test auth status (secure)
         console.log('🧪 Testing Auth Status:')
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-        console.log('- Session data:', !!sessionData)
+        const { data: userData, error: userError } = await supabase.auth.getUser()
+        console.log('- User data:', !!userData?.user)
+        console.log('- User error:', userError?.message || 'None')
+        
+        // Get session if user exists
+        const { data: sessionData, error: sessionError } = userData?.user ? 
+          await supabase.auth.getSession() : 
+          { data: { session: null }, error: null }
+        console.log('- Session data:', !!sessionData?.session)
         console.log('- Session error:', sessionError?.message || 'None')
         
         // Test a simple RPC call or health check

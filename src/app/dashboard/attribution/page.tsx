@@ -256,7 +256,9 @@ export default function AttributionPage() {
       const timeframeMap: Record<TimeframeOption, string> = {
         'Last 24 hours': 'last24h',
         'Last 7 days': 'last7d',
-        'Last 30 days': 'last30d'
+        'Last 30 days': 'last30d',
+        'Last 90 days': 'last90d',
+        'Last 365 days': 'last365d'
       }
       
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone

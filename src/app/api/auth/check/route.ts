@@ -11,11 +11,13 @@ export async function GET() {
     
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
     
-    // Try getSession first
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-    
-    // Try getUser
+        // Get authenticated user (secure)
     const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+    // Get session if user is authenticated
+    const { data: { session }, error: sessionError } = user ? 
+      await supabase.auth.getSession() : 
+      { data: { session: null }, error: null }
     
     return NextResponse.json({
       cookies: allCookies.map(c => ({ 

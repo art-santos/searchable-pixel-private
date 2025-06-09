@@ -29,10 +29,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const fetchInitialSession = async () => {
-      // Get the initial session and user
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
+      try {
+        // Get the authenticated user (secure)
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) {
+          console.error('Auth error:', error);
+          setSession(null);
+          setUser(null);
+        } else {
+          // If we have a user, get the session
+          const { data: { session } } = await supabase.auth.getSession();
+          setSession(session);
+          setUser(user);
+        }
+      } catch (error) {
+        console.error('Error fetching initial session:', error);
+        setSession(null);
+        setUser(null);
+      }
       setLoading(false);
     }
     

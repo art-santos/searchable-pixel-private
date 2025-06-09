@@ -253,7 +253,8 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
     switch (currentPlan) {
       case 'starter': return 10
       case 'pro': return 50
-      case 'team': return -1 // unlimited
+      case 'team': return 100
+      case 'admin': return -1 // unlimited
       default: return 0
     }
   }
@@ -434,8 +435,8 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
 
     const planType = currentPlan || usageData.billingPeriod.planType || 'starter'
     
-    // No free plan - all users must have paid subscription
-    if (!planType || !['starter', 'pro', 'team'].includes(planType)) {
+    // No free plan - all users must have paid subscription (or be admin)
+    if (!planType || !['starter', 'pro', 'team', 'admin'].includes(planType)) {
       return {
         name: 'No Active Plan',
         price: 0,
@@ -628,7 +629,7 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                       )}
                     </div>
                     <div className="space-y-1">
-                      {!currentPlan || !['starter', 'pro', 'team'].includes(currentPlan) ? (
+                      {!currentPlan || !['starter', 'pro', 'team', 'admin'].includes(currentPlan) ? (
                         <div>
                           <p className="text-red-400 font-mono tracking-tight text-sm">No Active Subscription</p>
                           <p className="text-xs text-[#666] font-mono tracking-tight">Choose a plan below to continue</p>
@@ -652,13 +653,17 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                     <Button
                       onClick={() => setShowPricingModal(true)}
                       className={`h-8 px-4 font-mono tracking-tight text-sm ${
-                        !currentPlan || !['starter', 'pro', 'team'].includes(currentPlan)
+                        !currentPlan || !['starter', 'pro', 'team', 'admin'].includes(currentPlan)
                           ? 'bg-red-600 hover:bg-red-700 text-white border-red-500'
                           : 'bg-[#1a1a1a] hover:bg-[#333] border border-[#333] hover:border-[#444] text-white'
                       }`}
-                      disabled={isLoading}
+                      disabled={isLoading || currentPlan === 'admin'}
                     >
-                      {!currentPlan || !['starter', 'pro', 'team'].includes(currentPlan) ? 'Choose Plan' : 'Change Plan'}
+                      {!currentPlan || !['starter', 'pro', 'team', 'admin'].includes(currentPlan) 
+                        ? 'Choose Plan' 
+                        : currentPlan === 'admin' 
+                          ? 'Admin Account' 
+                          : 'Change Plan'}
                     </Button>
                   </div>
                 </div>
