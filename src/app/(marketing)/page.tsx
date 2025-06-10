@@ -9,6 +9,7 @@ import { Schema } from '@/components/Schema'
 import CTASection from '@/components/sections/cta-section'
 import HeroCTA from '@/components/sections/hero-cta'
 import { StepOneAudit, StepTwoMonitor, StepThreeImplement } from '@/components/sections/step-cards'
+import { Analytics } from "@vercel/analytics/next"
 
 const faqSchema = {
   "@context": "https://schema.org",
@@ -501,6 +502,7 @@ export default function LandingPage() {
       <CTASection />
 
       <Schema json={faqSchema} />
+      <Analytics />
       </div>
     )
   }

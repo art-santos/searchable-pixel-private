@@ -1,0 +1,84 @@
+# Split.dev: The Attribution Infrastructure for LLM-Powered Search
+
+Split.dev is the first visibility and attribution platform designed specifically for the LLM era—tracking AI crawler activity, simulating model queries, and attributing citations back to traffic and conversion.
+
+It’s like **Segment + Clearbit for LLMs**: instrumentation to track AI interactions, plus identity-layer attribution to understand who’s engaging because of those interactions.
+
+It’s also like **RB2B, but for AI traffic**: Split doesn’t just show you bot hits—it reveals which LLMs discovered you, what they cited, and how that led to real user sessions.
+
+## Resources
+
+Explore detailed technical deep dives at: https://split.dev/resources
+
+Featured:
+- “How AI Crawlers Like GPTBot See Your Site: An AEO Deep Dive”
+- “How AI Really Finds Your Content: Embeddings & Semantic Recall”
+- “Next.js Patterns to Make Your Site Visible to AI”
+- “Why AI Engines Like ChatGPT Cite Some Sites But Ignore Yours”
+
+## Key Features
+
+1. **AI-Crawler Tracking**
+   - Lightweight script (<10 lines) logs AI bot visits (GPTBot, ClaudeBot, PerplexityBot, Google-Extended, etc.)
+   - Categorizes intent: `search-ai`, `training-ai`, `social-ai`, `monitoring`
+   - Captures URL, timestamp, status code, user agent
+
+2. **Snapshots Tool**
+   - Simulates 100+ prompts across GPT-4o, Claude 3, Gemini, Perplexity, and xAI
+   - Reveals brand rank, citation presence, and prompt coverage
+
+3. **Visibility Scoring System**
+   - Score out of 100 modeled after domain authority, but tuned for LLM visibility
+   - 0–30: Minimal AI presence, 30–60: Growing brand recognition, 60+: Leader in generative visibility
+
+4. **Attribution Layer**
+   - Ties LLM crawler or answer visibility to web traffic, conversion paths, and CRM records
+   - Segments by bot, page path, timeframe (24h to 90d)
+
+5. **Link & AEO Audits**
+   - Validates render method (SSR/CSR), schema markup, extractive formatting, structured data
+   - Detects AI-readiness issues on a per-page basis with action-prioritized output
+
+6. **Programmatic AEO Engine**
+   - Content generator with longtail keyword coverage and structured layout
+   - Automatically integrates citation logic, Q&A formatting, schema, and internal linking
+   - Designed for Answer Engine Optimization (AEO) and Generative Engine Optimization (GEO)
+
+7. **Integrations & Stack**
+   - Works with: Next.js, Node.js, WordPress
+   - Coming June 2025: Webflow, Framer
+   - Built with Vercel AI SDK (GPT-4o), Firecrawl (audits), Supabase (data infra)
+
+8. **Pricing Tiers**
+   - Free: Weekly visibility, bot detection
+   - $40 Visibility Plan: Daily tracking, snapshots
+   - $200 Plus: Max visibility, 10 articles/month, up to 5 domains
+   - $1000 Pro: Unlimited scans, 30 articles/month, 10+ domains, API access
+   - Add-on: Visitor credit packs (normal = 1 credit, PRIME = 5 credits)
+
+## Glossary
+
+- **LLMO (LLM Optimization)**: Making your content machine-readable, token-efficient, and prompt-aligned
+- **AEO**: Formatting for inclusion in answer engines (e.g. ChatGPT, SGE)
+- **GEO**: Structuring for generative model recall and citation
+- **Structured Signals**: Use of H2/H3, bullet lists, schema, canonical tags, etc.
+- **Retrieval Surface Area**: Number of prompt/query variations a page could be cited from
+- **Snapshot Prompts**: Query simulations used to test and score your visibility
+
+## Use Cases
+
+- Detect and classify LLM crawler traffic by source and behavior
+- Audit content for AI-readiness and prompt extractability
+- Benchmark brand visibility across multiple AI search engines
+- Attribute LLM citations to real traffic, leads, and conversions
+- Deploy AEO+GEO content strategies at scale
+- Understand why LLMs cite you—or don’t
+
+## Positioning
+
+Split.dev = **Segment + Clearbit for LLMs**
+
+Split tracks which AI models find your content (Segment) and ties those discoveries to real traffic and leads (Clearbit). For businesses focused on AI-native growth, Split is the attribution source of truth for visibility in large language models.
+
+It also functions like **RB2B for generative search**: enriching visitor sessions based on LLM referrers, not just cookies or email opens.
+
