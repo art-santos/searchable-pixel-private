@@ -156,6 +156,24 @@ export async function saveOnboardingData(
         .eq('is_primary', true)
         .single()
       
+      // 5. Mark onboarding as completed (before early return)
+      console.log('🎯 Marking onboarding as completed...')
+      const { error: completionError } = await supabase
+        .from('profiles')
+        .update({
+          onboarding_completed: true,
+          onboarding_completed_at: new Date().toISOString(),
+          updated_by: user.id
+        })
+        .eq('id', user.id)
+      
+      if (completionError) {
+        console.error('⚠️ Warning: Could not mark onboarding as completed:', completionError)
+        // Don't fail for this
+      } else {
+        console.log('✅ Onboarding marked as completed')
+      }
+      
       return { 
         success: true, 
         companyId: existingCompany.id,
@@ -204,6 +222,24 @@ export async function saveOnboardingData(
             .eq('user_id', user.id)
             .eq('is_primary', true)
             .single()
+          
+          // Mark onboarding as completed (before early return)
+          console.log('🎯 Marking onboarding as completed...')
+          const { error: completionError } = await supabase
+            .from('profiles')
+            .update({
+              onboarding_completed: true,
+              onboarding_completed_at: new Date().toISOString(),
+              updated_by: user.id
+            })
+            .eq('id', user.id)
+          
+          if (completionError) {
+            console.error('⚠️ Warning: Could not mark onboarding as completed:', completionError)
+            // Don't fail for this
+          } else {
+            console.log('✅ Onboarding marked as completed')
+          }
           
           return { 
             success: true, 

@@ -123,6 +123,46 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // Check if user should be marked as having completed onboarding
+    // Get the user's profile to check all required fields
+    const { data: userProfile, error: profileFetchError } = await supabase
+      .from('profiles')
+      .select('first_name, workspace_name, domain, onboarding_completed')
+      .eq('id', user.id)
+      .single()
+
+    if (!profileFetchError && userProfile && !userProfile.onboarding_completed) {
+      // Check if user has sufficient information for onboarding completion
+      // Use updated workspace data if workspace_name was just updated
+      const workspaceName = updates.workspace_name !== undefined ? updates.workspace_name : userProfile.workspace_name
+      const domain = updates.domain !== undefined ? updates.domain : userProfile.domain
+      
+      const hasName = userProfile.first_name && userProfile.first_name.trim().length > 0
+      const hasWorkspace = workspaceName && workspaceName.trim().length > 0
+      const hasDomain = domain && domain.trim().length > 0
+
+      if (hasName && hasWorkspace && hasDomain) {
+        console.log('🎉 Auto-completing onboarding for existing user via workspace update:', user.id)
+        
+        // Mark onboarding as completed
+        const { error: onboardingError } = await supabase
+          .from('profiles')
+          .update({
+            onboarding_completed: true,
+            onboarding_completed_at: new Date().toISOString(),
+            updated_by: user.id
+          })
+          .eq('id', user.id)
+        
+        if (onboardingError) {
+          console.error('⚠️ Warning: Could not mark onboarding as completed:', onboardingError)
+          // Don't fail the entire update for this
+        } else {
+          console.log('✅ Onboarding marked as completed for existing user via workspace update')
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: updatedWorkspace,
