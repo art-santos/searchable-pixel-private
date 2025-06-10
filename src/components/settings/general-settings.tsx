@@ -11,15 +11,9 @@ import { createClient } from '@/lib/supabase/client'
 import { AvatarUpload } from '@/components/profile/avatar-upload'
 
 interface UserProfile {
-  id?: string
   first_name?: string | null
-  last_name?: string | null
   workspace_name?: string | null
-  email?: string | null
-  created_by?: string
-  updated_by?: string
   profile_picture_url?: string | null
-  created_at?: string
 }
 
 interface SubscriptionData {
@@ -73,7 +67,7 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
     return profileChanged || workspaceChanged
   }
 
-  // Fetch user profile data
+  // Fetch user profile data - using same method as dashboard WelcomeCard
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user || !supabase) {
@@ -84,25 +78,23 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('first_name, workspace_name, profile_picture_url, created_at')
+          .select('first_name, workspace_name, profile_picture_url')
           .eq('id', user.id)
           .single()
 
+        console.log('🔍 Profile fetch result:', { data, error, userId: user.id })
+
         if (error && error.code !== 'PGRST116') {
-          // Profile fetch error - handle silently
+          console.error('Error fetching profile:', error)
         }
 
-        const profileData = data || {
-          first_name: user.email?.split('@')[0] || '',
-          workspace_name: '',
-          email: user.email,
-          created_at: user.created_at
-        }
-
-        setProfile(profileData)
-        setOriginalProfile(profileData)
+        // Use exact same approach as dashboard WelcomeCard
+        setProfile(data || null)
+        setOriginalProfile(data || null)
       } catch (err) {
-        // Error in profile fetch - handle silently
+        console.error('Error in profile fetch:', err)
+        setProfile(null)
+        setOriginalProfile(null)
       } finally {
         setProfileLoading(false)
       }
@@ -190,8 +182,8 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
 
   // Format membership date
   const getMembershipDate = () => {
-    if (!profile?.created_at && !user?.created_at) return null
-    const date = new Date(profile?.created_at || user?.created_at)
+    if (!user?.created_at) return null
+    const date = new Date(user.created_at)
     return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
   }
 
@@ -335,7 +327,7 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
           <AvatarUpload
             profilePictureUrl={profile?.profile_picture_url}
             firstName={profile?.first_name}
-            lastName={profile?.last_name}
+            lastName={null}
             email={user?.email}
             onAvatarUpdate={(url: string | null) => setProfile((prev: UserProfile | null) => ({ 
               ...prev, 
@@ -362,7 +354,7 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
                 ...prev, 
                 first_name: e.target.value 
               }))}
-              placeholder="John Doe"
+              placeholder="Enter your name"
                     className="bg-[#0a0a0a] border-[#2a2a2a] text-white h-8 font-mono tracking-tight text-sm"
             />
                 </div>
@@ -499,7 +491,7 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
                   <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
                     {profile?.first_name || user?.email?.split('@')[0] || 'User'} • {user?.email}
                   </div>
-      </div>
+                </div>
 
                 <div>
                   <div className="font-medium text-white font-mono tracking-tight text-sm">Current Plan</div>
@@ -508,7 +500,7 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
                       {planInfo.name}
                     </span>
                   </div>
-      </div>
+                </div>
 
                 <div>
                   <div className="font-medium text-white font-mono tracking-tight text-sm">Member Since</div>

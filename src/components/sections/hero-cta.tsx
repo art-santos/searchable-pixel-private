@@ -63,11 +63,11 @@ export default function HeroCTA() {
 
   return (
     <div className="text-center">
-      <h1 className="blur-in-up text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-3 md:mb-6 md:max-w-[90%] mx-auto">
-        The first <span className="font-serif font-light italic tracking-tight"> autonomous AEO Engineer. </span>
+      <h1 className="blur-in-up text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-3 md:mb-6 md:max-w-[70%] mx-auto">
+        Attribution Infrastructure for <span className="font-serif font-light italic tracking-tight"> LLM-Powered Search </span>
       </h1>
       <p className="blur-in-up-delay-1 text-sm md:text-lg lg:text-xl text-gray-200 md:max-w-[85%] mx-auto mb-6 md:mb-8 px-2 md:px-0">
-        See how often your site gets cited by ChatGPT, Perplexity, and Google AI. Join our early access.
+        Built for AEO and GEO teams that want more than just visibility. See who's citing you, who's visiting, and where your content actually lands across ChatGPT, Perplexity, Google, and more.
       </p>
       
       <div className="blur-in-up-delay-2 flex flex-col md:flex-row gap-4 justify-center items-center">

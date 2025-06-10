@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { useWorkspace } from '@/contexts/WorkspaceContext'
@@ -28,59 +28,6 @@ export default function CreateWorkspacePage() {
   })
 
   const supabase = createClient()
-
-  // Redirect if user already has workspace or not authenticated
-  useEffect(() => {
-    const checkWorkspaceStatus = async () => {
-      if (!user || !supabase) {
-        router.push('/login')
-        return
-      }
-
-      try {
-        // Check if user already has workspace data
-        const [profileResult, companyResult] = await Promise.all([
-          supabase
-            .from('profiles')
-            .select('first_name, workspace_name')
-            .eq('id', user.id)
-            .single(),
-          supabase
-            .from('companies')
-            .select('id, company_name, root_url')
-            .eq('submitted_by', user.id)
-            .single()
-        ])
-
-        const { data: profile } = profileResult
-        const { data: company } = companyResult
-
-        // If user already has complete workspace data, redirect to dashboard
-        const hasName = profile?.first_name?.trim()
-        const hasWorkspaceName = profile?.workspace_name?.trim()
-        const hasCompany = company?.id
-
-        if (hasName && hasWorkspaceName && hasCompany) {
-          console.log('User already has workspace, redirecting to dashboard')
-          router.push('/dashboard')
-          return
-        }
-
-        // Pre-populate form if we have existing data
-        if (profile) {
-          setWorkspaceData({
-            name: profile.first_name || '',
-            workspaceName: profile.workspace_name || '',
-            domain: company?.root_url ? new URL(company.root_url).hostname : ''
-          })
-        }
-      } catch (err) {
-        console.error('Error checking workspace status:', err)
-      }
-    }
-
-    checkWorkspaceStatus()
-  }, [user, supabase, router])
 
   const handleComplete = async () => {
     if (!user || !supabase) return
@@ -113,31 +60,29 @@ export default function CreateWorkspacePage() {
       console.log('💾 WORKSPACE CREATION: About to call saveOnboardingData...')
       console.log('📋 WORKSPACE CREATION: Payload:', onboardingPayload)
 
+      // Save data FIRST, then redirect
       const result = await saveOnboardingData(user, onboardingPayload)
-
       console.log('📋 WORKSPACE CREATION: saveOnboardingData result:', result)
-
+      
       if (!result.success) {
         console.error('❌ WORKSPACE CREATION: Failed to save:', result.error)
-        setErrorMessage(result.error || 'Failed to save workspace information.')
+        setErrorMessage('Failed to save workspace information. Please try again.')
+        setIsLoading(false)
         return
+      } else {
+        console.log('✅ WORKSPACE CREATION: Success! Now redirecting to dashboard...')
+        // Refresh workspace context
+        await refreshWorkspaces().catch(err => {
+          console.error('❌ WORKSPACE CREATION: Error refreshing workspaces:', err)
+        })
+        
+        // Now redirect to dashboard
+        router.push('/dashboard')
       }
 
-      console.log('✅ WORKSPACE CREATION: Success! Refreshing workspace context...')
-      
-      // Refresh the workspace context to pick up the new workspace
-      await refreshWorkspaces()
-      
-      console.log('✅ WORKSPACE CREATION: Context refreshed, redirecting to dashboard...')
-      
-      // Small delay to ensure UI updates, then redirect
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 300)
     } catch (err) {
       console.error('❌ WORKSPACE CREATION: Unexpected error:', err)
       setErrorMessage(err instanceof Error ? err.message : 'Failed to save workspace information.')
-    } finally {
       setIsLoading(false)
     }
   }
@@ -195,7 +140,7 @@ export default function CreateWorkspacePage() {
                   ...prev, 
                   name: e.target.value 
                 }))}
-                placeholder="John Doe"
+                placeholder="Your name"
                 className="bg-[#1a1a1a] border-[#333] text-white h-10 focus:border-[#444] transition-colors"
               />
             </div>
@@ -240,7 +185,7 @@ export default function CreateWorkspacePage() {
           <div className="flex gap-3 mt-6">
             <Button
               onClick={handleComplete}
-              className="w-full bg-white text-black text-sm h-9"
+              className="w-full bg-white text-black text-sm h-9 hover:bg-gray-200"
               disabled={isLoading || !canProceed()}
             >
               {isLoading ? 'Creating...' : 'Continue'}

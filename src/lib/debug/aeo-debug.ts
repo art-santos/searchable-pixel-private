@@ -1,10 +1,64 @@
-import { createClient } from '@/lib/supabase/client'
-import { saveAeoQuestions, saveCompleteAeoAnalysis } from '../onboarding/database'
+// Debug utilities for testing basic Supabase functionality
+// AEO functionality has been disabled due to missing database tables
 
-/**
- * Debug utilities for testing AEO database operations
- * Use these in the browser console to test database functionality
- */
+import { createClient } from '@/lib/supabase/client'
+
+// Test basic Supabase functionality that works with current schema
+export const testBasicSupabase = async () => {
+  console.log('🔍 Testing Basic Supabase Functionality...')
+  
+  const supabase = createClient()
+  if (!supabase) {
+    console.error('❌ Supabase client not available!')
+    return false
+  }
+  
+  try {
+    // Test profiles table
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, first_name, workspace_name')
+      .limit(3)
+    
+    console.log('📊 Profiles test:', {
+      success: !profilesError,
+      error: profilesError?.message,
+      count: profiles?.length || 0,
+      sample: profiles?.[0]
+    })
+    
+    // Test workspaces table
+    const { data: workspaces, error: workspacesError } = await supabase
+      .from('workspaces')
+      .select('id, workspace_name, domain')
+      .limit(3)
+    
+    console.log('📊 Workspaces test:', {
+      success: !workspacesError,
+      error: workspacesError?.message,
+      count: workspaces?.length || 0,
+      sample: workspaces?.[0]
+    })
+    
+    // Test companies table
+    const { data: companies, error: companiesError } = await supabase
+      .from('companies')
+      .select('id, company_name, root_url')
+      .limit(3)
+    
+    console.log('📊 Companies test:', {
+      success: !companiesError,
+      error: companiesError?.message,
+      count: companies?.length || 0,
+      sample: companies?.[0]
+    })
+    
+    return true
+  } catch (err) {
+    console.error('❌ Exception testing basic Supabase:', err)
+    return false
+  }
+}
 
 // Test Supabase client connectivity
 export const testSupabaseClient = async () => {
@@ -37,182 +91,15 @@ export const testSupabaseClient = async () => {
   }
 }
 
-// Test RLS policies by attempting to view AEO tables
-export const testRLSPolicies = async () => {
-  console.log('🔍 Testing RLS Policies...')
-  
-  const supabase = createClient()
-  if (!supabase) {
-    console.error('❌ Supabase client not available!')
-    return
-  }
-  
-  // Test aeo_runs
-  try {
-    const { data: runs, error: runsError } = await supabase
-      .from('aeo_runs')
-      .select('id')
-      .limit(1)
-    
-    console.log('📊 aeo_runs test:', {
-      success: !runsError,
-      error: runsError?.message,
-      data: runs
-    })
-  } catch (err) {
-    console.error('❌ aeo_runs test failed:', err)
-  }
-  
-  // Test aeo_questions
-  try {
-    const { data: questions, error: questionsError } = await supabase
-      .from('aeo_questions')
-      .select('id')
-      .limit(1)
-    
-    console.log('📊 aeo_questions test:', {
-      success: !questionsError,
-      error: questionsError?.message,
-      data: questions
-    })
-  } catch (err) {
-    console.error('❌ aeo_questions test failed:', err)
-  }
-  
-  // Test aeo_results
-  try {
-    const { data: results, error: resultsError } = await supabase
-      .from('aeo_results')
-      .select('id')
-      .limit(1)
-    
-    console.log('📊 aeo_results test:', {
-      success: !resultsError,
-      error: resultsError?.message,
-      data: results
-    })
-  } catch (err) {
-    console.error('❌ aeo_results test failed:', err)
-  }
-}
-
-// Test question insertion with a dummy run ID
-export const testQuestionInsertion = async (runId?: string) => {
-  console.log('🔍 Testing Question Insertion...')
-  
-  if (!runId) {
-    console.error('❌ No runId provided. Usage: testQuestionInsertion("your-run-id")')
-    return
-  }
-  
-  const testQuestions = [
-    'Test question 1',
-    'Test question 2', 
-    'Test question 3'
-  ]
-  
-  try {
-    const result = await saveAeoQuestions(runId, testQuestions)
-    console.log('📊 Question insertion test result:', result)
-    return result
-  } catch (err) {
-    console.error('❌ Question insertion test failed:', err)
-    return { success: false, error: err }
-  }
-}
-
-// Get all runs for current user to find run IDs for testing
-export const getCurrentUserRuns = async () => {
-  console.log('🔍 Getting current user runs...')
-  
-  const supabase = createClient()
-  if (!supabase) {
-    console.error('❌ Supabase client not available!')
-    return
-  }
-  
-  try {
-    const { data: runs, error } = await supabase
-      .from('aeo_runs')
-      .select(`
-        id,
-        company_id,
-        question_count,
-        total_score,
-        computed_at,
-        companies(company_name, root_url)
-      `)
-      .order('computed_at', { ascending: false })
-    
-    if (error) {
-      console.error('❌ Error fetching runs:', error)
-      return
-    }
-    
-    console.log('📊 Current user runs:', runs)
-    if (runs && runs.length > 0) {
-      console.log('💡 Use this run ID for testing:', runs[0].id)
-    }
-    
-    return runs
-  } catch (err) {
-    console.error('❌ Exception getting user runs:', err)
-  }
-}
-
-// Test complete analysis save with mock data
-export const testCompleteAnalysisSave = async (runId?: string) => {
-  console.log('🔍 Testing Complete Analysis Save...')
-  
-  if (!runId) {
-    console.error('❌ No runId provided. Usage: testCompleteAnalysisSave("your-run-id")')
-    return
-  }
-  
-  const mockPipelineData = {
-    overallScore: 85,
-    questions: ['Test question 1', 'Test question 2'],
-    serpResults: [
-      {
-        question: 'Test question 1',
-        results: [
-          { url: 'https://test.com', title: 'Test Result 1', snippet: 'Test snippet' }
-        ]
-      }
-    ],
-    targetDomain: 'test.com',
-    aeoData: {
-      aeo_score: 85,
-      coverage_owned: 0.5,
-      coverage_operated: 0.1
-    }
-  }
-  
-  try {
-    const result = await saveCompleteAeoAnalysis(runId, mockPipelineData, 'test-user-id')
-    console.log('📊 Complete analysis save test result:', result)
-    return result
-  } catch (err) {
-    console.error('❌ Complete analysis save test failed:', err)
-    return { success: false, error: err }
-  }
-}
-
-// Make functions available in browser console
+// Make functions available in browser console for debugging
 if (typeof window !== 'undefined') {
-  (window as any).aeoDebug = {
-    testSupabaseClient,
-    testRLSPolicies,
-    testQuestionInsertion,
-    getCurrentUserRuns,
-    testCompleteAnalysisSave
+  (window as any).debugUtils = {
+    testBasicSupabase,
+    testSupabaseClient
   }
   
-  console.log('🛠️ AEO Debug utilities loaded!')
+  console.log('🛠️ Basic debug utilities loaded!')
   console.log('Usage:')
-  console.log('  aeoDebug.testSupabaseClient()')
-  console.log('  aeoDebug.testRLSPolicies()')
-  console.log('  aeoDebug.getCurrentUserRuns()')
-  console.log('  aeoDebug.testQuestionInsertion("run-id")')
-  console.log('  aeoDebug.testCompleteAnalysisSave("run-id")')
+  console.log('  debugUtils.testBasicSupabase()')
+  console.log('  debugUtils.testSupabaseClient()')
 } 

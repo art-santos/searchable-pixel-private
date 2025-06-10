@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus, ArrowRight, Clock, ChevronDown } from 'lucide-react'
+import { ArrowRight, Clock, ChevronDown } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
@@ -15,7 +15,7 @@ export default function SnapshotPage() {
   const { user, loading } = useAuth()
   
   // Form state
-  const [urls, setUrls] = useState([''])
+  const [url, setUrl] = useState('')
   const [topic, setTopic] = useState('')
   const [selectedModel, setSelectedModel] = useState('Perplexity')
   const [showDropdown, setShowDropdown] = useState(false)
@@ -79,10 +79,10 @@ export default function SnapshotPage() {
   const loadUserData = async () => {
     if (!user?.id) return
     
-    // Load recent enhanced snapshots with scores
+    // Load all enhanced snapshots with scores
     try {
       const enhancedSnapshots = await getEnhancedSnapshots(user.id)
-      setRecentSnapshots(enhancedSnapshots.slice(0, 5)) // Take latest 5
+      setRecentSnapshots(enhancedSnapshots) // Show all snapshots
     } catch (error) {
       console.error('Failed to load enhanced snapshots:', error)
       setRecentSnapshots([])
@@ -95,23 +95,7 @@ export default function SnapshotPage() {
     }
   }
 
-  const addUrl = () => {
-    if (urls.length < 10) { // Max 10 URLs
-      setUrls([...urls, ''])
-    }
-  }
 
-  const updateUrl = (index: number, value: string) => {
-    const newUrls = [...urls]
-    newUrls[index] = value
-    setUrls(newUrls)
-  }
-
-  const removeUrl = (index: number) => {
-    if (urls.length > 1) {
-      setUrls(urls.filter((_, i) => i !== index))
-    }
-  }
 
   const handleSubmit = async () => {
     if (!user?.id) {
@@ -119,9 +103,8 @@ export default function SnapshotPage() {
       return
     }
 
-    const validUrls = urls.filter(url => url.trim())
-    if (validUrls.length === 0) {
-      setError('Please enter at least one URL')
+    if (!url.trim()) {
+      setError('Please enter a URL')
       return
     }
 
@@ -146,7 +129,7 @@ export default function SnapshotPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          urls: validUrls,
+          urls: [url.trim()],
           topic: topic.trim(),
           userId: user.id
         }),
@@ -270,47 +253,15 @@ export default function SnapshotPage() {
           <div className="grid grid-cols-2 gap-6">
             {/* Left Column */}
             <div className="space-y-6">
-              {/* URL Inputs - Top Left */}
-              <div className="space-y-3">
-                {urls.map((url, index) => (
-                  <div 
-                    key={index} 
-                    className="flex items-center gap-3 group transform transition-all duration-200 ease-out"
-                    style={{
-                      animation: index > 0 ? 'slideInLeft 0.2s ease-out' : 'none'
-                    }}
-                  >
-                    <div className="flex items-center justify-center w-7 h-7 bg-[#2A2A2A] border border-[#444] rounded-lg text-white text-xs font-medium transition-colors group-hover:bg-[#333]">
-                      {index + 1}
-                    </div>
-                    <input
-                      type="url"
-                      value={url}
-                      onChange={(e) => updateUrl(index, e.target.value)}
-                      placeholder="www.example.com"
-                      className="flex-1 bg-transparent text-white placeholder-[#666] text-base focus:outline-none py-2 border-b border-transparent focus:border-[#444] transition-colors"
-                    />
-                    {index > 0 && (
-                      <button
-                        onClick={() => removeUrl(index)}
-                        className="flex items-center justify-center w-6 h-6 text-[#666] hover:text-white hover:bg-[#2A2A2A] rounded transition-all duration-200 text-sm"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                ))}
-                
-                {/* Add URL Control */}
-                {urls.length < 10 && (
-                  <button
-                    onClick={addUrl}
-                    className="flex items-center gap-2 text-[#666] hover:text-white transition-all duration-200 ease-out text-sm ml-10 hover:translate-x-1 transform"
-                  >
-                    <Plus className="w-3 h-3" />
-                    <span>Add up to 10 URLs</span>
-                  </button>
-                )}
+              {/* URL Input - Top Left */}
+              <div>
+                <input
+                  type="url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="www.example.com"
+                  className="w-full bg-transparent text-white placeholder-[#666] text-base focus:outline-none py-2 border-b border-transparent focus:border-[#444] transition-colors"
+                />
               </div>
 
               {/* Topic Input - Bottom Left */}
@@ -393,7 +344,7 @@ export default function SnapshotPage() {
               {/* Submit Arrow */}
               <button
                 onClick={handleSubmit}
-                disabled={isSubmitting || !rateLimit?.allowed || !topic.trim() || urls.filter(url => url.trim()).length === 0}
+                disabled={isSubmitting || !rateLimit?.allowed || !topic.trim() || !url.trim()}
                 className="flex items-center justify-center w-12 h-12 bg-[#2A2A2A] hover:bg-[#333] border border-[#444] hover:border-[#555] text-white rounded-xl transition-all duration-200 ease-out disabled:opacity-50 hover:scale-105 active:scale-95 transform"
               >
                 {isSubmitting ? (
@@ -433,7 +384,7 @@ export default function SnapshotPage() {
       }`}>
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h3 className="text-white font-semibold text-lg tracking-tight">Recent Snapshots</h3>
+            <h3 className="text-white font-semibold text-lg tracking-tight">Snapshot History</h3>
             <p className="text-[#666] text-xs mt-1">{recentSnapshots.length} snapshots found</p>
           </div>
           <button

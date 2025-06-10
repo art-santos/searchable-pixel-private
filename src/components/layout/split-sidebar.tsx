@@ -189,19 +189,21 @@ export function SplitSidebar() {
             </SidebarMenuButton>
           </Link>
 
-          <Link href="/dashboard/leads" className="w-full flex justify-center">
-            <SidebarMenuButton 
-              tooltip="Leads"
-              className={cn(
-                "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
-                pathname === "/dashboard/leads" 
-                  ? "bg-[#222222] text-white border border-[#333333] selected-button"
-                  : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
-              )}
-            >
-              <Users className="h-6 w-6 icon-rotate" />
-            </SidebarMenuButton>
-          </Link>
+          {process.env.NEXT_PUBLIC_LEADS_ENABLED === 'true' && (
+            <Link href="/dashboard/leads" className="w-full flex justify-center">
+              <SidebarMenuButton 
+                tooltip="Leads"
+                className={cn(
+                  "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
+                  pathname === "/dashboard/leads" 
+                    ? "bg-[#222222] text-white border border-[#333333] selected-button"
+                    : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
+                )}
+              >
+                <Users className="h-6 w-6 icon-rotate" />
+              </SidebarMenuButton>
+            </Link>
+          )}
 
           <Link href="/dashboard/snapshot" className="w-full flex justify-center">
             <SidebarMenuButton 
