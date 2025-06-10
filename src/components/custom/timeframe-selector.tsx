@@ -58,7 +58,7 @@ export function TimeframeSelector({
           if (response.ok) {
             const data = await response.json()
             console.log('[TimeframeSelector] User subscription data:', data)
-            setCurrentPlan(data.subscription_plan || 'starter')
+            setCurrentPlan(data.subscriptionPlan || 'starter')
           } else {
             console.error('[TimeframeSelector] Failed to fetch subscription:', response.status)
             setCurrentPlan('starter')
@@ -113,17 +113,17 @@ export function TimeframeSelector({
             const isSelected = timeframe === option
             
             return (
-              <DropdownMenuItem 
+          <DropdownMenuItem 
                 key={option}
                 className={`hover:bg-[#222222] rounded-none flex items-center justify-between ${
                   !isAllowed ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
                 onClick={() => isAllowed && onTimeframeChange(option)}
                 disabled={!isAllowed}
-              >
+          >
                 <span className="text-sm">{option}</span>
                 {!isAllowed && <Lock className="h-3 w-3 text-[#666]" />}
-              </DropdownMenuItem>
+          </DropdownMenuItem>
             )
           })}
           

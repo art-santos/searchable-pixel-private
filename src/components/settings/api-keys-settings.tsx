@@ -124,7 +124,7 @@ export function APIKeysSettings() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
+        <div>
         <h2 className="text-xl font-medium text-white mb-2 font-mono tracking-tight">API Keys</h2>
         <p className="text-sm text-[#666] font-mono tracking-tight">
           Manage programmatic access to your Split Analytics data
@@ -208,66 +208,66 @@ export function APIKeysSettings() {
             </div>
           </div>
 
-          {loadingKeys ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-[#666]" />
-            </div>
-          ) : apiKeys.length === 0 && !newlyCreatedKey ? (
+      {loadingKeys ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-[#666]" />
+        </div>
+      ) : apiKeys.length === 0 && !newlyCreatedKey ? (
             <div className="bg-[#111] border border-[#1a1a1a] rounded-lg p-8 text-center">
-              <Key className="w-10 h-10 text-[#333] mx-auto mb-3" />
+          <Key className="w-10 h-10 text-[#333] mx-auto mb-3" />
               <p className="text-[#666] text-sm font-mono tracking-tight mb-1">No API keys yet</p>
               <p className="text-xs text-[#666] font-mono tracking-tight">Generate your first key to get started</p>
-            </div>
-          ) : (
+        </div>
+      ) : (
             <div className="space-y-6">
-              {/* Existing keys */}
-              {apiKeys.map((apiKey) => (
+          {/* Existing keys */}
+          {apiKeys.map((apiKey) => (
                 <div key={apiKey.id} className="flex items-center justify-between py-4 border-b border-[#1a1a1a]">
                   <div>
                     <div className="font-medium text-white font-mono tracking-tight text-sm mb-1">{apiKey.name}</div>
                     <div className="flex items-center gap-3">
-                      {/* Key Type Badge */}
+                    {/* Key Type Badge */}
                       <span className={`text-xs px-2 py-0.5 rounded-sm font-mono tracking-tight border ${
-                        apiKey.key.startsWith('split_test_') 
+                      apiKey.key.startsWith('split_test_') 
                           ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' 
                           : 'bg-green-500/10 text-green-400 border-green-500/20'
-                      }`}>
-                        {apiKey.key.startsWith('split_test_') ? 'Test' : 'Live'}
-                      </span>
+                    }`}>
+                      {apiKey.key.startsWith('split_test_') ? 'Test' : 'Live'}
+                    </span>
                       <span className="text-xs text-[#666] font-mono tracking-tight">
-                        Created {new Date(apiKey.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 mt-2">
-                      <code className="text-xs text-[#666] font-mono">
-                        {apiKey.key}
-                      </code>
-                      <button
-                        onClick={() => handleCopyApiKey(apiKey.key)}
-                        className="text-[#666] hover:text-white transition-colors group relative"
-                        title={apiKey.key.includes('*') ? "Masked keys cannot be copied" : "Copy API key"}
-                      >
-                        <Copy className="w-3 h-3" />
-                        {apiKey.key.includes('*') && (
-                          <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-[#1a1a1a] text-xs text-[#666] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                            Keys are only shown once
-                          </span>
-                        )}
-                      </button>
-                    </div>
+                      Created {new Date(apiKey.created_at).toLocaleDateString()}
+                    </span>
                   </div>
                   
-                  <button
-                    onClick={() => {
-                      setDeletingKeyId(apiKey.id)
-                      setShowDeleteConfirm(true)
-                    }}
-                    className="text-[#666] hover:text-red-400 transition-colors p-1"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                    <div className="flex items-center gap-2 mt-2">
+                    <code className="text-xs text-[#666] font-mono">
+                      {apiKey.key}
+                    </code>
+                    <button
+                      onClick={() => handleCopyApiKey(apiKey.key)}
+                      className="text-[#666] hover:text-white transition-colors group relative"
+                      title={apiKey.key.includes('*') ? "Masked keys cannot be copied" : "Copy API key"}
+                    >
+                      <Copy className="w-3 h-3" />
+                      {apiKey.key.includes('*') && (
+                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-[#1a1a1a] text-xs text-[#666] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                          Keys are only shown once
+                        </span>
+                      )}
+                    </button>
+                  </div>
                 </div>
+                
+                <button
+                  onClick={() => {
+                    setDeletingKeyId(apiKey.id)
+                    setShowDeleteConfirm(true)
+                  }}
+                  className="text-[#666] hover:text-red-400 transition-colors p-1"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
               ))}
             </div>
           )}
@@ -287,11 +287,11 @@ export function APIKeysSettings() {
               </div>
             </div>
             <div className="flex items-center gap-6">
-              <a
-                href="https://docs.split.dev#api-keys"
+        <a
+          href="https://docs.split.dev#api-keys"
                 className="inline-flex items-center gap-1.5 text-xs text-[#666] hover:text-white transition-colors font-mono tracking-tight"
-              >
-                <FileText className="w-3.5 h-3.5" />
+        >
+          <FileText className="w-3.5 h-3.5" />
                 View Documentation
                 <ExternalLink className="w-3 h-3" />
               </a>

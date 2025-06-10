@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     // Create checkout session using new helper
     const session = await createCheckoutSession({
-      planId,
+        planId,
       isAnnual,
       customerId,
       customerEmail,

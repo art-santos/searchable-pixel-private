@@ -9,7 +9,9 @@ import {
 } from 'recharts'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect } from 'react'
-import { TimeframeType } from '.'
+import { TimeframeOption } from '@/components/custom/timeframe-selector'
+
+type TimeframeType = TimeframeOption
 
 interface ChartDataPoint {
   date: string
@@ -134,11 +136,11 @@ export function ViewsChart({ timeframe, isVisible, setIsVisible, data }: ViewsCh
     labelAngle = 0
     labelHeight = 30
   } else if (isMonthlyData) {
-    tickInterval = 4 // Show every 5th day for month
+    tickInterval = 0 // Show all data points (already pre-filtered by API)
     labelAngle = -45
     labelHeight = 60
   } else {
-    tickInterval = 0 // Show all for longer periods
+    tickInterval = 0 // Show all data points (already pre-filtered by API)
     labelAngle = 0
     labelHeight = 30
   }

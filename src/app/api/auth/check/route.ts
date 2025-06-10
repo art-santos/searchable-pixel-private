@@ -13,11 +13,6 @@ export async function GET() {
     
         // Get authenticated user (secure)
     const { data: { user }, error: userError } = await supabase.auth.getUser()
-
-    // Get session if user is authenticated
-    const { data: { session }, error: sessionError } = user ? 
-      await supabase.auth.getSession() : 
-      { data: { session: null }, error: null }
     
     return NextResponse.json({
       cookies: allCookies.map(c => ({ 
@@ -26,9 +21,9 @@ export async function GET() {
         isAuth: c.name.includes('auth') || c.name.includes('sb-')
       })),
       session: {
-        exists: !!session,
-        user: session?.user?.id,
-        error: sessionError?.message
+        exists: !!user,
+        user: user?.id,
+        error: null
       },
       user: {
         exists: !!user,

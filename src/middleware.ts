@@ -181,7 +181,6 @@ export async function middleware(request: NextRequest) {
     }
 
     const { data: { user } } = await supabase.auth.getUser();
-    const { data: { session } } = await supabase.auth.getSession();
 
     // Allow public access to image files
     if (pathname.match(/\.(jpg|jpeg|png|gif|ico|svg|webp)$/i)) {
@@ -206,7 +205,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // If user is not logged in and tries to access protected routes, redirect to login
-    if (!session && isProtectedRoute(pathname)) {
+    if (!user && isProtectedRoute(pathname)) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = '/login';
       redirectUrl.searchParams.set(`redirectedFrom`, pathname);
@@ -214,22 +213,41 @@ export async function middleware(request: NextRequest) {
     }
 
     // If user IS logged in and tries to access /login, redirect to /dashboard
-    if (session && pathname === '/login') {
+    if (user && pathname === '/login') {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = '/dashboard';
       return NextResponse.redirect(redirectUrl);
     }
 
     // Subscription-based route protection
-    if (session && session.user) {
-      // Get user's subscription plan
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('subscription_plan')
-        .eq('id', session.user.id)
+    if (user) {
+      // Get user's subscription plan from centralized table
+      const { data: subscriptionData } = await supabase
+        .rpc('get_user_subscription', { p_user_id: user.id })
         .single()
       
-      const userPlan = (profile?.subscription_plan || 'free') as PlanType
+      // Cast to any to avoid TypeScript errors
+      const subscription = subscriptionData as any
+      
+      // Fallback to profiles table if centralized data not available
+      let userPlan: PlanType = 'starter'
+      
+      if (subscription?.plan_type) {
+        userPlan = subscription.plan_type as PlanType
+      } else {
+        // Fallback to profiles table
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('subscription_plan, is_admin')
+          .eq('id', user.id)
+          .single()
+        
+        if (profile?.is_admin) {
+          userPlan = 'admin' as PlanType
+        } else {
+          userPlan = (profile?.subscription_plan || 'starter') as PlanType
+        }
+      }
       
       // Check route access
       const accessCheck = checkRouteAccess(pathname, userPlan)

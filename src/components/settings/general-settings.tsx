@@ -322,8 +322,8 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
         <div className="space-y-8">
           <div>
             <h3 className="text-lg font-medium text-white mb-6 font-mono tracking-tight">Personal Information</h3>
-            
-            {/* Profile Picture */}
+        
+        {/* Profile Picture */}
             <div className="flex items-center justify-between py-4 border-b border-[#1a1a1a]">
               <div>
                 <div className="font-medium text-white font-mono tracking-tight text-sm">Profile Picture</div>
@@ -332,23 +332,23 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
                 </div>
               </div>
               <div className="flex items-center gap-6">
-                <AvatarUpload
-                  profilePictureUrl={profile?.profile_picture_url}
-                  firstName={profile?.first_name}
-                  lastName={profile?.last_name}
-                  email={user?.email}
-                  onAvatarUpdate={(url: string | null) => setProfile((prev: UserProfile | null) => ({ 
-                    ...prev, 
-                    profile_picture_url: url 
-                  }))}
-                  size="lg"
-                />
-              </div>
-            </div>
+          <AvatarUpload
+            profilePictureUrl={profile?.profile_picture_url}
+            firstName={profile?.first_name}
+            lastName={profile?.last_name}
+            email={user?.email}
+            onAvatarUpdate={(url: string | null) => setProfile((prev: UserProfile | null) => ({ 
+              ...prev, 
+              profile_picture_url: url 
+            }))}
+            size="lg"
+          />
+          </div>
+        </div>
 
             {/* Name */}
             <div className="flex items-center justify-between py-4 border-b border-[#1a1a1a]">
-              <div>
+          <div>
                 <div className="font-medium text-white font-mono tracking-tight text-sm">Full Name</div>
                 <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
                   Your display name across the platform
@@ -356,22 +356,22 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
               </div>
               <div className="flex items-center gap-6">
                 <div className="text-right min-w-[16rem]">
-                  <Input
-                    value={profile?.first_name || ''}
-                    onChange={(e) => setProfile((prev: UserProfile | null) => ({ 
-                      ...prev, 
-                      first_name: e.target.value 
-                    }))}
-                    placeholder="John Doe"
+            <Input
+              value={profile?.first_name || ''}
+              onChange={(e) => setProfile((prev: UserProfile | null) => ({ 
+                ...prev, 
+                first_name: e.target.value 
+              }))}
+              placeholder="John Doe"
                     className="bg-[#0a0a0a] border-[#2a2a2a] text-white h-8 font-mono tracking-tight text-sm"
-                  />
+            />
                 </div>
               </div>
-            </div>
-
+          </div>
+          
             {/* Email */}
             <div className="flex items-center justify-between py-4 border-b border-[#1a1a1a]">
-              <div>
+          <div>
                 <div className="font-medium text-white font-mono tracking-tight text-sm">Email Address</div>
                 <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
                   Contact support to change your email address
@@ -379,15 +379,15 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
               </div>
               <div className="flex items-center gap-6">
                 <div className="text-right min-w-[16rem]">
-                  <Input
-                    value={user?.email || ''}
-                    type="email"
-                    disabled
+            <Input
+              value={user?.email || ''}
+              type="email"
+              disabled
                     className="bg-[#0a0a0a] border-[#2a2a2a] text-[#666] h-8 cursor-not-allowed font-mono tracking-tight text-sm"
-                  />
-                </div>
-              </div>
-            </div>
+            />
+          </div>
+        </div>
+      </div>
           </div>
         </div>
       )}
@@ -397,9 +397,9 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
         <div className="space-y-8">
           <div>
             <h3 className="text-lg font-medium text-white mb-6 font-mono tracking-tight">Current Workspace</h3>
-            
-            {currentWorkspace ? (
-              <>
+        
+        {currentWorkspace ? (
+          <>
                 {/* Workspace Overview */}
                 <div className="bg-[#111] border border-[#1a1a1a] rounded-lg p-4 mb-6">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -438,7 +438,7 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
 
                 {/* Workspace Name */}
                 <div className="flex items-center justify-between py-4 border-b border-[#1a1a1a]">
-                  <div>
+            <div>
                     <div className="font-medium text-white font-mono tracking-tight text-sm">Workspace Name</div>
                     <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
                       Display name for your workspace
@@ -446,19 +446,19 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
                   </div>
                   <div className="flex items-center gap-6">
                     <div className="text-right min-w-[16rem]">
-                      <Input
-                        value={workspaceSettings.name}
-                        onChange={(e) => setWorkspaceSettings(prev => ({ ...prev, name: e.target.value }))}
-                        placeholder="My Company"
+              <Input
+                value={workspaceSettings.name}
+                onChange={(e) => setWorkspaceSettings(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="My Company"
                         className="bg-[#0a0a0a] border-[#2a2a2a] text-white h-8 font-mono tracking-tight text-sm"
-                      />
+              />
                     </div>
                   </div>
-                </div>
-
+            </div>
+            
                 {/* Primary Domain */}
                 <div className="flex items-center justify-between py-4 border-b border-[#1a1a1a]">
-                  <div>
+            <div>
                     <div className="font-medium text-white font-mono tracking-tight text-sm">Primary Domain</div>
                     <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
                       Domain we'll monitor for AI visibility
@@ -466,21 +466,21 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
                   </div>
                   <div className="flex items-center gap-6">
                     <div className="text-right min-w-[16rem]">
-                      <Input
-                        value={workspaceSettings.domain}
-                        onChange={(e) => setWorkspaceSettings(prev => ({ ...prev, domain: e.target.value }))}
-                        placeholder="example.com"
+              <Input
+                value={workspaceSettings.domain}
+                onChange={(e) => setWorkspaceSettings(prev => ({ ...prev, domain: e.target.value }))}
+                placeholder="example.com"
                         className="bg-[#0a0a0a] border-[#2a2a2a] text-white h-8 font-mono tracking-tight text-sm"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
+              />
+            </div>
+              </div>
+            </div>
+          </>
+        ) : (
               <div className="bg-[#111] border border-[#1a1a1a] rounded-lg p-4">
                 <p className="text-[#666] text-sm font-mono tracking-tight">Loading workspace settings...</p>
-              </div>
-            )}
+          </div>
+        )}
           </div>
         </div>
       )}
@@ -499,8 +499,8 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
                   <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
                     {profile?.first_name || user?.email?.split('@')[0] || 'User'} • {user?.email}
                   </div>
-                </div>
-                
+      </div>
+
                 <div>
                   <div className="font-medium text-white font-mono tracking-tight text-sm">Current Plan</div>
                   <div className="flex items-center gap-2 mt-1">
@@ -508,8 +508,8 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
                       {planInfo.name}
                     </span>
                   </div>
-                </div>
-                
+      </div>
+
                 <div>
                   <div className="font-medium text-white font-mono tracking-tight text-sm">Member Since</div>
                   <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
@@ -528,21 +528,21 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
                 </div>
               </div>
               <div className="flex items-center gap-6">
-                <Button 
-                  onClick={handleLogout}
-                  disabled={isLoading}
+        <Button 
+          onClick={handleLogout}
+          disabled={isLoading}
                   className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 hover:text-red-300 font-mono tracking-tight text-sm h-8 px-4 flex items-center gap-2"
-                >
-                  {isLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <LogOut className="w-4 h-4" />
-                      Logout
-                    </>
-                  )}
-                </Button>
-              </div>
+        >
+          {isLoading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <>
+              <LogOut className="w-4 h-4" />
+              Logout
+            </>
+          )}
+        </Button>
+      </div>
             </div>
           </div>
         </div>
@@ -580,7 +580,7 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
               </Button>
             </div>
           </div>
-        </div>
+      </div>
       )}
 
       {/* Success Toast */}

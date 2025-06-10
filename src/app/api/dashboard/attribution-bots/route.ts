@@ -34,6 +34,12 @@ export async function GET(request: Request) {
       case 'last30d':
         startDate.setDate(startDate.getDate() - 30)
         break
+      case 'last90d':
+        startDate.setDate(startDate.getDate() - 90)
+        break
+      case 'last365d':
+        startDate.setDate(startDate.getDate() - 365)
+        break
       default:
         startDate.setDate(startDate.getDate() - 7)
     }

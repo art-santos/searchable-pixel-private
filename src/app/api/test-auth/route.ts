@@ -44,11 +44,6 @@ export async function GET(req: NextRequest) {
     // Check if user is authenticated
     const isAuthenticated = !!userData?.user;
     
-    // Get session if authenticated
-    const { data: sessionData } = isAuthenticated ? 
-      await supabase.auth.getSession() : 
-      { data: { session: null } };
-    
     // Test database connection
     let dbConnectionStatus = 'Not tested';
     try {
@@ -62,9 +57,9 @@ export async function GET(req: NextRequest) {
       status: 'ok',
       message: 'Auth test completed',
       isAuthenticated,
-      user: isAuthenticated && sessionData.session ? {
-        id: sessionData.session.user.id,
-        email: sessionData.session.user.email
+      user: isAuthenticated && userData?.user ? {
+        id: userData.user.id,
+        email: userData.user.email
       } : null,
       dbConnectionStatus,
       time: new Date().toISOString()

@@ -58,6 +58,16 @@ export async function GET(request: Request) {
         startDate.setDate(startDate.getDate() - 30)
         groupBy = 'day'
         break
+      case 'last 90 days':
+        // Go back 90 days from current time
+        startDate.setDate(startDate.getDate() - 90)
+        groupBy = 'day'
+        break
+      case 'last 365 days':
+        // Go back 365 days from current time
+        startDate.setDate(startDate.getDate() - 365)
+        groupBy = 'day'
+        break
       default:
         // Default to last 24 hours
         startDate.setHours(startDate.getHours() - 24)
@@ -261,22 +271,153 @@ export async function GET(request: Request) {
         })
       }
     } else {
-      // Generate days for "Last 7 days" or "Last 30 days" timeframes
-      const daysToShow = timeframe === 'Last 7 days' ? 7 : 30
+      // Generate days for multi-day timeframes
+      let daysToShow: number
+      switch (timeframe.toLowerCase()) {
+        case 'last 7 days':
+          daysToShow = 7
+          break
+        case 'last 30 days':
+          daysToShow = 30
+          break
+        case 'last 90 days':
+          daysToShow = 90
+          break
+        case 'last 365 days':
+          daysToShow = 365
+          break
+        default:
+          daysToShow = 30
+      }
       
-      for (let daysAgo = daysToShow - 1; daysAgo >= 0; daysAgo--) {
-        const dayTime = new Date(nowInUserTz)
-        dayTime.setDate(dayTime.getDate() - daysAgo)
-        
+      if (daysToShow === 90) {
+        // For 90 days, group by weeks
+        const weeksData = new Map<string, number>()
         const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-        const dayKey = `${monthNames[dayTime.getMonth()]} ${dayTime.getDate()}`
-        const crawls = timeAggregates.get(dayKey) || 0
         
-        chartData.push({
-          date: dayKey,
-          crawls,
-          isCurrentPeriod: daysAgo === 0 // Mark current day for animation
+        // Group all data by week
+        timeAggregates.forEach((crawls, dayKey) => {
+          // Parse the day key to get the actual date
+          const [monthStr, dayStr] = dayKey.split(' ')
+          const monthIndex = monthNames.indexOf(monthStr)
+          const day = parseInt(dayStr)
+          
+          if (monthIndex !== -1) {
+            const date = new Date(nowInUserTz.getFullYear(), monthIndex, day)
+            
+            // Get the start of the week (Sunday)
+            const weekStart = new Date(date)
+            weekStart.setDate(date.getDate() - date.getDay())
+            
+            const weekKey = `${monthNames[weekStart.getMonth()]} ${weekStart.getDate()}`
+            weeksData.set(weekKey, (weeksData.get(weekKey) || 0) + crawls)
+          }
         })
+        
+        // Generate chart data for the last 13 weeks
+        for (let weeksAgo = 12; weeksAgo >= 0; weeksAgo--) {
+          const weekTime = new Date(nowInUserTz)
+          weekTime.setDate(weekTime.getDate() - (weeksAgo * 7))
+          
+          // Get start of week (Sunday)
+          const weekStart = new Date(weekTime)
+          weekStart.setDate(weekTime.getDate() - weekTime.getDay())
+          
+          const weekKey = `${monthNames[weekStart.getMonth()]} ${weekStart.getDate()}`
+          const crawls = weeksData.get(weekKey) || 0
+          
+          chartData.push({
+            date: weekKey,
+            crawls,
+            isCurrentPeriod: weeksAgo === 0
+          })
+        }
+        
+      } else if (daysToShow === 365) {
+        // For 365 days, group by months
+        const monthsData = new Map<string, number>()
+        const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+        
+        // Group all data by month
+        timeAggregates.forEach((crawls, dayKey) => {
+          const [monthStr] = dayKey.split(' ')
+          monthsData.set(monthStr, (monthsData.get(monthStr) || 0) + crawls)
+        })
+        
+        // Generate chart data for the last 12 months
+        for (let monthsAgo = 11; monthsAgo >= 0; monthsAgo--) {
+          const monthTime = new Date(nowInUserTz)
+          monthTime.setMonth(monthTime.getMonth() - monthsAgo)
+          
+          const monthKey = monthNames[monthTime.getMonth()]
+          const crawls = monthsData.get(monthKey) || 0
+          
+          chartData.push({
+            date: monthKey,
+            crawls,
+            isCurrentPeriod: monthsAgo === 0
+          })
+        }
+        
+      } else if (daysToShow === 30) {
+        // For 30 days, group by 3-day periods to get ~10 data points
+        const periodsData = new Map<string, number>()
+        const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+        
+        // Group all data by 3-day periods
+        timeAggregates.forEach((crawls, dayKey) => {
+          // Parse the day key to get the actual date
+          const [monthStr, dayStr] = dayKey.split(' ')
+          const monthIndex = monthNames.indexOf(monthStr)
+          const day = parseInt(dayStr)
+          
+          if (monthIndex !== -1) {
+            const date = new Date(nowInUserTz.getFullYear(), monthIndex, day)
+            
+            // Group into 3-day periods
+            const daysSinceStart = Math.floor((nowInUserTz.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+            const periodIndex = Math.floor(daysSinceStart / 3)
+            
+            // Calculate the start date of this 3-day period
+            const periodStart = new Date(nowInUserTz)
+            periodStart.setDate(periodStart.getDate() - (periodIndex * 3))
+            
+            const periodKey = `${monthNames[periodStart.getMonth()]} ${periodStart.getDate()}`
+            periodsData.set(periodKey, (periodsData.get(periodKey) || 0) + crawls)
+          }
+        })
+        
+        // Generate chart data for the last 10 periods (30 days / 3)
+        for (let periodsAgo = 9; periodsAgo >= 0; periodsAgo--) {
+          const periodTime = new Date(nowInUserTz)
+          periodTime.setDate(periodTime.getDate() - (periodsAgo * 3))
+          
+          const periodKey = `${monthNames[periodTime.getMonth()]} ${periodTime.getDate()}`
+          const crawls = periodsData.get(periodKey) || 0
+          
+          chartData.push({
+            date: periodKey,
+            crawls,
+            isCurrentPeriod: periodsAgo === 0
+          })
+        }
+        
+      } else {
+        // For 7 days, show daily data
+        for (let daysAgo = daysToShow - 1; daysAgo >= 0; daysAgo--) {
+          const dayTime = new Date(nowInUserTz)
+          dayTime.setDate(dayTime.getDate() - daysAgo)
+          
+          const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+          const dayKey = `${monthNames[dayTime.getMonth()]} ${dayTime.getDate()}`
+          const crawls = timeAggregates.get(dayKey) || 0
+          
+          chartData.push({
+            date: dayKey,
+            crawls,
+            isCurrentPeriod: daysAgo === 0 // Mark current day for animation
+          })
+        }
       }
     }
 

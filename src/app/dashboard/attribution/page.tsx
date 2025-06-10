@@ -177,49 +177,130 @@ export default function AttributionPage() {
           })
         })
         
-      } else if (timeframe === 'Last 30 days') {
-        // For 30 days, we only have data for June 1-7, so fill the rest with 0s
-        const startDate = new Date('2025-05-09') // 30 days before June 7
-        const endDate = new Date('2025-06-07')
+            } else if (timeframe === 'Last 30 days' || timeframe === 'Last 90 days' || timeframe === 'Last 365 days') {
+        // Handle longer timeframes dynamically
+        let daysToShow: number
         
-        const { data: monthlyData, error } = await supabase
+        switch (timeframe) {
+          case 'Last 30 days':
+            daysToShow = 30
+            break
+          case 'Last 90 days':
+            daysToShow = 90
+            break
+          case 'Last 365 days':
+            daysToShow = 365
+            break
+          default:
+            daysToShow = 30
+        }
+        
+        // Calculate start date
+        const endDate = new Date()
+        const startDate = new Date()
+        startDate.setDate(endDate.getDate() - daysToShow)
+        
+        const { data: timeframeData, error } = await supabase
           .from('crawler_visits')
           .select('created_at')
           .eq('workspace_id', currentWorkspace.id)
-          .gte('created_at', '2025-06-01T00:00:00Z')
-          .lt('created_at', '2025-06-08T00:00:00Z')
+          .gte('created_at', startDate.toISOString())
+          .lt('created_at', endDate.toISOString())
         
         if (error) throw error
         
-        // Create daily buckets for 30 days
-        const dailyBuckets: Record<string, number> = {}
-        
-        // Initialize all 30 days with 0
-        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-          const dateKey = d.toISOString().split('T')[0]
-          dailyBuckets[dateKey] = 0
-        }
-        
-        // Count actual data (only June 1-7 will have data)
-        monthlyData?.forEach(visit => {
-          const date = new Date(visit.created_at).toISOString().split('T')[0]
-          if (dailyBuckets.hasOwnProperty(date)) {
-            dailyBuckets[date]++
-          }
-        })
-        
-        // Convert to chart data, showing every 3rd day to avoid crowding
-        const sortedDates = Object.keys(dailyBuckets).sort()
-        sortedDates.forEach((date, index) => {
-          if (index % 3 === 0 || index === sortedDates.length - 1) { // Show every 3rd day + last day
-            const dayMonth = new Date(date + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        if (timeframe === 'Last 90 days') {
+          // For 90 days, aggregate by weeks
+          const weeklyBuckets = new Map<string, number>()
+          
+          // Group data by week
+          timeframeData?.forEach(visit => {
+            const visitDate = new Date(visit.created_at)
+            
+            // Get start of week (Sunday)
+            const weekStart = new Date(visitDate)
+            weekStart.setDate(visitDate.getDate() - visitDate.getDay())
+            
+            const weekKey = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            weeklyBuckets.set(weekKey, (weeklyBuckets.get(weekKey) || 0) + 1)
+          })
+          
+          // Generate chart data for the last 13 weeks
+          for (let weeksAgo = 12; weeksAgo >= 0; weeksAgo--) {
+            const weekTime = new Date(endDate)
+            weekTime.setDate(weekTime.getDate() - (weeksAgo * 7))
+            
+            // Get start of week (Sunday)
+            const weekStart = new Date(weekTime)
+            weekStart.setDate(weekTime.getDate() - weekTime.getDay())
+            
+            const weekKey = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            const crawls = weeklyBuckets.get(weekKey) || 0
+            
             data.push({
-              date: dayMonth,
-              crawls: dailyBuckets[date],
-              isCurrentPeriod: index === sortedDates.length - 1
+              date: weekKey,
+              crawls,
+              isCurrentPeriod: weeksAgo === 0
             })
           }
-        })
+          
+        } else if (timeframe === 'Last 365 days') {
+          // For 365 days, aggregate by months
+          const monthlyBuckets = new Map<string, number>()
+          
+          // Group data by month
+          timeframeData?.forEach(visit => {
+            const visitDate = new Date(visit.created_at)
+            const monthKey = visitDate.toLocaleDateString('en-US', { month: 'short' })
+            monthlyBuckets.set(monthKey, (monthlyBuckets.get(monthKey) || 0) + 1)
+          })
+          
+          // Generate chart data for the last 12 months
+          for (let monthsAgo = 11; monthsAgo >= 0; monthsAgo--) {
+            const monthTime = new Date(endDate)
+            monthTime.setMonth(monthTime.getMonth() - monthsAgo)
+            
+            const monthKey = monthTime.toLocaleDateString('en-US', { month: 'short' })
+            const crawls = monthlyBuckets.get(monthKey) || 0
+            
+            data.push({
+              date: monthKey,
+              crawls,
+              isCurrentPeriod: monthsAgo === 0
+            })
+          }
+          
+        } else {
+          // For 30 days, show every 3rd day
+          const dailyBuckets: Record<string, number> = {}
+          
+          // Initialize all days with 0
+          for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+            const dateKey = d.toISOString().split('T')[0]
+            dailyBuckets[dateKey] = 0
+          }
+          
+          // Count actual data
+          timeframeData?.forEach(visit => {
+            const date = new Date(visit.created_at).toISOString().split('T')[0]
+            if (dailyBuckets.hasOwnProperty(date)) {
+              dailyBuckets[date]++
+            }
+          })
+          
+          // Convert to chart data, showing every 3rd day
+          const sortedDates = Object.keys(dailyBuckets).sort()
+          sortedDates.forEach((date, index) => {
+            if (index % 3 === 0 || index === sortedDates.length - 1) {
+              const dayMonth = new Date(date + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+              data.push({
+                date: dayMonth,
+                crawls: dailyBuckets[date],
+                isCurrentPeriod: index === sortedDates.length - 1
+              })
+            }
+          })
+        }
       }
       
     } catch (error) {
@@ -543,10 +624,31 @@ export default function AttributionPage() {
                             axisLine={{ stroke: '#333333' }}
                             tickLine={{ stroke: '#333333' }}
                             tick={{ fill: '#666666', fontSize: 12 }}
-                            interval={timeframe === 'Last 30 days' ? 4 : timeframe === 'Last 24 hours' ? 2 : 0}
-                            angle={timeframe === 'Last 30 days' || timeframe === 'Last 24 hours' ? -45 : 0}
-                            textAnchor={timeframe === 'Last 30 days' || timeframe === 'Last 24 hours' ? 'end' : 'middle'}
-                            height={timeframe === 'Last 30 days' || timeframe === 'Last 24 hours' ? 60 : 30}
+                            interval={
+                              timeframe === 'Last 24 hours' ? 2 :
+                              timeframe === 'Last 7 days' ? 0 :
+                              timeframe === 'Last 30 days' ? 0 :
+                              timeframe === 'Last 90 days' ? 0 :
+                              timeframe === 'Last 365 days' ? 0 : 0
+                            }
+                            angle={
+                              timeframe === 'Last 24 hours' || 
+                              timeframe === 'Last 30 days' ||
+                              timeframe === 'Last 90 days' ||
+                              timeframe === 'Last 365 days' ? -45 : 0
+                            }
+                            textAnchor={
+                              timeframe === 'Last 24 hours' || 
+                              timeframe === 'Last 30 days' ||
+                              timeframe === 'Last 90 days' ||
+                              timeframe === 'Last 365 days' ? 'end' : 'middle'
+                            }
+                            height={
+                              timeframe === 'Last 24 hours' || 
+                              timeframe === 'Last 30 days' ||
+                              timeframe === 'Last 90 days' ||
+                              timeframe === 'Last 365 days' ? 60 : 30
+                            }
                           />
                           <YAxis
                             axisLine={{ stroke: '#333333' }}

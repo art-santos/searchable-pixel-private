@@ -21,12 +21,19 @@ interface CrawlerStats {
   last_crawl_date: string | null
 }
 
+interface LatestCrawl {
+  crawler_name: string
+  company: string
+  timestamp: string
+}
+
 export function WelcomeCard() {
   const { user } = useAuth()
   const { currentWorkspace } = useWorkspace()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [crawlerStats, setCrawlerStats] = useState<CrawlerStats | null>(null)
+  const [latestCrawl, setLatestCrawl] = useState<LatestCrawl | null>(null)
   const [loadingStats, setLoadingStats] = useState(true)
   const [showConnectDialog, setShowConnectDialog] = useState(false)
   const shouldReduceMotion = useReducedMotion()
@@ -73,30 +80,42 @@ export function WelcomeCard() {
       }
 
       try {
-        // Get crawler stats from last 30 days
-        const thirtyDaysAgo = new Date()
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+        // Get crawler stats from last 24 hours
+        const twentyFourHoursAgo = new Date()
+        twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24)
 
         const { data, error } = await supabase
           .from('crawler_visits')
-          .select('crawler_name, timestamp')
+          .select('crawler_name, crawler_company, timestamp, created_at')
           .eq('workspace_id', currentWorkspace.id)
-          .gte('timestamp', thirtyDaysAgo.toISOString())
+          .gte('created_at', twentyFourHoursAgo.toISOString())
+          .order('created_at', { ascending: false })
 
         if (error) {
           console.error('Error fetching crawler stats:', error)
+          console.error('Query details:', {
+            workspace_id: currentWorkspace.id,
+            time_filter: twentyFourHoursAgo.toISOString()
+          })
           setCrawlerStats(null)
+          setLatestCrawl(null)
         } else {
+          console.log('Crawler data fetched successfully:', data?.length || 0, 'visits')
           if (data && data.length > 0) {
             const uniqueCrawlers = new Set(data.map(visit => visit.crawler_name)).size
-            const lastCrawlDate = data.reduce((latest, visit) => {
-              return new Date(visit.timestamp) > new Date(latest) ? visit.timestamp : latest
-            }, data[0].timestamp)
+            const lastCrawlDate = data[0].created_at // Most recent since ordered by created_at desc
 
             setCrawlerStats({
               total_visits: data.length,
               unique_crawlers: uniqueCrawlers,
               last_crawl_date: lastCrawlDate
+            })
+
+            // Set latest crawl info
+            setLatestCrawl({
+              crawler_name: data[0].crawler_name,
+              company: data[0].crawler_company || 'Unknown',
+              timestamp: data[0].created_at
             })
           } else {
             setCrawlerStats({
@@ -104,11 +123,13 @@ export function WelcomeCard() {
               unique_crawlers: 0,
               last_crawl_date: null
             })
+            setLatestCrawl(null)
           }
         }
       } catch (err) {
         console.error('Error in crawler stats fetch:', err)
         setCrawlerStats(null)
+        setLatestCrawl(null)
       } finally {
         setLoadingStats(false)
       }
@@ -165,6 +186,43 @@ export function WelcomeCard() {
     })
   }
 
+  // Get favicon for a company
+  const getFaviconForCompany = (company: string) => {
+    const companyDomainMap: Record<string, string> = {
+      'OpenAI': 'openai.com',
+      'Anthropic': 'anthropic.com', 
+      'Google': 'google.com',
+      'Perplexity': 'perplexity.ai',
+      'Microsoft': 'microsoft.com',
+      'Meta': 'meta.com',
+      'Twitter': 'twitter.com',
+      'X': 'x.com',
+      'ByteDance': 'bytedance.com'
+    }
+
+    const domain = companyDomainMap[company]
+    if (domain) {
+      return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
+    }
+    
+    const constructedDomain = `${company.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`
+    return `https://www.google.com/s2/favicons?domain=${constructedDomain}&sz=32`
+  }
+
+  // Format time since last crawl
+  const getTimeSinceLastCrawl = (timestamp: string) => {
+    const now = new Date()
+    const crawlTime = new Date(timestamp)
+    const diffMs = now.getTime() - crawlTime.getTime()
+    const diffMinutes = Math.floor(diffMs / (1000 * 60))
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    
+    if (diffMinutes < 1) return 'Just now'
+    if (diffMinutes < 60) return `${diffMinutes} min${diffMinutes !== 1 ? 's' : ''} ago`
+    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`
+    return crawlTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
   const quickActions = [
     { 
       icon: Activity, 
@@ -182,9 +240,9 @@ export function WelcomeCard() {
     },
     { 
       icon: Settings, 
-      label: "Workspace Settings", 
-      desc: "Manage API keys & tracking", 
-      href: currentWorkspace ? `/dashboard/${currentWorkspace.id}/settings` : "#",
+      label: "Account Settings", 
+      desc: "Manage billing, workspaces & preferences", 
+      href: "/settings",
       primary: false
     },
   ]
@@ -207,7 +265,7 @@ export function WelcomeCard() {
             </p>
             
             {/* Crawler Stats Badge or Empty State */}
-            <div className="inline-flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-3 mb-6">
               {loadingStats ? (
                 <div className="flex items-center gap-2 bg-[#111] border border-[#1a1a1a] rounded-sm px-3 py-2">
                   <div className="w-2 h-2 bg-[#333] rounded-full animate-pulse"></div>
@@ -217,26 +275,31 @@ export function WelcomeCard() {
                 </div>
               ) : crawlerStats && crawlerStats.total_visits > 0 ? (
                 <>
-                  <div className="flex items-center gap-2 bg-[#111] border border-[#1a1a1a] rounded-sm px-3 py-2">
-                    <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-                    <span className="text-sm text-white font-mono tracking-tight">
-                      {crawlerStats.total_visits} visits • {crawlerStats.unique_crawlers} AI crawlers
-                    </span>
-                  </div>
-                  <div className="text-xs text-[#666] font-mono tracking-tight">
-                    Last activity: {getLastCrawlDate()}
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="bg-transparent border-[#333] text-[#888] hover:text-white hover:border-[#444] h-8 px-3 text-xs font-mono tracking-tight"
-                    asChild
-                  >
-                    <Link href="/dashboard" className="flex items-center gap-1">
-                      View Details
-                      <ArrowRight className="w-3 h-3" />
-                    </Link>
-                  </Button>
+                  {/* Latest crawl in card */}
+                  {latestCrawl && (
+                    <div className="flex items-center gap-2 bg-[#111] border border-[#1a1a1a] rounded-sm px-3 py-2">
+                      <img 
+                        src={getFaviconForCompany(latestCrawl.company)}
+                        alt={latestCrawl.company}
+                        width={16}
+                        height={16}
+                        className="w-4 h-4 object-contain"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.style.display = 'none'
+                          const fallback = target.nextElementSibling as HTMLElement
+                          if (fallback) fallback.style.display = 'block'
+                        }}
+                      />
+                      <Bot className="w-4 h-4 text-[#666] hidden" />
+                      <span className="text-sm text-white font-mono tracking-tight">
+                        {latestCrawl.crawler_name}
+                      </span>
+                      <span className="text-xs text-[#666] font-mono tracking-tight">
+                        • {getTimeSinceLastCrawl(latestCrawl.timestamp)}
+                      </span>
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
@@ -322,7 +385,7 @@ export function WelcomeCard() {
                 </Link>
               </div>
               <div className="text-xs text-[#666] font-mono tracking-tight">
-                {crawlerStats?.total_visits ? `${crawlerStats.total_visits} AI crawler visits (30d)` : 'Ready to track AI crawlers'}
+                {crawlerStats?.total_visits ? `${crawlerStats.total_visits} AI crawler visits (24h)` : 'Ready to track AI crawlers'}
               </div>
             </div>
           </div>

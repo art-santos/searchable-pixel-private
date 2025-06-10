@@ -171,72 +171,33 @@ export default function WorkspaceSettingsPage() {
                   </div>
                 </div>
 
-                {/* Data Retention */}
+                {/* Workspace Information */}
                 <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
-                  <h3 className="text-lg font-semibold mb-4">Data Retention</h3>
+                  <h3 className="text-lg font-semibold mb-4">Workspace Information</h3>
                   
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-4">
                     <div>
-                      <Label htmlFor="crawler-logs-days">Crawler Logs Retention (days)</Label>
+                      <Label htmlFor="workspace-name">Workspace Name</Label>
                       <Input
-                        id="crawler-logs-days"
-                        type="number"
-                        min="7"
-                        max="365"
-                        value={settings.data_retention.crawler_logs_days}
-                        onChange={(e) => updateSetting('data_retention.crawler_logs_days', parseInt(e.target.value))}
+                        id="workspace-name"
+                        type="text"
+                        value={workspace?.workspace_name || ''}
                         className="mt-1 bg-gray-800 border-gray-700"
+                        disabled
                       />
-                      <p className="text-xs text-gray-400 mt-1">Between 7 and 365 days</p>
+                      <p className="text-xs text-gray-400 mt-1">Workspace name can be changed in Account Settings</p>
                     </div>
                     
                     <div>
-                      <Label htmlFor="max-visibility-days">Max Visibility Data Retention (days)</Label>
+                      <Label htmlFor="workspace-domain">Domain</Label>
                       <Input
-                        id="max-visibility-days"
-                        type="number"
-                        min="30"
-                        max="730"
-                        value={settings.data_retention.max_visibility_days}
-                        onChange={(e) => updateSetting('data_retention.max_visibility_days', parseInt(e.target.value))}
+                        id="workspace-domain"
+                        type="text"
+                        value={workspace?.domain || ''}
                         className="mt-1 bg-gray-800 border-gray-700"
+                        disabled
                       />
-                      <p className="text-xs text-gray-400 mt-1">Between 30 and 730 days</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* API Rate Limits */}
-                <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
-                  <h3 className="text-lg font-semibold mb-4">API Rate Limits</h3>
-                  
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <Label htmlFor="requests-per-minute">Requests per Minute</Label>
-                      <Input
-                        id="requests-per-minute"
-                        type="number"
-                        min="1"
-                        max="1000"
-                        value={settings.api_limits.requests_per_minute}
-                        onChange={(e) => updateSetting('api_limits.requests_per_minute', parseInt(e.target.value))}
-                        className="mt-1 bg-gray-800 border-gray-700"
-                      />
-                      <p className="text-xs text-gray-400 mt-1">Between 1 and 1,000</p>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="requests-per-day">Requests per Day</Label>
-                      <Input
-                        id="requests-per-day"
-                        type="number"
-                        min="100"
-                        max="1000000"
-                        value={settings.api_limits.requests_per_day}
-                        onChange={(e) => updateSetting('api_limits.requests_per_day', parseInt(e.target.value))}
-                        className="mt-1 bg-gray-800 border-gray-700"
-                      />
-                      <p className="text-xs text-gray-400 mt-1">Between 100 and 1,000,000</p>
+                      <p className="text-xs text-gray-400 mt-1">Domain settings managed through Account Settings</p>
                     </div>
                   </div>
                 </div>

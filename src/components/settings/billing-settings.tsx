@@ -322,32 +322,32 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
 
   // Direct add-on removal without workspace deletion
   const removeAddOnDirect = async () => {
-    setIsUpdatingAddOns(true)
-    try {
-      const response = await fetch('/api/billing/manage-addons', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: extraDomains === 1 ? 'remove' : 'update',
-          addonType: 'extra_domains',
+      setIsUpdatingAddOns(true)
+      try {
+        const response = await fetch('/api/billing/manage-addons', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: extraDomains === 1 ? 'remove' : 'update',
+            addonType: 'extra_domains',
           quantity: extraDomains - 1
+          })
         })
-      })
-      
-      if (response.ok) {
+        
+        if (response.ok) {
         setExtraDomains(extraDomains - 1)
         await onRefreshUsage()
         showToast('Extra domain removed!')
-      } else {
-        const error = await response.json()
+        } else {
+          const error = await response.json()
         showToast(error.error || 'Failed to remove extra domain')
-      }
-    } catch (error) {
+        }
+      } catch (error) {
       console.error('Error removing domain:', error)
       showToast('Failed to remove extra domain')
-    } finally {
-      setIsUpdatingAddOns(false)
-    }
+      } finally {
+        setIsUpdatingAddOns(false)
+      }
   }
 
   // Handle workspace deletion confirmation
@@ -382,7 +382,7 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
         }
         
         showToast(`${deleteResult.deletedCount} workspace${deleteResult.deletedCount !== 1 ? 's' : ''} deleted and add-on removed!`)
-      } else {
+    } else {
         throw new Error(deleteResult.message || 'Some workspaces failed to delete')
       }
     } catch (error) {
@@ -758,12 +758,12 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
 
                     {/* Edge Alerts Add-on */}
                     <div className="flex items-center justify-between py-4 border-b border-[#1a1a1a]">
-                      <div>
+                        <div>
                         <div className="font-medium text-white font-mono tracking-tight text-sm">Edge Alerts</div>
-                        <div className="text-xs text-[#666] font-mono tracking-tight">
+                          <div className="text-xs text-[#666] font-mono tracking-tight">
                           $10 per month • Real-time webhooks for visitor spikes, new bots & thresholds
+                          </div>
                         </div>
-                      </div>
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-3">
                           <Switch
@@ -778,16 +778,16 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                           </div>
                           <div className="text-xs text-[#666] font-mono tracking-tight">per month</div>
                         </div>
+                        </div>
                       </div>
-                    </div>
+                      
 
-
-                  </div>
-                </div>
+                          </div>
+                        </div>
               )}
 
 
-            </div>
+                          </div>
           )}
 
           {/* Usage Tab */}
@@ -818,13 +818,13 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                       <div className="w-24 h-1 bg-[#1a1a1a] rounded-sm">
                         <div 
                           className="h-full bg-[#444] rounded-sm transition-all"
-                          style={{ 
+                              style={{
                             width: `${Math.min(100, (workspaceCounts.included / (currentPlan === 'team' ? 5 : 1)) * 100)}%` 
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
+                              }}
+                            />
+                          </div>
+                          </div>
+                        </div>
 
                   {/* Snapshots */}
                   <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
@@ -832,14 +832,14 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                       <div className="font-medium text-white font-mono tracking-tight text-sm">Monthly Snapshots</div>
                       <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
                         {usageData?.snapshots?.used || 0} / {getSnapshotLimit()} snapshots this month
-                      </div>
+                        </div>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
                         <div className="font-medium text-white font-mono tracking-tight text-sm">
                           {getSnapshotLimit() === -1 ? 'Unlimited' : `${Math.max(0, getSnapshotLimit() - (usageData?.snapshots?.used || 0))} left`}
-                        </div>
-                      </div>
+                  </div>
+                </div>
                       <div className="w-24 h-1 bg-[#1a1a1a] rounded-sm">
                         <div 
                           className="h-full bg-[#444] rounded-sm transition-all"
@@ -847,9 +847,9 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                             width: getSnapshotLimit() === -1 ? '100%' : `${Math.min(100, ((usageData?.snapshots?.used || 0) / getSnapshotLimit()) * 100)}%`
                           }}
                         />
-                      </div>
-                    </div>
                   </div>
+                </div>
+            </div>
 
                   {/* AI Crawler Logs */}
                   <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
@@ -887,7 +887,7 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                         </div>
                         <div className="text-xs text-[#666] font-mono tracking-tight">
                           {usageData?.addOns?.some((addon: any) => addon.add_on_type === 'edge_alerts' && addon.is_active) ? '$10/month' : 'Add-on required'}
-                        </div>
+                      </div>
                       </div>
                       {!usageData?.addOns?.some((addon: any) => addon.add_on_type === 'edge_alerts' && addon.is_active) && (
                         <Button

@@ -3,43 +3,84 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user profile with subscription info
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('subscription_plan, subscription_status, stripe_customer_id, is_admin')
-      .eq('id', user.id)
+    // Get subscription info from centralized table
+    const { data: subscriptionData, error: subscriptionError } = await supabase
+      .rpc('get_user_subscription', { p_user_id: user.id })
       .single()
 
-    if (profileError || !profile) {
-      if (profileError && profileError.code !== 'PGRST116') {
-        // If the error is something other than "no rows", log it
-        console.error('Error fetching user subscription:', profileError)
-      }
+    if (subscriptionError || !subscriptionData) {
+      console.error('Error fetching subscription data:', subscriptionError)
       
-      // If no profile or a "no rows" error, return default starter plan
+      // Fallback: check if user exists in profiles table
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('subscription_plan, subscription_status, stripe_customer_id, is_admin')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError || !profile) {
+        // Return default if no data found
+        return NextResponse.json({
+          subscriptionPlan: 'starter',
+          subscriptionStatus: 'active',
+          stripeCustomerId: null,
+          isAdmin: false
+        })
+      }
+
+      // Use profile data as fallback
+      const effectivePlan = profile.is_admin ? 'admin' : (profile.subscription_plan || 'starter')
       return NextResponse.json({
-        subscription_plan: 'starter',
-        subscription_status: 'active',
-        stripe_customer_id: null,
-        is_admin: false
+        subscriptionPlan: effectivePlan,
+        subscriptionStatus: profile.subscription_status || 'active',
+        stripeCustomerId: profile.stripe_customer_id,
+        isAdmin: profile.is_admin || false
       })
     }
 
-    // Admin users get full access (treat as team plan)
-    const effectivePlan = profile.is_admin ? 'team' : (profile.subscription_plan || 'starter')
+    // Cast to any to avoid TypeScript errors with RPC return type
+    const subscription = subscriptionData as any
 
+    // Return data from centralized subscription system
     return NextResponse.json({
-      subscription_plan: effectivePlan,
-      subscription_status: profile.subscription_status || 'active',
-      stripe_customer_id: profile.stripe_customer_id,
-      is_admin: profile.is_admin || false
+      subscriptionPlan: subscription.plan_type,
+      subscriptionStatus: subscription.plan_status,
+      stripeCustomerId: subscription.stripe_customer_id,
+      stripeSubscriptionId: subscription.stripe_subscription_id,
+      currentPeriodStart: subscription.current_period_start,
+      currentPeriodEnd: subscription.current_period_end,
+      trialEnd: subscription.trial_end,
+      cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      isAdmin: subscription.is_admin || false,
+      usage: {
+        domains: {
+          included: subscription.domains_included,
+          used: subscription.domains_used,
+          remaining: subscription.domains_remaining
+        },
+        workspaces: {
+          included: subscription.workspaces_included,
+          used: subscription.workspaces_used,
+          remaining: subscription.workspaces_remaining
+        },
+        aiLogs: {
+          included: subscription.ai_logs_included,
+          used: subscription.ai_logs_used,
+          remaining: subscription.ai_logs_remaining
+        }
+      },
+      addOns: {
+        extraDomains: subscription.extra_domains,
+        edgeAlertsEnabled: subscription.edge_alerts_enabled
+      },
+      billingPreferences: subscription.billing_preferences
     })
 
   } catch (error) {

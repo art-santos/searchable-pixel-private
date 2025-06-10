@@ -37,8 +37,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setSession(null);
           setUser(null);
         } else {
-          // If we have a user, get the session
-          const { data: { session } } = await supabase.auth.getSession();
+          // Create a minimal session object from user data
+          const session = user ? {
+            user,
+            access_token: '', // Not needed for client-side usage
+            refresh_token: '', // Not needed for client-side usage
+            expires_in: 0,
+            expires_at: 0,
+            token_type: 'bearer'
+          } : null;
           setSession(session);
           setUser(user);
         }

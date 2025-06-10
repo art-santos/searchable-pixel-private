@@ -34,6 +34,12 @@ export async function GET(request: Request) {
       case 'last30d':
         startDate.setDate(startDate.getDate() - 30)
         break
+      case 'last90d':
+        startDate.setDate(startDate.getDate() - 90)
+        break
+      case 'last365d':
+        startDate.setDate(startDate.getDate() - 365)
+        break
       default:
         startDate.setDate(startDate.getDate() - 7)
     }
@@ -129,7 +135,11 @@ export async function GET(request: Request) {
       return `${Math.round(avgHours / 24 * 10) / 10}d`
     }
 
-    const timeframeDays = timeframe === 'last24h' ? 1 : timeframe === 'last7d' ? 7 : 30
+    const timeframeDays = timeframe === 'last24h' ? 1 : 
+                         timeframe === 'last7d' ? 7 : 
+                         timeframe === 'last30d' ? 30 :
+                         timeframe === 'last90d' ? 90 :
+                         timeframe === 'last365d' ? 365 : 7
 
     // Convert to array and sort by total crawls
     const companies = Array.from(companyStats.entries())

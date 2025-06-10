@@ -34,9 +34,11 @@ export default function AttributionBySourcePage() {
 
   // Map timeframe options to API parameters
   const timeframeMap: Record<TimeframeOption, string> = {
-    'Last 24 hours': '24h',
-    'Last 7 days': '7d',
-    'Last 30 days': '30d'
+    'Last 24 hours': 'last24h',
+    'Last 7 days': 'last7d',
+    'Last 30 days': 'last30d',
+    'Last 90 days': 'last90d',
+    'Last 365 days': 'last365d'
   }
 
   useEffect(() => {
