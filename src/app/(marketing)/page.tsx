@@ -269,12 +269,12 @@ export default function LandingPage() {
             </h2>
           </div>
           
-          <div className="max-w-4xl mx-auto mb-12 md:mb-16">
+          <div className="max-w-5xl mx-auto mb-12 md:mb-16">
             <p className="text-lg sm:text-xl md:text-2xl text-gray-300 leading-relaxed font-light mb-4 md:mb-6">
-              Three steps to dominate AI engine visibility and get your content cited by ChatGPT, Perplexity, and Google AI.
+              From audit to attribution—track what AI crawlers see, monitor who's visiting, and convert insights into pipeline.
             </p>
             <div className="text-xs sm:text-sm text-gray-500 font-mono">
-              AUDIT → MONITOR → IMPLEMENT
+              AUDIT → TRACK → CONVERT
             </div>
           </div>
 
@@ -325,7 +325,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Step 2: Monitor Your Mentions */}
+            {/* Step 2: Track Crawler Activity */}
             <div className="bg-[#0c0c0c] border border-[#1a1a1a] p-6 md:p-8 hover:border-[#333333] transition-all duration-300">
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-8 h-8 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white font-bold text-sm">
@@ -334,13 +334,13 @@ export default function LandingPage() {
                 <div>
                   <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Step Two</div>
                   <h3 className="text-lg md:text-xl font-bold text-white leading-tight">
-                    Monitor Your Mentions
+                    Track Crawler Activity
                   </h3>
                 </div>
               </div>
               
               <p className="text-gray-300 mb-6 text-sm md:text-base leading-relaxed font-light">
-                Track your brand's footprint across AI engines. Know exactly where you're showing up (or not) in ChatGPT, Perplexity, and Google AI.
+                Monitor which pages AI crawlers are actually hitting, identify traffic patterns, and spot content that needs optimization to boost visibility.
               </p>
 
               {/* Features List */}
@@ -348,28 +348,28 @@ export default function LandingPage() {
                 <div className="flex items-start gap-3">
                   <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
                   <div>
-                    <span className="text-gray-100 font-medium text-sm">Real-time prompt-based visibility checks</span>
-                    <div className="text-xs text-gray-500 mt-1">Monitor how AI engines respond to queries about your domain</div>
+                    <span className="text-gray-100 font-medium text-sm">Live crawler monitoring</span>
+                    <div className="text-xs text-gray-500 mt-1">See which AI bots are visiting your pages in real-time</div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
                   <div>
-                    <span className="text-gray-100 font-medium text-sm">Daily re-rank tracking</span>
-                    <div className="text-xs text-gray-500 mt-1">See how your visibility changes over time with trend analysis</div>
+                    <span className="text-gray-100 font-medium text-sm">Page traffic insights</span>
+                    <div className="text-xs text-gray-500 mt-1">Identify which pages get the most crawler attention</div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
                   <div>
-                    <span className="text-gray-100 font-medium text-sm">Competitive landscape mapping</span>
-                    <div className="text-xs text-gray-500 mt-1">Compare your AI presence against industry competitors</div>
+                    <span className="text-gray-100 font-medium text-sm">Content performance alerts</span>
+                    <div className="text-xs text-gray-500 mt-1">Get notified when pages need optimization to increase crawl frequency</div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Step 3: Generate Content That Fills Gaps */}
+            {/* Step 3: Convert Attribution to Pipeline */}
             <div className="bg-[#0c0c0c] border border-[#1a1a1a] p-6 md:p-8 hover:border-[#333333] transition-all duration-300">
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-8 h-8 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white font-bold text-sm">
@@ -378,13 +378,13 @@ export default function LandingPage() {
                 <div>
                   <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Step Three</div>
                   <h3 className="text-lg md:text-xl font-bold text-white leading-tight">
-                    AEO Engineer Goes to Work
+                    Convert Attribution to Pipeline
                   </h3>
                 </div>
               </div>
               
               <p className="text-gray-300 mb-6 text-sm md:text-base leading-relaxed font-light">
-                Our engine identifies content gaps preventing LLM mentions, then generates optimized articles that fill those exact gaps. Queue, review, and publish directly to your CMS.
+                See exactly who's visiting from AI search results, identify which companies are engaging with your content, and convert attribution insights into qualified leads.
               </p>
 
               {/* Features List */}
@@ -392,22 +392,22 @@ export default function LandingPage() {
                 <div className="flex items-start gap-3">
                   <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
                   <div>
-                    <span className="text-gray-100 font-medium text-sm">Gap analysis & content queue</span>
-                    <div className="text-xs text-gray-500 mt-1">Monitor missing topics that prevent top LLM citations</div>
+                    <span className="text-gray-100 font-medium text-sm">Visitor identification & enrichment</span>
+                    <div className="text-xs text-gray-500 mt-1">See which companies are visiting after AI search citations</div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
                   <div>
-                    <span className="text-gray-100 font-medium text-sm">AI-optimized content generation</span>
-                    <div className="text-xs text-gray-500 mt-1">Select from engine-recommended content that fills citation gaps</div>
+                    <span className="text-gray-100 font-medium text-sm">Attribution tracking</span>
+                    <div className="text-xs text-gray-500 mt-1">Connect traffic spikes to specific AI mentions and citations</div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
                   <div>
-                    <span className="text-gray-100 font-medium text-sm">Copy/paste or CMS integration</span>
-                    <div className="text-xs text-gray-500 mt-1">Connect to your preferred CMS or copy optimized content directly</div>
+                    <span className="text-gray-100 font-medium text-sm">Lead scoring & pipeline integration</span>
+                    <div className="text-xs text-gray-500 mt-1">Push qualified AI-driven leads directly to your CRM</div>
                   </div>
                 </div>
               </div>

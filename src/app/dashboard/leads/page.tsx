@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { useWorkspace } from '@/contexts/WorkspaceContext'
@@ -137,6 +138,7 @@ const mockStats: LeadStats = {
 }
 
 export default function LeadsPage() {
+  const router = useRouter()
   const { user } = useAuth()
   const { currentWorkspace, switching } = useWorkspace()
   const [leads, setLeads] = useState<Lead[]>([])
@@ -147,6 +149,13 @@ export default function LeadsPage() {
   const [checkingConnection, setCheckingConnection] = useState(false)
   const [scriptCopied, setScriptCopied] = useState(false)
   const [testingTracking, setTestingTracking] = useState(false)
+
+  // Redirect if leads feature is disabled
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_LEADS_ENABLED !== 'true') {
+      router.push('/dashboard')
+    }
+  }, [router])
 
   // Check connection status
   const checkConnection = async () => {
