@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     }
     
     // Validate plan
-    const validPlans = ['free', 'visibility', 'plus', 'pro']
+    const validPlans = ['starter', 'pro', 'team']
     if (!validPlans.includes(plan)) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
     }
@@ -39,8 +39,8 @@ export async function POST(req: NextRequest) {
       .from('profiles')
       .update({
         subscription_plan: plan,
-        subscription_status: plan === 'free' ? 'free' : 'active',
-        subscription_period_end: plan === 'free' ? null : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
+        subscription_status: 'active',
+        subscription_period_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
         updated_by: userId
       })
       .eq('id', userId)

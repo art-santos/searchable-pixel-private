@@ -57,8 +57,7 @@ const platforms: Platform[] = [
     category: 'cms',
     icon: 'W',
     iconBg: 'bg-[#21759b] text-white',
-    available: false,
-    votes: 0
+    available: true
   },
   {
     id: 'netlify',
@@ -449,7 +448,7 @@ export function ConnectAnalyticsDialog({
 
             {/* I don't know option */}
             <button
-              onClick={() => window.open('mailto:support@split.dev?subject=Help with analytics setup', '_blank')}
+              onClick={() => window.open('https://cal.com/sam-hogan/15min', '_blank')}
               className="mt-4 w-full p-4 rounded-lg border border-dashed border-[#1a1a1a] hover:border-[#333] transition-colors group"
             >
               <div className="flex items-center justify-center gap-3">
@@ -516,6 +515,65 @@ export const middleware = splitAnalytics({
                     <ExternalLink className="w-4 h-4 mr-2" />
                     View full documentation
                   </Button>
+                </>
+              )}
+
+              {/* WordPress Instructions */}
+              {selectedPlatform === 'wordpress' && (
+                <>
+                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4">
+                    <h4 className="font-medium text-white mb-3">Quick Setup</h4>
+                    <ol className="space-y-3">
+                      <li className="flex gap-3">
+                        <span className="text-[#666] flex-shrink-0">1.</span>
+                        <div>
+                          <p className="text-sm text-[#ccc]">Download the Split Analytics plugin:</p>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="mt-2"
+                            onClick={() => {
+                              // Create download link for the zip file
+                              const link = document.createElement('a')
+                              link.href = '/wp-plugin/split-analytics.zip'
+                              link.download = 'split-analytics.zip'
+                              link.click()
+                            }}
+                          >
+                            Download Plugin (.zip)
+                          </Button>
+                        </div>
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="text-[#666] flex-shrink-0">2.</span>
+                        <div>
+                          <p className="text-sm text-[#ccc]">Install the plugin:</p>
+                          <ul className="mt-1 text-xs text-[#888] space-y-1 ml-4">
+                            <li>• Go to Plugins → Add New → Upload Plugin</li>
+                            <li>• Choose the downloaded ZIP file</li>
+                            <li>• Click "Install Now" and "Activate"</li>
+                          </ul>
+                        </div>
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="text-[#666] flex-shrink-0">3.</span>
+                        <div>
+                          <p className="text-sm text-[#ccc]">Configure your API key:</p>
+                          <ul className="mt-1 text-xs text-[#888] space-y-1 ml-4">
+                            <li>• Go to Settings → Split Analytics</li>
+                            <li>• Enter your API key from the dashboard</li>
+                            <li>• Enable tracking and save settings</li>
+                          </ul>
+                        </div>
+                      </li>
+                    </ol>
+                  </div>
+                  <div className="bg-blue-950/30 border border-blue-900/50 rounded-lg p-3">
+                    <p className="text-xs text-blue-300">
+                      <strong>Note:</strong> The plugin is currently in review for the WordPress.org directory. 
+                      For now, please use the manual installation method above.
+                    </p>
+                  </div>
                 </>
               )}
 

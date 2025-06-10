@@ -81,10 +81,10 @@ export async function GET() {
       // Get user's actual subscription plan from profiles table
       const userSubscription = await getUserSubscription(user.id)
       
-      let actualPlan = 'free'
+      let actualPlan = 'starter'
       
       if (userSubscription?.is_admin) {
-        actualPlan = 'pro'
+        actualPlan = 'team'
       } else if (userSubscription?.subscription_plan && userSubscription?.subscription_status === 'active') {
         actualPlan = userSubscription.subscription_plan
       }
@@ -92,8 +92,8 @@ export async function GET() {
       // If the billing period plan doesn't match the actual plan, update it
       if (billingPeriod.plan_type !== actualPlan) {
         // Update the billing period with correct plan and limits
-        const planDomains = actualPlan === 'pro' ? 3 : 1
-        const planAiLogs = actualPlan === 'free' ? 100 : actualPlan === 'visibility' ? 250 : actualPlan === 'plus' ? 500 : actualPlan === 'pro' ? 1000 : 100
+        const planDomains = actualPlan === 'team' ? 5 : 1
+        const planAiLogs = actualPlan === 'starter' ? 100 : actualPlan === 'pro' ? 500 : actualPlan === 'team' ? 1000 : 100
         
         const { error: updateError } = await serviceSupabase
           .from('subscription_usage')
@@ -124,10 +124,10 @@ export async function GET() {
       // Get user's actual subscription plan from profiles table
       const userSubscription = await getUserSubscription(user.id)
       
-      let actualPlan = 'free'
+      let actualPlan = 'starter'
       
       if (userSubscription?.is_admin) {
-        actualPlan = 'pro'
+        actualPlan = 'team'
       } else if (userSubscription?.subscription_plan && userSubscription?.subscription_status === 'active') {
         actualPlan = userSubscription.subscription_plan
       }

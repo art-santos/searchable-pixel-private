@@ -18,7 +18,7 @@ interface BillingSettingsProps {
 export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: BillingSettingsProps) {
   const { user } = useAuth()
   const [billingTab, setBillingTab] = useState<'plans' | 'usage' | 'settings'>('plans')
-  const [currentPlan, setCurrentPlan] = useState('free')
+  const [currentPlan, setCurrentPlan] = useState('starter')
   const [stripeCustomerId, setStripeCustomerId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showPricingModal, setShowPricingModal] = useState(false)
@@ -31,69 +31,8 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
   const [savingPreferences, setSavingPreferences] = useState(false)
   const [preferencesSaveMessage, setPreferencesSaveMessage] = useState('')
   const [highlightedSection, setHighlightedSection] = useState<string | null>(null)
-  const [visitorCredits, setVisitorCredits] = useState(3750) // Current slider value
-  const [currentVisitorCredits, setCurrentVisitorCredits] = useState(3750) // Current subscription amount
-  const [isUpdatingCredits, setIsUpdatingCredits] = useState(false)
   const [showWorkspaceDeletionDialog, setShowWorkspaceDeletionDialog] = useState(false)
   const [domainsToRemove, setDomainsToRemove] = useState(0)
-
-  // Get base credits included in current plan
-  const getBaseCreditsForPlan = (planType: string) => {
-    switch (planType) {
-      case 'visibility': return 0
-      case 'plus': return 3750
-      case 'pro': return 15000
-      default: return 0 // free plan
-    }
-  }
-
-  const baseCredits = getBaseCreditsForPlan(currentPlan)
-  const isVisibilityPlan = currentPlan === 'visibility' || currentPlan === 'free'
-
-  // Tiered pricing calculation
-  const calculateCreditCost = (credits: number) => {
-    if (credits <= baseCredits) return 0
-    
-    const additionalCredits = credits - baseCredits
-    let cost = 0
-    
-    // Tier 1: 1-2500 additional credits at $0.25 each
-    if (additionalCredits > 0) {
-      const tier1Credits = Math.min(additionalCredits, 2500)
-      cost += tier1Credits * 0.25
-    }
-    
-    // Tier 2: 2501-7500 additional credits at $0.20 each  
-    if (additionalCredits > 2500) {
-      const tier2Credits = Math.min(additionalCredits - 2500, 5000)
-      cost += tier2Credits * 0.20
-    }
-    
-    // Tier 3: 7501+ additional credits at $0.15 each
-    if (additionalCredits > 7500) {
-      const tier3Credits = additionalCredits - 7500
-      cost += tier3Credits * 0.15
-    }
-    
-    return Math.round(cost)
-  }
-
-  // Get current price per credit for display
-  const getCurrentPricePerCredit = (credits: number) => {
-    if (credits <= baseCredits) return 0
-    
-    const additionalCredits = credits - baseCredits
-    if (additionalCredits <= 2500) return 0.25
-    if (additionalCredits <= 7500) return 0.20
-    return 0.15
-  }
-
-  // Update credits when plan changes
-  useEffect(() => {
-    const planBaseCredits = getBaseCreditsForPlan(currentPlan)
-    setVisitorCredits(planBaseCredits)
-    setCurrentVisitorCredits(planBaseCredits)
-  }, [currentPlan])
 
   // Fetch subscription data on mount
   useEffect(() => {
@@ -527,39 +466,7 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
     }
   }
 
-  const handleUpdateCredits = async () => {
-    if (visitorCredits === currentVisitorCredits) return
 
-    setIsUpdatingCredits(true)
-    try {
-      // TODO: Connect to actual API endpoint for credit updates
-      const response = await fetch('/api/billing/update-credits', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          credits: visitorCredits
-        })
-      })
-
-      if (response.ok) {
-        setCurrentVisitorCredits(visitorCredits)
-        showToast(`Visitor credits updated to ${visitorCredits.toLocaleString()}!`)
-        await onRefreshUsage()
-      } else {
-        const error = await response.json()
-        showToast(error.error || 'Failed to update credits')
-      }
-    } catch (error) {
-      console.error('Error updating credits:', error)
-      showToast('Failed to update credits')
-    } finally {
-      setIsUpdatingCredits(false)
-    }
-  }
-
-  const handleCancelCreditChanges = () => {
-    setVisitorCredits(currentVisitorCredits)
-  }
 
   return (
     <div className="space-y-6">
@@ -1093,40 +1000,14 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                       </div>
 
                       <div className="space-y-2 mb-6">
-                        {plan.features.map((feature, index) => {
-                          // Check if this feature contains visitor credits numbers
-                          const hasCredits = feature.includes('3,750') || feature.includes('15,000')
-                          
-                          if (hasCredits) {
-                            const parts = feature.split(/(\d{1,2},\d{3})/)
-                            return (
-                              <div key={index} className="flex items-start gap-3">
-                                <div className="w-1.5 h-1.5 bg-[#666] rounded-full mt-2 flex-shrink-0" />
-                                <span className="text-sm text-[#ccc] flex items-center gap-1">
-                                  {parts.map((part, partIndex) => {
-                                    if (part.match(/\d{1,2},\d{3}/)) {
-                                      return (
-                                        <span key={partIndex} className="bg-[#1a1a1a] text-white px-2 py-1 text-xs rounded border border-[#333]">
-                                          {part}
-                                        </span>
-                                      )
-                                    }
-                                    return part
-                                  })}
-                                </span>
-                              </div>
-                            )
-                          }
-                          
-                          return (
-                            <div key={index} className="flex items-start gap-3">
-                              <div className="w-1.5 h-1.5 bg-[#666] rounded-full mt-2 flex-shrink-0" />
-                              <span className="text-sm text-[#ccc]">
-                                {feature}
-                              </span>
-                            </div>
-                          )
-                        })}
+                        {plan.features.map((feature, index) => (
+                          <div key={index} className="flex items-start gap-3">
+                            <div className="w-1.5 h-1.5 bg-[#666] rounded-full mt-2 flex-shrink-0" />
+                            <span className="text-sm text-[#ccc]">
+                              {feature}
+                            </span>
+                          </div>
+                        ))}
                       </div>
 
                       <Button

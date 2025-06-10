@@ -35,7 +35,7 @@ export async function checkUsageLimit(
       return { allowed: true }
   }
   
-    const userPlan = (profile.subscription_plan || 'free') as PlanType
+    const userPlan = (profile.subscription_plan || 'starter') as PlanType
     const limits = getSubscriptionLimits(userPlan)
 
     // Get current usage
@@ -126,7 +126,7 @@ export async function getUserUsage(userId: string): Promise<UsageData | null> {
     return null
   }
   
-    const userPlan = (profile.subscription_plan || 'free') as PlanType
+    const userPlan = (profile.subscription_plan || 'starter') as PlanType
     const limits = getSubscriptionLimits(userPlan)
 
     // Get actual domain count
@@ -246,7 +246,7 @@ export async function getScanHistory(
     .eq('id', userId)
     .single()
   
-  const plan = (profile?.subscription_plan || 'free') as PlanType
+  const plan = (profile?.subscription_plan || 'starter') as PlanType
   const retentionDays = getSubscriptionLimits(plan).dataRetention
   
   let query = supabase

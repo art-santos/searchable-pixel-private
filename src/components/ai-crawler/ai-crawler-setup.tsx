@@ -42,8 +42,8 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
   const [error, setError] = useState<string | null>(null)
 
   // Get plan information
-  const planType = subscription?.plan || 'free'
-  const aiLogsIncluded = planType === 'free' ? 100 : planType === 'visibility' ? 250 : planType === 'plus' ? 500 : planType === 'pro' ? 1000 : 100
+  const planType = subscription?.plan || 'starter'
+  const aiLogsIncluded = planType === 'starter' ? 100 : planType === 'pro' ? 500 : planType === 'team' ? 1000 : 100
   const hasPaymentMethod = paymentMethods.length > 0
 
   useEffect(() => {
@@ -169,10 +169,10 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
               </p>
             </div>
 
-            {/* Free Plan Highlight */}
+            {/* Plan Usage */}
             <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
-                <div className="text-white font-medium">Free Plan Included</div>
+                <div className="text-white font-medium">Plan Included</div>
                 <div className="text-sm bg-[#1a1a1a] text-[#888] px-2 py-1 rounded font-mono">
                   {aiLogsIncluded} logs/month
                 </div>
@@ -234,7 +234,7 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
                 )}
                 <Button
                   onClick={() => {
-                    if (hasPaymentMethod || planType !== 'free') {
+                    if (hasPaymentMethod) {
                       handleEnableTracking()
                     } else {
                       setStep('payment')
@@ -246,7 +246,7 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
                   {isEnabling ? (
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
                   ) : null}
-                  {hasPaymentMethod || planType !== 'free' ? 'Enable Tracking' : 'Continue'}
+                  {hasPaymentMethod ? 'Enable Tracking' : 'Continue'}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
@@ -276,7 +276,7 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
                 Add Payment Method
               </h2>
               <p className="text-sm text-[#666]">
-                Required for usage beyond {aiLogsIncluded} free logs per month
+                Required for usage beyond {aiLogsIncluded} included logs per month
               </p>
             </div>
 
@@ -293,7 +293,7 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="w-1 h-1 bg-[#666] rounded-full mt-2 flex-shrink-0"></div>
-                  <div>Only charged for usage above {aiLogsIncluded} logs/month</div>
+                  <div>Only charged for usage above {aiLogsIncluded} included logs/month</div>
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="w-1 h-1 bg-[#666] rounded-full mt-2 flex-shrink-0"></div>

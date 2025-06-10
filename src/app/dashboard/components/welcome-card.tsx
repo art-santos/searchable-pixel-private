@@ -376,13 +376,15 @@ export function WelcomeCard() {
                   <Rocket className="w-3 h-3" />
                   What's New
                 </Link>
-                <Link 
-                  href="/support" 
+                <a 
+                  href="https://cal.com/sam-hogan/15min" 
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-xs text-[#666] hover:text-white transition-colors font-mono tracking-tight flex items-center gap-1"
                 >
                   <HelpCircle className="w-3 h-3" />
                   Get Support
-                </Link>
+                </a>
               </div>
               <div className="text-xs text-[#666] font-mono tracking-tight">
                 {crawlerStats?.total_visits ? `${crawlerStats.total_visits} AI crawler visits (24h)` : 'Ready to track AI crawlers'}

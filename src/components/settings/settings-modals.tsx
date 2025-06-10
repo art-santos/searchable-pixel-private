@@ -352,7 +352,7 @@ export function SettingsModals() {
                     </div>
 
                     <Button
-                      onClick={() => window.open('mailto:sales@split.dev?subject=Enterprise%20Inquiry', '_blank')}
+                      onClick={() => window.open('https://cal.com/sam-hogan/15min', '_blank')}
                       className="w-full h-10 text-sm font-medium bg-[#1a1a1a] text-white hover:bg-[#2a2a2a] border border-[#333]"
                     >
                       Contact Sales
