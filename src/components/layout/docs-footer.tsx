@@ -53,12 +53,9 @@ export default function DocsFooter() {
             <div>
               <h4 className="text-white font-medium mb-3 text-sm">Resources</h4>
               <nav className="space-y-2">
-                <Link 
-                  href="https://docs.split.dev" 
-                  className="block text-gray-400 hover:text-white text-sm transition-colors"
-                >
-                  Documentation
-                </Link>
+                <span className="block text-gray-500 text-sm cursor-not-allowed">
+                  Documentation (Coming Soon)
+                </span>
                 <Link 
                   href="/resources" 
                   className="block text-gray-400 hover:text-white text-sm transition-colors"

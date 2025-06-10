@@ -110,9 +110,9 @@ export default function Footer() {
           <div>
             <h4 className="text-white font-semibold mb-3 md:mb-4 text-sm">Resources</h4>
             <nav className="space-y-2 md:space-y-3">
-              <Link href="https://docs.split.dev" className="footer-link block text-gray-400 hover:text-white text-xs sm:text-sm">
-                Documentation
-              </Link>
+              <span className="footer-link block text-gray-500 text-xs sm:text-sm cursor-not-allowed">
+                Documentation (Coming Soon)
+              </span>
               <Link href="/resources" className="footer-link block text-gray-400 hover:text-white text-xs sm:text-sm">
                 Blog & Guides
               </Link>

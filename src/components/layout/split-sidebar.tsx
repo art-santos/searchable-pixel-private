@@ -234,17 +234,17 @@ export function SplitSidebar() {
             </SidebarMenuButton>
           </Link>
 
-          <Link href="https://docs.split.dev" className="w-full flex justify-center">
+          <div className="w-full flex justify-center">
             <SidebarMenuButton 
-              tooltip="Documentation"
+              tooltip="Documentation (Coming Soon)"
               className={cn(
-                "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
-                "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
+                "w-10 h-10 flex items-center justify-center transition-colors rounded-none cursor-not-allowed",
+                "text-gray-600"
               )}
             >
-              <HelpCircleIcon className="h-6 w-6 icon-rotate" />
+              <HelpCircleIcon className="h-6 w-6" />
             </SidebarMenuButton>
-          </Link>
+          </div>
         </div>
         
         {/* Profile Square - Now links to settings */}
