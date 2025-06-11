@@ -189,12 +189,18 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
 
   // Get snapshot limit based on plan
   const getSnapshotLimit = () => {
+    // Use actual data from usage API if available
+    if (usageData?.snapshots?.included !== undefined) {
+      return usageData.snapshots.included
+    }
+    
+    // Fallback to plan-based limits
     switch (currentPlan) {
       case 'starter': return 10
       case 'pro': return 50
       case 'team': return 100
       case 'admin': return -1 // unlimited
-      default: return 0
+      default: return 10 // free tier default
     }
   }
 
@@ -743,7 +749,7 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">
+                        <div className="font-medium text-white font-mono tracking-tight text-sm">
                           {getSnapshotLimit() === -1 ? 'Unlimited' : `${Math.max(0, getSnapshotLimit() - (usageData?.snapshots?.used || 0))} left`}
                   </div>
                 </div>

@@ -43,6 +43,12 @@ interface UsageData {
     billingBlocked: boolean
     analyticsOnlyMode: boolean
   }
+  snapshots: {
+    included: number
+    used: number
+    remaining: number
+    percentage: number
+  }
   spendingLimits: {
     plan_limit_cents: number
     user_limit_cents: number

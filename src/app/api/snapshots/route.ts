@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSnapshotRequest, triggerSnapshotProcessing } from '@/lib/snapshot-client';
+import { createServiceRoleClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   console.log('🚀 Snapshot creation API called');
@@ -26,11 +27,60 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    if (!userId) {
+      console.error('❌ Missing userId');
+      return NextResponse.json(
+        { error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
     
     console.log('✅ Input validation passed');
     console.log(`   URLs: ${urls.length} provided`);
     console.log(`   Topic: "${topic}"`);
-    console.log(`   User ID: ${userId || 'anonymous'}`);
+    console.log(`   User ID: ${userId}`);
+
+    // Check if user has available snapshots before creating
+    console.log('🔍 Checking user snapshot usage...');
+    const serviceSupabase = createServiceRoleClient();
+    
+    const { data: billingPeriod, error: billingError } = await serviceSupabase
+      .rpc('get_current_billing_period', { p_user_id: userId })
+      .single() as { data: any, error: any };
+
+    if (billingError || !billingPeriod) {
+      console.error('❌ Failed to get billing period:', billingError);
+      return NextResponse.json(
+        { error: 'Unable to verify snapshot limits' },
+        { status: 500 }
+      );
+    }
+
+    const snapshotsUsed = billingPeriod.snapshots_used || 0;
+    const snapshotsIncluded = billingPeriod.snapshots_included || 0;
+    const snapshotsRemaining = billingPeriod.snapshots_remaining || 0;
+
+    console.log('📊 Snapshot usage check:', {
+      used: snapshotsUsed,
+      included: snapshotsIncluded,
+      remaining: snapshotsRemaining
+    });
+
+    if (snapshotsRemaining <= 0) {
+      console.error('❌ Snapshot limit exceeded');
+      return NextResponse.json(
+        { 
+          error: 'Snapshot limit exceeded',
+          details: {
+            used: snapshotsUsed,
+            included: snapshotsIncluded,
+            remaining: snapshotsRemaining
+          }
+        },
+        { status: 402 } // Payment Required
+      );
+    }
     
     // Create snapshot request
     console.log('💾 Creating snapshot request in database...');
@@ -51,6 +101,27 @@ export async function POST(request: NextRequest) {
     }
     
     console.log(`✅ Snapshot request created with ID: ${requestId}`);
+
+    // Track usage in billing system
+    console.log('📈 Tracking snapshot usage...');
+    const { error: trackingError } = await serviceSupabase
+      .rpc('track_usage_event', {
+        p_user_id: userId,
+        p_event_type: 'snapshot_created',
+        p_amount: 1,
+        p_metadata: { 
+          snapshot_id: requestId,
+          urls_count: urls.length,
+          topic: topic
+        }
+      });
+
+    if (trackingError) {
+      console.error('⚠️ Warning: Failed to track usage:', trackingError);
+      // Don't fail the request for tracking errors, but log it
+    } else {
+      console.log('✅ Usage tracked successfully');
+    }
     
     // Return immediately and trigger processing in background
     console.log('🎉 Snapshot API completed successfully - returning immediately');
@@ -70,7 +141,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: true,
       requestId,
-      message: 'Snapshot request created successfully'
+      message: 'Snapshot request created successfully',
+      usage: {
+        used: snapshotsUsed + 1,
+        included: snapshotsIncluded,
+        remaining: snapshotsRemaining - 1
+      }
     });
     
   } catch (error: any) {

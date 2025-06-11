@@ -60,29 +60,62 @@ export default function CreateWorkspacePage() {
       console.log('💾 WORKSPACE CREATION: About to call saveOnboardingData...')
       console.log('📋 WORKSPACE CREATION: Payload:', onboardingPayload)
 
-      // Save data FIRST, then redirect
+      // Save data and wait for completion
       const result = await saveOnboardingData(user, onboardingPayload)
       console.log('📋 WORKSPACE CREATION: saveOnboardingData result:', result)
       
       if (!result.success) {
         console.error('❌ WORKSPACE CREATION: Failed to save:', result.error)
-        setErrorMessage('Failed to save workspace information. Please try again.')
+        setErrorMessage(result.error || 'Failed to save workspace information. Please try again.')
         setIsLoading(false)
         return
-      } else {
-        console.log('✅ WORKSPACE CREATION: Success! Now redirecting to dashboard...')
-        // Refresh workspace context
-        await refreshWorkspaces().catch(err => {
-          console.error('❌ WORKSPACE CREATION: Error refreshing workspaces:', err)
-        })
-        
-        // Now redirect to dashboard
-        router.push('/dashboard')
       }
 
-    } catch (err) {
-      console.error('❌ WORKSPACE CREATION: Unexpected error:', err)
-      setErrorMessage(err instanceof Error ? err.message : 'Failed to save workspace information.')
+      console.log('✅ WORKSPACE CREATION: Data saved successfully!')
+
+      // Ensure onboarding completion flag is set (backup check)
+      try {
+        console.log('🔧 WORKSPACE CREATION: Ensuring onboarding completion...')
+        const { error: completionError } = await supabase
+          .from('profiles')
+          .update({
+            onboarding_completed: true,
+            onboarding_completed_at: new Date().toISOString()
+          })
+          .eq('id', user.id)
+
+        if (completionError) {
+          console.error('⚠️ Warning: Could not update onboarding flag:', completionError)
+          // Don't fail for this - the workspace creation succeeded
+        } else {
+          console.log('✅ Onboarding completion flag updated')
+        }
+      } catch (flagError) {
+        console.error('⚠️ Warning: Error updating onboarding flag:', flagError)
+        // Don't fail for this
+      }
+
+      // Refresh workspace context to get the new workspace
+      console.log('🔄 WORKSPACE CREATION: Refreshing workspaces...')
+      try {
+        await refreshWorkspaces()
+        console.log('✅ Workspaces refreshed successfully')
+      } catch (refreshError) {
+        console.error('❌ Warning: Failed to refresh workspaces:', refreshError)
+        // Don't fail for this - continue with redirect
+      }
+
+      // Small delay to ensure all database operations complete
+      console.log('⏳ WORKSPACE CREATION: Allowing time for database sync...')
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      // Now redirect to dashboard
+      console.log('📍 WORKSPACE CREATION: Redirecting to dashboard...')
+      router.push('/dashboard')
+
+    } catch (error) {
+      console.error('❌ WORKSPACE CREATION: Unexpected error:', error)
+      setErrorMessage(error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.')
       setIsLoading(false)
     }
   }
@@ -94,105 +127,123 @@ export default function CreateWorkspacePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c] flex items-center justify-center p-6">
-      <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 font-medium mb-6">
-            <Image src="/images/split-icon-white.svg" width={32} height={32} alt="Split Logo" />
-            <span className="text-white text-lg">Split</span>
-          </Link>
-          <h1 className="text-xl font-medium text-white mb-2">
-            Create workspace
-          </h1>
-          <p className="text-sm text-[#666]">
-            Set up your account to get started
-          </p>
-        </div>
-
-        {/* Form */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className="bg-[#0c0c0c] border border-[#1a1a1a] rounded-lg p-6"
-        >
-          <div className="space-y-4">
-            <AnimatePresence>
-              {errorMessage && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="p-3 rounded flex items-start gap-2 text-sm bg-red-500/10 border border-red-500/20 text-red-400"
-                >
-                  {errorMessage}
-                </motion.div>
-              )}
-            </AnimatePresence>
-            <div>
-              <label className="block text-xs text-[#888] mb-2">
-                Your name
-              </label>
-              <Input
-                value={workspaceData.name}
-                onChange={(e) => setWorkspaceData(prev => ({ 
-                  ...prev, 
-                  name: e.target.value 
-                }))}
-                placeholder="Your name"
-                className="bg-[#1a1a1a] border-[#333] text-white h-10 focus:border-[#444] transition-colors"
-              />
+    <div className="min-h-screen bg-[#0c0c0c] flex">
+      {/* Left side - Form */}
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="w-full max-w-md">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="flex items-center gap-3 mb-8">
+              <Image src="/images/split-icon-white.svg" width={32} height={32} alt="Split Logo" />
+              <h1 className="text-2xl font-bold text-white">Create Workspace</h1>
             </div>
             
-            <div>
-              <label className="block text-xs text-[#888] mb-2">
-                Workspace name
-              </label>
-              <Input
-                value={workspaceData.workspaceName}
-                onChange={(e) => setWorkspaceData(prev => ({ 
-                  ...prev, 
-                  workspaceName: e.target.value 
-                }))}
-                placeholder="My Company"
-                className="bg-[#1a1a1a] border-[#333] text-white h-10 focus:border-[#444] transition-colors"
-              />
-              <p className="text-xs text-[#666] mt-1">
-                This will be the name of your workspace
-              </p>
-            </div>
+            <div className="space-y-6">
+              <div>
+                <p className="text-gray-400 mb-6">
+                  Set up your workspace to get started with Split.
+                </p>
+              </div>
 
-            <div>
-              <label className="block text-xs text-[#888] mb-2">
-                Primary website domain
-              </label>
-              <Input
-                value={workspaceData.domain}
-                onChange={(e) => setWorkspaceData(prev => ({ 
-                  ...prev, 
-                  domain: e.target.value 
-                }))}
-                placeholder="yourcompany.com"
-                className="bg-[#1a1a1a] border-[#333] text-white h-10 focus:border-[#444] transition-colors"
-              />
-              <p className="text-xs text-[#666] mt-1">
-                Enter your main website domain (this will appear in your settings)
-              </p>
-            </div>
-          </div>
+              {errorMessage && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg"
+                >
+                  <p className="text-red-400 text-sm">{errorMessage}</p>
+                </motion.div>
+              )}
 
-          <div className="flex gap-3 mt-6">
-            <Button
-              onClick={handleComplete}
-              className="w-full bg-white text-black text-sm h-9 hover:bg-gray-200"
-              disabled={isLoading || !canProceed()}
-            >
-              {isLoading ? 'Creating...' : 'Continue'}
-              {!isLoading && <ArrowRight className="w-4 h-4 ml-2" />}
-            </Button>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Your Name
+                  </label>
+                  <Input
+                    value={workspaceData.name}
+                    onChange={(e) => setWorkspaceData(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="John Doe"
+                    className="bg-[#1a1a1a] border-[#333] text-white placeholder:text-gray-500"
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Workspace Name
+                  </label>
+                  <Input
+                    value={workspaceData.workspaceName}
+                    onChange={(e) => setWorkspaceData(prev => ({ ...prev, workspaceName: e.target.value }))}
+                    placeholder="My Company"
+                    className="bg-[#1a1a1a] border-[#333] text-white placeholder:text-gray-500"
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Website Domain
+                  </label>
+                  <Input
+                    value={workspaceData.domain}
+                    onChange={(e) => setWorkspaceData(prev => ({ ...prev, domain: e.target.value }))}
+                    placeholder="example.com"
+                    className="bg-[#1a1a1a] border-[#333] text-white placeholder:text-gray-500"
+                    disabled={isLoading}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter your domain without http:// or https://
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                onClick={handleComplete}
+                disabled={!canProceed() || isLoading}
+                className="w-full bg-white hover:bg-gray-100 text-black font-medium h-12"
+              >
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    Creating workspace...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    Create Workspace
+                    <ArrowRight className="w-4 h-4" />
+                  </div>
+                )}
+              </Button>
+
+              <div className="text-center pt-4">
+                <Link 
+                  href="/dashboard" 
+                  className="text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  Back to dashboard
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Right side - Visual */}
+      <div className="hidden lg:flex flex-1 bg-[#1a1a1a] items-center justify-center p-8">
+        <div className="text-center">
+          <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <ArrowRight className="w-8 h-8 text-white" />
           </div>
-        </motion.div>
+          <h2 className="text-xl font-semibold text-white mb-2">Almost there!</h2>
+          <p className="text-gray-400 max-w-sm">
+            Just a few details and you'll be ready to optimize your site's AI visibility.
+          </p>
+        </div>
       </div>
     </div>
   )

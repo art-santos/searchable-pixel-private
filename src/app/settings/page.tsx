@@ -39,6 +39,12 @@ interface UsageData {
     remaining: number
     percentage: number
   }
+  snapshots: {
+    included: number
+    used: number
+    remaining: number
+    percentage: number
+  }
   aiLogs: {
     included: number
     used: number

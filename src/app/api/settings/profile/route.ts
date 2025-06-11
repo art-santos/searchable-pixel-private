@@ -71,11 +71,10 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Build update object
+    // Build update object - removed manual updated_at since trigger handles it
     const updates: any = {
       id: user.id,
-      email: user.email,
-      updated_at: new Date().toISOString()
+      email: user.email
     }
     
     if (first_name !== undefined) updates.first_name = first_name

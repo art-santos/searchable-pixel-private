@@ -28,42 +28,67 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    const fetchInitialSession = async () => {
+    const initializeAuth = async () => {
       try {
-        // Get the authenticated user (secure)
-        const { data: { user }, error } = await supabase.auth.getUser();
-        if (error) {
-          console.error('Auth error:', error);
+        // First, get the session from storage (cookies)
+        const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Error getting initial session:', sessionError);
           setSession(null);
           setUser(null);
         } else {
-          // Create a minimal session object from user data
-          const session = user ? {
-            user,
-            access_token: '', // Not needed for client-side usage
-            refresh_token: '', // Not needed for client-side usage
-            expires_in: 0,
-            expires_at: 0,
-            token_type: 'bearer'
-          } : null;
-          setSession(session);
-          setUser(user);
+          // Set the session and user from the stored session
+          setSession(initialSession);
+          setUser(initialSession?.user ?? null);
+          
+          // Only log when we actually have a session
+          if (initialSession) {
+            console.log('✅ Auth session restored successfully');
+          }
         }
       } catch (error) {
-        console.error('Error fetching initial session:', error);
+        console.error('Error initializing auth:', error);
         setSession(null);
         setUser(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     
-    fetchInitialSession();
+    initializeAuth();
 
+    // Set up auth state change listener
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log(`Auth state change event: ${event}`);
-        setSession(session);
-        setUser(session?.user ?? null);
+        
+        // Handle different auth events
+        switch (event) {
+          case 'SIGNED_IN':
+          case 'TOKEN_REFRESHED':
+            setSession(session);
+            setUser(session?.user ?? null);
+            console.log('✅ User signed in or token refreshed');
+            break;
+          case 'SIGNED_OUT':
+            setSession(null);
+            setUser(null);
+            console.log('✅ User signed out');
+            break;
+          case 'USER_UPDATED':
+            if (session) {
+              setSession(session);
+              setUser(session.user);
+              console.log('✅ User updated');
+            }
+            break;
+          default:
+            // For other events, just update the state
+            setSession(session);
+            setUser(session?.user ?? null);
+        }
+        
         setLoading(false);
       }
     );

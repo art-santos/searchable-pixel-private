@@ -10,6 +10,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 // Removed inter import
 // Remove Footer import - it's handled in the (main) layout
 
+// Import debug utilities in development
+if (process.env.NODE_ENV === 'development') {
+  import('@/lib/debug/workspace-debug')
+}
+
 export const metadata: Metadata = {
   title: "Split | Agentic AEO for LLM Visibility",
   description: "Split helps you automate your LLM site visibility through intelligent content structuring, generation, and optimization tailored for AI understanding.",

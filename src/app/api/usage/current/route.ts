@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { getUserSubscription } from '@/lib/stripe-profiles'
-import { reportMeteredUsage } from '@/lib/stripe'
-
 interface BillingPeriod {
   usage_id: string
   period_start: string
@@ -15,6 +13,9 @@ interface BillingPeriod {
   ai_logs_included: number
   ai_logs_used: number
   ai_logs_remaining: number
+  snapshots_included?: number
+  snapshots_used?: number
+  snapshots_remaining?: number
   plan_type: string
   plan_status: string
   stripe_subscription_id: string | null
@@ -55,6 +56,7 @@ export async function GET() {
         billingPreferences: {},
         spendingLimits: {},
         domains: { included: 1, used: 0, purchased: 0, remaining: 1, percentage: 0 },
+        snapshots: { included: 10, used: 0, remaining: 10, percentage: 0 },
         ai_logs: { included: 100, used: 0, remaining: 100, percentage: 0 },
         addOns: [],
         recentEvents: [],
@@ -271,6 +273,14 @@ export async function GET() {
         purchased: billingPeriod.domains_purchased || 0,
         remaining: Math.max(0, (billingPeriod.domains_included + billingPeriod.domains_purchased) - actualDomainsUsed),
         percentage: Math.round((actualDomainsUsed / (billingPeriod.domains_included + billingPeriod.domains_purchased)) * 100)
+      },
+      snapshots: {
+        included: billingPeriod.snapshots_included || 0,
+        used: billingPeriod.snapshots_used || 0,
+        remaining: billingPeriod.snapshots_remaining || 0,
+        percentage: (billingPeriod.snapshots_included || 0) > 0 
+          ? Math.round(((billingPeriod.snapshots_used || 0) / (billingPeriod.snapshots_included || 0)) * 100)
+          : 0
       },
       aiLogs: {
         included: billingPeriod.ai_logs_included || 0,

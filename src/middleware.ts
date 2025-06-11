@@ -166,12 +166,23 @@ export async function middleware(request: NextRequest) {
     // Skip tracking for API routes to avoid loops
     if (pathname.startsWith('/api/')) {
       const { supabase, response } = createClient(request)
-      await supabase.auth.getUser()
+      try {
+        await supabase.auth.getUser()
+      } catch (error) {
+        console.error('[Middleware] Auth error in API route:', error)
+      }
       return response
     }
     
     const { supabase, response } = createClient(request)
-    await supabase.auth.getUser()
+    
+    // Initialize auth state properly
+    try {
+      await supabase.auth.getUser()
+    } catch (error) {
+      console.error('[Middleware] Auth initialization error:', error)
+      // Continue processing but with null user
+    }
     
     const ua = request.headers.get("user-agent") ?? "";
     if (isAiCrawler(ua)) {
