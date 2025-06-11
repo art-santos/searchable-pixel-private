@@ -99,13 +99,9 @@ export function PageAttributionCard({ pageData, isLoading = false }: PageAttribu
                       <span className="text-sm">{getPathIcon(page.path)}</span>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm text-black dark:text-white font-mono truncate mb-1">{page.path}</div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-[#666]">
-                        <span>{page.uniqueCrawlers} crawlers</span>
-                        <span>•</span>
-                        <span>{formatRelativeTime(page.lastCrawled)}</span>
-                        <span>•</span>
-                        <span>{page.avgResponse}ms</span>
+                      <div className="text-sm text-black dark:text-white font-medium truncate mb-1">{page.path}</div>
+                      <div className="text-xs text-gray-500 dark:text-[#666]">
+                        {page.uniqueCrawlers} crawlers • {formatRelativeTime(page.lastCrawled)} • {page.avgResponse}ms
                       </div>
                     </div>
                   </div>

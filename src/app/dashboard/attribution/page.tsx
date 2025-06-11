@@ -46,7 +46,7 @@ export default function AttributionPage() {
         } else {
           console.error('Failed to fetch user plan, response not ok')
         }
-      } catch (error) {
+    } catch (error) {
         console.error('Error fetching user plan:', error)
       } finally {
         setUserPlanLoading(false)
@@ -66,8 +66,8 @@ export default function AttributionPage() {
       }
 
   if (switching) {
-    return (
-      <div className="min-h-screen min-w-screen bg-white dark:bg-[#0c0c0c] text-black dark:text-white">
+  return (
+    <div className="min-h-screen min-w-screen bg-white dark:bg-[#0c0c0c] text-black dark:text-white">
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <div className="w-8 h-8 mx-auto mb-3">
@@ -104,20 +104,20 @@ export default function AttributionPage() {
 
   return (
     <div className="min-h-screen min-w-screen bg-white dark:bg-[#0c0c0c] text-black dark:text-white">
-      <div className="flex h-[calc(100vh-80px)] gap-6 p-6">
-        {/* Large Graph - 60% width */}
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={cardVariants}
-          className="w-[60%]"
-        >
-          <Card className="h-full bg-white dark:bg-[#0c0c0c] border-gray-200 dark:border-[#1a1a1a]">
-            <CardContent className="p-0 h-full flex flex-col">
-              {/* Graph Header */}
-              <CardHeader className="pb-4 pt-4 pl-6 pr-6 flex-shrink-0 border-b border-gray-200 dark:border-[#1a1a1a]">
-                <div className="flex items-center justify-between">
-                  <div>
+        <div className="flex h-[calc(100vh-80px)] gap-6 p-6">
+          {/* Large Graph - 60% width */}
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={cardVariants}
+            className="w-[60%]"
+          >
+            <Card className="h-full bg-white dark:bg-[#0c0c0c] border-gray-200 dark:border-[#1a1a1a]">
+              <CardContent className="p-0 h-full flex flex-col">
+                {/* Graph Header */}
+                <CardHeader className="pb-4 pt-4 pl-6 pr-6 flex-shrink-0 border-b border-gray-200 dark:border-[#1a1a1a]">
+                  <div className="flex items-center justify-between">
+                    <div>
                     <div className="flex items-center gap-3 mb-1">
                       <h3 className="text-lg font-semibold text-black dark:text-white">
                         Total Crawls
@@ -142,10 +142,10 @@ export default function AttributionPage() {
                         </motion.div>
                       )}
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-[#666]">
-                      {stats?.totalCrawls.toLocaleString() || '0'} crawls tracked
-                    </p>
-                  </div>
+                      <p className="text-sm text-gray-500 dark:text-[#666]">
+                        {stats?.totalCrawls.toLocaleString() || '0'} crawls tracked
+                      </p>
+                    </div>
                   {!userPlanLoading && (
                     <TimeframeSelector 
                       key={userPlan}
@@ -157,50 +157,50 @@ export default function AttributionPage() {
                       userPlan={userPlan}
                     />
                   )}
-                </div>
-              </CardHeader>
+                  </div>
+                </CardHeader>
 
-              {/* Graph Content */}
-              <div className="flex-1 p-6">
+                {/* Graph Content */}
+                <div className="flex-1 p-6">
                 <CrawlerVisitsChart 
                   timeframe={timeframe}
                   onDataChange={handleChartDataChange}
                   className="h-full"
                 />
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-        {/* Right Side Cards - 40% width */}
-        <div className="w-[40%] flex flex-col gap-6">
-          {/* Attribution by Source Card */}
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={cardVariants}
-            className="flex-1"
-          >
+          {/* Right Side Cards - 40% width */}
+          <div className="w-[40%] flex flex-col gap-6">
+            {/* Attribution by Source Card */}
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={cardVariants}
+              className="flex-1"
+            >
             <CrawlerAttributionCard 
               crawlerData={crawlerData}
               isLoading={isLoading}
             />
-          </motion.div>
+            </motion.div>
 
-          {/* Crawls by Page Card */}
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={cardVariants}
-            className="flex-1"
-          >
+            {/* Crawls by Page Card */}
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={cardVariants}
+              className="flex-1"
+            >
             <PageAttributionCard 
               pageData={pageData}
               isLoading={isLoading}
             />
-          </motion.div>
+            </motion.div>
+          </div>
         </div>
-      </div>
     </div>
   )
 } 

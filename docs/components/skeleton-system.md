@@ -198,6 +198,45 @@ import { SnapshotHistoryEmptySkeleton } from "@/components/skeletons"
 <SnapshotHistoryEmptySkeleton />
 ```
 
+### `TableSkeleton`
+
+Flexible table skeleton for data tables with expandable rows and customizable columns.
+
+```tsx
+import { TableSkeleton } from "@/components/skeletons"
+
+// Attribution source table
+<TableSkeleton 
+  rows={8}
+  columns={[
+    { span: 4, align: 'left' },
+    { span: 2, align: 'center' },
+    { span: 2, align: 'center' },
+    { span: 2, align: 'center' },
+    { span: 2, align: 'right' }
+  ]}
+  showExpandableRows={true}
+/>
+
+// Attribution page table
+<TableSkeleton 
+  rows={8}
+  columns={[
+    { span: 6, align: 'left' },
+    { span: 3, align: 'center' },
+    { span: 3, align: 'right' }
+  ]}
+  showExpandableRows={true}
+/>
+```
+
+**Features:**
+- Customizable column layout with grid spans
+- Expandable row animations (first 3 rows expand automatically)
+- Staggered row reveals with proper timing
+- Icon placeholders and realistic content structure
+- Supports different column alignments (left, center, right)
+
 ## Animation Features
 
 ### Staggered Reveals

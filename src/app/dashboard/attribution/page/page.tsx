@@ -7,6 +7,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { Loader2, ArrowLeft, ChevronDown, Clock, Bot } from "lucide-react"
 import Link from "next/link"
+import { TableSkeleton } from '@/components/skeletons'
 import { PlanType } from "@/lib/subscription/config"
 
 interface CrawledPage {
@@ -172,8 +173,8 @@ export default function AttributionByPagePage() {
           
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-semibold text-white mb-1">BY PAGE</h1>
-              <p className="text-sm text-zinc-500">Most crawled pages ({timeframe.toLowerCase()})</p>
+              <h1 className="text-3xl font-semibold text-white mb-2">Crawls by Page</h1>
+              <p className="text-zinc-400">Most crawled pages ({timeframe.toLowerCase()})</p>
             </div>
             <div className="flex items-center gap-4">
               {!userPlanLoading && (
@@ -199,9 +200,15 @@ export default function AttributionByPagePage() {
             <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
           </div>
         ) : isLoading ? (
-          <div className="flex items-center justify-center h-96">
-            <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
-          </div>
+          <TableSkeleton 
+            rows={8}
+            columns={[
+              { span: 6, align: 'left' },
+              { span: 3, align: 'center' },
+              { span: 3, align: 'right' }
+            ]}
+            showExpandableRows={true}
+          />
         ) : (
           <div className="bg-zinc-900/20 border border-zinc-800/50 rounded-lg overflow-hidden">
             {/* Table Header */}

@@ -44,18 +44,36 @@ export async function GET(request: Request) {
         startDate.setDate(startDate.getDate() - 7)
     }
 
-    // Query crawler visits for the workspace and timeframe
-    const { data: visits, error } = await supabase
-      .from('crawler_visits')
-      .select('*')
-      .eq('workspace_id', workspaceId)
-      .gte('timestamp', startDate.toISOString())
-      .order('timestamp', { ascending: false })
+    // Query crawler visits for the workspace and timeframe with pagination
+    let allVisits: any[] = []
+    let hasMore = true
+    let offset = 0
+    const limit = 1000
 
-    if (error) {
-      console.error('Error fetching crawler visits:', error)
-      return NextResponse.json({ error: 'Failed to fetch attribution data' }, { status: 500 })
+    while (hasMore) {
+      const { data: visits, error } = await supabase
+        .from('crawler_visits')
+        .select('*')
+        .eq('workspace_id', workspaceId)
+        .gte('timestamp', startDate.toISOString())
+        .range(offset, offset + limit - 1)
+        .order('timestamp', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching crawler visits:', error)
+        return NextResponse.json({ error: 'Failed to fetch attribution data' }, { status: 500 })
+      }
+
+      if (!visits || visits.length === 0) {
+        hasMore = false
+      } else {
+        allVisits = allVisits.concat(visits)
+        hasMore = visits.length === limit
+        offset += limit
+      }
     }
+
+    const visits = allVisits
 
     if (!visits || visits.length === 0) {
       return NextResponse.json({ pages: [] })

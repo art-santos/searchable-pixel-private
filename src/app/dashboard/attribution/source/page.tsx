@@ -7,6 +7,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { Loader2, ArrowLeft, ChevronDown, ExternalLink, Clock } from "lucide-react"
 import Link from "next/link"
+import { TableSkeleton } from '@/components/skeletons'
 import { PlanType } from "@/lib/subscription/config"
 
 interface CrawlerBot {
@@ -165,8 +166,8 @@ export default function AttributionBySourcePage() {
           
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-semibold text-white mb-1">BY SOURCE</h1>
-              <p className="text-sm text-zinc-500">Crawler bots ({timeframe.toLowerCase()})</p>
+              <h1 className="text-3xl font-semibold text-white mb-2">Attribution by Source</h1>
+              <p className="text-zinc-400">Crawler bots ({timeframe.toLowerCase()})</p>
             </div>
             <div className="flex items-center gap-4">
               {!userPlanLoading && (
@@ -192,9 +193,17 @@ export default function AttributionBySourcePage() {
             <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
           </div>
         ) : isLoading ? (
-          <div className="flex items-center justify-center h-96">
-            <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
-          </div>
+          <TableSkeleton 
+            rows={8}
+            columns={[
+              { span: 4, align: 'left' },
+              { span: 2, align: 'center' },
+              { span: 2, align: 'center' },
+              { span: 2, align: 'center' },
+              { span: 2, align: 'right' }
+            ]}
+            showExpandableRows={true}
+          />
         ) : (
           <div className="bg-zinc-900/20 border border-zinc-800/50 rounded-lg overflow-hidden">
             {/* Table Header */}
