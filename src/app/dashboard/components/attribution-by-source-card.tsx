@@ -11,6 +11,7 @@ import {
 import { ConnectAnalyticsDialog } from "./connect-analytics-dialog"
 import { useAuth } from "@/contexts/AuthContext"
 import { useWorkspace } from "@/contexts/WorkspaceContext"
+import { PlanType } from "@/lib/subscription/config"
 
 interface CrawlerData {
   name: string
@@ -32,6 +33,8 @@ export function AttributionBySourceCard() {
   const [totalCrawls, setTotalCrawls] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [userPlan, setUserPlan] = useState<PlanType>('starter')
+  const [userPlanLoading, setUserPlanLoading] = useState(true)
 
   // Helper to get favicon URL for unknown crawlers
   const getFaviconForCrawler = (company: string) => {
@@ -81,6 +84,34 @@ export function AttributionBySourceCard() {
     const constructedDomain = `${company.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`
     return `https://www.google.com/s2/favicons?domain=${constructedDomain}&sz=128`
   }
+
+  // Fetch user subscription plan
+  useEffect(() => {
+    const fetchUserPlan = async () => {
+      try {
+        const response = await fetch('/api/user/subscription')
+        if (response.ok) {
+          const data = await response.json()
+          const plan = data.subscriptionPlan || 'starter'
+          console.log('🔍 [AttributionBySourceCard] Fetched user plan:', plan, 'isAdmin:', data.isAdmin)
+          setUserPlan(plan as PlanType)
+        } else {
+          console.error('Failed to fetch user plan, response not ok')
+        }
+      } catch (error) {
+        console.error('Error fetching user plan:', error)
+      } finally {
+        setUserPlanLoading(false)
+      }
+    }
+
+    fetchUserPlan()
+  }, [])
+
+  // Debug log when userPlan changes
+  useEffect(() => {
+    console.log('🔍 [AttributionBySourceCard] userPlan state updated to:', userPlan)
+  }, [userPlan])
 
   // Fetch crawler data when component mounts, timeframe changes, or workspace changes
   useEffect(() => {
@@ -289,13 +320,17 @@ export function AttributionBySourceCard() {
                 </p>
               )}
             </div>
-            <TimeframeSelector
-              title=""
-              timeframe={timeframe}
-              onTimeframeChange={setTimeframe}
-              titleColor="text-white"
-              selectorColor="text-[#A7A7A7]"
-            />
+            {!userPlanLoading && (
+              <TimeframeSelector
+                key={userPlan}
+                title=""
+                timeframe={timeframe}
+                onTimeframeChange={setTimeframe}
+                titleColor="text-white"
+                selectorColor="text-[#A7A7A7]"
+                userPlan={userPlan}
+              />
+            )}
           </div>
         </CardHeader>
 

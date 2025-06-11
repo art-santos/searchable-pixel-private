@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TimeframeSelector, TimeframeOption } from "@/components/custom/timeframe-selector";
 import { MetricItem } from "@/components/custom/metric-item";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { motion, useReducedMotion } from "framer-motion";
+import { PlanType } from "@/lib/subscription/config"
 
 const topics = [
   "AI research agents",
@@ -56,7 +57,32 @@ const competitors = [
 export function CompetitorBenchmarkingCard() {
   const [timeframe, setTimeframe] = useState<TimeframeOption>("Last 7 days");
   const [selectedTopic, setSelectedTopic] = useState(topics[0]);
+  const [userPlan, setUserPlan] = useState<PlanType>('starter')
+  const [userPlanLoading, setUserPlanLoading] = useState(true)
   const shouldReduceMotion = useReducedMotion();
+
+  // Fetch user subscription plan
+  useEffect(() => {
+    const fetchUserPlan = async () => {
+      try {
+        const response = await fetch('/api/user/subscription')
+        if (response.ok) {
+          const data = await response.json()
+          const plan = data.subscriptionPlan || 'starter'
+          console.log('🔍 [CompetitorBenchmarkingCard] Fetched user plan:', plan, 'isAdmin:', data.isAdmin)
+          setUserPlan(plan as PlanType)
+        } else {
+          console.error('Failed to fetch user plan, response not ok')
+        }
+      } catch (error) {
+        console.error('Error fetching user plan:', error)
+      } finally {
+        setUserPlanLoading(false)
+      }
+    }
+
+    fetchUserPlan()
+  }, [])
 
   // Animation variants
   const cardVariants = shouldReduceMotion
@@ -84,13 +110,17 @@ export function CompetitorBenchmarkingCard() {
     >
       <CardHeader className="pb-2">
         <div className="flex flex-col gap-2">
-          <TimeframeSelector 
-            title="Competitor Benchmarking" 
-            timeframe={timeframe} 
-            onTimeframeChange={setTimeframe}
-            titleColor="text-white"
-            selectorColor="text-[#A7A7A7]"
-          />
+          {!userPlanLoading && (
+            <TimeframeSelector 
+              key={userPlan}
+              title="Competitor Benchmarking" 
+              timeframe={timeframe} 
+              onTimeframeChange={setTimeframe}
+              titleColor="text-white"
+              selectorColor="text-[#A7A7A7]"
+              userPlan={userPlan}
+            />
+          )}
         </div>
         <div className="mt-3 mb-3">
           <DropdownMenu>

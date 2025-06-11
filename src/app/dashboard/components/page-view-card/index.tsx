@@ -11,6 +11,7 @@ import { LinkIcon, TrendingUp, Loader2 } from "lucide-react"
 import { ConnectAnalyticsDialog } from "../connect-analytics-dialog"
 import { useAuth } from "@/contexts/AuthContext"
 import { useWorkspace } from "@/contexts/WorkspaceContext"
+import { PlanType } from "@/lib/subscription/config"
 
 
 interface CrawlerOption {
@@ -39,7 +40,32 @@ export function PageViewCard() {
   const [availableCrawlers, setAvailableCrawlers] = useState<CrawlerOption[]>([])
   const [totalCrawls, setTotalCrawls] = useState(0)
   const [isConnected, setIsConnected] = useState(false)
+  const [userPlan, setUserPlan] = useState<PlanType>('starter')
+  const [userPlanLoading, setUserPlanLoading] = useState(true)
   const shouldReduceMotion = useReducedMotion()
+
+  // Fetch user subscription plan
+  useEffect(() => {
+    const fetchUserPlan = async () => {
+      try {
+        const response = await fetch('/api/user/subscription')
+        if (response.ok) {
+          const data = await response.json()
+          const plan = data.subscriptionPlan || 'starter'
+          console.log('🔍 [PageViewCard] Fetched user plan:', plan, 'isAdmin:', data.isAdmin)
+          setUserPlan(plan as PlanType)
+        } else {
+          console.error('Failed to fetch user plan, response not ok')
+        }
+      } catch (error) {
+        console.error('Error fetching user plan:', error)
+      } finally {
+        setUserPlanLoading(false)
+      }
+    }
+
+    fetchUserPlan()
+  }, [])
 
   // Fetch data when component mounts, timeframe/crawler changes, or workspace changes
   useEffect(() => {
@@ -156,13 +182,17 @@ export function PageViewCard() {
                 <p className="text-sm text-gray-500 dark:text-[#666]">{totalCrawls.toLocaleString()} total visits</p>
               )}
             </div>
-            <TimeframeSelector 
-              title=""
-              timeframe={timeframe} 
-              onTimeframeChange={handleTimeframeChange}
-              titleColor="text-white"
-              selectorColor="text-[#A7A7A7]"
-            />
+            {!userPlanLoading && (
+              <TimeframeSelector 
+                key={userPlan}
+                title=""
+                timeframe={timeframe} 
+                onTimeframeChange={handleTimeframeChange}
+                titleColor="text-white"
+                selectorColor="text-[#A7A7A7]"
+                userPlan={userPlan}
+              />
+            )}
           </div>
         </CardHeader>
         

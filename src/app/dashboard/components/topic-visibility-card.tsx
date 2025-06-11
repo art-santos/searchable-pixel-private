@@ -3,8 +3,9 @@ import { TimeframeSelector, TimeframeOption } from "@/components/custom/timefram
 import { MetricItem } from "@/components/custom/metric-item";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, useReducedMotion, Variants } from "framer-motion";
+import { PlanType } from "@/lib/subscription/config"
 
 const topics = [
   {
@@ -68,8 +69,33 @@ const barData = [
 
 export function TopicVisibilityCard() {
   const [timeframe, setTimeframe] = useState<TimeframeOption>("This Month");
+  const [userPlan, setUserPlan] = useState<PlanType>('starter')
+  const [userPlanLoading, setUserPlanLoading] = useState(true)
   const total = barData.reduce((sum, b) => sum + b.value, 0);
   const shouldReduceMotion = useReducedMotion();
+
+  // Fetch user subscription plan
+  useEffect(() => {
+    const fetchUserPlan = async () => {
+      try {
+        const response = await fetch('/api/user/subscription')
+        if (response.ok) {
+          const data = await response.json()
+          const plan = data.subscriptionPlan || 'starter'
+          console.log('🔍 [TopicVisibilityCard] Fetched user plan:', plan, 'isAdmin:', data.isAdmin)
+          setUserPlan(plan as PlanType)
+        } else {
+          console.error('Failed to fetch user plan, response not ok')
+        }
+      } catch (error) {
+        console.error('Error fetching user plan:', error)
+      } finally {
+        setUserPlanLoading(false)
+      }
+    }
+
+    fetchUserPlan()
+  }, [])
 
   // Animation variants
   const cardVariants: Variants = shouldReduceMotion 
@@ -105,13 +131,17 @@ export function TopicVisibilityCard() {
     >
       <CardHeader className="pb-2">
         <div className="flex flex-col gap-2">
-          <TimeframeSelector 
-            title="Topic Visibility" 
-            timeframe={timeframe} 
-            onTimeframeChange={setTimeframe}
-            titleColor="text-white"
-            selectorColor="text-[#A7A7A7]"
-          />
+          {!userPlanLoading && (
+            <TimeframeSelector 
+              key={userPlan}
+              title="Topic Visibility" 
+              timeframe={timeframe} 
+              onTimeframeChange={setTimeframe}
+              titleColor="text-white"
+              selectorColor="text-[#A7A7A7]"
+              userPlan={userPlan}
+            />
+          )}
         </div>
         {/* Stats/Labels Bar */}
         <motion.div

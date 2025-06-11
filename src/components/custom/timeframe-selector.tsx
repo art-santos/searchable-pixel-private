@@ -49,8 +49,11 @@ export function TimeframeSelector({
   useEffect(() => {
     // Use passed userPlan or determine from user
     const planToUse = userPlan || 'starter' // Default fallback
+    console.log('🔍 [TimeframeSelector] Using plan:', planToUse, 'from userPlan prop:', userPlan)
     setCurrentPlan(planToUse)
-    setAllowedTimeframes(getAllowedTimeframes(planToUse))
+    const allowed = getAllowedTimeframes(planToUse)
+    console.log('🔍 [TimeframeSelector] Allowed timeframes for plan', planToUse, ':', allowed)
+    setAllowedTimeframes(allowed)
   }, [user, userPlan])
 
   // Auto-correct timeframe if current selection is not allowed

@@ -16,6 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { PlanType } from "@/lib/subscription/config"
 
 interface TopicMetrics {
   topic_id: string
@@ -89,8 +90,33 @@ export function EnhancedTopicInsightsCard() {
   const [showContexts, setShowContexts] = useState(false)
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [userPlan, setUserPlan] = useState<PlanType>('starter')
+  const [userPlanLoading, setUserPlanLoading] = useState(true)
 
   const hasMaxAccess = subscription?.plan === 'plus' || subscription?.plan === 'pro'
+
+  // Fetch user subscription plan
+  useEffect(() => {
+    const fetchUserPlan = async () => {
+      try {
+        const response = await fetch('/api/user/subscription')
+        if (response.ok) {
+          const data = await response.json()
+          const plan = data.subscriptionPlan || 'starter'
+          console.log('🔍 [EnhancedTopicInsightsCard] Fetched user plan:', plan, 'isAdmin:', data.isAdmin)
+          setUserPlan(plan as PlanType)
+        } else {
+          console.error('Failed to fetch user plan, response not ok')
+        }
+      } catch (error) {
+        console.error('Error fetching user plan:', error)
+      } finally {
+        setUserPlanLoading(false)
+      }
+    }
+
+    fetchUserPlan()
+  }, [])
 
   // Mock topic insights data
   const mockTopicData: TopicInsights = {
@@ -331,13 +357,17 @@ export function EnhancedTopicInsightsCard() {
       <Card className="bg-[#111111] border-[#222222] h-full">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <TimeframeSelector 
-              title="Topic Insights" 
-              timeframe={timeframe} 
-              onTimeframeChange={setTimeframe}
-              titleColor="text-white"
-              selectorColor="text-[#A7A7A7]"
-            />
+            {!userPlanLoading && (
+              <TimeframeSelector 
+                key={userPlan}
+                title="Topic Insights" 
+                timeframe={timeframe} 
+                onTimeframeChange={setTimeframe}
+                titleColor="text-white"
+                selectorColor="text-[#A7A7A7]"
+                userPlan={userPlan}
+              />
+            )}
             <div className="flex items-center space-x-2">
               {hasMaxAccess && (
                 <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">

@@ -6,6 +6,7 @@ import { useState, useEffect } from "react"
 import { useWorkspace } from "@/contexts/WorkspaceContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { Loader2, BarChart3 } from "lucide-react"
+import { PlanType } from "@/lib/subscription/config"
 import {
   Area,
   AreaChart,
@@ -163,6 +164,8 @@ export function CrawlerActivityCard() {
   const [isLoading, setIsLoading] = useState(false)
   const [chartData, setChartData] = useState<ChartDataPoint[]>([])
   const [showChart, setShowChart] = useState(true)
+  const [userPlan, setUserPlan] = useState<PlanType>('starter')
+  const [userPlanLoading, setUserPlanLoading] = useState(true)
 
   const cardVariants = shouldReduceMotion 
     ? { hidden: {}, visible: {} }
@@ -170,6 +173,34 @@ export function CrawlerActivityCard() {
         hidden: { opacity: 0, y: 20 },
         visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } }
       }
+
+  // Fetch user subscription plan
+  useEffect(() => {
+    const fetchUserPlan = async () => {
+      try {
+        const response = await fetch('/api/user/subscription')
+        if (response.ok) {
+          const data = await response.json()
+          const plan = data.subscriptionPlan || 'starter'
+          console.log('🔍 [CrawlerActivityCard] Fetched user plan:', plan, 'isAdmin:', data.isAdmin)
+          setUserPlan(plan as PlanType)
+        } else {
+          console.error('Failed to fetch user plan, response not ok')
+        }
+      } catch (error) {
+        console.error('Error fetching user plan:', error)
+      } finally {
+        setUserPlanLoading(false)
+      }
+    }
+
+    fetchUserPlan()
+  }, [])
+
+  // Debug log when userPlan changes
+  useEffect(() => {
+    console.log('🔍 [CrawlerActivityCard] userPlan state updated to:', userPlan)
+  }, [userPlan])
 
   // Fetch chart data
   useEffect(() => {
@@ -273,13 +304,17 @@ export function CrawlerActivityCard() {
                     <BarChart3 className={`h-4 w-4 ${showChart ? 'text-blue-500' : 'text-gray-400 dark:text-[#666]'}`} />
                   </button>
                 </div>
-                <TimeframeSelector 
-                  title=""
-                  timeframe={timeframe}
-                  onTimeframeChange={setTimeframe}
-                  titleColor="text-black dark:text-white"
-                  selectorColor="text-gray-600 dark:text-[#A7A7A7]"
-                />
+                {!userPlanLoading && (
+                  <TimeframeSelector 
+                    key={userPlan}
+                    title=""
+                    timeframe={timeframe}
+                    onTimeframeChange={setTimeframe}
+                    titleColor="text-black dark:text-white"
+                    selectorColor="text-gray-600 dark:text-[#A7A7A7]"
+                    userPlan={userPlan}
+                  />
+                )}
               </div>
             </div>
 

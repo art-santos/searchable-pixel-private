@@ -48,9 +48,19 @@ export async function GET(request: NextRequest) {
     // Cast to any to avoid TypeScript errors with RPC return type
     const subscription = subscriptionData as any
 
+    // Determine effective plan - admin users should have admin plan
+    const effectivePlan = subscription.is_admin ? 'admin' : subscription.plan_type
+    
+    console.log('User subscription data:', {
+      userId: user.id,
+      planType: subscription.plan_type,
+      isAdmin: subscription.is_admin,
+      effectivePlan: effectivePlan
+    })
+
     // Return data from centralized subscription system
     return NextResponse.json({
-      subscriptionPlan: subscription.plan_type,
+      subscriptionPlan: effectivePlan,
       subscriptionStatus: subscription.plan_status,
       stripeCustomerId: subscription.stripe_customer_id,
       stripeSubscriptionId: subscription.stripe_subscription_id,

@@ -10,6 +10,7 @@ import { Sparkles, TrendingUp, TrendingDown, AlertCircle, Zap, ArrowUpRight, Ref
 import { useSubscription } from '@/hooks/useSubscription'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
+import { PlanType } from "@/lib/subscription/config"
 
 interface VisibilityData {
   lite_score?: number
@@ -49,10 +50,35 @@ export function EnhancedVisibilityScorecard() {
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [userPlan, setUserPlan] = useState<PlanType>('starter')
+  const [userPlanLoading, setUserPlanLoading] = useState(true)
 
   // Determine user's current plan capabilities
   const hasMaxAccess = subscription?.plan === 'plus' || subscription?.plan === 'pro'
   const isPro = subscription?.plan === 'pro'
+
+  // Fetch user subscription plan
+  useEffect(() => {
+    const fetchUserPlan = async () => {
+      try {
+        const response = await fetch('/api/user/subscription')
+        if (response.ok) {
+          const data = await response.json()
+          const plan = data.subscriptionPlan || 'starter'
+          console.log('🔍 [EnhancedVisibilityScorecard] Fetched user plan:', plan, 'isAdmin:', data.isAdmin)
+          setUserPlan(plan as PlanType)
+        } else {
+          console.error('Failed to fetch user plan, response not ok')
+        }
+      } catch (error) {
+        console.error('Error fetching user plan:', error)
+      } finally {
+        setUserPlanLoading(false)
+      }
+    }
+
+    fetchUserPlan()
+  }, [])
 
   // Mock data for development - replace with real API calls
   const mockData: VisibilityData = {
@@ -216,13 +242,17 @@ export function EnhancedVisibilityScorecard() {
       <Card className="bg-[#111111] border-[#222222] h-full">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <TimeframeSelector 
-              title="AI Visibility Score" 
-              timeframe={timeframe} 
-              onTimeframeChange={setTimeframe}
-              titleColor="text-white"
-              selectorColor="text-[#A7A7A7]"
-            />
+            {!userPlanLoading && (
+              <TimeframeSelector 
+                key={userPlan}
+                title="AI Visibility Score" 
+                timeframe={timeframe} 
+                onTimeframeChange={setTimeframe}
+                titleColor="text-white"
+                selectorColor="text-[#A7A7A7]"
+                userPlan={userPlan}
+              />
+            )}
             <div className="flex items-center space-x-2">
               {hasMaxAccess && (
                 <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
