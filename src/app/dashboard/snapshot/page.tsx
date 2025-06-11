@@ -321,7 +321,7 @@ export default function SnapshotPage() {
                       className={`w-full flex items-center gap-3 px-4 h-12 text-left transition-all duration-150 ease-out ${
                         model.available 
                           ? 'hover:bg-gray-100 dark:hover:bg-[#2A2A2A] text-black dark:text-white' 
-                          : 'text-gray-500 dark:text-[#666] cursor-not-allowed'
+                          : 'text-gray-400 dark:text-[#666] cursor-not-allowed'
                       } ${model.name === selectedModel ? 'bg-gray-100 dark:bg-[#2A2A2A]' : ''}`}
                       style={{
                         transitionDelay: showDropdown ? `${index * 25}ms` : '0ms'

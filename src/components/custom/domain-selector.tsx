@@ -22,264 +22,180 @@ interface DomainSelectorProps {
 
 export function DomainSelector({ showAddButton = false, position = 'welcome' }: DomainSelectorProps) {
   const { user } = useAuth()
-  const router = useRouter()
   const { 
-    currentWorkspace, 
     workspaces, 
-    loading, 
+    currentWorkspace, 
     switchWorkspace, 
-    refreshWorkspaces 
+    loading: workspaceLoading,
+    refreshWorkspaces
   } = useWorkspace()
-  
-  const [faviconUrl, setFaviconUrl] = useState<string>('/images/split-icon-white.svg')
-  const [subscription, setSubscription] = useState<any>(null)
-  const [showWorkspaceCreationDialog, setShowWorkspaceCreationDialog] = useState(false)
-  const [usageData, setUsageData] = useState<any>(null)
+  const router = useRouter()
 
-  // Get display domain from current workspace or fallback
-  const getDisplayDomain = () => {
-    if (loading) return "Loading..."
-    if (currentWorkspace?.domain) return currentWorkspace.domain
-    if (currentWorkspace?.workspace_name) return `${currentWorkspace.workspace_name.toLowerCase().replace(/\s+/g, '')}.com`
-    return "your-domain.com"
+  const [loading, setLoading] = useState(false)
+  const [showWorkspaceCreationDialog, setShowWorkspaceCreationDialog] = useState(false)
+  const [userPlan, setUserPlan] = useState<'starter' | 'pro' | 'team'>('starter')
+  const [availableSlots, setAvailableSlots] = useState(0)
+
+  // Get display text based on position
+  const getDisplayText = () => {
+    return position === 'welcome' ? 'Select Domain' : ''
   }
 
-  // Fetch subscription and usage data
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!user) return
-
-      try {
-        const [subscriptionResponse, usageResponse] = await Promise.all([
-          fetch('/api/user/subscription'),
-          fetch('/api/usage/current')
-        ])
-        
-        if (subscriptionResponse.ok) {
-          const subscriptionData = await subscriptionResponse.json()
-          setSubscription(subscriptionData)
-        }
-        
-        if (usageResponse.ok) {
-          const usageData = await usageResponse.json()
-          setUsageData(usageData)
-        }
-      } catch (err) {
-        console.error('Error fetching data:', err)
-      }
+  // Determine if user can add more domains
+  const canAddDomains = availableSlots > 0
+  
+  // Get Add Domain text based on plan
+  const getAddDomainText = () => {
+    if (canAddDomains) {
+      return 'Add Domain'
     }
+    return userPlan === 'starter' ? 'Upgrade for More Domains' : 'Upgrade Plan'
+  }
 
-    fetchData()
-  }, [user])
+  // Generate Add icon component
+  const AddIcon = canAddDomains ? Plus : Crown
 
-  // Refresh usage data when workspaces change (to update available slots)
+  // Load user plan and calculate available slots
   useEffect(() => {
-    const refreshUsageData = async () => {
+    const loadUserPlan = async () => {
       if (!user) return
       
       try {
-        const usageResponse = await fetch('/api/usage/current')
-        if (usageResponse.ok) {
-          const newUsageData = await usageResponse.json()
-          setUsageData(newUsageData)
+        const response = await fetch('/api/user/subscription')
+        if (response.ok) {
+          const data = await response.json()
+          const plan = data.subscriptionPlan || 'starter'
+          setUserPlan(plan)
+          
+          // Calculate available slots
+          const maxDomains = plan === 'starter' ? 1 : plan === 'pro' ? 3 : 10
+          const usedSlots = workspaces.length
+          setAvailableSlots(Math.max(0, maxDomains - usedSlots))
         }
-      } catch (err) {
-        console.error('Error refreshing usage data:', err)
+      } catch (error) {
+        console.error('Error loading user plan:', error)
       }
     }
 
-    refreshUsageData()
-  }, [workspaces, user])
+    loadUserPlan()
+  }, [user, workspaces])
 
-  // Load favicon when current workspace changes
-  useEffect(() => {
-    const domain = currentWorkspace?.domain
+  const handleWorkspaceSwitch = async (workspaceId: string) => {
+    if (workspaceId === currentWorkspace?.id) return
     
-    if (domain && domain !== "your-domain.com") {
-      // Use Google's favicon service directly for simplicity and reliability
-      const googleFaviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`
-      setFaviconUrl(googleFaviconUrl)
-    } else {
-      setFaviconUrl('/images/split-icon-white.svg')
+    setLoading(true)
+    try {
+      await switchWorkspace(workspaceId)
+    } catch (error) {
+      console.error('Error switching workspace:', error)
+    } finally {
+      setLoading(false)
     }
-  }, [currentWorkspace])
-
-  // Check if user can add domains
-  const isTeamPlan = subscription?.subscriptionPlan === 'team'
-  const currentPlan = subscription?.subscriptionPlan || 'starter'
-  
-  // Calculate max workspaces based on plan + add-ons
-  const getMaxWorkspaces = () => {
-    let baseLimit = 1 // Default for starter/pro
-    if (isTeamPlan) {
-      baseLimit = 5 // Team gets 5 included
-    }
-    
-    // Add extra domains from add-ons
-    const domainsAddon = usageData?.usage?.addOns?.find((addon: any) => addon.add_on_type === 'extra_domains' && addon.status === 'active')
-    const extraDomains = domainsAddon?.quantity || 0
-    
-    return baseLimit + extraDomains
   }
-  
-  const maxWorkspaces = getMaxWorkspaces()
-  const canAddDomains = workspaces.length < maxWorkspaces
 
   const handleAddDomain = () => {
-    if (!canAddDomains) {
-      // Redirect to upgrade for non-team users
-      router.push('/settings?tab=billing&upgrade=team&feature=multiple-workspaces')
-    } else {
-      // Show workspace creation dialog for team users
+    if (canAddDomains) {
       setShowWorkspaceCreationDialog(true)
+    } else {
+      // Redirect to upgrade page
+      router.push('/settings/billing')
     }
   }
 
-  const handleWorkspaceCreated = async (workspace: any) => {
-    // Refresh workspaces list
+  const handleWorkspaceCreated = async () => {
     await refreshWorkspaces()
-    
-    // Also refresh usage data to update available slots
-    try {
-      const usageResponse = await fetch('/api/usage/current')
-      if (usageResponse.ok) {
-        const newUsageData = await usageResponse.json()
-        setUsageData(newUsageData)
-      }
-    } catch (err) {
-      console.error('Error refreshing usage data:', err)
+    setShowWorkspaceCreationDialog(false)
+  }
+
+  // Helper to get favicon URL
+  const getFaviconUrl = (domain: string) => {
+    if (domain && domain !== 'No domain set') {
+      const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '')
+      return `https://www.google.com/s2/favicons?domain=${cleanDomain}&sz=128`
     }
-    
-    // The workspaces array from context should now be updated
-    // We need to wait a bit for React state to update
-    setTimeout(() => {
-      const newWorkspace = workspaces.find(ws => ws.id === workspace.id)
-      
-      if (newWorkspace) {
-        switchWorkspace(newWorkspace)
-      }
-    }, 100)
+    return '/images/default-favicon.svg'
   }
 
-  const handleWorkspaceSwitch = async (workspace: any) => {
-    await switchWorkspace(workspace)
-  }
-
-  const getAddDomainText = () => {
-    if (!isTeamPlan) {
-      return 'Upgrade to Team for multiple workspaces'
+  const getDisplayDomain = () => {
+    if (position === 'welcome') {
+      return currentWorkspace?.domain || 'No domain set'
     }
-    return 'Add new workspace'
+    return currentWorkspace?.domain || 'Split'
   }
 
-  const getAddDomainIcon = () => {
-    if (!isTeamPlan) {
-      return Crown
-    }
-    return Plus
+  const faviconUrl = getFaviconUrl(currentWorkspace?.domain || '')
+
+  if (workspaceLoading) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="w-4 h-4 bg-gray-200 dark:bg-[#333] rounded animate-pulse" />
+        <div className="w-24 h-4 bg-gray-200 dark:bg-[#333] rounded animate-pulse" />
+      </div>
+    )
   }
-
-  const AddIcon = getAddDomainIcon()
-
-  // Calculate available slots for empty workspace placeholders
-  const getAvailableSlots = () => {
-    const usedWorkspaces = workspaces.length
-    const maxAllowed = maxWorkspaces
-    return Math.max(0, maxAllowed - usedWorkspaces)
-  }
-
-  const availableSlots = getAvailableSlots()
-
-  // Debug logging for admin
-  console.log('Domain Selector Debug:', {
-    subscription: subscription?.subscriptionPlan,
-    isTeamPlan,
-    workspaces: workspaces.length,
-    maxWorkspaces,
-    availableSlots,
-    canAddDomains,
-    usageData: usageData?.usage?.addOns
-  })
 
   return (
-    <div className="flex items-start">
+    <div className="flex items-center relative">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button 
-            variant="outline" 
-            className={`border border-gray-300 dark:border-[#333333] bg-transparent hover:bg-gray-50 dark:hover:bg-[#1a1a1a] rounded-none ${
-              position === 'topbar' 
-                ? 'h-8 px-3 text-sm' 
-                : 'w-fit px-2'
-            }`}
+            variant="ghost" 
+            className="bg-transparent hover:bg-gray-100 dark:hover:bg-transparent p-0 rounded-none flex items-center gap-2"
+            disabled={loading}
           >
             <div className="flex items-center gap-2">
-              <div className={`relative flex-shrink-0 flex items-center justify-center ${
-                position === 'topbar' ? 'w-4 h-4' : 'w-5 h-5'
-              }`}>
+              <div className="w-4 h-4 flex items-center justify-center">
                 <img 
                   src={faviconUrl}
-                  alt={getDisplayDomain()}
-                  width={position === 'topbar' ? 16 : 20} 
-                  height={position === 'topbar' ? 16 : 20}
+                  alt="Domain favicon"
+                  width={16} 
+                  height={16}
                   className="w-full h-full object-contain"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement
-                    target.src = '/images/split-icon-white.svg'
-                  }}
                 />
               </div>
-              <span className="font-geist-semi text-black dark:text-white">{getDisplayDomain()}</span>
-              <ChevronDown className={`text-gray-500 dark:text-[#666666] ${
-                position === 'topbar' ? 'h-3 w-3' : 'h-4 w-4'
-              }`} />
+              <span className="font-geist-semi text-black dark:text-white truncate max-w-[120px]">
+                {getDisplayDomain()}
+              </span>
+              {getDisplayText() && (
+                <span className="text-sm text-gray-500 dark:text-[#A7A7A7]">{getDisplayText()}</span>
+              )}
             </div>
+            <ChevronDown className="h-4 w-4 text-gray-500 dark:text-[#666666] ml-1" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent 
-          className="bg-white dark:bg-[#1a1a1a] border border-gray-300 dark:border-[#333333] text-black dark:text-white rounded-none"
-          align={position === 'topbar' ? 'end' : 'start'}
-          alignOffset={-1}
+          className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333333] text-black dark:text-white rounded-none min-w-[200px] max-w-[300px]"
+          align="start"
+          alignOffset={0}
+          sideOffset={4}
         >
-          {/* Workspace list */}
+          {/* Existing workspaces */}
           {workspaces.map((workspace) => (
             <DropdownMenuItem 
               key={workspace.id}
-              className="hover:bg-gray-100 dark:hover:bg-[#222222] rounded-none cursor-pointer"
-              onClick={() => handleWorkspaceSwitch(workspace)}
+              className="hover:bg-gray-100 dark:hover:bg-[#222222] rounded-none"
+              onClick={() => handleWorkspaceSwitch(workspace.id)}
             >
               <div className="flex items-center gap-2 w-full">
                 <div className="w-4 h-4 flex items-center justify-center">
                   <img 
-                    src={workspace.domain ? `https://www.google.com/s2/favicons?domain=${workspace.domain}&sz=128` : '/images/split-icon-white.svg'}
-                    alt={workspace.domain || workspace.workspace_name}
+                    src={getFaviconUrl(workspace.domain)}
+                    alt={workspace.name}
                     width={16} 
                     height={16}
                     className="w-full h-full object-contain"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement
-                      target.src = '/images/split-icon-white.svg'
-                    }}
                   />
                 </div>
-                <div className="flex-1">
-                  <div className="text-sm">{workspace.workspace_name}</div>
-                  <div className="text-xs text-[#666]">{workspace.domain}</div>
-                </div>
-                <div className="flex items-center gap-1">
-                  {workspace.is_primary && (
-                    <span className="text-xs text-[#666] bg-[#333] px-1.5 py-0.5 rounded">Primary</span>
-                  )}
-                  {currentWorkspace?.id === workspace.id && (
-                    <Check className="w-3 h-3 text-green-400" />
-                  )}
-                </div>
+                <span className="text-sm flex-1 truncate">{workspace.domain || workspace.name}</span>
+                {workspace.id === currentWorkspace?.id && (
+                  <Check className="w-4 h-4 text-green-500" />
+                )}
               </div>
             </DropdownMenuItem>
           ))}
           
           {workspaces.length === 0 && !loading && (
-            <DropdownMenuItem className="hover:bg-[#222222] rounded-none">
+            <DropdownMenuItem className="hover:bg-gray-100 dark:hover:bg-[#222222] rounded-none">
               <div className="flex items-center gap-2 w-full">
                 <div className="w-4 h-4 flex items-center justify-center">
                   <img 
@@ -291,7 +207,7 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
                   />
                 </div>
                 <span className="text-sm flex-1">{getDisplayDomain()}</span>
-                <span className="text-xs text-[#666] bg-[#333] px-1.5 py-0.5 rounded">Default</span>
+                <span className="text-xs text-gray-500 dark:text-[#666] bg-gray-100 dark:bg-[#333] px-1.5 py-0.5 rounded">Default</span>
               </div>
             </DropdownMenuItem>
           )}
@@ -300,27 +216,27 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
           {availableSlots > 0 && canAddDomains && Array.from({ length: availableSlots }, (_, i) => (
             <DropdownMenuItem 
               key={`empty-slot-${i}`}
-              className="hover:bg-[#222222] cursor-pointer rounded-none border border-dashed border-[#444] m-1"
+              className="hover:bg-gray-100 dark:hover:bg-[#222222] cursor-pointer rounded-none border border-dashed border-gray-300 dark:border-[#444] m-1"
               onClick={() => setShowWorkspaceCreationDialog(true)}
             >
               <div className="flex items-center gap-2 w-full opacity-60">
                 <div className="w-4 h-4 flex items-center justify-center">
-                  <Plus className="w-3 h-3 text-[#666]" />
+                  <Plus className="w-3 h-3 text-gray-500 dark:text-[#666]" />
                 </div>
                 <div className="flex-1">
-                  <div className="text-sm text-[#666]">Available slot</div>
-                  <div className="text-xs text-[#555]">Click to add workspace</div>
+                  <div className="text-sm text-gray-500 dark:text-[#666]">Available slot</div>
+                  <div className="text-xs text-gray-400 dark:text-[#555]">Click to add workspace</div>
                 </div>
-                <span className="text-xs text-[#555] bg-[#2a2a2a] px-1.5 py-0.5 rounded">Empty</span>
+                <span className="text-xs text-gray-400 dark:text-[#555] bg-gray-100 dark:bg-[#2a2a2a] px-1.5 py-0.5 rounded">Empty</span>
               </div>
             </DropdownMenuItem>
           ))}
           
           {showAddButton && !canAddDomains && (
             <>
-              <DropdownMenuSeparator className="bg-[#333333]" />
+              <DropdownMenuSeparator className="bg-gray-200 dark:bg-[#333333]" />
               <DropdownMenuItem 
-                className="hover:bg-[#222222] cursor-pointer rounded-none"
+                className="hover:bg-gray-100 dark:hover:bg-[#222222] cursor-pointer rounded-none"
                 onClick={handleAddDomain}
               >
                 <div className="flex items-center gap-2">

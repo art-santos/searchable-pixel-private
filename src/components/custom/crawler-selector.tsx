@@ -97,7 +97,7 @@ export function CrawlerSelector({ onCrawlerChange, selectedCrawler, availableCra
         <DropdownMenuTrigger asChild>
           <Button 
             variant="outline" 
-            className="w-fit min-w-[160px] border border-[#333333] bg-transparent hover:bg-[#1a1a1a] px-4 rounded-none"
+            className="w-fit min-w-[160px] border border-gray-300 dark:border-[#333333] bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-[#1a1a1a] px-4 rounded-none"
           >
             <div className="flex items-center gap-2">
               {selectedOption ? (
@@ -126,32 +126,32 @@ export function CrawlerSelector({ onCrawlerChange, selectedCrawler, availableCra
                       }}
                     />
                   )}
-                  <span className="font-geist-semi text-white truncate">{selectedOption.name}</span>
+                  <span className="font-geist-semi text-black dark:text-white truncate">{selectedOption.name}</span>
                 </>
               ) : (
                 // "All Crawlers" selected
                 <>
-                  <Sparkles className="w-4 h-4 text-[#888]" />
-                  <span className="font-geist-semi text-white truncate">All Crawlers</span>
+                  <Sparkles className="w-4 h-4 text-gray-500 dark:text-[#888]" />
+                  <span className="font-geist-semi text-black dark:text-white truncate">All Crawlers</span>
                 </>
               )}
-              <ChevronDown className="h-4 w-4 text-[#666666] ml-auto" />
+              <ChevronDown className="h-4 w-4 text-gray-500 dark:text-[#666666] ml-auto" />
             </div>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent 
-          className="bg-[#1a1a1a] border border-[#333333] text-white rounded-none max-h-[300px] overflow-y-auto"
+          className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333333] text-black dark:text-white rounded-none max-h-[300px] overflow-y-auto"
           align="start"
           alignOffset={-1}
           sideOffset={4}
         >
           {/* All Crawlers option */}
           <DropdownMenuItem 
-            className="hover:bg-[#222222] rounded-none"
+            className="hover:bg-gray-100 dark:hover:bg-[#222222] rounded-none"
             onClick={() => onCrawlerChange('all')}
           >
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#888]" />
+              <Sparkles className="w-4 h-4 text-gray-500 dark:text-[#888]" />
               <span className="text-sm">All Crawlers</span>
             </div>
           </DropdownMenuItem>
@@ -160,7 +160,7 @@ export function CrawlerSelector({ onCrawlerChange, selectedCrawler, availableCra
           {availableCrawlers.map((crawler) => (
             <DropdownMenuItem 
               key={crawler.id}
-              className="hover:bg-[#222222] rounded-none"
+              className="hover:bg-gray-100 dark:hover:bg-[#222222] rounded-none"
               onClick={() => onCrawlerChange(crawler.id)}
             >
               <div className="flex items-center gap-2">
@@ -187,12 +187,12 @@ export function CrawlerSelector({ onCrawlerChange, selectedCrawler, availableCra
                         if (fallback) fallback.style.display = 'block'
                       }}
                     />
-                    <div className="w-4 h-4 rounded-full bg-[#666] hidden" />
+                    <div className="w-4 h-4 rounded-full bg-gray-400 dark:bg-[#666] hidden" />
                   </div>
                 )}
                 <span className="text-sm">{crawler.name}</span>
                 {crawler.company && (
-                  <span className="text-xs text-[#666] ml-auto">({crawler.company})</span>
+                  <span className="text-xs text-gray-500 dark:text-[#666] ml-auto">({crawler.company})</span>
                 )}
               </div>
             </DropdownMenuItem>

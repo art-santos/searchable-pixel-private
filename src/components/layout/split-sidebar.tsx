@@ -164,7 +164,7 @@ export function SplitSidebar() {
             className="h-8 w-8 dark:block hidden"
           />
           <Image
-            src="/images/split-icon.svg"
+            src="/images/split-icon-black.svg"
             alt="Split Logo"
             width={32}
             height={32}

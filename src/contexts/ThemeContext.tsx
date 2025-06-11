@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
+import { isFeatureEnabled } from '@/lib/feature-flags'
 
 type Theme = 'light' | 'dark'
 
@@ -16,6 +17,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>('dark')
 
   useEffect(() => {
+    // If light mode is disabled, always use dark theme
+    if (!isFeatureEnabled('lightModeEnabled')) {
+      setTheme('dark')
+      return
+    }
+
     // Check for saved theme preference or default to dark
     const savedTheme = localStorage.getItem('theme') as Theme
     if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
@@ -31,6 +38,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme])
 
   const toggleTheme = () => {
+    // If light mode is disabled, don't allow toggling
+    if (!isFeatureEnabled('lightModeEnabled')) {
+      return
+    }
     setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light')
   }
 

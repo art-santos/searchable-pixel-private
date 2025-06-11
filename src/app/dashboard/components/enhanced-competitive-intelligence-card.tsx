@@ -425,17 +425,17 @@ export function EnhancedCompetitiveIntelligenceCard() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-fit min-w-[160px] border-[#333] bg-transparent hover:bg-[#1a1a1a] text-white"
+                  className="w-fit min-w-[160px] border border-gray-300 dark:border-[#333] bg-white dark:bg-transparent hover:bg-gray-100 dark:hover:bg-[#1a1a1a] text-black dark:text-white"
                 >
                   <span className="font-medium">{selectedCategory}</span>
-                  <ChevronDown className="h-4 w-4 ml-2 text-[#666]" />
+                  <ChevronDown className="h-4 w-4 ml-2 text-gray-500 dark:text-[#666]" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-[#1a1a1a] border-[#333] text-white">
+              <DropdownMenuContent className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333] text-black dark:text-white">
                 {competitiveCategories.map((category) => (
                   <DropdownMenuItem
                     key={category}
-                    className="hover:bg-[#222]"
+                    className="hover:bg-gray-100 dark:hover:bg-[#222]"
                     onClick={() => setSelectedCategory(category)}
                   >
                     {category}

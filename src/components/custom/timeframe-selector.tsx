@@ -38,55 +38,28 @@ export function TimeframeSelector({
   timeframe, 
   onTimeframeChange, 
   title = "Page Views",
-  titleColor = "text-[#A7A7A7]",
-  selectorColor = "text-white",
+  titleColor = "text-gray-600 dark:text-[#A7A7A7]",
+  selectorColor = "text-black dark:text-white",
   userPlan
 }: TimeframeSelectorProps) {
   const { user } = useAuth()
   const [currentPlan, setCurrentPlan] = useState<PlanType>('starter')
+  const [allowedTimeframes, setAllowedTimeframes] = useState<TimeframeOption[]>([])
 
   useEffect(() => {
-    const fetchUserPlan = async () => {
-      if (userPlan) {
-        setCurrentPlan(userPlan)
-        return
-      }
-
-      if (user) {
-        try {
-          const response = await fetch('/api/user/subscription')
-          if (response.ok) {
-            const data = await response.json()
-            console.log('[TimeframeSelector] User subscription data:', data)
-            setCurrentPlan(data.subscriptionPlan || 'starter')
-          } else {
-            console.error('[TimeframeSelector] Failed to fetch subscription:', response.status)
-            setCurrentPlan('starter')
-          }
-        } catch (error) {
-          console.error('[TimeframeSelector] Error fetching user plan:', error)
-          setCurrentPlan('starter')
-        }
-      }
-    }
-
-    fetchUserPlan()
+    // Use passed userPlan or determine from user
+    const planToUse = userPlan || 'starter' // Default fallback
+    setCurrentPlan(planToUse)
+    setAllowedTimeframes(getAllowedTimeframes(planToUse))
   }, [user, userPlan])
 
-  const allowedTimeframes = getAllowedTimeframes(currentPlan)
-  
-  // Debug logging
-  console.log('[TimeframeSelector] Current plan:', currentPlan)
-  console.log('[TimeframeSelector] Allowed timeframes:', allowedTimeframes)
-  console.log('[TimeframeSelector] Current timeframe:', timeframe)
-
-  // If current timeframe is not allowed, switch to first allowed one
+  // Auto-correct timeframe if current selection is not allowed
   useEffect(() => {
-    if (!hasTimeframeAccess(currentPlan, timeframe)) {
-      console.log('[TimeframeSelector] Switching timeframe from', timeframe, 'to', allowedTimeframes[0])
-      onTimeframeChange(allowedTimeframes[0] as TimeframeOption)
+    if (allowedTimeframes.length > 0 && !allowedTimeframes.includes(timeframe)) {
+      // Default to the first allowed timeframe
+      onTimeframeChange(allowedTimeframes[0])
     }
-  }, [currentPlan, timeframe, allowedTimeframes, onTimeframeChange])
+  }, [allowedTimeframes, timeframe, onTimeframeChange])
 
   return (
     <div className="space-y-1">
@@ -113,17 +86,17 @@ export function TimeframeSelector({
             const isSelected = timeframe === option
             
             return (
-          <DropdownMenuItem 
+              <DropdownMenuItem 
                 key={option}
                 className={`hover:bg-gray-100 dark:hover:bg-[#222222] rounded-none flex items-center justify-between ${
                   !isAllowed ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
                 onClick={() => isAllowed && onTimeframeChange(option)}
                 disabled={!isAllowed}
-          >
+              >
                 <span className="text-sm">{option}</span>
                 {!isAllowed && <Lock className="h-3 w-3 text-gray-400 dark:text-[#666]" />}
-          </DropdownMenuItem>
+              </DropdownMenuItem>
             )
           })}
           
