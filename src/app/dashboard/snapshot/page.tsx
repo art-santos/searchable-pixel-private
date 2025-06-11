@@ -10,6 +10,7 @@ import {
   type SnapshotRequest
 } from '@/lib/snapshot-client'
 import { getEnhancedSnapshots, getCombinedScore, type EnhancedSnapshotResult } from '@/lib/api/enhanced-snapshots'
+import { SnapshotPageSkeleton, SnapshotHistorySkeleton } from '@/components/skeletons'
 
 export default function SnapshotPage() {
   const { user, loading } = useAuth()
@@ -170,11 +171,7 @@ export default function SnapshotPage() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-white dark:bg-[#0c0c0c] flex items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent text-black dark:text-white" />
-      </div>
-    )
+    return <SnapshotPageSkeleton />
   }
 
   return (
@@ -396,7 +393,9 @@ export default function SnapshotPage() {
         </div>
 
         <div className="space-y-4">
-                      {recentSnapshots.length > 0 ? (
+          {loading ? (
+            <SnapshotHistorySkeleton />
+          ) : recentSnapshots.length > 0 ? (
               recentSnapshots.map((snapshot, index) => {
                 // For preview cards, just use the raw database visibility score
                 // Detail page will do more sophisticated weighted calculations

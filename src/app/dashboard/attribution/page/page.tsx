@@ -7,6 +7,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { Loader2, ArrowLeft, ChevronDown, Clock, Bot } from "lucide-react"
 import Link from "next/link"
+import { PlanType } from "@/lib/subscription/config"
 
 interface CrawledPage {
   path: string
@@ -28,6 +29,31 @@ export default function AttributionByPagePage() {
   const [pages, setPages] = useState<CrawledPage[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [expandedPages, setExpandedPages] = useState<Set<string>>(new Set())
+  const [userPlan, setUserPlan] = useState<PlanType>('starter')
+  const [userPlanLoading, setUserPlanLoading] = useState(true)
+
+  // Fetch user subscription plan
+  useEffect(() => {
+    const fetchUserPlan = async () => {
+      try {
+        const response = await fetch('/api/user/subscription')
+        if (response.ok) {
+          const data = await response.json()
+          const plan = data.subscriptionPlan || 'starter'
+          console.log('🔍 [AttributionByPagePage] Fetched user plan:', plan, 'isAdmin:', data.isAdmin)
+          setUserPlan(plan as PlanType)
+        } else {
+          console.error('Failed to fetch user plan, response not ok')
+        }
+      } catch (error) {
+        console.error('Error fetching user plan:', error)
+      } finally {
+        setUserPlanLoading(false)
+      }
+    }
+
+    fetchUserPlan()
+  }, [])
 
   useEffect(() => {
     if (currentWorkspace) {
@@ -150,13 +176,17 @@ export default function AttributionByPagePage() {
               <p className="text-sm text-zinc-500">Most crawled pages ({timeframe.toLowerCase()})</p>
             </div>
             <div className="flex items-center gap-4">
-              <TimeframeSelector 
-                title=""
-                timeframe={timeframe}
-                onTimeframeChange={setTimeframe}
-                titleColor="text-white"
-                selectorColor="text-zinc-400"
-              />
+              {!userPlanLoading && (
+                <TimeframeSelector 
+                  key={userPlan}
+                  title=""
+                  timeframe={timeframe}
+                  onTimeframeChange={setTimeframe}
+                  titleColor="text-white"
+                  selectorColor="text-zinc-400"
+                  userPlan={userPlan}
+                />
+              )}
               <button className="text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5 rounded border border-zinc-800 hover:border-zinc-700 bg-zinc-900/50">
                 Export
               </button>

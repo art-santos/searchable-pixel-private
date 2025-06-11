@@ -90,11 +90,28 @@ export async function GET(request: Request) {
 
     console.log(`[Dashboard API] User status - Admin: ${isAdmin}, Has Card: ${hasPaymentMethod}, Plan: ${subscriptionPlan}, Status: ${userProfile?.subscription_status}`)
 
+    // For period comparison, we need to fetch data from 2x the timeframe back
+    // This ensures we have data for both current and previous periods
+    let dataFetchStartDate = new Date(startDate)
+    if (timeframe.toLowerCase() === 'last 24 hours') {
+      dataFetchStartDate.setHours(dataFetchStartDate.getHours() - 24) // Go back another 24 hours
+    } else if (timeframe.toLowerCase() === 'last 7 days') {
+      dataFetchStartDate.setDate(dataFetchStartDate.getDate() - 7) // Go back another 7 days
+    } else if (timeframe.toLowerCase() === 'last 30 days') {
+      dataFetchStartDate.setDate(dataFetchStartDate.getDate() - 30) // Go back another 30 days
+    } else if (timeframe.toLowerCase() === 'last 90 days') {
+      dataFetchStartDate.setDate(dataFetchStartDate.getDate() - 90) // Go back another 90 days
+    } else if (timeframe.toLowerCase() === 'last 365 days') {
+      dataFetchStartDate.setDate(dataFetchStartDate.getDate() - 365) // Go back another 365 days
+    }
+
+    console.log(`[Dashboard API] Fetching data from ${dataFetchStartDate.toISOString()} to include previous period for comparison`)
+
     // Build the query with date filtering, filtered by workspace
     let query = supabase
       .from('crawler_visits')
       .select('timestamp, crawler_name, crawler_company', { count: 'exact' }) // Add count to see total
-      .gte('timestamp', startDate.toISOString())
+      .gte('timestamp', dataFetchStartDate.toISOString())
       .order('timestamp', { ascending: true })
 
     // Filter strictly by workspace - no fallback to prevent data bleeding
@@ -173,15 +190,37 @@ export async function GET(request: Request) {
       
       console.log(`[Dashboard API] Total records to fetch: ${count}`)
       
-      // Fetch data in chunks of 1000 (Supabase's limit)
+      // Fetch data in chunks of 1000 (Supabase's limit) - CONCURRENTLY
       const chunkSize = 1000
       const totalChunks = Math.ceil((count || 0) / chunkSize)
       
-      for (let i = 0; i < totalChunks; i++) {
+      // Create all chunk promises at once - each with a fresh query
+      const chunkPromises = Array.from({ length: totalChunks }, (_, i) => {
         const start = i * chunkSize
         const end = start + chunkSize - 1
         
-        const { data: chunk, error: chunkError } = await query.range(start, end)
+        // Create a fresh query for each chunk to avoid conflicts
+        let chunkQuery = supabase
+          .from('crawler_visits')
+          .select('timestamp, crawler_name, crawler_company')
+          .gte('timestamp', dataFetchStartDate.toISOString())
+          .order('timestamp', { ascending: true })
+          .eq('workspace_id', workspaceId)
+        
+        // Apply crawler filter if specified
+        if (crawler !== 'all') {
+          chunkQuery = chunkQuery.eq('crawler_name', crawler)
+        }
+        
+        return chunkQuery.range(start, end)
+      })
+      
+      // Fetch all chunks concurrently
+      const chunkResults = await Promise.all(chunkPromises)
+      
+      // Process results and handle errors
+      for (let i = 0; i < chunkResults.length; i++) {
+        const { data: chunk, error: chunkError } = chunkResults[i]
         
         if (chunkError) {
           console.error(`Error fetching chunk ${i + 1}/${totalChunks}:`, chunkError)
@@ -198,11 +237,110 @@ export async function GET(request: Request) {
     const visits = allVisits
     console.log(`[Dashboard API] Processing ${visits.length} visits for workspace ${workspaceId}`)
 
+    // Calculate period-over-period analytics
+    let periodComparison: { hasComparison: boolean; percentChange?: number; trend?: 'up' | 'down' | 'same' } | null = null
+    
+    // Check if we have enough data for period comparison (need 2x the timeframe)
+    // We need to check against ALL workspace data, not just filtered visits
+    const { data: oldestVisitData, error: oldestError } = await supabase
+      .from('crawler_visits')
+      .select('timestamp')
+      .eq('workspace_id', workspaceId)
+      .order('timestamp', { ascending: true })
+      .limit(1)
+
+    let daysSinceOldest = 0
+    if (oldestVisitData && oldestVisitData.length > 0) {
+      const oldestVisit = new Date(oldestVisitData[0].timestamp)
+      daysSinceOldest = Math.floor((nowInUserTz.getTime() - oldestVisit.getTime()) / (1000 * 60 * 60 * 24))
+    }
+    
+    console.log(`[Dashboard API] 📊 Period comparison check:`, {
+      timeframe: timeframe.toLowerCase(),
+      oldestVisit: oldestVisitData?.[0]?.timestamp,
+      daysSinceOldest,
+      totalVisits: visits.length
+    })
+    
+    let requiredDaysForComparison: number
+    switch (timeframe.toLowerCase()) {
+      case 'last 24 hours':
+        requiredDaysForComparison = 2
+        break
+      case 'last 7 days':
+        requiredDaysForComparison = 14
+        break
+      case 'last 30 days':
+        requiredDaysForComparison = 60
+        break
+      case 'last 90 days':
+        requiredDaysForComparison = 180
+        break
+      case 'last 365 days':
+        requiredDaysForComparison = 730
+        break
+      default:
+        requiredDaysForComparison = 60
+    }
+    
+    console.log(`[Dashboard API] 📊 Required days: ${requiredDaysForComparison}, Available days: ${daysSinceOldest}`)
+    
+    if (daysSinceOldest >= requiredDaysForComparison) {
+      // Calculate current period and previous period counts
+      // For proper period-over-period comparison, we need equal length periods
+      const periodLengthMs = nowInUserTz.getTime() - startDate.getTime()
+      const previousStartDate = new Date(startDate.getTime() - periodLengthMs)
+      const previousEndDate = new Date(startDate.getTime())
+      
+      const currentPeriodCount = visits.filter(v => new Date(v.timestamp) >= startDate).length
+      const previousPeriodCount = visits.filter(v => {
+        const visitDate = new Date(v.timestamp)
+        return visitDate >= previousStartDate && visitDate < previousEndDate
+      }).length
+      
+      console.log(`[Dashboard API] 📊 Period counts:`, {
+        currentPeriodCount,
+        previousPeriodCount,
+        currentPeriod: `${startDate.toISOString()} to ${nowInUserTz.toISOString()}`,
+        previousPeriod: `${previousStartDate.toISOString()} to ${previousEndDate.toISOString()}`
+      })
+      
+      // Always create comparison, even if previous period is 0
+      if (previousPeriodCount > 0) {
+        const percentChange = ((currentPeriodCount - previousPeriodCount) / previousPeriodCount) * 100
+        periodComparison = {
+          hasComparison: true,
+          percentChange: Math.round(percentChange * 10) / 10, // Round to 1 decimal
+          trend: percentChange > 0 ? 'up' : percentChange < 0 ? 'down' : 'same'
+        }
+        console.log(`[Dashboard API] 📊 Created period comparison:`, periodComparison)
+      } else if (currentPeriodCount > 0) {
+        // Previous period had 0 visits, current has some
+        // Don't show badge when there's no previous data to compare against
+        periodComparison = null
+        console.log(`[Dashboard API] 📊 No previous period data - not showing comparison badge`)
+      } else {
+        // Both periods have 0 visits
+        periodComparison = {
+          hasComparison: true,
+          percentChange: 0,
+          trend: 'same'
+        }
+        console.log(`[Dashboard API] 📊 Created zero activity comparison:`, periodComparison)
+      }
+    } else {
+      console.log(`[Dashboard API] 📊 Not enough historical data for comparison`)
+      periodComparison = null
+    }
+
     // Aggregate visits by time period
     const timeAggregates = new Map<string, number>()
     const crawlerSet = new Map<string, { company: string, count: number }>()
 
-    visits?.forEach(visit => {
+    // Only include visits from the current period for aggregation (not previous period data)
+    const currentPeriodVisits = visits.filter(v => new Date(v.timestamp) >= startDate)
+    
+    currentPeriodVisits?.forEach(visit => {
       // Convert database timestamp to user's timezone
       const date = convertToUserTimezone(visit.timestamp)
       let key: string
@@ -234,7 +372,7 @@ export async function GET(request: Request) {
     })
 
     // Generate chart data
-    let chartData: { date: string; crawls: number; isCurrentPeriod?: boolean }[] = []
+    let chartData: { date: string; crawls: number; isCurrentPeriod?: boolean; showLabel?: boolean }[] = []
 
     if (groupBy === 'hour') {
       // Generate all 24 hours for "Last 24 hours" timeframe
@@ -267,155 +405,78 @@ export async function GET(request: Request) {
         chartData.push({
           date: displayHour,
           crawls,
-          isCurrentPeriod: hoursAgo === 0 // Mark current hour for animation
+          isCurrentPeriod: hoursAgo === 0, // Mark current hour for animation
+          showLabel: hoursAgo % 4 === 0 || hoursAgo === 0 // Label every 4 hours + current hour
         })
       }
     } else {
-      // Generate days for multi-day timeframes
-      let daysToShow: number
-      switch (timeframe.toLowerCase()) {
-        case 'last 7 days':
-          daysToShow = 7
-          break
-        case 'last 30 days':
-          daysToShow = 30
-          break
-        case 'last 90 days':
-          daysToShow = 90
-          break
-        case 'last 365 days':
-          daysToShow = 365
-          break
-        default:
-          daysToShow = 30
-      }
+      const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
       
-      if (daysToShow === 90) {
-        // For 90 days, group by weeks
-        const weeksData = new Map<string, number>()
-        const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-        
-        // Group all data by week
-        timeAggregates.forEach((crawls, dayKey) => {
-          // Parse the day key to get the actual date
-          const [monthStr, dayStr] = dayKey.split(' ')
-          const monthIndex = monthNames.indexOf(monthStr)
-          const day = parseInt(dayStr)
-          
-          if (monthIndex !== -1) {
-            const date = new Date(nowInUserTz.getFullYear(), monthIndex, day)
-            
-            // Get the start of the week (Sunday)
-            const weekStart = new Date(date)
-            weekStart.setDate(date.getDate() - date.getDay())
-            
-            const weekKey = `${monthNames[weekStart.getMonth()]} ${weekStart.getDate()}`
-            weeksData.set(weekKey, (weeksData.get(weekKey) || 0) + crawls)
-          }
-        })
-        
-        // Generate chart data for the last 13 weeks
-        for (let weeksAgo = 12; weeksAgo >= 0; weeksAgo--) {
-          const weekTime = new Date(nowInUserTz)
-          weekTime.setDate(weekTime.getDate() - (weeksAgo * 7))
-          
-          // Get start of week (Sunday)
-          const weekStart = new Date(weekTime)
-          weekStart.setDate(weekTime.getDate() - weekTime.getDay())
-          
-          const weekKey = `${monthNames[weekStart.getMonth()]} ${weekStart.getDate()}`
-          const crawls = weeksData.get(weekKey) || 0
-          
-          chartData.push({
-            date: weekKey,
-            crawls,
-            isCurrentPeriod: weeksAgo === 0
-          })
-        }
-        
-      } else if (daysToShow === 365) {
-        // For 365 days, group by months
-        const monthsData = new Map<string, number>()
-        const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-        
-        // Group all data by month
-        timeAggregates.forEach((crawls, dayKey) => {
-          const [monthStr] = dayKey.split(' ')
-          monthsData.set(monthStr, (monthsData.get(monthStr) || 0) + crawls)
-        })
-        
-        // Generate chart data for the last 12 months
-        for (let monthsAgo = 11; monthsAgo >= 0; monthsAgo--) {
-          const monthTime = new Date(nowInUserTz)
-          monthTime.setMonth(monthTime.getMonth() - monthsAgo)
-          
-          const monthKey = monthNames[monthTime.getMonth()]
-          const crawls = monthsData.get(monthKey) || 0
-          
-          chartData.push({
-            date: monthKey,
-            crawls,
-            isCurrentPeriod: monthsAgo === 0
-          })
-        }
-        
-      } else if (daysToShow === 30) {
-        // For 30 days, group by 3-day periods to get ~10 data points
-        const periodsData = new Map<string, number>()
-        const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-        
-        // Group all data by 3-day periods
-        timeAggregates.forEach((crawls, dayKey) => {
-          // Parse the day key to get the actual date
-          const [monthStr, dayStr] = dayKey.split(' ')
-          const monthIndex = monthNames.indexOf(monthStr)
-          const day = parseInt(dayStr)
-          
-          if (monthIndex !== -1) {
-            const date = new Date(nowInUserTz.getFullYear(), monthIndex, day)
-            
-            // Group into 3-day periods
-            const daysSinceStart = Math.floor((nowInUserTz.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
-            const periodIndex = Math.floor(daysSinceStart / 3)
-            
-            // Calculate the start date of this 3-day period
-            const periodStart = new Date(nowInUserTz)
-            periodStart.setDate(periodStart.getDate() - (periodIndex * 3))
-            
-            const periodKey = `${monthNames[periodStart.getMonth()]} ${periodStart.getDate()}`
-            periodsData.set(periodKey, (periodsData.get(periodKey) || 0) + crawls)
-          }
-        })
-        
-        // Generate chart data for the last 10 periods (30 days / 3)
-        for (let periodsAgo = 9; periodsAgo >= 0; periodsAgo--) {
-          const periodTime = new Date(nowInUserTz)
-          periodTime.setDate(periodTime.getDate() - (periodsAgo * 3))
-          
-          const periodKey = `${monthNames[periodTime.getMonth()]} ${periodTime.getDate()}`
-          const crawls = periodsData.get(periodKey) || 0
-          
-          chartData.push({
-            date: periodKey,
-            crawls,
-            isCurrentPeriod: periodsAgo === 0
-          })
-        }
-        
-      } else {
-        // For 7 days, show daily data
-        for (let daysAgo = daysToShow - 1; daysAgo >= 0; daysAgo--) {
+      if (timeframe.toLowerCase() === 'last 7 days') {
+        // Show all 7 days with daily granularity
+        for (let daysAgo = 6; daysAgo >= 0; daysAgo--) {
           const dayTime = new Date(nowInUserTz)
           dayTime.setDate(dayTime.getDate() - daysAgo)
           
-          const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
           const dayKey = `${monthNames[dayTime.getMonth()]} ${dayTime.getDate()}`
           const crawls = timeAggregates.get(dayKey) || 0
           
           chartData.push({
             date: dayKey,
             crawls,
-            isCurrentPeriod: daysAgo === 0 // Mark current day for animation
+            isCurrentPeriod: daysAgo === 0,
+            showLabel: true // Show all labels for 7 days
+          })
+        }
+        
+      } else if (timeframe.toLowerCase() === 'last 30 days') {
+        // Show all 30 days but only label every 5th day to avoid clutter
+        for (let daysAgo = 29; daysAgo >= 0; daysAgo--) {
+          const dayTime = new Date(nowInUserTz)
+          dayTime.setDate(dayTime.getDate() - daysAgo)
+          
+          const dayKey = `${monthNames[dayTime.getMonth()]} ${dayTime.getDate()}`
+          const crawls = timeAggregates.get(dayKey) || 0
+          
+          chartData.push({
+            date: dayKey,
+            crawls,
+            isCurrentPeriod: daysAgo === 0,
+            showLabel: daysAgo % 5 === 0 || daysAgo === 0 // Label every 5th day + current day
+          })
+        }
+        
+      } else if (timeframe.toLowerCase() === 'last 90 days') {
+        // Show all 90 days but only label every 14th day (weekly-ish)
+        for (let daysAgo = 89; daysAgo >= 0; daysAgo--) {
+          const dayTime = new Date(nowInUserTz)
+          dayTime.setDate(dayTime.getDate() - daysAgo)
+          
+          const dayKey = `${monthNames[dayTime.getMonth()]} ${dayTime.getDate()}`
+          const crawls = timeAggregates.get(dayKey) || 0
+          
+          chartData.push({
+            date: dayKey,
+            crawls,
+            isCurrentPeriod: daysAgo === 0,
+            showLabel: daysAgo % 14 === 0 || daysAgo === 0 // Label every 2 weeks + current day
+          })
+        }
+        
+      } else if (timeframe.toLowerCase() === 'last 365 days') {
+        // Show all 365 days but only label every 30th day (monthly-ish)
+        for (let daysAgo = 364; daysAgo >= 0; daysAgo--) {
+          const dayTime = new Date(nowInUserTz)
+          dayTime.setDate(dayTime.getDate() - daysAgo)
+          
+          const dayKey = `${monthNames[dayTime.getMonth()]} ${dayTime.getDate()}`
+          const crawls = timeAggregates.get(dayKey) || 0
+          
+          chartData.push({
+            date: dayKey,
+            crawls,
+            isCurrentPeriod: daysAgo === 0,
+            showLabel: daysAgo % 30 === 0 || daysAgo === 0 // Label every month + current day
           })
         }
       }
@@ -500,7 +561,7 @@ export async function GET(request: Request) {
       icon: getCrawlerIcon(crawler.company)
     }))
 
-    const totalCrawls = visits?.length || 0
+    const totalCrawls = currentPeriodVisits?.length || 0
 
     console.log(`[Dashboard API] Returning ${totalCrawls} total crawls, ${availableCrawlersWithIcons.length} unique crawlers`)
 
@@ -508,7 +569,8 @@ export async function GET(request: Request) {
       chartData,
       availableCrawlers: availableCrawlersWithIcons,
       totalCrawls,
-      timeframe
+      timeframe,
+      periodComparison
     })
 
   } catch (error) {

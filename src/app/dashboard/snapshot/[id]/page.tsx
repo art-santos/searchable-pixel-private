@@ -47,6 +47,7 @@ import {
   type VisibilityResult,
   type TechnicalChecklistItem
 } from '@/lib/api/enhanced-snapshots';
+import { SnapshotReportSkeleton, SnapshotProcessingSkeleton } from '@/components/skeletons';
 
 type TabType = 'visibility' | 'technical';
 
@@ -314,81 +315,7 @@ export default function EnhancedSnapshotReportPage() {
   );
 
   if (loading) {
-    return (
-      <main className="min-h-screen bg-[#0c0c0c]">
-        <div className="max-w-7xl mx-auto p-6">
-          {/* Header */}
-          <div className="flex items-center gap-4 mb-8">
-            <Link
-              href="/dashboard/snapshot"
-              className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span className="text-sm">Return to snapshots</span>
-            </Link>
-      </div>
-
-          {/* Loading State */}
-          <div className="space-y-6">
-            <div className="bg-zinc-900/20 border border-zinc-800 rounded-lg p-6">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 animate-spin rounded-full border border-zinc-500 border-t-transparent" />
-                  <span className="text-xs text-zinc-400 uppercase tracking-wider font-medium">Loading</span>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="w-72 h-4 bg-zinc-800 rounded animate-pulse"></div>
-                <div className="w-48 h-6 bg-zinc-700 rounded animate-pulse"></div>
-              </div>
-            </div>
-
-            {/* Skeleton Results */}
-            <div className="py-8">
-              <div className="grid grid-cols-12 gap-12 items-center">
-                <div className="col-span-12 lg:col-span-4 flex items-center justify-center">
-                  <div className="relative w-64 h-64">
-                    <svg className="w-64 h-64 transform -rotate-90" viewBox="0 0 100 100">
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        stroke="currentColor"
-                        strokeWidth="6"
-                        fill="none"
-                        className="text-zinc-800"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-6 h-6 animate-spin rounded-full border border-zinc-600 border-t-transparent" />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="col-span-12 lg:col-span-8 space-y-6">
-                  <div className="space-y-4">
-                    <div className="w-48 h-4 bg-zinc-800 rounded animate-pulse"></div>
-                    <div className="w-3/4 h-8 bg-zinc-700 rounded animate-pulse"></div>
-                    <div className="w-full h-4 bg-zinc-800 rounded animate-pulse"></div>
-                    <div className="w-2/3 h-4 bg-zinc-800 rounded animate-pulse"></div>
-                  </div>
-
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div key={i}>
-                        <div className="w-20 h-3 bg-zinc-800 rounded animate-pulse mb-2"></div>
-                        <div className="w-12 h-6 bg-zinc-700 rounded animate-pulse"></div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-    );
+    return <SnapshotReportSkeleton />
   }
 
   if (error || !snapshot) {
@@ -493,27 +420,7 @@ export default function EnhancedSnapshotReportPage() {
 
               {/* Processing Steps */}
             {snapshot.status === 'processing' && (
-                <div className="space-y-3">
-                  <div className="text-zinc-400 text-sm font-medium mb-3">Processing Steps:</div>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="w-4 h-4 text-emerald-400" />
-                      <span className="text-sm text-zinc-300">Page content scraped</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 animate-spin rounded-full border border-zinc-500 border-t-transparent" />
-                      <span className="text-sm text-zinc-300">Running AI visibility tests</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Clock className="w-4 h-4 text-zinc-500" />
-                      <span className="text-sm text-zinc-500">Technical health audit</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Clock className="w-4 h-4 text-zinc-500" />
-                      <span className="text-sm text-zinc-500">Generating insights</span>
-                    </div>
-                  </div>
-                </div>
+                <SnapshotProcessingSkeleton />
               )}
 
               {snapshot.status === 'pending' && (

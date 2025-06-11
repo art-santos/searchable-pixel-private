@@ -156,15 +156,32 @@ export async function GET(request: Request) {
       
       console.log(`🔍 [Crawler Stats API] Total records to fetch: ${count}`)
       
-      // Fetch data in chunks of 1000 (Supabase's limit)
+      // Fetch data in chunks of 1000 (Supabase's limit) - CONCURRENTLY
       const chunkSize = 1000
       const totalChunks = Math.ceil((count || 0) / chunkSize)
       
-      for (let i = 0; i < totalChunks; i++) {
+      // Create all chunk promises at once - each with a fresh query
+      const chunkPromises = Array.from({ length: totalChunks }, (_, i) => {
         const start = i * chunkSize
         const end = start + chunkSize - 1
         
-        const { data: chunk, error: chunkError } = await query.range(start, end)
+        // Create a fresh query for each chunk to avoid conflicts
+        let chunkQuery = supabase
+          .from('crawler_visits')
+          .select('crawler_name, crawler_company, timestamp')
+          .gte('timestamp', startDate.toISOString())
+          .order('timestamp', { ascending: true })
+          .eq('workspace_id', workspaceId)
+        
+        return chunkQuery.range(start, end)
+      })
+      
+      // Fetch all chunks concurrently
+      const chunkResults = await Promise.all(chunkPromises)
+      
+      // Process results and handle errors
+      for (let i = 0; i < chunkResults.length; i++) {
+        const { data: chunk, error: chunkError } = chunkResults[i]
         
         if (chunkError) {
           console.error(`🔍 [Crawler Stats API] Error fetching chunk ${i + 1}/${totalChunks}:`, chunkError)

@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { Loader2, ArrowLeft, CheckCircle, XCircle } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
+import { PlanType } from "@/lib/subscription/config"
 
 interface CrawlerPage {
   path: string
@@ -37,7 +38,32 @@ export default function CompanyCrawlerPage() {
   const params = useParams()
   const company = params.company as string
   const [error, setError] = useState<string | null>(null)
+  const [userPlan, setUserPlan] = useState<PlanType>('starter')
+  const [userPlanLoading, setUserPlanLoading] = useState(true)
   
+  // Fetch user subscription plan
+  useEffect(() => {
+    const fetchUserPlan = async () => {
+      try {
+        const response = await fetch('/api/user/subscription')
+        if (response.ok) {
+          const data = await response.json()
+          const plan = data.subscriptionPlan || 'starter'
+          console.log('🔍 [CompanyCrawlerPage] Fetched user plan:', plan, 'isAdmin:', data.isAdmin)
+          setUserPlan(plan as PlanType)
+        } else {
+          console.error('Failed to fetch user plan, response not ok')
+        }
+      } catch (error) {
+        console.error('Error fetching user plan:', error)
+      } finally {
+        setUserPlanLoading(false)
+      }
+    }
+
+    fetchUserPlan()
+  }, [])
+
   useEffect(() => {
     if (currentWorkspace && company) {
       fetchCompanyData()
@@ -185,13 +211,17 @@ export default function CompanyCrawlerPage() {
               )}
             </div>
             <div className="flex items-center gap-4">
-              <TimeframeSelector 
-                title=""
-                timeframe={timeframe}
-                onTimeframeChange={setTimeframe}
-                titleColor="text-white"
-                selectorColor="text-[#A7A7A7]"
-              />
+              {!userPlanLoading && (
+                <TimeframeSelector 
+                  key={userPlan}
+                  title=""
+                  timeframe={timeframe}
+                  onTimeframeChange={setTimeframe}
+                  titleColor="text-white"
+                  selectorColor="text-[#A7A7A7]"
+                  userPlan={userPlan}
+                />
+              )}
               <button className="text-sm text-[#888] hover:text-white transition-colors font-medium px-4 py-2 rounded-lg border border-[#2a2a2a] hover:border-[#444] bg-[#111] hover:bg-[#1a1a1a]">
                 Export Data
               </button>

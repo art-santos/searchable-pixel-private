@@ -4,18 +4,9 @@ import { motion, useReducedMotion } from "framer-motion"
 import { TimeframeSelector, TimeframeOption } from "@/components/custom/timeframe-selector"
 import { useState, useEffect } from "react"
 import { useWorkspace } from "@/contexts/WorkspaceContext"
-import { useAuth } from "@/contexts/AuthContext"
 import { Loader2, BarChart3 } from "lucide-react"
 import { PlanType } from "@/lib/subscription/config"
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-  Tooltip,
-} from 'recharts'
+import { CrawlerVisitsChart } from "@/components/charts/crawler-visits-chart"
 
 interface CrawlerLog {
   id: number
@@ -28,10 +19,10 @@ interface CrawlerLog {
   crawler: string
 }
 
-interface ChartDataPoint {
-  date: string
-  crawls: number
-  isCurrentPeriod?: boolean
+interface PeriodComparison {
+  hasComparison: boolean
+  percentChange?: number
+  trend?: 'up' | 'down' | 'same'
 }
 
 const crawlerLogs: CrawlerLog[] = [
@@ -117,55 +108,17 @@ const crawlerLogs: CrawlerLog[] = [
   }
 ]
 
-// Custom tooltip for the chart
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    const isCurrentPeriod = payload[0].payload?.isCurrentPeriod
-    
-    return (
-      <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333333] px-3 py-2 rounded-lg shadow-md">
-        <p className="font-mono text-sm text-black dark:text-white">
-          {payload[0].value} crawls
-          {isCurrentPeriod && (
-            <span className="ml-2 text-xs text-green-500">● LIVE</span>
-          )}
-        </p>
-        <p className="font-mono text-xs text-gray-500 dark:text-[#666666]">{label}</p>
-      </div>
-    )
-  }
-  return null
-}
 
-// Custom dot for current period
-const CustomDot = (props: any) => {
-  const { cx, cy, payload } = props
-  if (payload?.isCurrentPeriod) {
-    return (
-      <circle
-        cx={cx}
-        cy={cy}
-        r={4}
-        fill="currentColor"
-        stroke="var(--background)"
-        strokeWidth={2}
-        className="animate-pulse"
-      />
-    )
-  }
-  return null
-}
 
 export function CrawlerActivityCard() {
   const shouldReduceMotion = useReducedMotion()
   const [timeframe, setTimeframe] = useState<TimeframeOption>('Last 24 hours')
   const { currentWorkspace, switching } = useWorkspace()
-  const { session } = useAuth()
-  const [isLoading, setIsLoading] = useState(false)
-  const [chartData, setChartData] = useState<ChartDataPoint[]>([])
   const [showChart, setShowChart] = useState(true)
   const [userPlan, setUserPlan] = useState<PlanType>('starter')
   const [userPlanLoading, setUserPlanLoading] = useState(true)
+  const [periodComparison, setPeriodComparison] = useState<PeriodComparison | null>(null)
+  const [totalCrawls, setTotalCrawls] = useState(0)
 
   const cardVariants = shouldReduceMotion 
     ? { hidden: {}, visible: {} }
@@ -202,64 +155,11 @@ export function CrawlerActivityCard() {
     console.log('🔍 [CrawlerActivityCard] userPlan state updated to:', userPlan)
   }, [userPlan])
 
-  // Fetch chart data
-  useEffect(() => {
-    const fetchChartData = async () => {
-      if (!currentWorkspace) return
-
-      setIsLoading(true)
-      try {
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-        const response = await fetch(`/api/dashboard/crawler-visits?timeframe=${encodeURIComponent(timeframe)}&crawler=all&timezone=${encodeURIComponent(timezone)}&workspaceId=${currentWorkspace.id}`, {
-          headers: {
-            'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
-          }
-        })
-        
-        if (response.ok) {
-          const data = await response.json()
-          setChartData(data.chartData || [])
-        } else {
-          console.log('API response not ok, using fallback data')
-          // Fallback sample data
-          const fallbackData = [
-            { date: 'Hour 1', crawls: 12 },
-            { date: 'Hour 2', crawls: 19 },
-            { date: 'Hour 3', crawls: 8 },
-            { date: 'Hour 4', crawls: 24 },
-            { date: 'Hour 5', crawls: 15 },
-            { date: 'Hour 6', crawls: 31 },
-            { date: 'Hour 7', crawls: 22 },
-            { date: 'Hour 8', crawls: 18 },
-          ]
-          console.log('Setting fallback chart data:', fallbackData)
-          setChartData(fallbackData)
-        }
-      } catch (error) {
-        console.error('Error fetching chart data:', error)
-        // Fallback sample data
-        setChartData([
-          { date: 'Hour 1', crawls: 12 },
-          { date: 'Hour 2', crawls: 19 },
-          { date: 'Hour 3', crawls: 8 },
-          { date: 'Hour 4', crawls: 24 },
-          { date: 'Hour 5', crawls: 15 },
-          { date: 'Hour 6', crawls: 31 },
-          { date: 'Hour 7', crawls: 22 },
-          { date: 'Hour 8', crawls: 18 },
-        ])
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchChartData()
-  }, [timeframe, currentWorkspace, session])
-
-  // Debug log for chart data
-  useEffect(() => {
-    console.log('Chart data updated:', chartData)
-  }, [chartData])
+  // Handle data updates from the shared chart component
+  const handleChartDataChange = (data: { totalCrawls: number; periodComparison: PeriodComparison | null }) => {
+    setTotalCrawls(data.totalCrawls)
+    setPeriodComparison(data.periodComparison)
+  }
 
   return (
     <>
@@ -296,6 +196,25 @@ export function CrawlerActivityCard() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <h3 className="text-lg font-semibold text-black dark:text-white mb-1">Crawler Activity</h3>
+                                    {periodComparison?.hasComparison && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.3, duration: 0.3 }}
+                      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
+                        periodComparison.trend === 'up' 
+                          ? 'bg-green-500/20 text-green-600 dark:bg-green-500/20 dark:text-green-400' 
+                          : periodComparison.trend === 'down'
+                          ? 'bg-red-500/20 text-red-600 dark:bg-red-500/20 dark:text-red-400'
+                          : 'bg-gray-500/20 text-gray-600 dark:bg-gray-500/20 dark:text-gray-400'
+                      }`}
+                    >
+                      {periodComparison.percentChange !== undefined 
+                        ? `${periodComparison.percentChange > 0 ? '+' : ''}${Math.round(periodComparison.percentChange).toLocaleString()}%`
+                        : 'NEW'
+                      }
+                    </motion.div>
+                  )}
                   <button
                     onClick={() => setShowChart(!showChart)}
                     className="p-1 rounded hover:bg-gray-100 dark:hover:bg-[#1a1a1a] transition-colors"
@@ -343,59 +262,11 @@ export function CrawlerActivityCard() {
               ) : showChart ? (
                 /* Chart View */
                 <div className="h-full p-4">
-                  {isLoading ? (
-                    <div className="flex items-center justify-center h-full">
-                      <Loader2 className="animate-spin h-8 w-8 text-black dark:text-white" />
-                    </div>
-                  ) : (
-                    <div className="h-full w-full relative text-gray-800 dark:text-gray-300">
-                      <div className="h-full w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart
-                            data={chartData}
-                            margin={{ top: 30, right: 40, left: 10, bottom: 40 }}
-                          >
-                            <defs>
-                              <linearGradient id="crawlerGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="currentColor" stopOpacity={0.15} />
-                                <stop offset="100%" stopColor="currentColor" stopOpacity={0} />
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid
-                              vertical={false}
-                              horizontal={true}
-                              strokeDasharray="4 4"
-                              stroke="currentColor"
-                              opacity={0.4}
-                            />
-                            <XAxis
-                              dataKey="date"
-                              axisLine={{ stroke: 'currentColor' }}
-                              tickLine={{ stroke: 'currentColor' }}
-                              tick={{ fill: 'currentColor', fontSize: 12 }}
-                            />
-                            <YAxis
-                              axisLine={{ stroke: 'currentColor' }}
-                              tickLine={{ stroke: 'currentColor' }}
-                              tick={{ fill: 'currentColor', fontSize: 12 }}
-                              width={60}
-                              domain={[0, (dataMax: number) => dataMax * 1.5]}
-                            />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Area
-                              type="linear"
-                              dataKey="crawls"
-                              stroke="currentColor"
-                              strokeWidth={2}
-                              fill="url(#crawlerGradient)"
-                              dot={<CustomDot />}
-                              activeDot={{ r: 6, stroke: 'currentColor', strokeWidth: 2, fill: 'var(--background)' }}
-                            />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  )}
+                  <CrawlerVisitsChart 
+                    timeframe={timeframe}
+                    onDataChange={handleChartDataChange}
+                    className="h-full"
+                  />
                 </div>
               ) : (
                 /* Log Entries View */
@@ -408,12 +279,7 @@ export function CrawlerActivityCard() {
                     }}
                   >
                     <div className="space-y-3">
-                      {isLoading ? (
-                        <div className="flex justify-center items-center h-full">
-                          <Loader2 className="animate-spin h-8 w-8 text-black dark:text-white" />
-                        </div>
-                      ) : (
-                        crawlerLogs.map((log, index) => (
+                      {crawlerLogs.map((log, index) => (
                           <div key={log.id} className="group/item">
                             <div className="flex items-center justify-between py-2 px-0 rounded-lg hover:bg-gray-50 dark:hover:bg-[#0f0f0f] transition-all duration-200">
                               <div className="flex-1 min-w-0">
@@ -436,7 +302,7 @@ export function CrawlerActivityCard() {
                             </div>
                           </div>
                         ))
-                      )}
+                      }
                     </div>
                   </div>
                   
