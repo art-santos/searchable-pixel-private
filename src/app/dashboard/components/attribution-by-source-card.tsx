@@ -270,21 +270,21 @@ export function AttributionBySourceCard() {
       }
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="h-full flex flex-col bg-white dark:bg-transparent border-gray-200 dark:border-[#1a1a1a]">
       <motion.div
         initial="hidden"
         animate="visible"
         variants={cardVariants}
         className="h-full flex flex-col"
       >
-        <CardHeader className="pb-4 pt-4 pl-6 flex-shrink-0 border-b border-[#1a1a1a]">
+        <CardHeader className="pb-4 pt-4 pl-6 flex-shrink-0 border-b border-gray-200 dark:border-[#1a1a1a]">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-1">
+              <h3 className="text-lg font-semibold text-black dark:text-white mb-1">
                 Attribution by Source
               </h3>
               {isConnected && totalCrawls > 0 && (
-                <p className="text-sm text-[#666]">
+                <p className="text-sm text-gray-500 dark:text-[#666]">
                   {totalCrawls.toLocaleString()} crawls tracked
                 </p>
               )}
@@ -501,13 +501,13 @@ export function AttributionBySourceCard() {
               {/* Empty state message - absolute positioned overlay */}
               <div className="absolute inset-0 flex items-center justify-center z-10">
                 <div className="text-center max-w-sm">
-                  <h4 className="text-white font-medium mb-2">No data yet</h4>
-                  <p className="text-[#666] text-sm mb-6 leading-relaxed">
+                  <h4 className="text-black dark:text-white font-medium mb-2">No data yet</h4>
+                  <p className="text-gray-600 dark:text-[#666] text-sm mb-6 leading-relaxed">
                     Track which AI engines are viewing your content most frequently
                   </p>
                   <button 
                     onClick={() => setShowConnectDialog(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-white text-black rounded-md text-sm font-medium hover:bg-gray-100 transition-colors"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
                   >
                     <LinkIcon className="w-4 h-4" />
                     Connect Analytics

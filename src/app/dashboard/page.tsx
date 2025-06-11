@@ -70,15 +70,15 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center bg-[#0c0c0c]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent text-white" />
+      <div className="flex h-full items-center justify-center bg-white dark:bg-[#0c0c0c]">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent text-black dark:text-white" />
       </div>
     )
   }
 
   return (
     <motion.main 
-      className="min-h-screen bg-[#0c0c0c] pl-6 pr-4 md:pr-6 lg:pr-8 pb-8 md:pb-12"
+      className="min-h-screen bg-white dark:bg-[#0c0c0c] pl-6 pr-4 md:pr-6 lg:pr-8 pb-8 md:pb-12"
       initial="hidden"
       animate="visible"
       variants={containerVariants}

@@ -207,7 +207,7 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
         <DropdownMenuTrigger asChild>
           <Button 
             variant="outline" 
-            className={`border border-[#333333] bg-transparent hover:bg-[#1a1a1a] rounded-none ${
+            className={`border border-gray-300 dark:border-[#333333] bg-transparent hover:bg-gray-50 dark:hover:bg-[#1a1a1a] rounded-none ${
               position === 'topbar' 
                 ? 'h-8 px-3 text-sm' 
                 : 'w-fit px-2'
@@ -229,15 +229,15 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
                   }}
                 />
               </div>
-              <span className="font-geist-semi text-white">{getDisplayDomain()}</span>
-              <ChevronDown className={`text-[#666666] ${
+              <span className="font-geist-semi text-black dark:text-white">{getDisplayDomain()}</span>
+              <ChevronDown className={`text-gray-500 dark:text-[#666666] ${
                 position === 'topbar' ? 'h-3 w-3' : 'h-4 w-4'
               }`} />
             </div>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent 
-          className="bg-[#1a1a1a] border border-[#333333] text-white rounded-none"
+          className="bg-white dark:bg-[#1a1a1a] border border-gray-300 dark:border-[#333333] text-black dark:text-white rounded-none"
           align={position === 'topbar' ? 'end' : 'start'}
           alignOffset={-1}
         >
@@ -245,7 +245,7 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
           {workspaces.map((workspace) => (
             <DropdownMenuItem 
               key={workspace.id}
-              className="hover:bg-[#222222] rounded-none cursor-pointer"
+              className="hover:bg-gray-100 dark:hover:bg-[#222222] rounded-none cursor-pointer"
               onClick={() => handleWorkspaceSwitch(workspace)}
             >
               <div className="flex items-center gap-2 w-full">

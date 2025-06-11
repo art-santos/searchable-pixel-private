@@ -99,12 +99,12 @@ export function TimeframeSelector({
           >
             <div className="flex items-center gap-2">
               <span className={`font-geist-semi ${selectorColor}`}>{timeframe}</span>
-              <ChevronDown className="h-4 w-4 text-[#666666]" />
+              <ChevronDown className="h-4 w-4 text-gray-400 dark:text-[#666666]" />
             </div>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent 
-          className="bg-[#1a1a1a] border border-[#333333] text-white rounded-none mt-1"
+          className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333333] text-black dark:text-white rounded-none mt-1"
           align="start"
           alignOffset={0}
         >
@@ -115,24 +115,24 @@ export function TimeframeSelector({
             return (
           <DropdownMenuItem 
                 key={option}
-                className={`hover:bg-[#222222] rounded-none flex items-center justify-between ${
+                className={`hover:bg-gray-100 dark:hover:bg-[#222222] rounded-none flex items-center justify-between ${
                   !isAllowed ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
                 onClick={() => isAllowed && onTimeframeChange(option)}
                 disabled={!isAllowed}
           >
                 <span className="text-sm">{option}</span>
-                {!isAllowed && <Lock className="h-3 w-3 text-[#666]" />}
+                {!isAllowed && <Lock className="h-3 w-3 text-gray-400 dark:text-[#666]" />}
           </DropdownMenuItem>
             )
           })}
           
           {currentPlan === 'starter' && (
             <>
-              <div className="border-t border-[#333] my-1" />
+              <div className="border-t border-gray-200 dark:border-[#333] my-1" />
               <div className="px-3 py-2">
-                <p className="text-xs text-[#666] mb-1">Need longer timeframes?</p>
-                <p className="text-xs text-blue-400 hover:text-blue-300 cursor-pointer">
+                <p className="text-xs text-gray-500 dark:text-[#666] mb-1">Need longer timeframes?</p>
+                <p className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer">
                   Upgrade to Pro or Team →
                 </p>
               </div>

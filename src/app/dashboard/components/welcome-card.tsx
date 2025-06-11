@@ -228,7 +228,7 @@ export function WelcomeCard() {
       icon: Activity, 
       label: "Crawler Attribution", 
       desc: crawlerStats?.total_visits ? "View detailed attribution insights" : "Monitor AI crawler activity", 
-      href: "/dashboard",
+      href: "/dashboard/attribution",
       primary: true
     },
     { 
@@ -248,7 +248,7 @@ export function WelcomeCard() {
   ]
 
   return (
-    <Card className="bg-transparent border-[#1a1a1a] h-full">
+    <Card className="bg-transparent border-gray-200 dark:border-[#1a1a1a] h-full">
       <CardContent className="p-8 h-full">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -257,19 +257,19 @@ export function WelcomeCard() {
         >
           {/* Welcome Section */}
           <div className="mb-8">
-            <h1 className="text-3xl font-medium text-white mb-3 font-mono tracking-tight">
+            <h1 className="text-3xl font-medium text-black dark:text-white mb-3 font-mono tracking-tight">
               Welcome back, {getDisplayName()}
             </h1>
-            <p className="text-[#888] text-lg leading-relaxed mb-4 max-w-2xl">
+            <p className="text-gray-600 dark:text-[#888] text-lg leading-relaxed mb-4 max-w-2xl">
               {getWelcomeMessage(crawlerStats)}
             </p>
             
             {/* Crawler Stats Badge or Empty State */}
             <div className="flex items-center gap-3 mb-6">
               {loadingStats ? (
-                <div className="flex items-center gap-2 bg-[#111] border border-[#1a1a1a] rounded-sm px-3 py-2">
-                  <div className="w-2 h-2 bg-[#333] rounded-full animate-pulse"></div>
-                  <span className="text-sm text-[#666] font-mono tracking-tight">
+                <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#111] border border-gray-200 dark:border-[#1a1a1a] rounded-sm px-3 py-2">
+                  <div className="w-2 h-2 bg-gray-300 dark:bg-[#333] rounded-full animate-pulse"></div>
+                  <span className="text-sm text-gray-500 dark:text-[#666] font-mono tracking-tight">
                     Loading activity...
                   </span>
                 </div>
@@ -277,7 +277,7 @@ export function WelcomeCard() {
                 <>
                   {/* Latest crawl in card */}
                   {latestCrawl && (
-                    <div className="flex items-center gap-2 bg-[#111] border border-[#1a1a1a] rounded-sm px-3 py-2">
+                    <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#111] border border-gray-200 dark:border-[#1a1a1a] rounded-sm px-3 py-2">
                       <img 
                         src={getFaviconForCompany(latestCrawl.company)}
                         alt={latestCrawl.company}
@@ -291,11 +291,11 @@ export function WelcomeCard() {
                           if (fallback) fallback.style.display = 'block'
                         }}
                       />
-                      <Bot className="w-4 h-4 text-[#666] hidden" />
-                      <span className="text-sm text-white font-mono tracking-tight">
+                      <Bot className="w-4 h-4 text-gray-500 dark:text-[#666] hidden" />
+                      <span className="text-sm text-black dark:text-white font-mono tracking-tight">
                         {latestCrawl.crawler_name}
                       </span>
-                      <span className="text-xs text-[#666] font-mono tracking-tight">
+                      <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">
                         • {getTimeSinceLastCrawl(latestCrawl.timestamp)}
                       </span>
                     </div>
@@ -303,16 +303,16 @@ export function WelcomeCard() {
                 </>
               ) : (
                 <>
-                  <div className="flex items-center gap-2 bg-[#111] border border-[#1a1a1a] border-dashed rounded-sm px-3 py-2">
-                    <Bot className="w-4 h-4 text-[#666]" />
-                    <span className="text-sm text-[#666] font-mono tracking-tight">
+                  <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#111] border border-gray-300 dark:border-[#1a1a1a] border-dashed rounded-sm px-3 py-2">
+                    <Bot className="w-4 h-4 text-gray-500 dark:text-[#666]" />
+                    <span className="text-sm text-gray-500 dark:text-[#666] font-mono tracking-tight">
                       No crawler activity yet
                     </span>
                   </div>
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="bg-transparent border-[#333] text-[#888] hover:text-white hover:border-[#444] h-8 px-3 text-xs font-mono tracking-tight"
+                    className="bg-transparent border-gray-300 dark:border-[#333] text-gray-600 dark:text-[#888] hover:text-black dark:hover:text-white hover:border-gray-400 dark:hover:border-[#444] h-8 px-3 text-xs font-mono tracking-tight"
                     onClick={() => setShowConnectDialog(true)}
                   >
                     <div className="flex items-center gap-1">
@@ -328,7 +328,7 @@ export function WelcomeCard() {
           {/* Quick Actions */}
           <div className="flex-1">
             <div className="mb-4">
-              <h2 className="text-sm text-[#666] font-mono tracking-tight uppercase">Quick Actions</h2>
+              <h2 className="text-sm text-gray-500 dark:text-[#666] font-mono tracking-tight uppercase">Quick Actions</h2>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -341,23 +341,23 @@ export function WelcomeCard() {
                 >
                   <Link
                     href={action.href}
-                    className={`group block p-4 bg-[#111] border border-[#1a1a1a] hover:border-[#333] hover:bg-[#151515] transition-all duration-200 rounded-sm ${
+                    className={`group block p-4 bg-white dark:bg-[#111] border border-gray-200 dark:border-[#1a1a1a] hover:border-gray-300 dark:hover:border-[#333] hover:bg-gray-50 dark:hover:bg-[#151515] transition-all duration-200 rounded-sm ${
                       action.primary ? 'md:col-span-2' : ''
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-[#1a1a1a] rounded-sm flex items-center justify-center group-hover:bg-[#222] transition-colors">
-                        <action.icon className="w-4 h-4 text-[#666] group-hover:text-white transition-colors" />
+                      <div className="w-8 h-8 bg-gray-100 dark:bg-[#1a1a1a] rounded-sm flex items-center justify-center group-hover:bg-gray-200 dark:group-hover:bg-[#222] transition-colors">
+                        <action.icon className="w-4 h-4 text-gray-500 dark:text-[#666] group-hover:text-black dark:group-hover:text-white transition-colors" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-medium text-white group-hover:text-white transition-colors font-mono tracking-tight mb-1">
+                        <h3 className="text-sm font-medium text-black dark:text-white group-hover:text-black dark:group-hover:text-white transition-colors font-mono tracking-tight mb-1">
                           {action.label}
                         </h3>
-                        <p className="text-xs text-[#666] group-hover:text-[#888] transition-colors">
+                        <p className="text-xs text-gray-500 dark:text-[#666] group-hover:text-gray-600 dark:group-hover:text-[#888] transition-colors">
                           {action.desc}
                         </p>
                       </div>
-                      <ArrowRight className="w-3 h-3 text-[#444] group-hover:text-[#666] transition-colors mt-0.5" />
+                      <ArrowRight className="w-3 h-3 text-gray-400 dark:text-[#444] group-hover:text-gray-500 dark:group-hover:text-[#666] transition-colors mt-0.5" />
                     </div>
                   </Link>
                 </motion.div>
@@ -366,12 +366,12 @@ export function WelcomeCard() {
           </div>
 
           {/* Footer Actions */}
-          <div className="mt-8 pt-6 border-t border-[#1a1a1a]">
+          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-[#1a1a1a]">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <Link 
                   href="/changelog" 
-                  className="text-xs text-[#666] hover:text-white transition-colors font-mono tracking-tight flex items-center gap-1"
+                  className="text-xs text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white transition-colors font-mono tracking-tight flex items-center gap-1"
                 >
                   <Rocket className="w-3 h-3" />
                   What's New
@@ -380,13 +380,13 @@ export function WelcomeCard() {
                   href="https://cal.com/sam-hogan/15min" 
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-[#666] hover:text-white transition-colors font-mono tracking-tight flex items-center gap-1"
+                  className="text-xs text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white transition-colors font-mono tracking-tight flex items-center gap-1"
                 >
                   <HelpCircle className="w-3 h-3" />
                   Get Support
                 </a>
               </div>
-              <div className="text-xs text-[#666] font-mono tracking-tight">
+              <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">
                 {crawlerStats?.total_visits ? `${crawlerStats.total_visits} AI crawler visits (24h)` : 'Ready to track AI crawlers'}
               </div>
             </div>

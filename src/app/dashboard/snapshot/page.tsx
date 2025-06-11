@@ -171,8 +171,8 @@ export default function SnapshotPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0c0c0c] flex items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent text-white" />
+      <div className="min-h-screen bg-white dark:bg-[#0c0c0c] flex items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent text-black dark:text-white" />
       </div>
     )
   }
@@ -218,11 +218,11 @@ export default function SnapshotPage() {
         }
       `}</style>
       
-      <div className="min-h-screen bg-[#0c0c0c] flex flex-col items-center justify-center relative px-4">
+      <div className="min-h-screen bg-white dark:bg-[#0c0c0c] flex flex-col items-center justify-center relative px-4">
       {/* History Button */}
       <button
         onClick={() => setShowHistory(!showHistory)}
-        className="absolute top-8 right-8 flex items-center gap-2 px-3 py-2 text-[#888] hover:text-white bg-[#181818] border border-[#333] hover:border-[#444] transition-all duration-200 ease-out hover:scale-105 transform"
+        className="absolute top-8 right-8 flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-[#888] hover:text-black dark:hover:text-white bg-gray-100 dark:bg-[#181818] border border-gray-300 dark:border-[#333] hover:border-gray-400 dark:hover:border-[#444] transition-all duration-200 ease-out hover:scale-105 transform"
       >
         <Clock className="w-4 h-4" />
         <span className="text-sm font-medium">History</span>
@@ -232,8 +232,8 @@ export default function SnapshotPage() {
       <div className="w-full max-w-4xl">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-6xl font-semibold text-white mb-4 tracking-tight" style={{ letterSpacing: '-0.04em' }}>Snapshots</h1>
-          <p className="text-2xl text-[#888] font-medium leading-tighter tracking-tight">
+          <h1 className="text-6xl font-semibold text-black dark:text-white mb-4 tracking-tight" style={{ letterSpacing: '-0.04em' }}>Snapshots</h1>
+          <p className="text-2xl text-gray-600 dark:text-[#888] font-medium leading-tighter tracking-tight">
             The fastest way to see if your content is<br />
             visible, crawlable, and cited by AI models.
           </p>
@@ -249,7 +249,7 @@ export default function SnapshotPage() {
         )}
 
         {/* Unified Command Bar */}
-        <div className="bg-[#181818] border border-[#333] p-6 transform transition-all duration-200 ease-out hover:border-[#444]">
+        <div className="bg-gray-100 dark:bg-[#181818] border border-gray-300 dark:border-[#333] p-6 transform transition-all duration-200 ease-out hover:border-gray-400 dark:hover:border-[#444]">
           <div className="grid grid-cols-2 gap-6">
             {/* Left Column */}
             <div className="space-y-6">
@@ -260,7 +260,7 @@ export default function SnapshotPage() {
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder="www.example.com"
-                  className="w-full bg-transparent text-white placeholder-[#666] text-base focus:outline-none py-2 border-b border-transparent focus:border-[#444] transition-colors"
+                  className="w-full bg-transparent text-black dark:text-white placeholder-gray-500 dark:placeholder-[#666] text-base focus:outline-none py-2 border-b border-transparent focus:border-gray-400 dark:focus:border-[#444] transition-colors"
                 />
               </div>
 
@@ -271,11 +271,11 @@ export default function SnapshotPage() {
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
                   placeholder="Add the query you'd like to test"
-                  className="w-full bg-[#1C1C1C] text-white placeholder-[#666] text-base focus:outline-none h-12 py-3 px-4 rounded-xl transition-all duration-200 ease-out"
+                  className="w-full bg-white dark:bg-[#1C1C1C] text-black dark:text-white placeholder-gray-500 dark:placeholder-[#666] text-base focus:outline-none h-12 py-3 px-4 rounded-xl transition-all duration-200 ease-out"
                 />
                 {topic && (
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <div className="w-2 h-2 bg-[#888] rounded-full"></div>
+                    <div className="w-2 h-2 bg-gray-500 dark:bg-[#888] rounded-full"></div>
                   </div>
                 )}
               </div>
@@ -290,7 +290,7 @@ export default function SnapshotPage() {
                     e.stopPropagation()
                     setShowDropdown(!showDropdown)
                   }}
-                  className="flex items-center gap-3 bg-[#1C1C1C] hover:bg-[#2A2A2A] rounded-xl px-4 h-12 text-white transition-all duration-200 ease-out min-w-[140px] hover:scale-[1.02] transform"
+                  className="flex items-center gap-3 bg-white dark:bg-[#1C1C1C] hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-xl px-4 h-12 text-black dark:text-white transition-all duration-200 ease-out min-w-[140px] hover:scale-[1.02] transform"
                 >
                   <img 
                     src={models.find(m => m.name === selectedModel)?.logo} 
@@ -303,7 +303,7 @@ export default function SnapshotPage() {
                 
                 {/* Dropdown Menu */}
                 <div 
-                  className={`absolute top-full left-0 mt-2 w-full bg-[#1C1C1C] rounded-xl overflow-hidden z-10 transform transition-all duration-200 ease-out origin-top ${
+                  className={`absolute top-full left-0 mt-2 w-full bg-white dark:bg-[#1C1C1C] rounded-xl overflow-hidden z-10 transform transition-all duration-200 ease-out origin-top ${
                     showDropdown ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 -translate-y-1 pointer-events-none'
                   }`}
                   onClick={(e) => e.stopPropagation()}
@@ -320,9 +320,9 @@ export default function SnapshotPage() {
                       disabled={!model.available}
                       className={`w-full flex items-center gap-3 px-4 h-12 text-left transition-all duration-150 ease-out ${
                         model.available 
-                          ? 'hover:bg-[#2A2A2A] text-white' 
-                          : 'text-[#666] cursor-not-allowed'
-                      } ${model.name === selectedModel ? 'bg-[#2A2A2A]' : ''}`}
+                          ? 'hover:bg-gray-100 dark:hover:bg-[#2A2A2A] text-black dark:text-white' 
+                          : 'text-gray-500 dark:text-[#666] cursor-not-allowed'
+                      } ${model.name === selectedModel ? 'bg-gray-100 dark:bg-[#2A2A2A]' : ''}`}
                       style={{
                         transitionDelay: showDropdown ? `${index * 25}ms` : '0ms'
                       }}
@@ -345,7 +345,7 @@ export default function SnapshotPage() {
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting || !rateLimit?.allowed || !topic.trim() || !url.trim()}
-                className="flex items-center justify-center w-12 h-12 bg-[#2A2A2A] hover:bg-[#333] border border-[#444] hover:border-[#555] text-white rounded-xl transition-all duration-200 ease-out disabled:opacity-50 hover:scale-105 active:scale-95 transform"
+                className="flex items-center justify-center w-12 h-12 bg-gray-200 dark:bg-[#2A2A2A] hover:bg-gray-300 dark:hover:bg-[#333] border border-gray-300 dark:border-[#444] hover:border-gray-400 dark:hover:border-[#555] text-black dark:text-white rounded-xl transition-all duration-200 ease-out disabled:opacity-50 hover:scale-105 active:scale-95 transform"
               >
                 {isSubmitting ? (
                   <div className="w-5 h-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -372,7 +372,7 @@ export default function SnapshotPage() {
 
         {/* Usage Info */}
         {rateLimit && (
-          <div className="mt-8 text-center text-[#666] text-sm">
+          <div className="mt-8 text-center text-gray-500 dark:text-[#666] text-sm">
             {rateLimit.requestsToday}/{rateLimit.limit} snapshots used today
           </div>
         )}

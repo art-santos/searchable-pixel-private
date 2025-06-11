@@ -11,7 +11,8 @@ import {
   ArrowLeft,
   Shield,
   BarChart3,
-  AlertCircle
+  AlertCircle,
+  Eye
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSubscription } from '@/hooks/useSubscription'
@@ -159,58 +160,43 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
             exit={{ opacity: 0, y: -10 }}
             className="space-y-6"
           >
-            {/* Header */}
             <div className="text-center space-y-2">
-              <h2 className="text-xl text-white">
+              <h2 className="text-xl text-black dark:text-white">
                 Enable AI Crawler Tracking
               </h2>
-              <p className="text-sm text-[#666]">
-                Track which AI systems are viewing your content
+              <p className="text-sm text-gray-500 dark:text-[#666]">
+                Track which AI crawlers visit your website
               </p>
             </div>
 
-            {/* Plan Usage */}
-            <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="text-white font-medium">Plan Included</div>
-                <div className="text-sm bg-[#1a1a1a] text-[#888] px-2 py-1 rounded font-mono">
-                  {aiLogsIncluded} logs/month
-                </div>
-              </div>
-              <div className="text-sm text-[#666]">
-                Additional logs beyond your plan: <span className="text-[#888] font-mono">$0.008 each</span>
-              </div>
-            </div>
-
-            {/* Features */}
-            <div className="space-y-3">
+            <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#1a1a1a] rounded-lg p-4 space-y-4">
               <div className="flex items-center gap-3 py-3">
-                <div className="w-8 h-8 bg-[#1a1a1a] rounded-lg flex items-center justify-center">
-                  <BarChart3 className="w-4 h-4 text-[#888]" />
+                <div className="w-8 h-8 bg-gray-100 dark:bg-[#1a1a1a] rounded-lg flex items-center justify-center">
+                  <Eye className="w-4 h-4 text-gray-600 dark:text-[#888]" />
                 </div>
                 <div>
-                  <div className="text-sm text-white">Real-time Detection</div>
-                  <div className="text-xs text-[#666]">See AI crawlers as they visit</div>
+                  <div className="text-sm text-black dark:text-white">Real-time Detection</div>
+                  <div className="text-xs text-gray-500 dark:text-[#666]">See AI crawlers as they visit</div>
                 </div>
               </div>
               
               <div className="flex items-center gap-3 py-3">
-                <div className="w-8 h-8 bg-[#1a1a1a] rounded-lg flex items-center justify-center">
-                  <Shield className="w-4 h-4 text-[#888]" />
+                <div className="w-8 h-8 bg-gray-100 dark:bg-[#1a1a1a] rounded-lg flex items-center justify-center">
+                  <BarChart3 className="w-4 h-4 text-gray-600 dark:text-[#888]" />
                 </div>
                 <div>
-                  <div className="text-sm text-white">Source Attribution</div>
-                  <div className="text-xs text-[#666]">Know which AI systems are crawling</div>
+                  <div className="text-sm text-black dark:text-white">Usage Analytics</div>
+                  <div className="text-xs text-gray-500 dark:text-[#666]">Understand AI training patterns</div>
                 </div>
               </div>
               
               <div className="flex items-center gap-3 py-3">
-                <div className="w-8 h-8 bg-[#1a1a1a] rounded-lg flex items-center justify-center">
-                  <CheckCircle2 className="w-4 h-4 text-[#888]" />
+                <div className="w-8 h-8 bg-gray-100 dark:bg-[#1a1a1a] rounded-lg flex items-center justify-center">
+                  <CheckCircle2 className="w-4 h-4 text-gray-600 dark:text-[#888]" />
                 </div>
                 <div>
-                  <div className="text-sm text-white">Full Control</div>
-                  <div className="text-xs text-[#666]">Disable anytime in Settings</div>
+                  <div className="text-sm text-black dark:text-white">Full Control</div>
+                  <div className="text-xs text-gray-500 dark:text-[#666]">Disable anytime in Settings</div>
                 </div>
               </div>
             </div>
@@ -218,7 +204,7 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
             {/* Action */}
             {loadingPayment ? (
               <div className="flex items-center justify-center py-4">
-                <Loader2 className="w-4 h-4 animate-spin text-[#666]" />
+                <Loader2 className="w-4 h-4 animate-spin text-gray-400 dark:text-[#666]" />
               </div>
             ) : (
               <div className="flex gap-3 pt-2">
@@ -226,7 +212,7 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
                   <Button
                     onClick={onBack}
                     variant="outline"
-                    className="flex-1 border-[#1a1a1a] text-[#666] hover:text-white bg-transparent hover:bg-[#1a1a1a]"
+                    className="flex-1 border-gray-200 dark:border-[#1a1a1a] text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white bg-transparent hover:bg-gray-100 dark:hover:bg-[#1a1a1a]"
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Back
@@ -240,7 +226,7 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
                       setStep('payment')
                     }
                   }}
-                  className="flex-1 bg-[#1a1a1a] hover:bg-[#333] border border-[#333] hover:border-[#444] text-white"
+                  className="flex-1 bg-gray-900 dark:bg-[#1a1a1a] hover:bg-gray-800 dark:hover:bg-[#333] border border-gray-300 dark:border-[#333] hover:border-gray-400 dark:hover:border-[#444] text-white"
                   disabled={isEnabling}
                 >
                   {isEnabling ? (
@@ -253,10 +239,10 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
             )}
 
             {error && (
-              <div className="bg-[#1a1a1a] border border-[#333] p-3 rounded-lg">
+              <div className="bg-red-50 dark:bg-[#1a1a1a] border border-red-200 dark:border-[#333] p-3 rounded-lg">
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-[#888] mt-0.5 flex-shrink-0" />
-                  <div className="text-sm text-[#888]">{error}</div>
+                  <AlertCircle className="w-4 h-4 text-red-500 dark:text-[#888] mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-red-700 dark:text-[#888]">{error}</div>
                 </div>
               </div>
             )}
@@ -272,35 +258,35 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
             className="space-y-6"
           >
             <div className="text-center space-y-2">
-              <h2 className="text-xl text-white">
+              <h2 className="text-xl text-black dark:text-white">
                 Add Payment Method
               </h2>
-              <p className="text-sm text-[#666]">
+              <p className="text-sm text-gray-500 dark:text-[#666]">
                 Required for usage beyond {aiLogsIncluded} included logs per month
               </p>
             </div>
 
-            <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4 space-y-4">
+            <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#1a1a1a] rounded-lg p-4 space-y-4">
               <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-[#888]" />
-                <div className="text-sm text-white">Secure & Transparent</div>
+                <Shield className="w-4 h-4 text-gray-600 dark:text-[#888]" />
+                <div className="text-sm text-black dark:text-white">Secure & Transparent</div>
               </div>
               
-              <div className="space-y-2 text-sm text-[#666]">
+              <div className="space-y-2 text-sm text-gray-500 dark:text-[#666]">
                 <div className="flex items-start gap-2">
-                  <div className="w-1 h-1 bg-[#666] rounded-full mt-2 flex-shrink-0"></div>
+                  <div className="w-1 h-1 bg-gray-400 dark:bg-[#666] rounded-full mt-2 flex-shrink-0"></div>
                   <div>Payment securely processed by Stripe</div>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="w-1 h-1 bg-[#666] rounded-full mt-2 flex-shrink-0"></div>
+                  <div className="w-1 h-1 bg-gray-400 dark:bg-[#666] rounded-full mt-2 flex-shrink-0"></div>
                   <div>Only charged for usage above {aiLogsIncluded} included logs/month</div>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="w-1 h-1 bg-[#666] rounded-full mt-2 flex-shrink-0"></div>
+                  <div className="w-1 h-1 bg-gray-400 dark:bg-[#666] rounded-full mt-2 flex-shrink-0"></div>
                   <div>Cancel or disable anytime in Settings</div>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="w-1 h-1 bg-[#666] rounded-full mt-2 flex-shrink-0"></div>
+                  <div className="w-1 h-1 bg-gray-400 dark:bg-[#666] rounded-full mt-2 flex-shrink-0"></div>
                   <div>Real-time usage tracking and alerts</div>
                 </div>
               </div>
@@ -310,14 +296,14 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
               <Button
                 onClick={() => setStep('intro')}
                 variant="outline"
-                className="flex-1 border-[#1a1a1a] text-[#666] hover:text-white bg-transparent hover:bg-[#1a1a1a]"
+                className="flex-1 border-gray-200 dark:border-[#1a1a1a] text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white bg-transparent hover:bg-gray-100 dark:hover:bg-[#1a1a1a]"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
               </Button>
               <Button
                 onClick={handleAddPaymentMethod}
-                className="flex-1 bg-[#1a1a1a] hover:bg-[#333] border border-[#333] hover:border-[#444] text-white"
+                className="flex-1 bg-gray-900 dark:bg-[#1a1a1a] hover:bg-gray-800 dark:hover:bg-[#333] border border-gray-300 dark:border-[#333] hover:border-gray-400 dark:hover:border-[#444] text-white"
               >
                 <CreditCard className="w-4 h-4 mr-2" />
                 Add Payment Method
@@ -325,10 +311,10 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
             </div>
 
             {error && (
-              <div className="bg-[#1a1a1a] border border-[#333] p-3 rounded-lg">
+              <div className="bg-red-50 dark:bg-[#1a1a1a] border border-red-200 dark:border-[#333] p-3 rounded-lg">
                 <div className="flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-[#888] mt-0.5 flex-shrink-0" />
-                  <div className="text-sm text-[#888]">{error}</div>
+                  <AlertCircle className="w-4 h-4 text-red-500 dark:text-[#888] mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-red-700 dark:text-[#888]">{error}</div>
                 </div>
               </div>
             )}
@@ -344,29 +330,29 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
             className="space-y-6"
           >
             <div className="text-center space-y-4">
-              <div className="w-12 h-12 bg-[#1a1a1a] border border-[#333] rounded-lg flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 bg-gray-100 dark:bg-[#1a1a1a] border border-gray-300 dark:border-[#333] rounded-lg flex items-center justify-center mx-auto">
+                <CheckCircle2 className="w-6 h-6 text-black dark:text-white" />
               </div>
               <div>
-                <h2 className="text-xl text-white mb-2">
+                <h2 className="text-xl text-black dark:text-white mb-2">
                   AI Tracking Enabled
                 </h2>
-                <p className="text-sm text-[#666]">
+                <p className="text-sm text-gray-500 dark:text-[#666]">
                   Now set up the code on your {instructions.title} site
                 </p>
               </div>
             </div>
 
-            <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4">
-              <div className="text-sm text-white mb-3">Setup Instructions</div>
+            <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#1a1a1a] rounded-lg p-4">
+              <div className="text-sm text-black dark:text-white mb-3">Setup Instructions</div>
               
               <div className="space-y-3">
                 {instructions.steps.map((step, index) => (
                   <div key={index} className="flex gap-3">
-                    <div className="w-5 h-5 bg-[#1a1a1a] border border-[#333] rounded flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs text-[#888] font-mono">{index + 1}</span>
+                    <div className="w-5 h-5 bg-gray-100 dark:bg-[#1a1a1a] border border-gray-300 dark:border-[#333] rounded flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs text-gray-600 dark:text-[#888] font-mono">{index + 1}</span>
                     </div>
-                    <div className="text-sm text-[#888] leading-relaxed">
+                    <div className="text-sm text-gray-600 dark:text-[#888] leading-relaxed">
                       {step}
                     </div>
                   </div>
@@ -374,10 +360,10 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
               </div>
             </div>
 
-            <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-3">
-              <div className="text-xs text-[#666] text-center">
+            <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#1a1a1a] rounded-lg p-3">
+              <div className="text-xs text-gray-500 dark:text-[#666] text-center">
                 Manage tracking settings in{' '}
-                <span className="text-[#888]">Settings → Usage & Controls</span>
+                <span className="text-gray-700 dark:text-[#888]">Settings → Usage & Controls</span>
               </div>
             </div>
 
@@ -385,13 +371,13 @@ export function AICrawlerSetup({ platform, onComplete, onBack }: AICrawlerSetupP
               <Button
                 onClick={() => window.open('https://docs.split.dev', '_blank')}
                 variant="outline"
-                className="flex-1 border-[#1a1a1a] text-[#666] hover:text-white bg-transparent hover:bg-[#1a1a1a]"
+                className="flex-1 border-gray-200 dark:border-[#1a1a1a] text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white bg-transparent hover:bg-gray-100 dark:hover:bg-[#1a1a1a]"
               >
                 Documentation
               </Button>
               <Button
                 onClick={onComplete}
-                className="flex-1 bg-[#1a1a1a] hover:bg-[#333] border border-[#333] hover:border-[#444] text-white"
+                className="flex-1 bg-gray-900 dark:bg-[#1a1a1a] hover:bg-gray-800 dark:hover:bg-[#333] border border-gray-300 dark:border-[#333] hover:border-gray-400 dark:hover:border-[#444] text-white"
               >
                 Complete Setup
                 <ArrowRight className="w-4 h-4 ml-2" />

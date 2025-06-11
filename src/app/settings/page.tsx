@@ -129,12 +129,12 @@ export default function SettingsPage() {
   ]
 
   return (
-    <main className="min-h-full bg-[#0c0c0c]">
+    <main className="min-h-full bg-white dark:bg-[#0c0c0c]">
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Header */}
         <div className="mb-6 md:mb-8">
-          <h1 className="text-xl md:text-2xl font-medium text-white mb-2">Settings</h1>
-          <p className="text-[#666] text-sm">Manage your workspace and integrations</p>
+          <h1 className="text-xl md:text-2xl font-medium text-black dark:text-white mb-2">Settings</h1>
+          <p className="text-gray-500 dark:text-[#666] text-sm">Manage your workspace and integrations</p>
         </div>
         
         <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
@@ -149,8 +149,8 @@ export default function SettingsPage() {
                       onClick={() => setActiveSection(section.id)}
                       className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors whitespace-nowrap ${
                         activeSection === section.id
-                          ? 'bg-[#1a1a1a] text-white'
-                          : 'text-[#666] hover:text-white hover:bg-[#0a0a0a]'
+                          ? 'bg-gray-100 dark:bg-[#1a1a1a] text-black dark:text-white'
+                          : 'text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white hover:bg-gray-50 dark:hover:bg-[#0a0a0a]'
                       }`}
                     >
                       <Icon className="w-4 h-4" />
@@ -232,8 +232,8 @@ export default function SettingsPage() {
                 />
               </div>
             </div>
-            <h2 className="text-xl font-semibold text-white mb-2">Switching workspace...</h2>
-            <p className="text-[#888] text-sm">Loading your workspace data</p>
+            <h2 className="text-xl font-semibold text-black dark:text-white mb-2">Switching workspace...</h2>
+            <p className="text-gray-600 dark:text-[#888] text-sm">Loading your workspace data</p>
           </div>
         </motion.div>
       )}

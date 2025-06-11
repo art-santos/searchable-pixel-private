@@ -243,7 +243,12 @@ export function ConnectAnalyticsDialog({
       // Then sort by vote count (highest first)
       const aVotes = platformVotes[a.id] || 0
       const bVotes = platformVotes[b.id] || 0
-      return bVotes - aVotes
+      if (bVotes !== aVotes) {
+        return bVotes - aVotes
+      }
+      
+      // If votes are equal, maintain stable order by platform name
+      return a.name.localeCompare(b.name)
     })
     return sorted
   }, [filteredPlatforms, platformVotes])
@@ -336,7 +341,7 @@ export function ConnectAnalyticsDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px] bg-black border-[#1a1a1a]">
+      <DialogContent className="sm:max-w-[600px] bg-white dark:bg-black border-gray-200 dark:border-[#1a1a1a]">
         {showAICrawlerSetup ? (
           // AI Crawler Setup flow
           <AICrawlerSetup
@@ -348,23 +353,23 @@ export function ConnectAnalyticsDialog({
           // Platform selection screen
           <>
             <DialogHeader>
-              <DialogTitle className="text-xl text-white">
+              <DialogTitle className="text-xl text-black dark:text-white">
                 How do you host your website?
               </DialogTitle>
-              <p className="text-sm text-[#666] mt-2">
+              <p className="text-sm text-gray-500 dark:text-[#666] mt-2">
                 Search or select your platform for setup instructions
               </p>
             </DialogHeader>
 
             {/* Search Input */}
             <div className="mt-4 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#666]" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-[#666]" />
               <Input
                 type="text"
                 placeholder="Search platforms..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-[#0a0a0a] border-[#1a1a1a] text-white placeholder:text-[#444]"
+                className="pl-10 bg-gray-50 dark:bg-[#0a0a0a] border-gray-200 dark:border-[#1a1a1a] text-black dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#444]"
               />
             </div>
 
@@ -380,24 +385,26 @@ export function ConnectAnalyticsDialog({
                     onClick={isAvailable ? () => handlePlatformSelect(platform.id) : undefined}
                     className={`w-full p-3 rounded-lg border transition-colors text-left group ${
                       isAvailable 
-                        ? 'border-[#1a1a1a] hover:border-[#333] cursor-pointer' 
-                        : 'border-[#0a0a0a] cursor-default opacity-60'
+                        ? 'border-gray-200 dark:border-[#1a1a1a] hover:border-gray-300 dark:hover:border-[#333] cursor-pointer' 
+                        : 'border-gray-200 dark:border-[#0a0a0a] cursor-default'
                     }`}
                     disabled={!isAvailable}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold ${
-                        isAvailable ? platform.iconBg : 'bg-[#0a0a0a] text-[#333]'
+                        isAvailable ? platform.iconBg : 'bg-gray-200 dark:bg-[#0a0a0a] text-gray-500 dark:text-[#333]'
                       }`}>
                         {platform.icon}
                       </div>
                       <div className="flex-1">
                         <h3 className={`font-medium text-sm ${
-                          isAvailable ? 'text-white group-hover:text-white/90' : 'text-[#444]'
+                          isAvailable ? 'text-black dark:text-white group-hover:text-gray-700 dark:group-hover:text-white/90' : 'text-gray-600 dark:text-[#444]'
                         }`}>
                           {platform.name}
                         </h3>
-                        <p className="text-xs text-[#666]">
+                        <p className={`text-xs ${
+                          isAvailable ? 'text-gray-500 dark:text-[#666]' : 'text-gray-500 dark:text-[#666]'
+                        }`}>
                           {isAvailable ? platform.description : 'Coming soon'}
                         </p>
                       </div>
@@ -411,7 +418,7 @@ export function ConnectAnalyticsDialog({
                             className={`flex items-center gap-1 px-2 py-1 rounded-md transition-all ${
                               votedPlatforms.has(platform.id)
                                 ? 'bg-green-500/20 text-green-500 cursor-default'
-                                : 'bg-[#1a1a1a] hover:bg-[#222] text-[#666] hover:text-white'
+                                : 'bg-gray-200 dark:bg-[#1a1a1a] hover:bg-gray-300 dark:hover:bg-[#222] text-gray-600 dark:text-[#666] hover:text-black dark:hover:text-white'
                             }`}
                             disabled={votedPlatforms.has(platform.id) || loadingPlatform === platform.id}
                           >
@@ -441,7 +448,7 @@ export function ConnectAnalyticsDialog({
             </div>
 
             <div className="mt-3 text-center">
-              <p className="text-xs text-[#666]">
+              <p className="text-xs text-gray-500 dark:text-[#666]">
                 Vote for platforms you'd like to see supported
               </p>
             </div>
@@ -449,11 +456,11 @@ export function ConnectAnalyticsDialog({
             {/* I don't know option */}
             <button
               onClick={() => window.open('https://cal.com/sam-hogan/15min', '_blank')}
-              className="mt-4 w-full p-4 rounded-lg border border-dashed border-[#1a1a1a] hover:border-[#333] transition-colors group"
+              className="mt-4 w-full p-4 rounded-lg border border-dashed border-gray-200 dark:border-[#1a1a1a] hover:border-gray-300 dark:hover:border-[#333] transition-colors group"
             >
               <div className="flex items-center justify-center gap-3">
-                <HelpCircle className="w-5 h-5 text-[#666]" />
-                <span className="text-[#666] group-hover:text-[#888]">I don't know / Need help</span>
+                <HelpCircle className="w-5 h-5 text-gray-500 dark:text-[#666]" />
+                <span className="text-gray-500 dark:text-[#666] group-hover:text-gray-700 dark:group-hover:text-[#888]">I don't know / Need help</span>
               </div>
             </button>
           </>
@@ -463,11 +470,11 @@ export function ConnectAnalyticsDialog({
             <div className="flex items-center gap-3 mb-4">
               <button
                 onClick={handleBack}
-                className="p-2 rounded-lg hover:bg-[#1a1a1a] transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1a1a] transition-colors"
               >
-                <ArrowLeft className="w-4 h-4 text-[#666]" />
+                <ArrowLeft className="w-4 h-4 text-gray-500 dark:text-[#666]" />
               </button>
-              <DialogTitle className="text-xl text-white">
+              <DialogTitle className="text-xl text-black dark:text-white">
                 {selectedPlatformData?.name} Setup
               </DialogTitle>
             </div>
@@ -476,23 +483,23 @@ export function ConnectAnalyticsDialog({
               {/* Vercel/Next.js Instructions */}
               {selectedPlatform === 'vercel' && (
                 <>
-                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4">
-                    <h4 className="font-medium text-white mb-3">Quick Setup</h4>
+                  <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#1a1a1a] rounded-lg p-4">
+                    <h4 className="font-medium text-black dark:text-white mb-3">Quick Setup</h4>
                     <ol className="space-y-3">
                       <li className="flex gap-3">
-                        <span className="text-[#666] flex-shrink-0">1.</span>
+                        <span className="text-gray-500 dark:text-[#666] flex-shrink-0">1.</span>
                         <div>
-                          <p className="text-sm text-[#ccc]">Install our package:</p>
-                          <code className="block mt-1 text-xs bg-[#1a1a1a] px-3 py-2 rounded font-mono text-[#888]">
+                          <p className="text-sm text-gray-700 dark:text-[#ccc]">Install our package:</p>
+                          <code className="block mt-1 text-xs bg-gray-100 dark:bg-[#1a1a1a] px-3 py-2 rounded font-mono text-gray-600 dark:text-[#888]">
                             npm install @split.dev/analytics
                           </code>
                         </div>
                       </li>
                       <li className="flex gap-3">
-                        <span className="text-[#666] flex-shrink-0">2.</span>
+                        <span className="text-gray-500 dark:text-[#666] flex-shrink-0">2.</span>
                         <div>
-                          <p className="text-sm text-[#ccc]">Add to your middleware.ts:</p>
-                          <code className="block mt-1 text-xs bg-[#1a1a1a] px-3 py-2 rounded font-mono text-[#888] whitespace-pre">
+                          <p className="text-sm text-gray-700 dark:text-[#ccc]">Add to your middleware.ts:</p>
+                          <code className="block mt-1 text-xs bg-gray-100 dark:bg-[#1a1a1a] px-3 py-2 rounded font-mono text-gray-600 dark:text-[#888] whitespace-pre">
 {`import { splitAnalytics } from '@split.dev/analytics/next'
 
 export const middleware = splitAnalytics({
@@ -502,8 +509,8 @@ export const middleware = splitAnalytics({
                         </div>
                       </li>
                       <li className="flex gap-3">
-                        <span className="text-[#666] flex-shrink-0">3.</span>
-                        <p className="text-sm text-[#ccc]">Deploy your changes</p>
+                        <span className="text-gray-500 dark:text-[#666] flex-shrink-0">3.</span>
+                        <p className="text-sm text-gray-700 dark:text-[#ccc]">Deploy your changes</p>
                       </li>
                     </ol>
                   </div>
@@ -521,13 +528,13 @@ export const middleware = splitAnalytics({
               {/* WordPress Instructions */}
               {selectedPlatform === 'wordpress' && (
                 <>
-                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4">
-                    <h4 className="font-medium text-white mb-3">Quick Setup</h4>
+                  <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#1a1a1a] rounded-lg p-4">
+                    <h4 className="font-medium text-black dark:text-white mb-3">Quick Setup</h4>
                     <ol className="space-y-3">
                       <li className="flex gap-3">
-                        <span className="text-[#666] flex-shrink-0">1.</span>
+                        <span className="text-gray-500 dark:text-[#666] flex-shrink-0">1.</span>
                         <div>
-                          <p className="text-sm text-[#ccc]">Download the Split Analytics plugin:</p>
+                          <p className="text-sm text-gray-700 dark:text-[#ccc]">Download the Split Analytics plugin:</p>
                           <Button 
                             variant="outline" 
                             size="sm"
@@ -545,10 +552,10 @@ export const middleware = splitAnalytics({
                         </div>
                       </li>
                       <li className="flex gap-3">
-                        <span className="text-[#666] flex-shrink-0">2.</span>
+                        <span className="text-gray-500 dark:text-[#666] flex-shrink-0">2.</span>
                         <div>
-                          <p className="text-sm text-[#ccc]">Install the plugin:</p>
-                          <ul className="mt-1 text-xs text-[#888] space-y-1 ml-4">
+                          <p className="text-sm text-gray-700 dark:text-[#ccc]">Install the plugin:</p>
+                          <ul className="mt-1 text-xs text-gray-600 dark:text-gray-300 space-y-1 ml-4">
                             <li>• Go to Plugins → Add New → Upload Plugin</li>
                             <li>• Choose the downloaded ZIP file</li>
                             <li>• Click "Install Now" and "Activate"</li>
@@ -556,10 +563,10 @@ export const middleware = splitAnalytics({
                         </div>
                       </li>
                       <li className="flex gap-3">
-                        <span className="text-[#666] flex-shrink-0">3.</span>
+                        <span className="text-gray-500 dark:text-[#666] flex-shrink-0">3.</span>
                         <div>
-                          <p className="text-sm text-[#ccc]">Configure your API key:</p>
-                          <ul className="mt-1 text-xs text-[#888] space-y-1 ml-4">
+                          <p className="text-sm text-gray-700 dark:text-[#ccc]">Configure your API key:</p>
+                          <ul className="mt-1 text-xs text-gray-600 dark:text-gray-300 space-y-1 ml-4">
                             <li>• Go to Settings → Split Analytics</li>
                             <li>• Enter your API key from the dashboard</li>
                             <li>• Enable tracking and save settings</li>
@@ -568,8 +575,8 @@ export const middleware = splitAnalytics({
                       </li>
                     </ol>
                   </div>
-                  <div className="bg-blue-950/30 border border-blue-900/50 rounded-lg p-3">
-                    <p className="text-xs text-blue-300">
+                  <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 rounded-lg p-3">
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
                       <strong>Note:</strong> The plugin is currently in review for the WordPress.org directory. 
                       For now, please use the manual installation method above.
                     </p>
@@ -580,23 +587,23 @@ export const middleware = splitAnalytics({
               {/* Custom/API Instructions */}
               {selectedPlatform === 'custom' && (
                 <>
-                  <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4">
-                    <h4 className="font-medium text-white mb-3">Quick Setup</h4>
+                  <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#1a1a1a] rounded-lg p-4">
+                    <h4 className="font-medium text-black dark:text-white mb-3">Quick Setup</h4>
                     <ol className="space-y-3">
                       <li className="flex gap-3">
-                        <span className="text-[#666] flex-shrink-0">1.</span>
+                        <span className="text-gray-500 dark:text-[#666] flex-shrink-0">1.</span>
                         <div>
-                          <p className="text-sm text-[#ccc]">Install our package:</p>
-                          <code className="block mt-1 text-xs bg-[#1a1a1a] px-3 py-2 rounded font-mono text-[#888]">
+                          <p className="text-sm text-gray-700 dark:text-[#ccc]">Install our package:</p>
+                          <code className="block mt-1 text-xs bg-gray-100 dark:bg-[#1a1a1a] px-3 py-2 rounded font-mono text-gray-600 dark:text-[#888]">
                             npm install @split.dev/analytics
                           </code>
                         </div>
                       </li>
                       <li className="flex gap-3">
-                        <span className="text-[#666] flex-shrink-0">2.</span>
+                        <span className="text-gray-500 dark:text-[#666] flex-shrink-0">2.</span>
                         <div>
-                          <p className="text-sm text-[#ccc]">Add to your server:</p>
-                          <code className="block mt-1 text-xs bg-[#1a1a1a] px-3 py-2 rounded font-mono text-[#888] whitespace-pre overflow-x-auto">
+                          <p className="text-sm text-gray-700 dark:text-[#ccc]">Add to your server:</p>
+                          <code className="block mt-1 text-xs bg-gray-100 dark:bg-[#1a1a1a] px-3 py-2 rounded font-mono text-gray-600 dark:text-[#888] whitespace-pre overflow-x-auto">
 {`const { splitAnalytics } = require('@split.dev/analytics')
 
 app.use(splitAnalytics({
@@ -606,8 +613,8 @@ app.use(splitAnalytics({
                         </div>
                       </li>
                       <li className="flex gap-3">
-                        <span className="text-[#666] flex-shrink-0">3.</span>
-                        <p className="text-sm text-[#ccc]">Deploy your changes</p>
+                        <span className="text-gray-500 dark:text-[#666] flex-shrink-0">3.</span>
+                        <p className="text-sm text-gray-700 dark:text-[#ccc]">Deploy your changes</p>
                       </li>
                     </ol>
                   </div>
@@ -620,7 +627,7 @@ app.use(splitAnalytics({
                       <ExternalLink className="w-4 h-4 mr-2" />
                       View full documentation
                     </Button>
-                    <p className="text-xs text-[#666] text-center">
+                    <p className="text-xs text-gray-500 dark:text-[#666] text-center">
                       Supports Express, Fastify, Koa, and raw Node.js
                     </p>
                   </div>

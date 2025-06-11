@@ -140,35 +140,48 @@ export function SplitSidebar() {
         .menu-button:hover .icon-rotate {
           transform: rotateY(180deg);
         }
-        .selected-button:hover {
+        .dark .selected-button:hover {
           background-color: #222222 !important;
         }
-        .selected-button svg {
+        .selected-button:hover {
+          background-color: #f3f4f6 !important;
+        }
+        .dark .selected-button svg {
           color: white;
         }
+        .selected-button svg {
+          color: black;
+        }
       `}</style>
-      <Sidebar className="w-16 border-r border-[#222222] bg-[#0c0c0c] !bg-[#0c0c0c] dark:!bg-[#0c0c0c]">
+      <Sidebar className="w-16 border-r border-gray-200 dark:border-[#222222] bg-white dark:bg-[#0c0c0c] !bg-white dark:!bg-[#0c0c0c]">
         {/* Logo Square */}
-        <SidebarHeader className="box-border h-16 w-16 min-h-[64px] min-w-[64px] border-r border-b border-[#222222] bg-[#0c0c0c] flex items-center justify-center">
+        <SidebarHeader className="box-border h-16 w-16 min-h-[64px] min-w-[64px] border-r border-b border-gray-200 dark:border-[#222222] bg-white dark:bg-[#0c0c0c] flex items-center justify-center">
           <Image
             src="/images/split-icon-white.svg"
             alt="Split Logo"
             width={32}
             height={32}
-            className="h-8 w-8"
+            className="h-8 w-8 dark:block hidden"
+          />
+          <Image
+            src="/images/split-icon.svg"
+            alt="Split Logo"
+            width={32}
+            height={32}
+            className="h-8 w-8 dark:hidden block"
           />
         </SidebarHeader>
         
         {/* Main Menu Items */}
-        <SidebarContent className="flex flex-col items-center py-2 space-y-1 bg-[#0c0c0c]">
+        <SidebarContent className="flex flex-col items-center py-2 space-y-1 bg-white dark:bg-[#0c0c0c]">
           <Link href="/dashboard" className="w-full flex justify-center">
             <SidebarMenuButton 
               tooltip="Dashboard"
               className={cn(
                 "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
                 pathname === "/dashboard" 
-                  ? "bg-[#222222] text-white border border-[#333333] selected-button" 
-                  : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
+                  ? "bg-gray-100 dark:bg-[#222222] text-black dark:text-white border border-gray-300 dark:border-[#333333] selected-button" 
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#161616] hover:text-gray-800 dark:hover:text-gray-200"
               )}
             >
               <LayoutDashboardIcon className="h-6 w-6 icon-rotate" />
@@ -181,8 +194,8 @@ export function SplitSidebar() {
               className={cn(
                 "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
                 pathname.startsWith("/dashboard/attribution") 
-                  ? "bg-[#222222] text-white border border-[#333333] selected-button"
-                  : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
+                  ? "bg-gray-100 dark:bg-[#222222] text-black dark:text-white border border-gray-300 dark:border-[#333333] selected-button"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#161616] hover:text-gray-800 dark:hover:text-gray-200"
               )}
             >
               <Activity className="h-6 w-6 icon-rotate" />
@@ -196,8 +209,8 @@ export function SplitSidebar() {
                 className={cn(
                   "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
                   pathname === "/dashboard/leads" 
-                    ? "bg-[#222222] text-white border border-[#333333] selected-button"
-                    : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
+                    ? "bg-gray-100 dark:bg-[#222222] text-black dark:text-white border border-gray-300 dark:border-[#333333] selected-button"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#161616] hover:text-gray-800 dark:hover:text-gray-200"
                 )}
               >
                 <Users className="h-6 w-6 icon-rotate" />
@@ -211,8 +224,8 @@ export function SplitSidebar() {
               className={cn(
                 "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
                 pathname === "/dashboard/snapshot" 
-                  ? "bg-[#222222] text-white border border-[#333333] selected-button"
-                  : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
+                  ? "bg-gray-100 dark:bg-[#222222] text-black dark:text-white border border-gray-300 dark:border-[#333333] selected-button"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#161616] hover:text-gray-800 dark:hover:text-gray-200"
               )}
             >
               <Camera className="h-6 w-6 icon-rotate" />
@@ -221,15 +234,15 @@ export function SplitSidebar() {
         </SidebarContent>
 
         {/* Bottom Menu Items */}
-        <div className="mt-auto flex flex-col items-center space-y-1 pb-2 bg-[#0c0c0c]">
+        <div className="mt-auto flex flex-col items-center space-y-1 pb-2 bg-white dark:bg-[#0c0c0c]">
           <Link href="/settings" className="w-full flex justify-center">
             <SidebarMenuButton 
               tooltip="Settings"
               className={cn(
                 "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
                 pathname === "/settings" 
-                  ? "bg-[#222222] text-white border border-[#333333] selected-button" 
-                  : "text-gray-400 hover:bg-[#161616] hover:text-gray-200"
+                  ? "bg-gray-100 dark:bg-[#222222] text-black dark:text-white border border-gray-300 dark:border-[#333333] selected-button" 
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#161616] hover:text-gray-800 dark:hover:text-gray-200"
               )}
             >
               <SettingsIcon className="h-6 w-6 icon-rotate" />
@@ -241,7 +254,7 @@ export function SplitSidebar() {
               tooltip="Documentation (Coming Soon)"
               className={cn(
                 "w-10 h-10 flex items-center justify-center transition-colors rounded-none cursor-not-allowed",
-                "text-gray-600"
+                "text-gray-500 dark:text-gray-600"
               )}
             >
               <HelpCircleIcon className="h-6 w-6" />
@@ -250,14 +263,14 @@ export function SplitSidebar() {
         </div>
         
         {/* Profile Square - Now links to settings */}
-        <SidebarFooter className="h-16 w-16 border-t border-r border-[#222222] bg-[#0c0c0c] flex items-center justify-center">
+        <SidebarFooter className="h-16 w-16 border-t border-r border-gray-200 dark:border-[#222222] bg-white dark:bg-[#0c0c0c] flex items-center justify-center">
           <Link href="/settings" className="w-full h-full flex items-center justify-center">
-            <Avatar className="h-10 w-10 border border-[#333333] cursor-pointer hover:border-[#444444] transition-colors">
+            <Avatar className="h-10 w-10 border border-gray-300 dark:border-[#333333] cursor-pointer hover:border-gray-400 dark:hover:border-[#444444] transition-colors">
               <AvatarImage 
                 src={profile?.profile_picture_url || undefined} 
                 alt={`${profile?.username || 'User'}'s profile picture`}
               />
-              <AvatarFallback className="bg-[#222222] text-gray-400">
+              <AvatarFallback className="bg-gray-100 dark:bg-[#222222] text-gray-600 dark:text-gray-400">
                 {initials}
               </AvatarFallback>
             </Avatar>

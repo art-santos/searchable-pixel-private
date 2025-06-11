@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TimeframeSelector } from "@/components/custom/timeframe-selector";
+import { TimeframeSelector, TimeframeOption } from "@/components/custom/timeframe-selector";
 import { MetricItem } from "@/components/custom/metric-item";
-import { TimeframeType } from "./page-view-card";
 import { useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -55,7 +54,7 @@ const competitors = [
 ];
 
 export function CompetitorBenchmarkingCard() {
-  const [timeframe, setTimeframe] = useState<TimeframeType>("This Month");
+  const [timeframe, setTimeframe] = useState<TimeframeOption>("Last 7 days");
   const [selectedTopic, setSelectedTopic] = useState(topics[0]);
   const shouldReduceMotion = useReducedMotion();
 
@@ -98,17 +97,17 @@ export function CompetitorBenchmarkingCard() {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="w-fit min-w-[140px] border border-[#333333] bg-transparent hover:bg-[#1a1a1a] px-4 rounded-none flex items-center gap-2"
+                className="w-fit min-w-[140px] border border-gray-200 dark:border-[#333333] bg-transparent hover:bg-gray-100 dark:hover:bg-[#1a1a1a] px-4 rounded-none flex items-center gap-2"
               >
-                <span className="font-geist-semi text-white">{selectedTopic}</span>
-                <ChevronDown className="h-4 w-4 text-[#666666]" />
+                <span className="font-geist-semi text-black dark:text-white">{selectedTopic}</span>
+                <ChevronDown className="h-4 w-4 text-gray-400 dark:text-[#666666]" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-[#1a1a1a] border border-[#333333] text-white rounded-none">
+            <DropdownMenuContent className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333333] text-black dark:text-white rounded-none">
               {topics.map((topic) => (
                 <DropdownMenuItem
                   key={topic}
-                  className="hover:bg-[#222222] rounded-none"
+                  className="hover:bg-gray-100 dark:hover:bg-[#222222] rounded-none"
                   onClick={() => setSelectedTopic(topic)}
                 >
                   <span className="text-base font-geist-semi">{topic}</span>

@@ -524,7 +524,7 @@ export default function AttributionPage() {
       }
 
   return (
-    <div className="min-h-screen min-w-screen bg-[#0c0c0c] text-white">
+    <div className="min-h-screen min-w-screen bg-white dark:bg-[#0c0c0c] text-black dark:text-white">
 
 
       {switching ? (
@@ -554,16 +554,16 @@ export default function AttributionPage() {
             variants={cardVariants}
             className="w-[60%]"
           >
-            <Card className="h-full bg-[#0c0c0c] border-[#1a1a1a]">
+            <Card className="h-full bg-white dark:bg-[#0c0c0c] border-gray-200 dark:border-[#1a1a1a]">
               <CardContent className="p-0 h-full flex flex-col">
                 {/* Graph Header */}
-                <CardHeader className="pb-4 pt-4 pl-6 pr-6 flex-shrink-0 border-b border-[#1a1a1a]">
+                <CardHeader className="pb-4 pt-4 pl-6 pr-6 flex-shrink-0 border-b border-gray-200 dark:border-[#1a1a1a]">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold text-white mb-1">
+                      <h3 className="text-lg font-semibold text-black dark:text-white mb-1">
                         Total Crawls
                       </h3>
-                      <p className="text-sm text-[#666]">
+                      <p className="text-sm text-gray-500 dark:text-[#666]">
                         {stats?.totalCrawls.toLocaleString() || '0'} crawls tracked
                       </p>
                     </div>
@@ -608,22 +608,22 @@ export default function AttributionPage() {
                         >
                           <defs>
                             <linearGradient id="crawlerGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#fff" stopOpacity={0.15} />
-                              <stop offset="100%" stopColor="#fff" stopOpacity={0} />
+                              <stop offset="0%" stopColor="currentColor" stopOpacity={0.15} />
+                              <stop offset="100%" stopColor="currentColor" stopOpacity={0} />
                             </linearGradient>
                           </defs>
                           <CartesianGrid
                             vertical={false}
                             horizontal={true}
                             strokeDasharray="4 4"
-                            stroke="#333333"
+                            stroke="currentColor"
                             opacity={0.4}
                           />
                           <XAxis
                             dataKey="date"
-                            axisLine={{ stroke: '#333333' }}
-                            tickLine={{ stroke: '#333333' }}
-                            tick={{ fill: '#666666', fontSize: 12 }}
+                            axisLine={{ stroke: 'currentColor' }}
+                            tickLine={{ stroke: 'currentColor' }}
+                            tick={{ fill: 'currentColor', fontSize: 12 }}
                             interval={
                               timeframe === 'Last 24 hours' ? 2 :
                               timeframe === 'Last 7 days' ? 0 :
@@ -651,9 +651,9 @@ export default function AttributionPage() {
                             }
                           />
                           <YAxis
-                            axisLine={{ stroke: '#333333' }}
-                            tickLine={{ stroke: '#333333' }}
-                            tick={{ fill: '#666666', fontSize: 12 }}
+                            axisLine={{ stroke: 'currentColor' }}
+                            tickLine={{ stroke: 'currentColor' }}
+                            tick={{ fill: 'currentColor', fontSize: 12 }}
                             width={60}
                             domain={[0, (dataMax: number) => dataMax * 1.5]}
                           />
@@ -661,11 +661,11 @@ export default function AttributionPage() {
                           <Area
                             type="linear"
                             dataKey="crawls"
-                            stroke="#fff"
+                            stroke="currentColor"
                             strokeWidth={2}
                             fill="url(#crawlerGradient)"
                             dot={<CustomDot />}
-                            activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2, fill: '#333' }}
+                            activeDot={{ r: 6, stroke: 'currentColor', strokeWidth: 2, fill: 'var(--background)' }}
                           />
                         </AreaChart>
                       </ResponsiveContainer>
@@ -687,20 +687,20 @@ export default function AttributionPage() {
               variants={cardVariants}
               className="flex-1"
             >
-              <Card className="h-full bg-[#0c0c0c] border-[#1a1a1a]">
-                <CardHeader className="pb-4 pt-4 pl-6 flex-shrink-0 border-b border-[#1a1a1a]">
+              <Card className="h-full bg-white dark:bg-[#0c0c0c] border-gray-200 dark:border-[#1a1a1a]">
+                <CardHeader className="pb-4 pt-4 pl-6 flex-shrink-0 border-b border-gray-200 dark:border-[#1a1a1a]">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold text-white mb-1">
+                      <h3 className="text-lg font-semibold text-black dark:text-white mb-1">
                         Attribution by Source
                       </h3>
-                      <p className="text-sm text-[#666]">
+                      <p className="text-sm text-gray-500 dark:text-[#666]">
                         {crawlerData.reduce((sum, c) => sum + c.crawls, 0).toLocaleString()} crawls tracked
                       </p>
                     </div>
                     <Link 
                       href="/dashboard/attribution/source"
-                      className="text-sm text-[#888] hover:text-white transition-colors flex items-center gap-1"
+                      className="text-sm text-gray-600 dark:text-[#888] hover:text-black dark:hover:text-white transition-colors flex items-center gap-1"
                     >
                       <Eye className="w-4 h-4" />
                       View All
@@ -721,7 +721,7 @@ export default function AttributionPage() {
                       >
                         <div className="flex items-center justify-between mb-1.5">
                           <div className="flex items-center gap-3">
-                            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a]">
+                            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-gray-100 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#2a2a2a]">
                               <div className="relative">
                                 <img 
                                   src={getFaviconForCrawler(source.company)}
@@ -736,18 +736,18 @@ export default function AttributionPage() {
                                     if (fallback) fallback.style.display = 'block'
                                   }}
                                 />
-                                <div className="w-2.5 h-2.5 rounded-full bg-[#666] hidden" />
+                                <div className="w-2.5 h-2.5 rounded-full bg-gray-500 dark:bg-[#666] hidden" />
                               </div>
                             </div>
                             <div>
-                              <div className="text-white font-medium text-sm">{source.name}</div>
-                              <div className="text-[#666] text-xs">
+                              <div className="text-black dark:text-white font-medium text-sm">{source.name}</div>
+                              <div className="text-gray-500 dark:text-[#666] text-xs">
                                 {source.crawls.toLocaleString()} crawls
                               </div>
                             </div>
                           </div>
                           <motion.div 
-                            className="text-white font-semibold text-sm"
+                            className="text-black dark:text-white font-semibold text-sm"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: index * 0.05 + 0.2, duration: 0.3 }}
@@ -755,7 +755,7 @@ export default function AttributionPage() {
                             {source.percentage.toFixed(1)}%
                           </motion.div>
                         </div>
-                        <div className="w-full h-1 bg-[#1a1a1a] rounded-full overflow-hidden">
+                        <div className="w-full h-1 bg-gray-200 dark:bg-[#1a1a1a] rounded-full overflow-hidden">
                           <motion.div 
                             className="h-full rounded-full"
                             style={{ 
@@ -782,20 +782,20 @@ export default function AttributionPage() {
               variants={cardVariants}
               className="flex-1"
             >
-              <Card className="h-full bg-[#0c0c0c] border-[#1a1a1a]">
-                <CardHeader className="pb-4 pt-4 pl-6 pr-6 flex-shrink-0 border-b border-[#1a1a1a]">
+              <Card className="h-full bg-white dark:bg-[#0c0c0c] border-gray-200 dark:border-[#1a1a1a]">
+                <CardHeader className="pb-4 pt-4 pl-6 pr-6 flex-shrink-0 border-b border-gray-200 dark:border-[#1a1a1a]">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold text-white mb-1">
+                      <h3 className="text-lg font-semibold text-black dark:text-white mb-1">
                         Crawls by Page
                       </h3>
-                      <p className="text-sm text-[#666]">
+                      <p className="text-sm text-gray-500 dark:text-[#666]">
                         {pageData.reduce((sum, p) => sum + p.totalCrawls, 0).toLocaleString()} total page crawls
                       </p>
                     </div>
                     <Link 
                       href="/dashboard/attribution/page"
-                      className="text-sm text-[#888] hover:text-white transition-colors flex items-center gap-1"
+                      className="text-sm text-gray-600 dark:text-[#888] hover:text-black dark:hover:text-white transition-colors flex items-center gap-1"
                     >
                       <Eye className="w-4 h-4" />
                       View All
@@ -825,14 +825,14 @@ export default function AttributionPage() {
                           }}
                           className="group relative"
                         >
-                          <div className="flex items-center justify-between py-3 px-3 hover:bg-[#0f0f0f] rounded-lg transition-all duration-200 border border-transparent hover:border-[#1a1a1a]">
+                          <div className="flex items-center justify-between py-3 px-3 hover:bg-gray-50 dark:hover:bg-[#0f0f0f] rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200 dark:hover:border-[#1a1a1a]">
                             <div className="flex items-center gap-3 min-w-0 flex-1">
-                              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] group-hover:bg-[#222] transition-colors">
+                              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#2a2a2a] group-hover:bg-gray-200 dark:group-hover:bg-[#222] transition-colors">
                                 <span className="text-sm">{getPathIcon(page.path)}</span>
                               </div>
                               <div className="min-w-0 flex-1">
-                                <div className="text-sm text-white font-mono truncate mb-1">{page.path}</div>
-                                <div className="flex items-center gap-2 text-xs text-[#666]">
+                                <div className="text-sm text-black dark:text-white font-mono truncate mb-1">{page.path}</div>
+                                <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-[#666]">
                                   <span>{page.uniqueCrawlers} crawlers</span>
                                   <span>•</span>
                                   <span>{formatRelativeTime(page.lastCrawled)}</span>
@@ -843,12 +843,12 @@ export default function AttributionPage() {
                             </div>
                             <div className="flex items-center gap-3">
                               <div className="text-right">
-                                <div className="text-lg font-semibold text-white">{page.totalCrawls}</div>
-                                <div className="text-xs text-[#666]">crawls</div>
+                                <div className="text-lg font-semibold text-black dark:text-white">{page.totalCrawls}</div>
+                                <div className="text-xs text-gray-500 dark:text-[#666]">crawls</div>
                               </div>
-                              <div className="w-1 h-8 bg-[#1a1a1a] rounded-full overflow-hidden">
+                              <div className="w-1 h-8 bg-gray-200 dark:bg-[#1a1a1a] rounded-full overflow-hidden">
                                 <motion.div 
-                                  className="w-full bg-white rounded-full"
+                                  className="w-full bg-black dark:bg-white rounded-full"
                                   initial={{ height: 0 }}
                                   animate={{ height: `${Math.min((page.totalCrawls / Math.max(...pageData.map(p => p.totalCrawls))) * 100, 100)}%` }}
                                   transition={{ delay: index * 0.1 + 0.3, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}

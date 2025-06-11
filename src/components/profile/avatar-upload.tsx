@@ -194,7 +194,7 @@ export function AvatarUpload({
           size="sm"
           onClick={() => document.getElementById('avatar-upload')?.click()}
           disabled={isUploading}
-          className="bg-[#0a0a0a] border-[#333] text-white hover:bg-[#1a1a1a] h-8"
+          className="bg-[#0a0a0a] border-[#333] text-white hover:bg-[#1a1a1a] hover:text-white h-8"
         >
           {isUploading ? (
             <Loader2 className="h-3 w-3 animate-spin mr-2" />
