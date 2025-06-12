@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_config: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       api_keys: {
         Row: {
           created_at: string | null
@@ -977,6 +1004,7 @@ export type Database = {
       profiles: {
         Row: {
           billing_preferences: Json | null
+          created_at: string | null
           created_by: string
           domain: string | null
           email: string | null
@@ -1001,11 +1029,13 @@ export type Database = {
           subscription_plan: string | null
           subscription_status: string | null
           team_size: number | null
+          updated_at: string | null
           updated_by: string
           workspace_name: string | null
         }
         Insert: {
           billing_preferences?: Json | null
+          created_at?: string | null
           created_by?: string
           domain?: string | null
           email?: string | null
@@ -1030,11 +1060,13 @@ export type Database = {
           subscription_plan?: string | null
           subscription_status?: string | null
           team_size?: number | null
+          updated_at?: string | null
           updated_by?: string
           workspace_name?: string | null
         }
         Update: {
           billing_preferences?: Json | null
+          created_at?: string | null
           created_by?: string
           domain?: string | null
           email?: string | null
@@ -1059,6 +1091,7 @@ export type Database = {
           subscription_plan?: string | null
           subscription_status?: string | null
           team_size?: number | null
+          updated_at?: string | null
           updated_by?: string
           workspace_name?: string | null
         }
@@ -1357,6 +1390,8 @@ export type Database = {
           overage_blocked: boolean | null
           plan_status: string
           plan_type: string
+          snapshots_included: number
+          snapshots_used: number
           stripe_subscription_id: string | null
           updated_at: string | null
           user_id: string | null
@@ -1382,6 +1417,8 @@ export type Database = {
           overage_blocked?: boolean | null
           plan_status?: string
           plan_type: string
+          snapshots_included?: number
+          snapshots_used?: number
           stripe_subscription_id?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -1407,6 +1444,8 @@ export type Database = {
           overage_blocked?: boolean | null
           plan_status?: string
           plan_type?: string
+          snapshots_included?: number
+          snapshots_used?: number
           stripe_subscription_id?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -1888,6 +1927,9 @@ export type Database = {
           ai_logs_included: number
           ai_logs_used: number
           ai_logs_remaining: number
+          snapshots_included: number
+          snapshots_used: number
+          snapshots_remaining: number
           max_scans_used: number
           daily_scans_used: number
           plan_type: string
@@ -2033,6 +2075,10 @@ export type Database = {
         }
         Returns: string
       }
+      is_admin: {
+        Args: { user_email?: string }
+        Returns: boolean
+      }
       ivfflat_bit_support: {
         Args: { "": unknown }
         Returns: unknown
@@ -2153,6 +2199,10 @@ export type Database = {
       vector_typmod_in: {
         Args: { "": unknown[] }
         Returns: number
+      }
+      verify_admin_password: {
+        Args: { submitted_password: string }
+        Returns: boolean
       }
     }
     Enums: {

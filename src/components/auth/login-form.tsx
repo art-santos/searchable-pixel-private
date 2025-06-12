@@ -123,15 +123,28 @@ export function LoginForm({
         console.log('👤 User ID:', data.user.id)
         console.log('📧 User email:', data.user.email)
         
-        showNotification("success", "Welcome back! Redirecting to your dashboard...")
-        
-        // Call success callback
-        onLoginSuccess?.()
-        
-        // Redirect to dashboard after a brief delay
-        setTimeout(() => {
-          router.push('/dashboard')
-        }, 1000)
+        // Check if user has @split.dev email for admin access
+        if (data.user.email?.endsWith('@split.dev')) {
+          showNotification("success", "Welcome admin! Redirecting to verification...")
+          
+          // Call success callback
+          onLoginSuccess?.()
+          
+          // Redirect to admin verification after a brief delay
+          setTimeout(() => {
+            router.push('/admin/verify')
+          }, 1000)
+        } else {
+          showNotification("success", "Welcome back! Redirecting to your dashboard...")
+          
+          // Call success callback
+          onLoginSuccess?.()
+          
+          // Redirect to dashboard after a brief delay
+          setTimeout(() => {
+            router.push('/dashboard')
+          }, 1000)
+        }
       }
 
     } catch (err: any) {

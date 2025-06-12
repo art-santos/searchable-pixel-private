@@ -123,17 +123,35 @@ export default function AuthenticatedLayout({
 
     // --- Onboarding Redirection Logic ---
     const isAtCreateWorkspace = pathname === '/create-workspace'
+    const isAdminEmail = user?.email?.endsWith('@split.dev')
+    const isAtAdminVerify = pathname === '/admin/verify'
+    const isAtAdminDashboard = pathname.startsWith('/admin/dashboard')
 
-    // If onboarding is incomplete, they MUST be at the create-workspace page.
-    if (onboardingStatus === 'incomplete' && !isAtCreateWorkspace) {
-      console.log('📍 Redirecting to /create-workspace - onboarding incomplete')
-      router.push('/create-workspace')
+    // If user has @split.dev email, handle admin flow
+    if (isAdminEmail) {
+      // If not at admin verify or admin dashboard, redirect to admin verify
+      if (!isAtAdminVerify && !isAtAdminDashboard) {
+        console.log('📍 Redirecting admin user to /admin/verify')
+        router.push('/admin/verify')
+        return
+      }
+    } else {
+      // Regular user flow - If onboarding is incomplete, they MUST be at the create-workspace page.
+      if (onboardingStatus === 'incomplete' && !isAtCreateWorkspace) {
+        console.log('📍 Redirecting to /create-workspace - onboarding incomplete')
+        router.push('/create-workspace')
+      }
     }
 
     // If onboarding IS complete, they MUST NOT be at the create-workspace page.
     if (onboardingStatus === 'complete' && isAtCreateWorkspace) {
-      console.log('📍 Redirecting to /dashboard - onboarding already complete')
-      router.push('/dashboard')
+      if (isAdminEmail) {
+        console.log('📍 Redirecting admin user to /admin/verify - should not be at create-workspace')
+        router.push('/admin/verify')
+      } else {
+        console.log('📍 Redirecting to /dashboard - onboarding already complete')
+        router.push('/dashboard')
+      }
     }
   }, [onboardingStatus, pathname, router])
   
@@ -146,15 +164,33 @@ export default function AuthenticatedLayout({
     )
   }
   
-  // If the user is unauthenticated or their onboarding status is incomplete and they're not on the create workspace page
-  // return null to avoid flashing content before redirect.
-  if (!user || (onboardingStatus === 'incomplete' && pathname !== '/create-workspace')) {
+  // If the user is unauthenticated, return null
+  if (!user) {
     return null
   }
 
-  // If onboarding is complete but they are on the create-workspace page, return null
-  if (onboardingStatus === 'complete' && pathname === '/create-workspace') {
-    return null
+  // Check if user is admin
+  const isAdminEmail = user?.email?.endsWith('@split.dev')
+  const isAtAdminVerify = pathname === '/admin/verify'
+  const isAtAdminDashboard = pathname.startsWith('/admin/dashboard')
+
+  // Admin user logic
+  if (isAdminEmail) {
+    // Admin users should only see content if they're at admin verify or admin dashboard
+    if (!isAtAdminVerify && !isAtAdminDashboard) {
+      return null // Will redirect in useEffect
+    }
+  } else {
+    // Regular user logic
+    // If their onboarding status is incomplete and they're not on the create workspace page, return null
+    if (onboardingStatus === 'incomplete' && pathname !== '/create-workspace') {
+      return null
+    }
+
+    // If onboarding is complete but they are on the create-workspace page, return null
+    if (onboardingStatus === 'complete' && pathname === '/create-workspace') {
+      return null
+    }
   }
   
   return (

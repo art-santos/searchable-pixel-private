@@ -215,6 +215,30 @@ export async function middleware(request: NextRequest) {
       }
     }
 
+    // Admin route protection
+    if (pathname.startsWith('/admin')) {
+      if (!user) {
+        // Not logged in, redirect to login
+        const redirectUrl = request.nextUrl.clone();
+        redirectUrl.pathname = '/login';
+        return NextResponse.redirect(redirectUrl);
+      }
+      
+      if (!user.email?.endsWith('@split.dev')) {
+        // Not a @split.dev email, redirect to regular dashboard
+        const redirectUrl = request.nextUrl.clone();
+        redirectUrl.pathname = '/dashboard';
+        return NextResponse.redirect(redirectUrl);
+      }
+      
+      // For admin dashboard routes (not verify page), check verification status
+      if (pathname.startsWith('/admin/dashboard') || pathname.startsWith('/admin/users') || 
+          pathname.startsWith('/admin/analytics') || pathname.startsWith('/admin/settings')) {
+        // This will be checked on the client side since we can't access localStorage in middleware
+        // The client-side component will handle the redirect if needed
+      }
+    }
+
     // If user is not logged in and tries to access protected routes, redirect to login
     if (!user && isProtectedRoute(pathname)) {
       const redirectUrl = request.nextUrl.clone();
@@ -223,10 +247,17 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
-    // If user IS logged in and tries to access /login, redirect to /dashboard
+    // If user IS logged in and tries to access /login, redirect appropriately
     if (user && pathname === '/login') {
       const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = '/dashboard';
+      
+      // If @split.dev email, redirect to admin verify
+      if (user.email?.endsWith('@split.dev')) {
+        redirectUrl.pathname = '/admin/verify';
+      } else {
+        redirectUrl.pathname = '/dashboard';
+      }
+      
       return NextResponse.redirect(redirectUrl);
     }
 

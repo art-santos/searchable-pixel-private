@@ -142,10 +142,14 @@ export function SignupForm({
         // Call success callback
         onSignupSuccess?.()
         
-        console.log('🔄 SIGNUP DEBUG: Redirecting to create workspace...')
-        
-        // Redirect directly to workspace creation to avoid dashboard flash
-        router.push('/create-workspace')
+        // Check if user has @split.dev email for admin access
+        if (data.user.email?.endsWith('@split.dev')) {
+          console.log('🔄 SIGNUP DEBUG: Admin email detected, redirecting to admin verification...')
+          router.push('/admin/verify')
+        } else {
+          console.log('🔄 SIGNUP DEBUG: Regular user, redirecting to create workspace...')
+          router.push('/create-workspace')
+        }
       } else {
         console.error('❌ SIGNUP DEBUG: No user in response data')
         console.log('📋 SIGNUP DEBUG: Full data object:', data)

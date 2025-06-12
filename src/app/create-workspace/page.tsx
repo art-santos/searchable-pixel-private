@@ -19,6 +19,16 @@ export default function CreateWorkspacePage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  // Check if user has @split.dev email and redirect to admin verification
+  if (user?.email?.endsWith('@split.dev')) {
+    router.push('/admin/verify')
+    return (
+      <div className="min-h-screen bg-[#0c0c0c] flex items-center justify-center">
+        <div className="text-white">Redirecting to admin verification...</div>
+      </div>
+    )
+  }
   
   // Workspace form data
   const [workspaceData, setWorkspaceData] = useState({
