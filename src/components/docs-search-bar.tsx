@@ -4,127 +4,86 @@ import * as React from "react"
 import { SearchIcon, Command } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+// Type definition for documentation items
+type DocItem = {
+  section: string
+  item: string
+  sectionId: string
+  description: string
+  keywords: string
+}
+
 // Documentation sections and items for search
-const DOC_ITEMS = [
+const DOC_ITEMS: DocItem[] = [
   {
     section: "Getting Started",
-    item: "Introduction",
-    description: "Overview of Split Analytics and AI crawler tracking",
-    keywords: "introduction overview getting started ai crawler analytics"
-  },
-  {
-    section: "Getting Started", 
-    item: "Quickstart",
-    description: "Get up and running in under 5 minutes",
-    keywords: "quickstart quick start setup installation guide"
+    item: "Installation",
+    sectionId: "installation", 
+    description: "Package installation with npm, yarn, or pnpm",
+    keywords: "installation install npm yarn pnpm package manager setup"
   },
   {
     section: "Getting Started",
-    item: "Installation", 
-    description: "Package installation and requirements",
-    keywords: "installation install npm yarn pnpm requirements"
+    item: "Configuration", 
+    sectionId: "configuration",
+    description: "API key setup and basic configuration",
+    keywords: "configuration setup api key environment variables auth"
   },
   {
-    section: "Getting Started",
-    item: "Authentication",
-    description: "API key management and security",
-    keywords: "authentication api key security environment variables"
+    section: "API Reference",
+    item: "trackCrawlerVisit()",
+    sectionId: "js-api",
+    description: "Main function for tracking AI crawler visits",
+    keywords: "trackcrawlervisit api function main tracking method"
   },
   {
-    section: "Integration",
+    section: "API Reference",
+    item: "SplitAnalytics Class",
+    sectionId: "js-api-advanced", 
+    description: "Advanced usage with SplitAnalytics class",
+    keywords: "splitanalytics class advanced usage constructor methods"
+  },
+  {
+    section: "API Reference",
+    item: "Utility Functions",
+    sectionId: "js-api-utils",
+    description: "Helper functions like ping() for testing",
+    keywords: "utility functions ping helpers testing validation"
+  },
+  {
+    section: "Crawlers & Detection",
+    item: "Supported Crawlers",
+    sectionId: "supported-crawlers",
+    description: "List of 25+ supported AI crawlers and bots",
+    keywords: "supported crawlers bots ai detection gptbot claudebot bingbot"
+  },
+  {
+    section: "Help & Support", 
+    item: "Troubleshooting",
+    sectionId: "troubleshooting",
+    description: "Common issues and solutions",
+    keywords: "troubleshooting problems issues errors solutions help"
+  },
+  {
+    section: "Platform Integration",
+    item: "Platform Guides",
+    sectionId: "platform-guides",
+    description: "Integration guides for different platforms",
+    keywords: "platform integration guides framework setup"
+  },
+  {
+    section: "Platform Integration",
     item: "Next.js",
-    description: "Next.js middleware integration guide", 
-    keywords: "nextjs next.js middleware app router integration"
+    sectionId: "nextjs",
+    description: "Next.js middleware integration guide",
+    keywords: "nextjs next.js middleware app router pages integration"
   },
   {
-    section: "Integration",
-    item: "Express",
-    description: "Express.js server integration",
-    keywords: "express expressjs server nodejs middleware"
-  },
-  {
-    section: "Integration", 
+    section: "Platform Integration",
     item: "Node.js",
-    description: "Node.js application integration",
-    keywords: "nodejs node.js server backend integration"
-  },
-  {
-    section: "Integration",
-    item: "Custom Integration",
-    description: "Custom implementation patterns",
-    keywords: "custom integration manual implementation patterns"
-  },
-  {
-    section: "API Reference",
-    item: "Endpoints",
-    description: "Available API endpoints and methods",
-    keywords: "api endpoints methods reference documentation"
-  },
-  {
-    section: "API Reference",
-    item: "Authentication",
-    description: "API authentication methods",
-    keywords: "api authentication bearer token security"
-  },
-  {
-    section: "API Reference",
-    item: "Events",
-    description: "Event tracking and data structure",
-    keywords: "events tracking data structure payload"
-  },
-  {
-    section: "API Reference", 
-    item: "Rate Limits",
-    description: "API rate limiting and quotas",
-    keywords: "rate limits quotas throttling api limits"
-  },
-  {
-    section: "Configuration",
-    item: "Options",
-    description: "Configuration options and parameters",
-    keywords: "configuration options parameters settings"
-  },
-  {
-    section: "Configuration",
-    item: "Middleware",
-    description: "Middleware configuration guide",
-    keywords: "middleware configuration setup options"
-  },
-  {
-    section: "Configuration",
-    item: "Environment Variables",
-    description: "Environment variable configuration",
-    keywords: "environment variables env config setup"
-  },
-  {
-    section: "Configuration",
-    item: "Debugging",
-    description: "Debug mode and troubleshooting",
-    keywords: "debugging debug troubleshooting errors logs"
-  },
-  {
-    section: "Advanced",
-    item: "AI Crawler Detection",
-    description: "How AI crawler detection works",
-    keywords: "ai crawler detection bot identification user agent"
-  },
-  {
-    section: "Advanced",
-    item: "Event Batching", 
-    description: "Event batching and performance optimization",
-    keywords: "batching events performance optimization buffer"
-  },
-  {
-    section: "Advanced",
-    item: "Retry Logic",
-    description: "Automatic retry mechanisms",
-    keywords: "retry logic automatic retries error handling"
-  },
-  {
-    section: "Advanced", 
-    item: "Webhooks",
-    description: "Webhook integration and callbacks",
-    keywords: "webhooks callbacks integration notifications"
+    sectionId: "nodejs", 
+    description: "Node.js and Express server integration",
+    keywords: "nodejs node.js express server backend integration"
   }
 ]
 
@@ -174,10 +133,8 @@ export function DocsSearchBar({ onNavigate }: DocsSearchBarProps) {
     }
   }, [isSearchOpen])
 
-  const handleItemClick = (item: typeof DOC_ITEMS[0]) => {
-    // Convert section and item to section ID format
-    const sectionId = item.item.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
-    onNavigate?.(sectionId)
+  const handleItemClick = (item: DocItem) => {
+    onNavigate?.(item.sectionId)
     setIsSearchOpen(false)
     setSearchQuery("")
   }
@@ -206,20 +163,20 @@ export function DocsSearchBar({ onNavigate }: DocsSearchBarProps) {
       `}</style>
       
       <div className="flex items-center w-full h-10 px-2">
-        <SearchIcon className="h-4 w-4 text-gray-400 mr-1.5" />
-        <div className="relative flex-1">
-          <div className="flex items-center">
+        <SearchIcon className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
+        <div className="relative flex-1 min-w-0">
+          <div className="flex items-center justify-between">
             <input
               type="text"
-              placeholder="Search documentation..."
-              className="bg-transparent border-none outline-none text-gray-200 placeholder-gray-400 w-full font-sans text-sm"
+              placeholder="Search docs..."
+              className="bg-transparent border-none outline-none text-gray-200 placeholder-gray-400 w-full font-sans text-sm pr-2 truncate"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setIsSearchOpen(true)}
             />
-            <div className="flex items-center h-6 border border-[#2F2F2F] bg-[#1C1C1C] px-1.5 text-gray-400 ml-1">
-              <Command className="h-3 w-3" />
-              <span className="text-xs mx-1">+</span>
+            <div className="flex items-center h-5 border border-[#2F2F2F] bg-[#1C1C1C] px-1.5 text-gray-400 flex-shrink-0">
+              <Command className="h-2.5 w-2.5" />
+              <span className="text-xs mx-0.5">+</span>
               <span className="text-xs">K</span>
             </div>
           </div>

@@ -23,63 +23,86 @@ export default function DocsFooter() {
               <span className="text-white font-semibold">Split</span>
             </Link>
             <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-              The first autonomous AEO engineer.
+            Attribution Infrastructure for LLM-Powered Search.
             </p>
           </div>
 
           {/* Navigation Links - Compact Grid */}
           <div className="flex gap-16">
             
-            {/* Company */}
+            {/* Product */}
             <div>
-              <h4 className="text-white font-medium mb-3 text-sm">Company</h4>
+              <h4 className="text-white font-medium mb-3 text-sm">Product</h4>
               <nav className="space-y-2">
                 <Link 
-                  href="/customers" 
+                  href="/dashboard" 
                   className="block text-gray-400 hover:text-white text-sm transition-colors"
                 >
-                  Customers
+                  Dashboard
                 </Link>
                 <Link 
-                  href="/case-studies/origami" 
+                  href="/settings" 
                   className="block text-gray-400 hover:text-white text-sm transition-colors"
                 >
-                  Case Studies
+                  Settings
+                </Link>
+                <Link 
+                  href="/dashboard/attribution" 
+                  className="block text-gray-400 hover:text-white text-sm transition-colors"
+                >
+                  AI Attribution
                 </Link>
               </nav>
             </div>
 
-            {/* Resources */}
+            {/* Developers */}
             <div>
-              <h4 className="text-white font-medium mb-3 text-sm">Resources</h4>
+              <h4 className="text-white font-medium mb-3 text-sm">Developers</h4>
               <nav className="space-y-2">
-                <span className="block text-gray-500 text-sm cursor-not-allowed">
-                  Documentation (Coming Soon)
-                </span>
                 <Link 
-                  href="/resources" 
+                  href="/docs" 
                   className="block text-gray-400 hover:text-white text-sm transition-colors"
                 >
-                  Blog & Guides
+                  Documentation
+                </Link>
+                <a 
+                  href="https://www.npmjs.com/package/@split.dev/analytics" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-gray-400 hover:text-white text-sm transition-colors"
+                >
+                  NPM Package
+                </a>
+                <Link 
+                  href="/docs#troubleshooting" 
+                  className="block text-gray-400 hover:text-white text-sm transition-colors"
+                >
+                  Troubleshooting
                 </Link>
               </nav>
             </div>
 
-            {/* Legal */}
+            {/* Support */}
             <div>
-              <h4 className="text-white font-medium mb-3 text-sm">Legal</h4>
+              <h4 className="text-white font-medium mb-3 text-sm">Support</h4>
               <nav className="space-y-2">
                 <Link 
-                  href="/privacy" 
+                  href="/docs#installation" 
                   className="block text-gray-400 hover:text-white text-sm transition-colors"
                 >
-                  Privacy Policy
+                  Getting Started
                 </Link>
                 <Link 
-                  href="/terms" 
+                  href="/docs#api-reference" 
                   className="block text-gray-400 hover:text-white text-sm transition-colors"
                 >
-                  Terms of Service
+                  API Reference
+                </Link>
+                <Link 
+                  href="/docs#supported-crawlers" 
+                  className="block text-gray-400 hover:text-white text-sm transition-colors"
+                >
+                  Supported Crawlers
                 </Link>
               </nav>
             </div>
@@ -89,7 +112,7 @@ export default function DocsFooter() {
         {/* Bottom Bar */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-6 border-t border-[#1a1a1a]">
           <p className="text-gray-500 text-sm mb-4 sm:mb-0">
-            © 1000X, All rights reserved.
+            © 2024 Split Analytics. MIT License.
           </p>
           
           <div className="flex items-center gap-4">
