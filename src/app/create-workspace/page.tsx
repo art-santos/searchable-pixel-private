@@ -137,9 +137,9 @@ export default function CreateWorkspacePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c] flex">
+    <div className="min-h-screen bg-[#0c0c0c] grid lg:grid-cols-2">
       {/* Left side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex items-center justify-center p-8">
         <div className="w-full max-w-md">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -244,17 +244,32 @@ export default function CreateWorkspacePage() {
       </div>
 
       {/* Right side - Visual */}
-      <div className="hidden lg:flex flex-1 bg-[#1a1a1a] items-center justify-center p-8">
-        <div className="text-center">
-          <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
-            <ArrowRight className="w-8 h-8 text-white" />
-          </div>
+      <div className="relative hidden lg:block bg-[#0c0c0c] overflow-hidden">
+        <div className="absolute inset-0 pattern-grid opacity-10"></div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Image 
+            src="/images/signup.png" 
+            fill
+            alt="Signup" 
+            className="object-cover filter grayscale brightness-50"
+            priority
+          />
+        </div>
+        <div className="absolute bottom-8 left-0 right-0 text-center">
           <h2 className="text-xl font-semibold text-white mb-2">Almost there!</h2>
-          <p className="text-gray-400 max-w-sm">
+          <p className="text-gray-400 max-w-sm mx-auto">
             Just a few details and you'll be ready to optimize your site's AI visibility.
           </p>
         </div>
       </div>
     </div>
+
+    <style jsx>{`
+      .pattern-grid {
+        background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                          linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        background-size: 30px 30px;
+      }
+    `}</style>
   )
 } 

@@ -80,7 +80,7 @@ export default function AttributionByPagePage() {
       // Auto-detect user's timezone
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
       
-      const response = await fetch(`/api/dashboard/attribution-pages-detailed?timeframe=${timeframeMap[timeframe]}&workspaceId=${currentWorkspace.id}`, {
+      const response = await fetch(`/api/dashboard/attribution-pages-detailed?timeframe=${timeframeMap[timeframe as keyof typeof timeframeMap]}&workspaceId=${currentWorkspace.id}`, {
         headers: {
           'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
         }
@@ -148,12 +148,12 @@ export default function AttributionByPagePage() {
   const exportData: ExportData = {
     stats: {
       totalPages: pages.length,
-      totalVisits: pages.reduce((sum, page) => sum + page.totalVisits, 0),
-      totalBots: pages.reduce((sum, page) => sum + page.bots.length, 0),
+      totalVisits: pages.reduce((sum: number, page: CrawledPage) => sum + page.totalVisits, 0),
+      totalBots: pages.reduce((sum: number, page: CrawledPage) => sum + page.bots.length, 0),
       timeframe: timeframe
     },
     chartData: [], // No chart data for list view
-    recentActivity: pages.map(page => ({
+    recentActivity: pages.map((page: CrawledPage) => ({
       path: page.path,
       totalVisits: page.totalVisits,
       lastVisit: page.lastVisit,
@@ -237,7 +237,7 @@ export default function AttributionByPagePage() {
 
             {/* Table Body */}
             <div className="divide-y divide-zinc-800/30">
-              {pages.map((page, index) => (
+              {pages.map((page: CrawledPage, index: number) => (
                 <motion.div
                   key={page.path}
                   initial={{ opacity: 0, y: 10 }}

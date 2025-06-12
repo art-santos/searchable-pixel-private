@@ -137,7 +137,7 @@ export default function CrawlerDetailPage() {
     
     setIsLoading(true)
     try {
-      const response = await fetch(`/api/dashboard/crawler-detail?botName=${encodeURIComponent(botName)}&timeframe=${timeframeMap[timeframe]}&workspaceId=${currentWorkspace.id}`, {
+      const response = await fetch(`/api/dashboard/crawler-detail?botName=${encodeURIComponent(botName)}&timeframe=${timeframeMap[timeframe as keyof typeof timeframeMap]}&workspaceId=${currentWorkspace.id}`, {
         headers: {
           'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
         }
@@ -277,7 +277,10 @@ export default function CrawlerDetailPage() {
                     className="w-8 h-8"
                     onError={(e) => {
                       e.currentTarget.style.display = 'none'
-                      e.currentTarget.nextElementSibling!.style.display = 'flex'
+                      const nextElement = e.currentTarget.nextElementSibling as HTMLElement
+                      if (nextElement) {
+                        nextElement.style.display = 'flex'
+                      }
                     }}
                   />
                   <Bot className="w-6 h-6 text-zinc-500 hidden" />
@@ -452,7 +455,7 @@ export default function CrawlerDetailPage() {
                         angle={labelAngle}
                         textAnchor={labelAngle !== 0 ? 'end' : 'middle'}
                         height={labelHeight}
-                        tickFormatter={(value, index) => {
+                        tickFormatter={(value: any, index: number) => {
                           const dataPoint = chartData[index]
                           if (isHourlyData && dataPoint && !dataPoint.showLabel) {
                             return ''
@@ -473,7 +476,7 @@ export default function CrawlerDetailPage() {
                           letterSpacing: '-0.025em'
                         }}
                         tickLine={false}
-                        tickFormatter={(value) => `${value}`}
+                        tickFormatter={(value: any) => `${value}`}
                         tickCount={8}
                         domain={[0, (dataMax: number) => dataMax * 2]}
                         width={40}
@@ -523,7 +526,7 @@ export default function CrawlerDetailPage() {
                     className="bg-transparent border-none shadow-none"
                   />
                 ) : stats && stats.recentActivity.length > 0 ? (
-                  stats.recentActivity.map((activity, index) => (
+                  stats.recentActivity.map((activity: CrawlerActivity, index: number) => (
                     <motion.div
                       key={index}
                       initial={{ opacity: 0, y: 20 }}
