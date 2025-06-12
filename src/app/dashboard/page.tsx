@@ -10,7 +10,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { CheckCircle2, XCircle, X } from 'lucide-react'
 import { ConnectAnalyticsDialog } from "@/app/dashboard/components/connect-analytics-dialog"
-import { WorkspaceDebug } from "@/components/debug/workspace-debug"
+
 
 export default function Dashboard() {
   const { user, supabase, loading } = useAuth()
@@ -175,8 +175,7 @@ export default function Dashboard() {
         </motion.div>
       )}
 
-      {/* Temporary debug component */}
-      <WorkspaceDebug />
+
 
       <style jsx global>{`
         @keyframes workspaceFlip {

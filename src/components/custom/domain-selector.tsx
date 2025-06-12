@@ -83,9 +83,16 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
   const handleWorkspaceSwitch = async (workspaceId: string) => {
     if (workspaceId === currentWorkspace?.id) return
     
+    // Find the workspace object from the ID
+    const targetWorkspace = workspaces.find(ws => ws.id === workspaceId)
+    if (!targetWorkspace) {
+      console.error('Workspace not found:', workspaceId)
+      return
+    }
+    
     setLoading(true)
     try {
-      await switchWorkspace(workspaceId)
+      await switchWorkspace(targetWorkspace)
     } catch (error) {
       console.error('Error switching workspace:', error)
     } finally {
