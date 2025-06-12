@@ -718,6 +718,9 @@ export default function EnhancedSnapshotReportPage() {
                 >
                   <Settings className="w-4 h-4" />
                   <span>Technical Health</span>
+                  <span className="px-1.5 py-0.5 text-xs rounded-sm bg-orange-500/10 text-orange-400 border border-orange-500/20 ml-1">
+                    Beta
+                  </span>
                 </button>
                       </div>
                     </div>
