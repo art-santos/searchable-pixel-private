@@ -146,9 +146,9 @@ export default function WebsiteConnector({ onComplete }: WebsiteConnectorProps =
           </CardContent>
         </Card>
         
-        {/* Framer Card - Coming Soon */}
+        {/* Framer Card - Beta */}
         <Card 
-          className={`bg-[#171717] border-[#333333] cursor-pointer hover:border-gray-500/50 hover:bg-[#1a1a1a] transition-colors ${platform === 'framer' ? 'border-[#FF914D] ring-1 ring-[#FF914D]/30' : ''}`}
+          className={`bg-[#171717] border-[#333333] cursor-pointer hover:border-[#FF914D]/70 hover:bg-[#1a1a1a] transition-colors ${platform === 'framer' ? 'border-[#FF914D] ring-1 ring-[#FF914D]/30' : ''}`}
           onClick={() => handlePlatformSelect('framer')}
         >
           <CardContent className="p-4 flex flex-col items-center justify-center space-y-4">
@@ -161,13 +161,13 @@ export default function WebsiteConnector({ onComplete }: WebsiteConnectorProps =
               <h4 className="text-sm font-medium text-white">Framer</h4>
               <p className="text-xs text-gray-400 mt-1">Framer sites</p>
             </div>
-            <Badge variant="outline">Coming Soon</Badge>
+            <Badge variant="secondary" className="bg-orange-500/20 text-orange-300 border-orange-500/30">Beta</Badge>
           </CardContent>
         </Card>
         
-        {/* Webflow Card - Coming Soon */}
+        {/* Webflow Card - Supported */}
         <Card 
-          className={`bg-[#171717] border-[#333333] cursor-pointer hover:border-gray-500/50 hover:bg-[#1a1a1a] transition-colors ${platform === 'webflow' ? 'border-[#FF914D] ring-1 ring-[#FF914D]/30' : ''}`}
+          className={`bg-[#171717] border-[#333333] cursor-pointer hover:border-[#FF914D]/70 hover:bg-[#1a1a1a] transition-colors ${platform === 'webflow' ? 'border-[#FF914D] ring-1 ring-[#FF914D]/30' : ''}`}
           onClick={() => handlePlatformSelect('webflow')}
         >
           <CardContent className="p-4 flex flex-col items-center justify-center space-y-4">
@@ -180,7 +180,7 @@ export default function WebsiteConnector({ onComplete }: WebsiteConnectorProps =
               <h4 className="text-sm font-medium text-white">Webflow</h4>
               <p className="text-xs text-gray-400 mt-1">Webflow sites</p>
             </div>
-            <Badge variant="outline">Coming Soon</Badge>
+            <Badge variant="secondary" className="bg-blue-500/20 text-blue-300 border-blue-500/30">Lite</Badge>
           </CardContent>
         </Card>
         
@@ -202,7 +202,7 @@ export default function WebsiteConnector({ onComplete }: WebsiteConnectorProps =
         </Card>
       </div>
       
-      {platform && platform !== 'nextjs' && (
+      {platform && platform !== 'nextjs' && platform !== 'webflow' && platform !== 'framer' && (
         <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
           <div className="flex items-start">
             <AlertCircle className="h-5 w-5 text-blue-400 mr-3 mt-0.5" />

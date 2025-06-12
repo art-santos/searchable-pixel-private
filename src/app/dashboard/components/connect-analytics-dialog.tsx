@@ -29,6 +29,7 @@ type Platform = {
   iconBg?: string
   available: boolean
   votes?: number
+  hasBeta?: boolean
 }
 
 const platforms: Platform[] = [
@@ -42,6 +43,15 @@ const platforms: Platform[] = [
     available: true
   },
   {
+    id: 'wordpress',
+    name: 'WordPress',
+    description: 'WordPress.com or self-hosted',
+    category: 'cms',
+    icon: 'W',
+    iconBg: 'bg-[#21759b] text-white',
+    available: true
+  },
+  {
     id: 'custom',
     name: 'Custom Server',
     description: 'Node.js, Python, PHP, or other',
@@ -51,13 +61,22 @@ const platforms: Platform[] = [
     available: true
   },
   {
-    id: 'wordpress',
-    name: 'WordPress',
-    description: 'WordPress.com or self-hosted',
-    category: 'cms',
-    icon: 'W',
-    iconBg: 'bg-[#21759b] text-white',
-    available: true
+    id: 'webflow',
+    name: 'Webflow',
+    description: 'Sites built with Webflow',
+    category: 'nocode',
+    iconBg: 'bg-[#4353FF] text-white',
+    available: true,
+    hasBeta: true
+  },
+  {
+    id: 'framer',
+    name: 'Framer',
+    description: 'Sites built with Framer',
+    category: 'nocode',
+    iconBg: 'bg-[#0055FF] text-white',
+    available: true,
+    hasBeta: true
   },
   {
     id: 'netlify',
@@ -99,26 +118,7 @@ const platforms: Platform[] = [
     available: false,
     votes: 0
   },
-  {
-    id: 'framer',
-    name: 'Framer',
-    description: 'Sites built with Framer',
-    category: 'nocode',
-    icon: 'F',
-    iconBg: 'bg-[#0055FF] text-white',
-    available: false,
-    votes: 0
-  },
-  {
-    id: 'webflow',
-    name: 'Webflow',
-    description: 'Sites built with Webflow',
-    category: 'nocode',
-    icon: 'W',
-    iconBg: 'bg-[#4353FF] text-white',
-    available: false,
-    votes: 0
-  },
+
   {
     id: 'wix',
     name: 'Wix',
@@ -240,6 +240,12 @@ export function ConnectAnalyticsDialog({
       if (a.available && !b.available) return -1
       if (!a.available && b.available) return 1
       
+      // Among available platforms, non-beta first
+      if (a.available && b.available) {
+        if (!a.hasBeta && b.hasBeta) return -1
+        if (a.hasBeta && !b.hasBeta) return 1
+      }
+      
       // Then sort by vote count (highest first)
       const aVotes = platformVotes[a.id] || 0
       const bVotes = platformVotes[b.id] || 0
@@ -274,7 +280,7 @@ export function ConnectAnalyticsDialog({
     setSelectedPlatform(platformId)
     
     // For supported platforms, show installation guide
-    if (platformId === 'vercel' || platformId === 'custom') {
+    if (platformId === 'vercel' || platformId === 'custom' || platformId === 'webflow' || platformId === 'framer') {
       setShowInstallationGuide(true)
     }
     // For other platforms, show existing setup instructions
@@ -345,7 +351,7 @@ export function ConnectAnalyticsDialog({
         {showInstallationGuide ? (
           // Installation Guide flow
           <InstallationGuide
-            platform={selectedPlatform === 'custom' ? 'node' : selectedPlatform as 'vercel' | 'node'}
+            platform={selectedPlatform === 'custom' ? 'node' : selectedPlatform as 'vercel' | 'node' | 'webflow' | 'framer'}
             onComplete={handleInstallationComplete}
             onBack={handleBack}
           />
@@ -394,14 +400,27 @@ export function ConnectAnalyticsDialog({
                       <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold ${
                         isAvailable ? platform.iconBg : 'bg-gray-200 dark:bg-[#0a0a0a] text-gray-500 dark:text-[#333]'
                       }`}>
-                        {platform.icon}
+                        {platform.id === 'webflow' ? (
+                          <Image src="/images/webflow.svg" alt="Webflow" width={20} height={12} className="filter brightness-0 invert" />
+                        ) : platform.id === 'framer' ? (
+                          <Image src="/images/framer.svg" alt="Framer" width={14} height={20} className="filter brightness-0 invert" />
+                        ) : (
+                          platform.icon
+                        )}
                       </div>
                       <div className="flex-1">
-                        <h3 className={`font-medium text-sm ${
-                          isAvailable ? 'text-black dark:text-white group-hover:text-gray-700 dark:group-hover:text-white/90' : 'text-gray-600 dark:text-[#444]'
-                        }`}>
-                          {platform.name}
-                        </h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className={`font-medium text-sm ${
+                            isAvailable ? 'text-black dark:text-white group-hover:text-gray-700 dark:group-hover:text-white/90' : 'text-gray-600 dark:text-[#444]'
+                          }`}>
+                            {platform.name}
+                          </h3>
+                          {platform.hasBeta && (
+                            <span className="px-1.5 py-0.5 text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded">
+                              Beta
+                            </span>
+                          )}
+                        </div>
                         <p className={`text-xs ${
                           isAvailable ? 'text-gray-500 dark:text-[#666]' : 'text-gray-500 dark:text-[#666]'
                         }`}>
@@ -514,14 +533,24 @@ export const middleware = splitAnalytics({
                       </li>
                     </ol>
                   </div>
-                  <Button 
-                    className="w-full" 
-                    variant="outline"
-                    onClick={() => window.open('https://docs.split.dev', '_blank')}
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    View full documentation
-                  </Button>
+                  <div className="flex gap-3">
+                    <Button 
+                      variant="ghost"
+                      onClick={handleBack}
+                      className="text-gray-500 dark:text-[#666]"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Back
+                    </Button>
+                    <Button 
+                      className="flex-1" 
+                      variant="outline"
+                      onClick={() => window.open('https://docs.split.dev', '_blank')}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      View full documentation
+                    </Button>
+                  </div>
                 </>
               )}
 
@@ -540,7 +569,6 @@ export const middleware = splitAnalytics({
                             size="sm"
                             className="mt-2"
                             onClick={() => {
-                              // Create download link for the zip file
                               const link = document.createElement('a')
                               link.href = '/wp-plugin/split-analytics.zip'
                               link.download = 'split-analytics.zip'
@@ -555,31 +583,39 @@ export const middleware = splitAnalytics({
                         <span className="text-gray-500 dark:text-[#666] flex-shrink-0">2.</span>
                         <div>
                           <p className="text-sm text-gray-700 dark:text-[#ccc]">Install the plugin:</p>
-                          <ul className="mt-1 text-xs text-gray-600 dark:text-gray-300 space-y-1 ml-4">
-                            <li>• Go to Plugins → Add New → Upload Plugin</li>
-                            <li>• Choose the downloaded ZIP file</li>
-                            <li>• Click "Install Now" and "Activate"</li>
-                          </ul>
+                          <code className="block mt-1 text-xs bg-gray-100 dark:bg-[#1a1a1a] px-3 py-2 rounded font-mono text-gray-600 dark:text-[#888]">
+                            WordPress Admin → Plugins → Add New → Upload Plugin
+                          </code>
                         </div>
                       </li>
                       <li className="flex gap-3">
                         <span className="text-gray-500 dark:text-[#666] flex-shrink-0">3.</span>
                         <div>
                           <p className="text-sm text-gray-700 dark:text-[#ccc]">Configure your API key:</p>
-                          <ul className="mt-1 text-xs text-gray-600 dark:text-gray-300 space-y-1 ml-4">
-                            <li>• Go to Settings → Split Analytics</li>
-                            <li>• Enter your API key from the dashboard</li>
-                            <li>• Enable tracking and save settings</li>
-                          </ul>
+                          <code className="block mt-1 text-xs bg-gray-100 dark:bg-[#1a1a1a] px-3 py-2 rounded font-mono text-gray-600 dark:text-[#888]">
+                            Settings → Split Analytics → Enter API Key
+                          </code>
                         </div>
                       </li>
                     </ol>
                   </div>
-                  <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 rounded-lg p-3">
-                    <p className="text-xs text-blue-700 dark:text-blue-300">
-                      <strong>Note:</strong> The plugin is currently in review for the WordPress.org directory. 
-                      For now, please use the manual installation method above.
-                    </p>
+                  <div className="flex gap-3">
+                    <Button 
+                      variant="ghost"
+                      onClick={handleBack}
+                      className="text-gray-500 dark:text-[#666]"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Back
+                    </Button>
+                    <Button 
+                      className="flex-1" 
+                      variant="outline"
+                      onClick={() => window.open('https://docs.split.dev/wordpress', '_blank')}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      View full documentation
+                    </Button>
                   </div>
                 </>
               )}
@@ -619,17 +655,131 @@ app.use(splitAnalytics({
                     </ol>
                   </div>
                   <div className="space-y-2">
+                                      <div className="flex gap-3">
                     <Button 
-                      className="w-full" 
+                      variant="ghost"
+                      onClick={handleBack}
+                      className="text-gray-500 dark:text-[#666]"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Back
+                    </Button>
+                    <Button 
+                      className="flex-1" 
                       variant="outline"
                       onClick={() => window.open('https://docs.split.dev', '_blank')}
                     >
                       <ExternalLink className="w-4 h-4 mr-2" />
                       View full documentation
                     </Button>
+                  </div>
                     <p className="text-xs text-gray-500 dark:text-[#666] text-center">
                       Supports Express, Fastify, Koa, and raw Node.js
                     </p>
+                  </div>
+                </>
+              )}
+
+              {/* Webflow Instructions */}
+              {selectedPlatform === 'webflow' && (
+                <>
+                  <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#1a1a1a] rounded-lg p-4">
+                    <h4 className="font-medium text-black dark:text-white mb-3">Quick Setup</h4>
+                    <ol className="space-y-3">
+                      <li className="flex gap-3">
+                        <span className="text-gray-500 dark:text-[#666] flex-shrink-0">1.</span>
+                        <div>
+                          <p className="text-sm text-gray-700 dark:text-[#ccc]">Add tracking script to your site:</p>
+                          <code className="block mt-1 text-xs bg-gray-100 dark:bg-[#1a1a1a] px-3 py-2 rounded font-mono text-gray-600 dark:text-[#888]">
+                            Site Settings → Custom Code → Head Code
+                          </code>
+                        </div>
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="text-gray-500 dark:text-[#666] flex-shrink-0">2.</span>
+                        <div>
+                          <p className="text-sm text-gray-700 dark:text-[#ccc]">Paste the tracking script:</p>
+                          <code className="block mt-1 text-xs bg-gray-100 dark:bg-[#1a1a1a] px-3 py-2 rounded font-mono text-gray-600 dark:text-[#888] whitespace-pre">
+{`<script src="https://cdn.split.dev/analytics.js" 
+        data-key="your_api_key_here"></script>`}
+                          </code>
+                        </div>
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="text-gray-500 dark:text-[#666] flex-shrink-0">3.</span>
+                        <p className="text-sm text-gray-700 dark:text-[#ccc]">Publish your site</p>
+                      </li>
+                    </ol>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button 
+                      variant="ghost"
+                      onClick={handleBack}
+                      className="text-gray-500 dark:text-[#666]"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Back
+                    </Button>
+                    <Button 
+                      className="flex-1" 
+                      variant="outline"
+                      onClick={() => window.open('https://docs.split.dev/webflow', '_blank')}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      View full documentation
+                    </Button>
+                  </div>
+                </>
+              )}
+
+              {/* Framer Instructions */}
+              {selectedPlatform === 'framer' && (
+                <>
+                  <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#1a1a1a] rounded-lg p-4">
+                    <h4 className="font-medium text-black dark:text-white mb-3">Quick Setup</h4>
+                    <ol className="space-y-3">
+                      <li className="flex gap-3">
+                        <span className="text-gray-500 dark:text-[#666] flex-shrink-0">1.</span>
+                        <div>
+                          <p className="text-sm text-gray-700 dark:text-[#ccc]">Add custom code to your site:</p>
+                          <code className="block mt-1 text-xs bg-gray-100 dark:bg-[#1a1a1a] px-3 py-2 rounded font-mono text-gray-600 dark:text-[#888]">
+                            Site Settings → General → Custom Code
+                          </code>
+                        </div>
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="text-gray-500 dark:text-[#666] flex-shrink-0">2.</span>
+                        <div>
+                          <p className="text-sm text-gray-700 dark:text-[#ccc]">Paste the tracking script:</p>
+                          <code className="block mt-1 text-xs bg-gray-100 dark:bg-[#1a1a1a] px-3 py-2 rounded font-mono text-gray-600 dark:text-[#888] whitespace-pre">
+{`<script src="https://cdn.split.dev/analytics.js" 
+        data-key="your_api_key_here"></script>`}
+                          </code>
+                        </div>
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="text-gray-500 dark:text-[#666] flex-shrink-0">3.</span>
+                        <p className="text-sm text-gray-700 dark:text-[#ccc]">Publish your site</p>
+                      </li>
+                    </ol>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button 
+                      variant="ghost"
+                      onClick={handleBack}
+                      className="text-gray-500 dark:text-[#666]"
+                    >
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Back
+                    </Button>
+                    <Button 
+                      className="flex-1" 
+                      variant="outline"
+                      onClick={() => window.open('https://docs.split.dev/framer', '_blank')}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      View full documentation
+                    </Button>
                   </div>
                 </>
               )}
