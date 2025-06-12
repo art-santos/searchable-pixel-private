@@ -351,28 +351,29 @@ export default function PageDetailPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
                       data={chartData}
-                      margin={{ top: 20, right: 30, left: -40, bottom: 20 }}
+                      margin={{ top: 5, right: 10, left: -20, bottom: 5 }}
                     >
                       <defs>
                         <linearGradient id="crawlerGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#fff" stopOpacity={0.15} />
-                          <stop offset="100%" stopColor="#fff" stopOpacity={0} />
+                          <stop offset="0%" stopColor="#ffffff" stopOpacity={0.08} />
+                          <stop offset="100%" stopColor="#ffffff" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid
                         vertical={false}
                         horizontal={true}
-                        strokeDasharray="4 4"
+                        strokeDasharray="2 2"
                         stroke="#333333"
-                        opacity={0.4}
+                        opacity={0.15}
                       />
                       <XAxis
                         dataKey="date"
-                        axisLine={{ stroke: '#333333' }}
+                        axisLine={false}
                         tick={{ 
-                          fill: '#666666', 
+                          fill: '#555555', 
                           fontSize: 11,
-                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
+                          fontFamily: 'var(--font-geist-mono)',
+                          letterSpacing: '-0.025em'
                         }}
                         tickLine={false}
                         interval={tickInterval}
@@ -392,14 +393,18 @@ export default function PageDetailPage() {
                         }}
                       />
                       <YAxis
-                        axisLine={{ stroke: '#333333' }}
+                        axisLine={false}
                         tick={{ 
-                          fill: '#666666', 
+                          fill: '#555555', 
                           fontSize: 11,
-                          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace'
+                          fontFamily: 'var(--font-geist-mono)',
+                          letterSpacing: '-0.025em'
                         }}
                         tickLine={false}
                         tickFormatter={(value) => `${value}`}
+                        tickCount={8}
+                        domain={[0, (dataMax: number) => dataMax * 2]}
+                        width={40}
                       />
                       <Tooltip
                         content={<CustomTooltip />}
@@ -408,10 +413,11 @@ export default function PageDetailPage() {
                       <Area
                         type="monotone"
                         dataKey="visits"
-                        stroke="#fff"
-                        strokeWidth={2}
+                        stroke="#ffffff"
+                        strokeWidth={1.5}
                         fill="url(#crawlerGradient)"
-                        strokeOpacity={0.8}
+                        dot={false}
+                        activeDot={{ r: 4, stroke: '#ffffff', strokeWidth: 2, fill: '#0c0c0c' }}
                       />
                     </AreaChart>
                   </ResponsiveContainer>

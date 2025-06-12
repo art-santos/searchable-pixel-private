@@ -182,54 +182,62 @@ export function CrawlerVisitsChart({ timeframe, onDataChange, className = "" }: 
               data={chartData}
               width="100%"
               height="100%"
-              margin={{ top: 10, right: 20, left: 0, bottom: 10 }}
+              margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
             >
               <defs>
                 <linearGradient id="crawlerGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="currentColor" stopOpacity={0.15} />
-                  <stop offset="100%" stopColor="currentColor" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#ffffff" stopOpacity={0.08} />
+                  <stop offset="100%" stopColor="#ffffff" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid
                 vertical={false}
                 horizontal={true}
-                strokeDasharray="4 4"
+                strokeDasharray="2 2"
                 stroke="currentColor"
-                opacity={0.4}
+                opacity={0.15}
               />
               <XAxis
                 dataKey="date"
-                axisLine={{ stroke: 'currentColor' }}
-                tickLine={{ stroke: 'currentColor' }}
+                axisLine={false}
+                tickLine={false}
                 tick={{ 
                   fill: 'currentColor', 
-                  fontSize: 12,
-                  angle: 0,
-                  textAnchor: 'middle'
+                  fontSize: 11,
+                  fontFamily: 'var(--font-geist-mono)',
+                  letterSpacing: '-0.025em',
+                  opacity: 0.6
                 }}
                 tickFormatter={(value, index) => {
                   const dataPoint = chartData[index]
                   return dataPoint?.showLabel ? value : ''
                 }}
                 interval={0}
-                height={25}
+                height={30}
               />
               <YAxis
-                axisLine={{ stroke: 'currentColor' }}
-                tickLine={{ stroke: 'currentColor' }}
-                tick={{ fill: 'currentColor', fontSize: 12 }}
+                axisLine={false}
+                tickLine={false}
+                tick={{ 
+                  fill: 'currentColor', 
+                  fontSize: 11,
+                  fontFamily: 'var(--font-geist-mono)',
+                  letterSpacing: '-0.025em',
+                  opacity: 0.6
+                }}
                 width={40}
-                domain={[0, (dataMax: number) => dataMax * 1.5]}
+                domain={[0, (dataMax: number) => dataMax * 2]}
+                tickCount={8}
               />
               <Tooltip content={<CustomTooltip />} />
               <Area
                 type="linear"
                 dataKey="crawls"
-                stroke="currentColor"
-                strokeWidth={2}
+                stroke="#ffffff"
+                strokeWidth={1.5}
                 fill="url(#crawlerGradient)"
-                dot={<CustomDot />}
-                activeDot={{ r: 6, stroke: 'currentColor', strokeWidth: 2, fill: 'var(--background)' }}
+                dot={false}
+                activeDot={{ r: 4, stroke: '#ffffff', strokeWidth: 2, fill: 'var(--background)' }}
               />
             </AreaChart>
           </ResponsiveContainer>

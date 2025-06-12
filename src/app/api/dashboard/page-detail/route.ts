@@ -1,5 +1,38 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import {
+  getTimeframeConfig,
+  fetchDataInBatches,
+  aggregateVisitsByPeriod,
+  generateChartData,
+  formatRelativeTime,
+  ChartDataPoint
+} from '@/lib/chart-utils'
+import { getCache, generateCacheKey, CACHE_TTL } from '@/lib/cache-utils'
+
+interface CrawlerVisit {
+  timestamp: string
+  crawler_name: string
+  crawler_company: string
+  path: string
+  response_time_ms?: number
+  workspace_id: string
+}
+
+interface PageStats {
+  totalVisits: number
+  uniqueCrawlers: number
+  uniqueCompanies: number
+  lastCrawled: string
+  path: string
+  recentVisits: Array<{
+    botName: string
+    company: string
+    visits: number
+    lastVisit: string
+    avgResponseTime?: number
+  }>
+}
 
 export async function GET(request: Request) {
   try {
@@ -21,70 +54,36 @@ export async function GET(request: Request) {
     if (!pagePath || !workspaceId) {
       return NextResponse.json({ error: 'Page path and workspace ID required' }, { status: 400 })
     }
+
+    // Check cache first
+    const cache = getCache()
+    const cacheKey = generateCacheKey('page-detail', {
+      pagePath,
+      timeframe,
+      workspaceId,
+      userId: user.id
+    })
     
-    // Calculate date range based on timeframe
-    let startDate = new Date()
-    let chartPeriods = 7
-    let isHourly = false
+    const cachedData = cache.get<{ stats: PageStats; chartData: any[] }>(cacheKey)
+    if (cachedData) {
+      return NextResponse.json(cachedData)
+    }
     
-    switch (timeframe.toLowerCase()) {
-      case 'last24h':
-        startDate.setHours(startDate.getHours() - 24)
-        chartPeriods = 24 // 24 hours
-        isHourly = true
-        break
-      case 'last7d':
-        startDate.setDate(startDate.getDate() - 7)
-        chartPeriods = 7
-        break
-      case 'last30d':
-        startDate.setDate(startDate.getDate() - 30)
-        chartPeriods = 30
-        break
-      case 'last90d':
-        startDate.setDate(startDate.getDate() - 90)
-        chartPeriods = 90
-        break
-      case 'last365d':
-        startDate.setDate(startDate.getDate() - 365)
-        chartPeriods = 365
-        break
-      default:
-        startDate.setDate(startDate.getDate() - 7)
-        chartPeriods = 7
-    }
+    // Get timeframe configuration
+    const config = getTimeframeConfig(timeframe)
 
-    // Query crawler visits for the specific page with pagination
-    let allVisits: any[] = []
-    let hasMore = true
-    let offset = 0
-    const limit = 1000
-
-    while (hasMore) {
-      const { data: visits, error } = await supabase
-        .from('crawler_visits')
-        .select('*')
-        .eq('workspace_id', workspaceId)
-        .eq('path', pagePath)
-        .gte('timestamp', startDate.toISOString())
-        .range(offset, offset + limit - 1)
-        .order('timestamp', { ascending: false })
-
-      if (error) {
-        console.error('Error fetching page visits:', error)
-        return NextResponse.json({ error: 'Failed to fetch page data' }, { status: 500 })
-      }
-
-      if (!visits || visits.length === 0) {
-        hasMore = false
-      } else {
-        allVisits = allVisits.concat(visits)
-        hasMore = visits.length === limit
-        offset += limit
-      }
-    }
-
-    const visits = allVisits
+    // Fetch visits using optimized batch fetching
+    const visits = await fetchDataInBatches<CrawlerVisit>(
+      supabase,
+      'crawler_visits',
+      {
+        workspace_id: workspaceId,
+        path: pagePath,
+        gte_timestamp: config.startDate.toISOString()
+      },
+      'timestamp, crawler_name, crawler_company, response_time_ms',
+      { column: 'timestamp', ascending: false }
+    )
 
     if (!visits || visits.length === 0) {
       return NextResponse.json({ 
@@ -93,15 +92,9 @@ export async function GET(request: Request) {
       })
     }
 
-    // Calculate stats
-    const totalVisits = visits.length
-    const uniqueCrawlers = new Set(visits.map(v => v.crawler_name)).size
-    const lastCrawled = visits[0].timestamp // Already sorted by timestamp desc
-    
-    // Calculate crawler diversity (number of unique crawler companies)
-    const uniqueCompanies = new Set(visits.map(v => v.crawler_company)).size
-
-    // Group visits by crawler for recent activity
+    // Calculate stats efficiently
+    const crawlerSet = new Set<string>()
+    const companySet = new Set<string>()
     const crawlerData = new Map<string, {
       visits: number
       lastVisit: Date
@@ -109,15 +102,20 @@ export async function GET(request: Request) {
       responseTimes: number[]
     }>()
 
+    // Single pass through visits for all aggregations
     visits.forEach(visit => {
       const botName = visit.crawler_name
+      const company = visit.crawler_company || 'Unknown'
       const visitTime = new Date(visit.timestamp)
+      
+      crawlerSet.add(botName)
+      companySet.add(company)
       
       if (!crawlerData.has(botName)) {
         crawlerData.set(botName, {
           visits: 0,
           lastVisit: visitTime,
-          company: visit.crawler_company || 'Unknown',
+          company,
           responseTimes: []
         })
       }
@@ -146,69 +144,32 @@ export async function GET(request: Request) {
       .sort((a, b) => new Date(b.lastVisit).getTime() - new Date(a.lastVisit).getTime())
       .slice(0, 20) // Limit to 20 most recent
 
-    // Generate chart data
-    const chartData = []
-    const now = new Date()
+    // Generate chart data using utilities
+    const aggregates = aggregateVisitsByPeriod(visits, config.groupBy)
+    const chartDataRaw = generateChartData(aggregates, config)
     
-    for (let i = chartPeriods - 1; i >= 0; i--) {
-      const date = new Date(now)
-      
-      if (isHourly) {
-        // For hourly data, go back by hours
-        date.setHours(date.getHours() - i)
-      } else {
-        // For daily data, go back by days
-        date.setDate(date.getDate() - i)
-      }
-      
-      const periodStart = new Date(date)
-      const periodEnd = new Date(date)
-      
-      if (isHourly) {
-        // Set to the start and end of the hour
-        periodStart.setMinutes(0, 0, 0)
-        periodEnd.setMinutes(59, 59, 999)
-      } else {
-        // Set to the start and end of the day
-        periodStart.setHours(0, 0, 0, 0)
-        periodEnd.setHours(23, 59, 59, 999)
-      }
-      
-      const periodVisits = visits.filter(visit => {
-        const visitTime = new Date(visit.timestamp)
-        return visitTime >= periodStart && visitTime <= periodEnd
-      }).length
-      
-      chartData.push({
-        date: periodStart.toISOString(),
-        visits: periodVisits,
-        showLabel: isHourly ? (i % 2 === 0) : true // For hourly, show every other label to avoid crowding
-      })
-    }
+    // Transform to match expected format
+    const chartData: Array<{ date: string; visits: number; showLabel?: boolean }> = chartDataRaw.map(point => ({
+      date: point.date,
+      visits: point.value,
+      showLabel: point.showLabel
+    }))
 
-    const stats = {
-      totalVisits,
-      uniqueCrawlers,
-      uniqueCompanies,
-      lastCrawled,
+    const stats: PageStats = {
+      totalVisits: visits.length,
+      uniqueCrawlers: crawlerSet.size,
+      uniqueCompanies: companySet.size,
+      lastCrawled: visits[0].timestamp, // Already sorted by timestamp desc
       path: pagePath,
       recentVisits
     }
 
-    // Debug logging for 24h timeframe
-    if (timeframe === 'last24h') {
-      console.log(`[Page Detail API] 24h Debug:`, {
-        totalVisits,
-        chartDataLength: chartData.length,
-        chartDataSample: chartData.slice(0, 3),
-        visitsCount: visits.length,
-        timeframe,
-        isHourly,
-        chartPeriods
-      })
-    }
-
-    return NextResponse.json({ stats, chartData })
+    const response = { stats, chartData }
+    
+    // Cache the response
+    cache.set(cacheKey, response, CACHE_TTL.CHART_DATA)
+    
+    return NextResponse.json(response)
 
   } catch (error) {
     console.error('Error in page-detail API:', error)
