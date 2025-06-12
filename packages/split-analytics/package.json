@@ -1,6 +1,6 @@
 {
   "name": "@split.dev/analytics",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Simple AI crawler tracking for any website. Zero dependencies, lightweight, reliable.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -76,4 +76,4 @@
     "node": ">=16.0.0"
   },
   "sideEffects": false
-} 
+}
