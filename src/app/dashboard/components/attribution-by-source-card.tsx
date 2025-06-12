@@ -12,6 +12,7 @@ import { ConnectAnalyticsDialog } from "./connect-analytics-dialog"
 import { useAuth } from "@/contexts/AuthContext"
 import { useWorkspace } from "@/contexts/WorkspaceContext"
 import { PlanType } from "@/lib/subscription/config"
+import { ListSkeleton } from "@/components/skeletons"
 
 interface CrawlerData {
   name: string
@@ -350,9 +351,13 @@ export function AttributionBySourceCard() {
               </div>
             </div>
           ) : isLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="w-6 h-6 animate-spin text-[#666]" />
-            </div>
+            <ListSkeleton 
+              itemType="crawler"
+              items={5}
+              showProgress={true}
+              showHeader={false}
+              className="bg-transparent border-none shadow-none h-full"
+            />
           ) : error ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">

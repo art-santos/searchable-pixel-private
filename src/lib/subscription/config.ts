@@ -82,7 +82,7 @@ export const CREDIT_PACKS = {
 
 // Helper to get subscription limits for a plan
 export function getSubscriptionLimits(plan: PlanType) {
-  return LIMITS[plan]
+  return LIMITS[plan] || LIMITS.starter
 }
 
 // Helper to check if a plan has access to a feature
@@ -118,7 +118,7 @@ export function formatLimit(limit: number | string): string {
 
 // Helper to get allowed timeframes for a plan
 export function getAllowedTimeframes(plan: PlanType): string[] {
-  return LIMITS[plan].timeframes || ['Last 24 hours']
+  return LIMITS[plan]?.timeframes || ['Last 24 hours']
 }
 
 // Helper to check if a plan has access to a specific timeframe

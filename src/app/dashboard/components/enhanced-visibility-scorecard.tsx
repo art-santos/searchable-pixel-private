@@ -243,15 +243,15 @@ export function EnhancedVisibilityScorecard() {
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
             {!userPlanLoading && (
-              <TimeframeSelector 
+            <TimeframeSelector 
                 key={userPlan}
-                title="AI Visibility Score" 
-                timeframe={timeframe} 
-                onTimeframeChange={setTimeframe}
-                titleColor="text-white"
-                selectorColor="text-[#A7A7A7]"
+              title="AI Visibility Score" 
+              timeframe={timeframe} 
+              onTimeframeChange={setTimeframe}
+              titleColor="text-white"
+              selectorColor="text-[#A7A7A7]"
                 userPlan={userPlan}
-              />
+            />
             )}
             <div className="flex items-center space-x-2">
               {hasMaxAccess && (

@@ -5,10 +5,12 @@ import { TimeframeSelector, TimeframeOption } from "@/components/custom/timefram
 import { useState, useEffect } from "react"
 import { useWorkspace } from "@/contexts/WorkspaceContext"
 import { useAuth } from "@/contexts/AuthContext"
-import { Loader2, ArrowLeft, ChevronDown, ExternalLink, Clock } from "lucide-react"
+import { Loader2, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { TableSkeleton } from '@/components/skeletons'
 import { PlanType } from "@/lib/subscription/config"
+import { ExportDropdown } from '@/components/ui/export-dropdown'
+import { ExportData, formatStatsForExport, formatChartDataForExport, formatRecentActivityForExport } from '@/lib/export-utils'
 
 interface CrawlerBot {
   botName: string
@@ -32,7 +34,7 @@ export default function AttributionBySourcePage() {
   const { supabase, session } = useAuth()
   const [bots, setBots] = useState<CrawlerBot[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [expandedBots, setExpandedBots] = useState<Set<string>>(new Set())
+
   const [userPlan, setUserPlan] = useState<PlanType>('starter')
   const [userPlanLoading, setUserPlanLoading] = useState(true)
 
@@ -120,17 +122,7 @@ export default function AttributionBySourcePage() {
     return `https://www.google.com/s2/favicons?domain=${constructedDomain}&sz=128`
   }
 
-  const toggleBotExpansion = (botName: string) => {
-    setExpandedBots(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(botName)) {
-        newSet.delete(botName)
-      } else {
-        newSet.add(botName)
-      }
-      return newSet
-    })
-  }
+
 
   const formatRelativeTime = (timeStr: string) => {
     const now = new Date()
@@ -145,9 +137,34 @@ export default function AttributionBySourcePage() {
     return time.toLocaleDateString()
   }
 
+  // Prepare export data
+  const exportData: ExportData = {
+    stats: {
+      totalBots: bots.length,
+      totalCrawls: bots.reduce((sum, bot) => sum + bot.totalCrawls, 0),
+      totalPaths: bots.reduce((sum, bot) => sum + bot.pathsVisited, 0),
+      timeframe: timeframe
+    },
+    chartData: [], // No chart data for list view
+    recentActivity: bots.map(bot => ({
+      botName: bot.botName,
+      company: bot.company,
+      totalCrawls: bot.totalCrawls,
+      pathsVisited: bot.pathsVisited,
+      avgInterval: bot.avgInterval,
+      lastSeen: bot.lastSeen
+    })),
+    metadata: {
+      title: 'Attribution by Source',
+      timeframe,
+      exportDate: new Date().toLocaleString(),
+      domain: currentWorkspace?.domain
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#0c0c0c] text-white">
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div id="source-list-export" className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -181,9 +198,10 @@ export default function AttributionBySourcePage() {
                   userPlan={userPlan}
                 />
               )}
-              <button className="text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5 rounded border border-zinc-800 hover:border-zinc-700 bg-zinc-900/50">
-                Export
-              </button>
+              <ExportDropdown 
+                data={exportData}
+                elementId="source-list-export"
+              />
             </div>
           </div>
         </motion.div>
@@ -217,93 +235,51 @@ export default function AttributionBySourcePage() {
 
             {/* Table Body */}
             <div className="divide-y divide-zinc-800/30">
-              {bots.map((bot, index) => {
-                const isExpanded = expandedBots.has(bot.botName)
-                
-                return (
-                  <motion.div
-                    key={bot.botName}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.02 }}
+              {bots.map((bot, index) => (
+                <motion.div
+                  key={bot.botName}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.02 }}
+                >
+                  <Link 
+                    href={`/dashboard/attribution/source/${encodeURIComponent(bot.botName)}`}
+                    className="grid grid-cols-12 gap-4 px-4 py-4 hover:bg-zinc-900/20 cursor-pointer transition-colors block"
                   >
-                    {/* Main Row */}
-                    <div 
-                      className="grid grid-cols-12 gap-4 px-4 py-3 hover:bg-zinc-900/20 cursor-pointer transition-colors"
-                      onClick={() => toggleBotExpansion(bot.botName)}
-                    >
-                      <div className="col-span-4 flex items-center gap-3">
-                        <ChevronDown 
-                          className={`w-4 h-4 text-zinc-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                        />
-                        <img 
-                          src={getFaviconForCompany(bot.company)}
-                          alt={bot.company}
-                          width={16}
-                          height={16}
-                          className="w-4 h-4 object-contain"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement
-                            target.style.display = 'none'
-                          }}
-                        />
-                        <div>
-                          <div className="text-white text-sm font-medium">{bot.botName}</div>
-                          <div className="text-zinc-500 text-xs">{bot.company}</div>
+                    <div className="col-span-4 flex items-center gap-3">
+                      <img 
+                        src={getFaviconForCompany(bot.company)}
+                        alt={bot.company}
+                        width={16}
+                        height={16}
+                        className="w-4 h-4 object-contain"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.style.display = 'none'
+                        }}
+                      />
+                      <div>
+                        <div className="text-white text-sm font-medium hover:text-blue-400 transition-colors">
+                          {bot.botName}
                         </div>
-                      </div>
-                      <div className="col-span-2 text-center">
-                        <div className="text-white text-sm font-mono">{bot.totalCrawls.toLocaleString()}</div>
-                      </div>
-                      <div className="col-span-2 text-center">
-                        <div className="text-white text-sm font-mono">{bot.pathsVisited}</div>
-                      </div>
-                      <div className="col-span-2 text-center">
-                        <div className="text-zinc-300 text-sm">{bot.avgInterval}</div>
-                      </div>
-                      <div className="col-span-2 text-right">
-                        <div className="text-zinc-400 text-sm">{formatRelativeTime(bot.lastSeen)}</div>
+                        <div className="text-zinc-500 text-xs">{bot.company}</div>
                       </div>
                     </div>
-
-                    {/* Expanded Content */}
-                    <AnimatePresence>
-                      {isExpanded && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="px-4 py-4 bg-zinc-900/10 border-t border-zinc-800/30">
-                            <div className="mb-3">
-                              <h4 className="text-white text-sm font-medium mb-2">Pages Visited</h4>
-                            </div>
-                            <div className="space-y-2 max-h-64 overflow-y-auto">
-                              {bot.pages.map((page, pageIndex) => (
-                                <div key={pageIndex} className="flex items-center justify-between py-2 px-3 bg-zinc-900/30 rounded text-sm">
-                                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                                    <ExternalLink className="w-3 h-3 text-zinc-500 flex-shrink-0" />
-                                    <span className="text-zinc-300 font-mono truncate">{page.path}</span>
-                                  </div>
-                                  <div className="flex items-center gap-4 text-zinc-500">
-                                    <span>{page.visits} visits</span>
-                                    <span className="flex items-center gap-1">
-                                      <Clock className="w-3 h-3" />
-                                      {formatRelativeTime(page.lastVisit)}
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
-                )
-              })}
+                    <div className="col-span-2 text-center">
+                      <div className="text-white text-sm font-mono">{bot.totalCrawls.toLocaleString()}</div>
+                    </div>
+                    <div className="col-span-2 text-center">
+                      <div className="text-white text-sm font-mono">{bot.pathsVisited}</div>
+                    </div>
+                    <div className="col-span-2 text-center">
+                      <div className="text-zinc-300 text-sm">{bot.avgInterval}</div>
+                    </div>
+                    <div className="col-span-2 text-right">
+                      <div className="text-zinc-400 text-sm">{formatRelativeTime(bot.lastSeen)}</div>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
             </div>
 
             {bots.length === 0 && !isLoading && (
