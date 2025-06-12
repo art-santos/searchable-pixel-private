@@ -245,7 +245,14 @@ export default function CreateWorkspacePage() {
 
       {/* Right side - Visual */}
       <div className="relative hidden lg:block bg-[#0c0c0c] overflow-hidden">
-        <div className="absolute inset-0 pattern-grid opacity-10"></div>
+        <div 
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                             linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)`,
+            backgroundSize: '30px 30px'
+          }}
+        ></div>
         <div className="absolute inset-0 flex items-center justify-center">
           <Image 
             src="/images/signup.png" 
@@ -263,13 +270,5 @@ export default function CreateWorkspacePage() {
         </div>
       </div>
     </div>
-
-    <style jsx>{`
-      .pattern-grid {
-        background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-                          linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-        background-size: 30px 30px;
-      }
-    `}</style>
   )
 } 

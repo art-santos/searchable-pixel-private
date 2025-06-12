@@ -12,14 +12,13 @@ npm install @split.dev/analytics
 
 ## Configuration
 
-**IMPORTANT:** Set your API endpoint to your own domain:
+**Quick Setup:**
 
 ```javascript
 import { createSplitMiddleware } from '@split.dev/analytics/middleware'
 
 export const middleware = createSplitMiddleware({
   apiKey: process.env.SPLIT_API_KEY!,
-  apiEndpoint: process.env.NEXT_PUBLIC_URL + '/api', // YOUR domain, not split.dev
   debug: process.env.NODE_ENV === 'development'
 })
 ```
@@ -29,9 +28,6 @@ export const middleware = createSplitMiddleware({
 ```bash
 # Your API key from Split Analytics dashboard
 SPLIT_API_KEY=split_live_your_key_here
-
-# Your website's URL (important!)
-NEXT_PUBLIC_URL=https://yourdomain.com
 ```
 
 ## Next.js Setup
@@ -43,7 +39,6 @@ import { createSplitMiddleware } from '@split.dev/analytics/middleware'
 
 export const middleware = createSplitMiddleware({
   apiKey: process.env.SPLIT_API_KEY!,
-  apiEndpoint: process.env.NEXT_PUBLIC_URL + '/api',
   debug: process.env.NODE_ENV === 'development'
 })
 
@@ -148,10 +143,19 @@ app.use(async (req, res, next) => {
 ### 5. Test Your Setup
 
 **Trigger an AI crawler visit:**
+
+#### Option 1: Use ChatGPT Search on your website
 1. Use ChatGPT Search on your website
 2. Check your logs for: `✅ AI crawler tracked successfully`
 3. Wait 5-10 seconds (batching delay)
 4. Check your [Split Dashboard](https://split.dev/dashboard)
+
+#### Option 2: Simulate Locally with `curl`
+You can simulate an AI crawler visit locally using `curl` with a known AI crawler User-Agent.  
+Run this command in your terminal (replace the URL if needed):
+
+curl -H "User-Agent: Mozilla/5.0 (compatible; GPTBot/1.0; +https://openai.com/gptbot)" \
+     http://localhost:3000/
 
 ---
 
@@ -425,18 +429,9 @@ Once set up, your [Split Dashboard](https://split.dev/dashboard) shows:
 1. **Check the [troubleshooting section](#🔧-troubleshooting)**
 2. **Enable debug mode** and check logs
 3. **Test your API key**: `npx @split.dev/analytics --test-api YOUR_KEY`
-4. **Join our Discord**: [discord.gg/split](https://discord.gg/split)
-5. **Email support**: [help@split.dev](mailto:help@split.dev)
-
 ---
 
 ## 📝 Changelog
-
-### v2.1.0
-- ✅ **Fixed data format compatibility** (url + crawler object)
-- ✅ **Improved error handling** (never crashes your app)
-- ✅ **Enhanced debugging** (detailed logs in debug mode)
-- ✅ **Better documentation** (this README!)
 
 ### v2.0.0
 - ✅ **Added 25+ AI crawler detection**
@@ -446,10 +441,5 @@ Once set up, your [Split Dashboard](https://split.dev/dashboard) shows:
 
 ---
 
-## 🤝 Contributing
-
-Found a bug? Missing a crawler? [Open an issue](https://github.com/split-dev/analytics/issues) or submit a PR!
-
----
 
 **Built with ❤️ by the Split team** 

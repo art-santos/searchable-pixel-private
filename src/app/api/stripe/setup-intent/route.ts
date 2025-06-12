@@ -84,9 +84,7 @@ export async function POST(request: Request) {
       // Add configuration to better handle errors and Link payments
       payment_method_configuration: undefined, // Use default configuration
       locale: 'auto', // Auto-detect locale to fix the localization error
-      allow_promotion_codes: false,
-      billing_address_collection: 'auto',
-      customer_creation: 'if_required'
+      billing_address_collection: 'auto'
     })
 
     return NextResponse.json({ 

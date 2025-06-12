@@ -17,7 +17,7 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsup",
     "dev": "tsup --watch",
     "prepublishOnly": "npm run build",
     "test": "node test-installation.js",
