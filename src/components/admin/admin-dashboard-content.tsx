@@ -11,6 +11,7 @@ import {
   RefreshCw
 } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { motion } from 'framer-motion'
 
 interface AdminDashboardContentProps {
   user: any
@@ -279,176 +280,218 @@ export function AdminDashboardContent({ user }: AdminDashboardContentProps) {
             <h1 className="text-3xl font-bold text-white mb-2">Main Dashboard</h1>
           </div>
           <div className="flex items-center gap-4">
-            <button
+            <motion.button
               onClick={fetchDashboardStats}
               disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#222222] border border-[#333333] text-white rounded-md text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
-            </button>
-            <Badge variant="outline" className="text-gray-300 border-gray-600">
+            </motion.button>
+            <div className="text-xs text-[#666666]">
               Last updated: {new Date(stats.lastUpdated).toLocaleTimeString()}
-            </Badge>
+            </div>
           </div>
         </div>
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-900/20 border border-red-500 rounded-lg">
-          <p className="text-red-400">{error}</p>
-        </div>
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 p-4 bg-red-900/10 border border-red-500/20 rounded-md"
+        >
+          <p className="text-red-400 text-sm">{error}</p>
+        </motion.div>
       )}
 
-      {/* Charts - Full Width */}
-      <div className="space-y-8 mb-8">
-        {/* User Growth Chart */}
-        <Card className="bg-[#161616] border-[#333333] w-full">
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold text-white">Daily User Growth</CardTitle>
-            <p className="text-gray-400">Cumulative registered users over last 30 days (scroll to navigate)</p>
-          </CardHeader>
-          <CardContent>
-            <div className="w-full h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart 
-                  data={userGrowthData.length > 0 ? userGrowthData : [{ date: '1/1', users: 0, mrr: 0 }]} 
-                  margin={{ top: 5, right: 30, left: 20, bottom: 60 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333333" />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="#666666"
-                    fontSize={11}
-                    angle={-45}
-                    textAnchor="end"
-                    height={60}
-                    interval={Math.floor(Math.max(1, userGrowthData.length / 10))}
-                  />
-                  <YAxis 
-                    stroke="#666666"
-                    fontSize={12}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#161616', 
-                      border: '1px solid #333333',
-                      borderRadius: '8px',
-                      color: 'white'
-                    }}
-                    formatter={(value) => [value, 'Users']}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="users" 
-                    stroke="#3b82f6" 
-                    strokeWidth={2}
-                    dot={{ fill: '#3b82f6', strokeWidth: 1, r: 3 }}
-                    activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Card className="bg-[#111111] border-[#222222] hover:border-[#333333] transition-colors">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-[#888888]">Total Users</CardTitle>
+              <Users className="h-4 w-4 text-blue-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{stats.totalUsers.toLocaleString()}</div>
+              <p className="text-xs text-[#666666]">Registered accounts</p>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-        {/* MRR Chart */}
-        <Card className="bg-[#161616] border-[#333333] w-full">
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold text-white">Daily Monthly Recurring Revenue</CardTitle>
-            <p className="text-gray-400">Cumulative MRR from active subscriptions over last 30 days (scroll to navigate)</p>
-          </CardHeader>
-          <CardContent>
-            <div className="w-full h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart 
-                  data={mrrData.length > 0 ? mrrData : [{ date: '1/1', users: 0, mrr: 0 }]} 
-                  margin={{ top: 5, right: 30, left: 20, bottom: 60 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#333333" />
-                  <XAxis 
-                    dataKey="date" 
-                    stroke="#666666"
-                    fontSize={11}
-                    angle={-45}
-                    textAnchor="end"
-                    height={60}
-                    interval={Math.floor(Math.max(1, mrrData.length / 10))}
-                  />
-                  <YAxis 
-                    stroke="#666666"
-                    fontSize={12}
-                    tickFormatter={(value) => `$${value}`}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#161616', 
-                      border: '1px solid #333333',
-                      borderRadius: '8px',
-                      color: 'white'
-                    }}
-                    formatter={(value) => [`$${value}`, 'MRR']}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="mrr" 
-                    stroke="#10b981" 
-                    strokeWidth={2}
-                    dot={{ fill: '#10b981', strokeWidth: 1, r: 3 }}
-                    activeDot={{ r: 6, stroke: '#10b981', strokeWidth: 2 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Card className="bg-[#111111] border-[#222222] hover:border-[#333333] transition-colors">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-[#888888]">Active Users</CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{stats.activeUsers.toLocaleString()}</div>
+              <p className="text-xs text-[#666666]">Last 72 hours</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <Card className="bg-[#111111] border-[#222222] hover:border-[#333333] transition-colors">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-[#888888]">Monthly Recurring Revenue</CardTitle>
+              <DollarSign className="h-4 w-4 text-yellow-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">${stats.currentMrr.toLocaleString()}</div>
+              <p className="text-xs text-[#666666]">Current active subscriptions</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <Card className="bg-[#111111] border-[#222222] hover:border-[#333333] transition-colors">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-[#888888]">Total Workspaces</CardTitle>
+              <Users className="h-4 w-4 text-purple-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{stats.totalWorkspaces.toLocaleString()}</div>
+              <p className="text-xs text-[#666666]">Active workspaces</p>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
 
-      {/* Stats Cards - Moved below charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-[#161616] border-[#333333]">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-300">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-blue-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{stats.totalUsers.toLocaleString()}</div>
-            <p className="text-xs text-gray-400">Registered accounts</p>
-          </CardContent>
-        </Card>
+      {/* Charts */}
+      <div className="space-y-8">
+        {/* User Growth Chart */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+        >
+          <Card className="bg-[#111111] border-[#222222] w-full">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold text-white">Daily User Growth</CardTitle>
+              <p className="text-[#888888] text-sm">Cumulative registered users over last 30 days</p>
+            </CardHeader>
+            <CardContent>
+              <div className="w-full h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart 
+                    data={userGrowthData.length > 0 ? userGrowthData : [{ date: '1/1', users: 0, mrr: 0 }]} 
+                    margin={{ top: 5, right: 30, left: 20, bottom: 60 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#222222" />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="#666666"
+                      fontSize={11}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                      interval={Math.floor(Math.max(1, userGrowthData.length / 10))}
+                    />
+                    <YAxis 
+                      stroke="#666666"
+                      fontSize={12}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#111111', 
+                        border: '1px solid #222222',
+                        borderRadius: '6px',
+                        color: 'white'
+                      }}
+                      formatter={(value) => [value, 'Users']}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="users" 
+                      stroke="#3b82f6" 
+                      strokeWidth={2}
+                      dot={{ fill: '#3b82f6', strokeWidth: 1, r: 3 }}
+                      activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-        <Card className="bg-[#161616] border-[#333333]">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-300">Active Users</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{stats.activeUsers.toLocaleString()}</div>
-            <p className="text-xs text-gray-400">Last 72 hours</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-[#161616] border-[#333333]">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-300">Monthly Recurring Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-yellow-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">${stats.currentMrr.toLocaleString()}</div>
-            <p className="text-xs text-gray-400">Current active subscriptions</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-[#161616] border-[#333333]">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-300">Total Workspaces</CardTitle>
-            <Users className="h-4 w-4 text-purple-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-white">{stats.totalWorkspaces.toLocaleString()}</div>
-            <p className="text-xs text-gray-400">Active workspaces</p>
-          </CardContent>
-        </Card>
+        {/* MRR Chart */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+        >
+          <Card className="bg-[#111111] border-[#222222] w-full">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold text-white">Daily Monthly Recurring Revenue</CardTitle>
+              <p className="text-[#888888] text-sm">Cumulative MRR from active subscriptions over last 30 days</p>
+            </CardHeader>
+            <CardContent>
+              <div className="w-full h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart 
+                    data={mrrData.length > 0 ? mrrData : [{ date: '1/1', users: 0, mrr: 0 }]} 
+                    margin={{ top: 5, right: 30, left: 20, bottom: 60 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#222222" />
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="#666666"
+                      fontSize={11}
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                      interval={Math.floor(Math.max(1, mrrData.length / 10))}
+                    />
+                    <YAxis 
+                      stroke="#666666"
+                      fontSize={12}
+                      tickFormatter={(value) => `$${value}`}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#111111', 
+                        border: '1px solid #222222',
+                        borderRadius: '6px',
+                        color: 'white'
+                      }}
+                      formatter={(value) => [`$${value}`, 'MRR']}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="mrr" 
+                      stroke="#10b981" 
+                      strokeWidth={2}
+                      dot={{ fill: '#10b981', strokeWidth: 1, r: 3 }}
+                      activeDot={{ r: 6, stroke: '#10b981', strokeWidth: 2 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     </div>
   )
