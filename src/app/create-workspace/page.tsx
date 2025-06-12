@@ -83,6 +83,28 @@ export default function CreateWorkspacePage() {
 
       console.log('✅ WORKSPACE CREATION: Data saved successfully!')
 
+      // Send welcome email now that workspace is set up (non-blocking)
+      try {
+        const welcomeResponse = await fetch('/api/emails/welcome', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: user.email,
+            name: workspaceData.name,
+            workspaceName: workspaceData.workspaceName
+          })
+        })
+        
+        if (welcomeResponse.ok) {
+          console.log('📧 WORKSPACE CREATION: Welcome email sent successfully')
+        } else {
+          console.error('📧 WORKSPACE CREATION: Failed to send welcome email:', await welcomeResponse.text())
+        }
+      } catch (emailError) {
+        console.error('📧 WORKSPACE CREATION: Welcome email error:', emailError)
+        // Don't block workspace creation for email errors
+      }
+
       // Ensure onboarding completion flag is set (backup check)
       try {
         console.log('🔧 WORKSPACE CREATION: Ensuring onboarding completion...')

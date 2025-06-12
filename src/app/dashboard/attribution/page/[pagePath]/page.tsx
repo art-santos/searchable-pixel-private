@@ -382,7 +382,7 @@ export default function PageDetailPage() {
                         height={labelHeight}
                         tickFormatter={(value, index) => {
                           const dataPoint = chartData[index]
-                          if (isHourlyData && dataPoint && !dataPoint.showLabel) {
+                          if (dataPoint && !dataPoint.showLabel) {
                             return ''
                           }
                           const date = new Date(value)

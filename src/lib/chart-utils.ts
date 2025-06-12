@@ -319,11 +319,20 @@ export function generateChartData(
       
       // Determine label visibility based on timeframe
       let showLabel = true
-      if (daysToGenerate > 30 && daysToGenerate <= 90) {
-        showLabel = daysAgo % 5 === 0 || daysAgo === 0
-      } else if (daysToGenerate > 90 && daysToGenerate <= 180) {
+      if (daysToGenerate <= 7) {
+        // Show all labels for 7 days or less
+        showLabel = true
+      } else if (daysToGenerate <= 30) {
+        // Show every 3rd day for 30 days
+        showLabel = daysAgo % 3 === 0 || daysAgo === 0
+      } else if (daysToGenerate <= 90) {
+        // Show every 7th day for 90 days
+        showLabel = daysAgo % 7 === 0 || daysAgo === 0
+      } else if (daysToGenerate <= 180) {
+        // Show every 14th day for 180 days
         showLabel = daysAgo % 14 === 0 || daysAgo === 0
-      } else if (daysToGenerate > 180) {
+      } else {
+        // Show every 30th day for 365+ days
         showLabel = daysAgo % 30 === 0 || daysAgo === 0
       }
       

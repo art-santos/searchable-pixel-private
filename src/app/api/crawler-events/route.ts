@@ -275,6 +275,52 @@ export async function POST(request: Request) {
       
       console.log('[Crawler API] ✅ Successfully inserted crawler visits')
 
+      // Check for first crawler detection and send email (non-blocking)
+      try {
+        // Get user profile for email
+        const { data: userProfile, error: profileError } = await supabaseAdmin
+          .from('profiles')
+          .select('email, first_name')
+          .eq('id', userId)
+          .single()
+
+        if (!profileError && userProfile?.email) {
+          // Check if this is the user's first crawler visit
+          const { data: crawlerCount, error: countError } = await supabaseAdmin
+            .from('crawler_visits')
+            .select('id', { count: 'exact' })
+            .eq('user_id', userId)
+
+          if (!countError && crawlerCount && crawlerCount.length === processedEvents.length) {
+            // This is their first crawler(s) - send celebration email
+            const firstEvent = processedEvents[0]
+            
+                         fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/emails/first-crawler`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: userId,
+                crawlerName: firstEvent.crawler_name,
+                page: firstEvent.path,
+                userEmail: userProfile.email,
+                userName: userProfile.first_name
+              })
+            }).then(response => {
+              if (response.ok) {
+                console.log('[Crawler API] 📧 First crawler email sent successfully')
+              } else {
+                console.error('[Crawler API] 📧 Failed to send first crawler email')
+              }
+            }).catch(err => {
+              console.error('[Crawler API] 📧 First crawler email error:', err)
+            })
+          }
+        }
+      } catch (emailError) {
+        console.error('[Crawler API] 📧 Error checking for first crawler email:', emailError)
+        // Don't fail the request for email errors
+      }
+
       // Track usage for billing
       if (!isAdmin) {
         try {

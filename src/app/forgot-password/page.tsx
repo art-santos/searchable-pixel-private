@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,7 +21,6 @@ export default function ForgotPasswordPage() {
   const [notificationMessage, setNotificationMessage] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = createClient()
 
   // Load email from URL params if available
   useEffect(() => {
@@ -48,22 +46,23 @@ export default function ForgotPasswordPage() {
       return
     }
 
-    if (!supabase) {
-      showNotification("error", "Authentication client not available")
-      setIsLoading(false)
-      return
-    }
-
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`
+      // Use our custom forgot password API instead of Supabase
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
       })
 
-      if (error) {
-        showNotification("error", error.message)
-      } else {
+      const data = await response.json()
+
+      if (response.ok && data.success) {
         setEmailSent(true)
         setNotificationMessage(null) // Clear any existing notifications
+      } else {
+        showNotification("error", data.error || "Failed to send reset email. Please try again.")
       }
     } catch (err: any) {
       showNotification("error", "Failed to send reset email. Please try again.")

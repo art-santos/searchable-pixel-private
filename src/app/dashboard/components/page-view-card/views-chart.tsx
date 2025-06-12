@@ -17,6 +17,7 @@ interface ChartDataPoint {
   date: string
   crawls: number
   isCurrentPeriod?: boolean
+  showLabel?: boolean
 }
 
 interface ViewsChartProps {
@@ -118,31 +119,19 @@ export function ViewsChart({ timeframe, isVisible, setIsVisible, data }: ViewsCh
     return () => clearTimeout(timer)
   }, [setIsVisible])
 
-  // Determine if we should show fewer X-axis labels for different timeframes
+  // Determine chart display settings based on timeframe
   const isHourlyData = timeframe === 'Last 24 hours'
-  const isWeeklyData = timeframe === 'Last 7 days'
-  const isMonthlyData = timeframe === 'Last 30 days'
+  const isLongerTimeframe = timeframe === 'Last 90 days' || timeframe === 'Last 365 days'
   
-  let tickInterval = 0
   let labelAngle = 0
   let labelHeight = 30
   
   if (isHourlyData) {
-    tickInterval = 2 // Show every 3rd hour
     labelAngle = -45
     labelHeight = 60
-  } else if (isWeeklyData) {
-    tickInterval = 0 // Show all days in week
-    labelAngle = 0
-    labelHeight = 30
-  } else if (isMonthlyData) {
-    tickInterval = 0 // Show all data points (already pre-filtered by API)
+  } else if (isLongerTimeframe) {
     labelAngle = -45
     labelHeight = 60
-  } else {
-    tickInterval = 0 // Show all data points (already pre-filtered by API)
-    labelAngle = 0
-    labelHeight = 30
   }
 
   return (
@@ -207,10 +196,14 @@ export function ViewsChart({ timeframe, isVisible, setIsVisible, data }: ViewsCh
                       letterSpacing: '-0.025em'
                     }}
                     tickLine={false}
-                    interval={tickInterval}
+                    interval={0}
                     angle={labelAngle}
                     textAnchor={labelAngle !== 0 ? 'end' : 'middle'}
                     height={labelHeight}
+                    tickFormatter={(value, index) => {
+                      const dataPoint = data[index]
+                      return dataPoint?.showLabel ? value : ''
+                    }}
                   />
                   <YAxis
                     axisLine={false}

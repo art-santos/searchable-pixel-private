@@ -139,6 +139,8 @@ export function SignupForm({
         console.log('👤 User created:', data.user?.email)
         console.log('🆔 User ID:', data.user?.id)
         
+        // Welcome email will be sent after workspace setup is complete
+        
         // Call success callback
         onSignupSuccess?.()
         

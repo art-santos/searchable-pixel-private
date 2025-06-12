@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -23,16 +22,20 @@ function ResetPasswordForm() {
   const [notificationType, setNotificationType] = useState<NotificationType>(null)
   const [notificationMessage, setNotificationMessage] = useState<string | null>(null)
   const [resetComplete, setResetComplete] = useState(false)
+  const [resetToken, setResetToken] = useState<string | null>(null)
   
   const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = createClient()
 
   useEffect(() => {
-    // Supabase automatically handles the URL hash tokens from password reset emails
-    // No need for manual validation - let Supabase process the tokens naturally
-    // If the tokens are invalid, the updateUser call will fail with a proper error
-  }, [])
+    // Get reset token from URL parameters
+    const token = searchParams.get('token')
+    if (!token) {
+      showNotification("error", "Invalid reset link. Please request a new password reset.")
+      return
+    }
+    setResetToken(token)
+  }, [searchParams])
 
   const showNotification = (type: NotificationType, message: string) => {
     setNotificationType(type)
@@ -76,36 +79,38 @@ function ResetPasswordForm() {
       return
     }
 
+    if (!resetToken) {
+      showNotification("error", "Invalid reset token")
+      return
+    }
+
     setIsLoading(true)
 
     try {
-      if (!supabase) {
-        showNotification("error", "Authentication client not available")
-        return
-      }
-
-      const { data, error } = await supabase.auth.updateUser({
-        password: password
+      // Use our custom reset password API
+      const response = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          token: resetToken, 
+          password: password 
+        }),
       })
 
-      if (error) {
-        console.error('Password reset error:', error)
-        if (error.message.includes('session_not_found')) {
-          showNotification("error", "Reset link has expired. Please request a new password reset.")
-        } else {
-          showNotification("error", error.message)
-        }
-        return
-      }
+      const data = await response.json()
 
-      if (data.user) {
+      if (response.ok && data.success) {
         setResetComplete(true)
-        showNotification("success", "Password reset successful! Redirecting to dashboard...")
+        showNotification("success", "Password reset successful! Redirecting to login...")
         
-        // Auto-login and redirect after successful reset
+        // Redirect to login after successful reset
         setTimeout(() => {
-          router.push('/dashboard')
+          router.push('/login')
         }, 2000)
+      } else {
+        showNotification("error", data.error || "Failed to reset password. Please try again.")
       }
 
     } catch (err: any) {
