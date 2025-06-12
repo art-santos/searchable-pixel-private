@@ -12,6 +12,7 @@ import { CrawlerAttributionCard } from "@/components/attribution/crawler-attribu
 import { PageAttributionCard } from "@/components/attribution/page-attribution-card"
 import { useAttributionData } from "@/hooks/use-attribution-data"
 import { AttributionPageSkeleton } from "@/components/skeletons"
+import { ConnectAnalyticsDialog } from "@/app/dashboard/components/connect-analytics-dialog"
 
 
 
@@ -21,6 +22,7 @@ export default function AttributionPage() {
   const { switching } = useWorkspace()
   const [userPlan, setUserPlan] = useState<PlanType>('starter')
   const [userPlanLoading, setUserPlanLoading] = useState(true)
+  const [showConnectDialog, setShowConnectDialog] = useState(false)
 
   // Use the custom hook for data fetching
   const { 
@@ -166,6 +168,7 @@ export default function AttributionPage() {
                   timeframe={timeframe}
                   onDataChange={handleChartDataChange}
                   className="h-full"
+                  onConnectAnalytics={() => setShowConnectDialog(true)}
                 />
                 </div>
               </CardContent>
@@ -184,6 +187,7 @@ export default function AttributionPage() {
             <CrawlerAttributionCard 
               crawlerData={crawlerData}
               isLoading={isLoading}
+              onConnectAnalytics={() => setShowConnectDialog(true)}
             />
             </motion.div>
 
@@ -197,10 +201,16 @@ export default function AttributionPage() {
             <PageAttributionCard 
               pageData={pageData}
               isLoading={isLoading}
+              onConnectAnalytics={() => setShowConnectDialog(true)}
             />
             </motion.div>
           </div>
         </div>
+
+        <ConnectAnalyticsDialog 
+          open={showConnectDialog}
+          onOpenChange={setShowConnectDialog}
+        />
     </div>
   )
 } 

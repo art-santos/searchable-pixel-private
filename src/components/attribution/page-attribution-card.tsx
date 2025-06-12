@@ -4,11 +4,23 @@ import { Eye } from "lucide-react"
 import Link from "next/link"
 import { PageData } from "@/types/attribution"
 import { ListSkeleton } from "@/components/skeletons"
+import { EmptyStateBlur } from "@/components/ui/empty-state-blur"
 
 interface PageAttributionCardProps {
   pageData: PageData[]
   isLoading?: boolean
+  onConnectAnalytics?: () => void
 }
+
+// Mock data for empty state preview
+const mockPageData: PageData[] = [
+  { path: '/', totalCrawls: 45, uniqueCrawlers: 3, lastCrawled: '2024-01-15T10:30:00Z', avgResponse: 120 },
+  { path: '/blog', totalCrawls: 38, uniqueCrawlers: 3, lastCrawled: '2024-01-15T09:15:00Z', avgResponse: 95 },
+  { path: '/docs', totalCrawls: 32, uniqueCrawlers: 2, lastCrawled: '2024-01-15T08:45:00Z', avgResponse: 110 },
+  { path: '/api/health', totalCrawls: 28, uniqueCrawlers: 4, lastCrawled: '2024-01-15T08:00:00Z', avgResponse: 45 },
+  { path: '/robots.txt', totalCrawls: 25, uniqueCrawlers: 5, lastCrawled: '2024-01-15T07:30:00Z', avgResponse: 25 },
+  { path: '/sitemap.xml', totalCrawls: 22, uniqueCrawlers: 4, lastCrawled: '2024-01-15T07:00:00Z', avgResponse: 35 }
+]
 
 const getPathIcon = (path: string) => {
   if (path === '/robots.txt') return '🤖'
@@ -34,7 +46,7 @@ const formatRelativeTime = (timeStr: string) => {
   return time.toLocaleDateString()
 }
 
-export function PageAttributionCard({ pageData, isLoading = false }: PageAttributionCardProps) {
+export function PageAttributionCard({ pageData, isLoading = false, onConnectAnalytics }: PageAttributionCardProps) {
   const shouldReduceMotion = useReducedMotion()
 
   // Show skeleton while loading
@@ -49,7 +61,10 @@ export function PageAttributionCard({ pageData, isLoading = false }: PageAttribu
     )
   }
 
-  return (
+  const hasData = pageData.length > 0 && pageData.some(page => page.totalCrawls > 0)
+  const displayData = hasData ? pageData : mockPageData
+
+  const CardComponent = () => (
     <Card className="h-full bg-white dark:bg-[#0c0c0c] border-gray-200 dark:border-[#1a1a1a]">
       <CardHeader className="pb-4 pt-4 pl-6 pr-6 flex-shrink-0 border-b border-gray-200 dark:border-[#1a1a1a]">
         <div className="flex items-center justify-between">
@@ -58,7 +73,7 @@ export function PageAttributionCard({ pageData, isLoading = false }: PageAttribu
               Crawls by Page
             </h3>
             <p className="text-sm text-gray-500 dark:text-[#666]">
-              {pageData.reduce((sum, p) => sum + p.totalCrawls, 0).toLocaleString()} total page crawls
+              {displayData.reduce((sum, p) => sum + p.totalCrawls, 0).toLocaleString()} total page crawls
             </p>
           </div>
           <Link 
@@ -74,7 +89,7 @@ export function PageAttributionCard({ pageData, isLoading = false }: PageAttribu
       <CardContent className="flex-1 min-h-0 pt-4 pr-6 pb-6 pl-6 flex flex-col">
         <div className="flex-1 overflow-y-auto">
           <div className="space-y-1">
-            {pageData.slice(0, 6).map((page, index) => (
+            {displayData.slice(0, 6).map((page, index) => (
               <motion.div
                 key={page.path}
                 initial="hidden"
@@ -114,7 +129,7 @@ export function PageAttributionCard({ pageData, isLoading = false }: PageAttribu
                       <motion.div 
                         className="w-full bg-black dark:bg-white rounded-full"
                         initial={{ height: 0 }}
-                        animate={{ height: `${Math.min((page.totalCrawls / Math.max(...pageData.map(p => p.totalCrawls))) * 100, 100)}%` }}
+                        animate={{ height: `${Math.min((page.totalCrawls / Math.max(...displayData.map(p => p.totalCrawls))) * 100, 100)}%` }}
                         transition={{ delay: index * 0.1 + 0.3, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                       />
                     </div>
@@ -126,5 +141,16 @@ export function PageAttributionCard({ pageData, isLoading = false }: PageAttribu
         </div>
       </CardContent>
     </Card>
+  )
+
+  return (
+    <EmptyStateBlur
+      hasData={hasData}
+      title="No data yet"
+      description="See which pages on your site are being crawled by AI engines"
+      onAction={onConnectAnalytics}
+    >
+      <CardComponent />
+    </EmptyStateBlur>
   )
 } 

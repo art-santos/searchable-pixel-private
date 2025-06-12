@@ -4,11 +4,22 @@ import { Eye } from "lucide-react"
 import Link from "next/link"
 import { CrawlerData } from "@/types/attribution"
 import { ListSkeleton } from "@/components/skeletons"
+import { EmptyStateBlur } from "@/components/ui/empty-state-blur"
 
 interface CrawlerAttributionCardProps {
   crawlerData: CrawlerData[]
   isLoading?: boolean
+  onConnectAnalytics?: () => void
 }
+
+// Mock data for empty state preview
+const mockCrawlerData: CrawlerData[] = [
+  { name: 'ChatGPT', company: 'OpenAI', crawls: 234, percentage: 45.2, color: '#10B981' },
+  { name: 'Claude', company: 'Anthropic', crawls: 187, percentage: 36.1, color: '#3B82F6' },
+  { name: 'Perplexity', company: 'Perplexity', crawls: 92, percentage: 17.8, color: '#8B5CF6' },
+  { name: 'Gemini', company: 'Google', crawls: 45, percentage: 8.7, color: '#F59E0B' },
+  { name: 'Copilot', company: 'Microsoft', crawls: 23, percentage: 4.4, color: '#EF4444' }
+]
 
 const getFaviconForCrawler = (company: string) => {
   const companyDomainMap: Record<string, string> = {
@@ -31,7 +42,7 @@ const getFaviconForCrawler = (company: string) => {
   return `https://www.google.com/s2/favicons?domain=${constructedDomain}&sz=128`
 }
 
-export function CrawlerAttributionCard({ crawlerData, isLoading = false }: CrawlerAttributionCardProps) {
+export function CrawlerAttributionCard({ crawlerData, isLoading = false, onConnectAnalytics }: CrawlerAttributionCardProps) {
   const shouldReduceMotion = useReducedMotion()
 
   // Show skeleton while loading
@@ -75,7 +86,10 @@ export function CrawlerAttributionCard({ crawlerData, isLoading = false }: Crawl
         }),
       }
 
-  return (
+  const hasData = crawlerData.length > 0 && crawlerData.some(crawler => crawler.crawls > 0)
+  const displayData = hasData ? crawlerData : mockCrawlerData
+
+  const CardComponent = () => (
     <Card className="h-full bg-white dark:bg-[#0c0c0c] border-gray-200 dark:border-[#1a1a1a]">
       <CardHeader className="pb-4 pt-4 pl-6 pr-6 flex-shrink-0 border-b border-gray-200 dark:border-[#1a1a1a]">
         <div className="flex items-center justify-between">
@@ -84,7 +98,7 @@ export function CrawlerAttributionCard({ crawlerData, isLoading = false }: Crawl
               Attribution by Source
             </h3>
             <p className="text-sm text-gray-500 dark:text-[#666]">
-              {crawlerData.reduce((sum, c) => sum + c.crawls, 0).toLocaleString()} crawls tracked
+              {displayData.reduce((sum, c) => sum + c.crawls, 0).toLocaleString()} crawls tracked
             </p>
           </div>
           <Link 
@@ -100,7 +114,7 @@ export function CrawlerAttributionCard({ crawlerData, isLoading = false }: Crawl
       <CardContent className="flex-1 min-h-0 pt-4 pr-6 pb-6 pl-6 flex flex-col">
         <div className="flex-1 overflow-y-auto">
           <div className="space-y-1">
-            {crawlerData.slice(0, 5).map((source, index) => (
+            {displayData.slice(0, 5).map((source, index) => (
               <motion.div
                 key={source.name}
                 custom={index}
@@ -164,5 +178,16 @@ export function CrawlerAttributionCard({ crawlerData, isLoading = false }: Crawl
         </div>
       </CardContent>
     </Card>
+  )
+
+  return (
+    <EmptyStateBlur
+      hasData={hasData}
+      title="No data yet"
+      description="Track which AI engines are viewing your content most frequently"
+      onAction={onConnectAnalytics}
+    >
+      <CardComponent />
+    </EmptyStateBlur>
   )
 } 

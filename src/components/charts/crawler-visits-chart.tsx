@@ -5,6 +5,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext"
 import { useAuth } from "@/contexts/AuthContext"
 import { TimeframeOption } from "@/components/custom/timeframe-selector"
 import { ChartSkeleton } from "@/components/skeletons"
+import { EmptyStateBlur } from "@/components/ui/empty-state-blur"
 import {
   Area,
   AreaChart,
@@ -32,7 +33,19 @@ interface CrawlerVisitsChartProps {
   timeframe: TimeframeOption
   onDataChange?: (data: { totalCrawls: number; periodComparison: PeriodComparison | null }) => void
   className?: string
+  onConnectAnalytics?: () => void
 }
+
+// Mock data for empty state preview
+const mockChartData: ChartDataPoint[] = [
+  { date: 'Jan 1', crawls: 45, showLabel: true },
+  { date: 'Jan 2', crawls: 52 },
+  { date: 'Jan 3', crawls: 48 },
+  { date: 'Jan 4', crawls: 61 },
+  { date: 'Jan 5', crawls: 55 },
+  { date: 'Jan 6', crawls: 67 },
+  { date: 'Jan 7', crawls: 73, isCurrentPeriod: true, showLabel: true }
+]
 
 // Custom tooltip for the chart
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -94,7 +107,7 @@ const CustomDot = (props: any) => {
   return null
 }
 
-export function CrawlerVisitsChart({ timeframe, onDataChange, className = "" }: CrawlerVisitsChartProps) {
+export function CrawlerVisitsChart({ timeframe, onDataChange, className = "", onConnectAnalytics }: CrawlerVisitsChartProps) {
   const shouldReduceMotion = useReducedMotion()
   const { currentWorkspace } = useWorkspace()
   const { session } = useAuth()
@@ -151,7 +164,10 @@ export function CrawlerVisitsChart({ timeframe, onDataChange, className = "" }: 
     )
   }
 
-  return (
+  const hasData = chartData.length > 0 && chartData.some(point => point.crawls > 0)
+  const displayData = hasData ? chartData : mockChartData
+
+  const ChartComponent = () => (
     <div className={`h-full w-full relative text-gray-800 dark:text-gray-300 ${className}`} style={{ width: '100%', height: '100%' }}>
       <motion.div 
         className="h-full w-full"
@@ -179,7 +195,7 @@ export function CrawlerVisitsChart({ timeframe, onDataChange, className = "" }: 
         >
           <ResponsiveContainer width="100%" height="100%" style={{ width: '100%', height: '100%' }}>
             <AreaChart
-              data={chartData}
+              data={displayData}
               width="100%"
               height="100%"
               margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
@@ -209,7 +225,7 @@ export function CrawlerVisitsChart({ timeframe, onDataChange, className = "" }: 
                   opacity: 0.6
                 }}
                 tickFormatter={(value, index) => {
-                  const dataPoint = chartData[index]
+                  const dataPoint = displayData[index]
                   return dataPoint?.showLabel ? value : ''
                 }}
                 interval={0}
@@ -244,5 +260,16 @@ export function CrawlerVisitsChart({ timeframe, onDataChange, className = "" }: 
         </motion.div>
       </motion.div>
     </div>
+  )
+
+  return (
+    <EmptyStateBlur
+      hasData={hasData}
+      title="No data yet"
+      description="Connect your analytics to track every time an AI engine crawls your pages"
+      onAction={onConnectAnalytics}
+    >
+      <ChartComponent />
+    </EmptyStateBlur>
   )
 } 

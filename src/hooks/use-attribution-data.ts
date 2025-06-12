@@ -11,6 +11,7 @@ interface AttributionData {
   periodComparison: PeriodComparison | null
   isLoading: boolean
   error: string | null
+  handleChartDataChange: (data: { totalCrawls: number; periodComparison: PeriodComparison | null }) => void
 }
 
 const timeframeMap: Record<TimeframeOption, string> = {

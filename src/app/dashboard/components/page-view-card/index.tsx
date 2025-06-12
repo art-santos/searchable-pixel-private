@@ -125,6 +125,7 @@ export function PageViewCard() {
                   timeframe={timeframe}
                   onDataChange={handleDataChange}
                   className="h-full"
+                  onConnectAnalytics={() => setShowConnectDialog(true)}
                 />
               </div>
 
