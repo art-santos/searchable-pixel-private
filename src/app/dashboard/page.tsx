@@ -22,7 +22,10 @@ export default function Dashboard() {
       const urlParams = new URLSearchParams(window.location.search)
       const setup = urlParams.get('setup')
       
-      if (setup === 'success') {
+      if (setup === 'vercel' || setup === 'node') {
+        // Redirect to installation guide for specific platform
+        // This will be handled by the connect analytics dialog
+      } else if (setup === 'success') {
         setSetupStatus('success')
         // Clean up URL
         window.history.replaceState({}, '', '/dashboard')
@@ -102,8 +105,8 @@ export default function Dashboard() {
           )}
           <span className="text-sm font-medium">
             {setupStatus === 'success' 
-              ? 'Payment method added successfully!' 
-              : 'Payment setup was canceled'}
+              ? 'Setup completed successfully!' 
+              : 'Setup was canceled'}
           </span>
           <button
             onClick={() => setSetupStatus(null)}

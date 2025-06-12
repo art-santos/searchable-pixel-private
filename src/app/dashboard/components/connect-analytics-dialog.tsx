@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { ArrowLeft, ExternalLink, HelpCircle, Search, ChevronUp, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import { useToast } from '@/components/ui/use-toast'
-import { AICrawlerSetup } from '@/components/ai-crawler/ai-crawler-setup'
+import { InstallationGuide } from '@/components/ai-crawler/installation-guide'
 
 interface ConnectAnalyticsDialogProps {
   open: boolean
@@ -146,7 +146,7 @@ export function ConnectAnalyticsDialog({
   onOpenChange,
 }: ConnectAnalyticsDialogProps) {
   const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null)
-  const [showAICrawlerSetup, setShowAICrawlerSetup] = useState(false)
+  const [showInstallationGuide, setShowInstallationGuide] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [votedPlatforms, setVotedPlatforms] = useState<Set<string>>(new Set())
   const [platformVotes, setPlatformVotes] = useState<Record<string, number>>({})
@@ -254,8 +254,8 @@ export function ConnectAnalyticsDialog({
   }, [filteredPlatforms, platformVotes])
 
   const handleBack = () => {
-    if (showAICrawlerSetup) {
-      setShowAICrawlerSetup(false)
+    if (showInstallationGuide) {
+      setShowInstallationGuide(false)
       setSelectedPlatform(null)
     } else {
       setSelectedPlatform(null)
@@ -265,7 +265,7 @@ export function ConnectAnalyticsDialog({
 
   const handleClose = () => {
     setSelectedPlatform(null)
-    setShowAICrawlerSetup(false)
+    setShowInstallationGuide(false)
     setSearchQuery('')
     onOpenChange(false)
   }
@@ -273,14 +273,14 @@ export function ConnectAnalyticsDialog({
   const handlePlatformSelect = (platformId: string) => {
     setSelectedPlatform(platformId)
     
-    // For supported platforms, show AI crawler setup
+    // For supported platforms, show installation guide
     if (platformId === 'vercel' || platformId === 'custom') {
-      setShowAICrawlerSetup(true)
+      setShowInstallationGuide(true)
     }
     // For other platforms, show existing setup instructions
   }
 
-  const handleAICrawlerComplete = () => {
+  const handleInstallationComplete = () => {
     // Close dialog and refresh page to show new data
     handleClose()
     router.refresh()
@@ -342,11 +342,11 @@ export function ConnectAnalyticsDialog({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px] bg-white dark:bg-black border-gray-200 dark:border-[#1a1a1a]">
-        {showAICrawlerSetup ? (
-          // AI Crawler Setup flow
-          <AICrawlerSetup
-            platform={selectedPlatform as 'vercel' | 'custom'}
-            onComplete={handleAICrawlerComplete}
+        {showInstallationGuide ? (
+          // Installation Guide flow
+          <InstallationGuide
+            platform={selectedPlatform === 'custom' ? 'node' : selectedPlatform as 'vercel' | 'node'}
+            onComplete={handleInstallationComplete}
             onBack={handleBack}
           />
         ) : selectedPlatform === null ? (
