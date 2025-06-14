@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase/client'
 import { saveOnboardingData } from '@/lib/onboarding/database'
+import { isValidDomain } from '@/lib/utils/domain'
 import { ArrowRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
@@ -50,6 +51,12 @@ export default function CreateWorkspacePage() {
     if (!workspaceData.name.trim() || !workspaceData.workspaceName.trim() || !workspaceData.domain.trim()) {
       console.error('❌ WORKSPACE CREATION: Missing required fields')
       setErrorMessage('Please fill in all required fields.')
+      return
+    }
+
+    if (!isValidDomain(workspaceData.domain)) {
+      console.error('❌ WORKSPACE CREATION: Invalid domain format')
+      setErrorMessage('Please enter a valid domain (e.g. example.com).')
       return
     }
 
@@ -117,14 +124,18 @@ export default function CreateWorkspacePage() {
           .eq('id', user.id)
 
         if (completionError) {
-          console.error('⚠️ Warning: Could not update onboarding flag:', completionError)
-          // Don't fail for this - the workspace creation succeeded
+          console.error('❌ Error updating onboarding flag:', completionError)
+          setErrorMessage('Workspace created but onboarding could not be finalized. Please try again.')
+          setIsLoading(false)
+          return
         } else {
           console.log('✅ Onboarding completion flag updated')
         }
       } catch (flagError) {
-        console.error('⚠️ Warning: Error updating onboarding flag:', flagError)
-        // Don't fail for this
+        console.error('❌ Error updating onboarding flag:', flagError)
+        setErrorMessage('Workspace created but onboarding could not be finalized. Please try again.')
+        setIsLoading(false)
+        return
       }
 
       // Refresh workspace context to get the new workspace
@@ -153,9 +164,12 @@ export default function CreateWorkspacePage() {
   }
 
   const canProceed = () => {
-    return workspaceData.name.trim() && 
-           workspaceData.workspaceName.trim() && 
-           workspaceData.domain.trim()
+    return (
+      workspaceData.name.trim() &&
+      workspaceData.workspaceName.trim() &&
+      workspaceData.domain.trim() &&
+      isValidDomain(workspaceData.domain)
+    )
   }
 
   return (

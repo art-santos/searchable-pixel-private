@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase/client'
 import { saveOnboardingData } from '@/lib/onboarding/database'
+import { isValidDomain } from '@/lib/utils/domain'
 import { 
   ArrowRight
 } from 'lucide-react'
@@ -43,6 +44,12 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
     if (!workspaceData.name.trim() || !workspaceData.workspaceName.trim() || !workspaceData.domain.trim()) {
       console.error('❌ ONBOARDING DEBUG: Missing required fields')
       setErrorMessage('Please fill in all required fields.')
+      return
+    }
+
+    if (!isValidDomain(workspaceData.domain)) {
+      console.error('❌ ONBOARDING DEBUG: Invalid domain format')
+      setErrorMessage('Please enter a valid domain (e.g. example.com).')
       return
     }
 
@@ -99,9 +106,12 @@ export function SimpleWorkspaceOnboarding({ children, onComplete }: SimpleWorksp
   }
 
   const canProceed = () => {
-    return workspaceData.name.trim() && 
-           workspaceData.workspaceName.trim() && 
-           workspaceData.domain.trim()
+    return (
+      workspaceData.name.trim() &&
+      workspaceData.workspaceName.trim() &&
+      workspaceData.domain.trim() &&
+      isValidDomain(workspaceData.domain)
+    )
   }
   
   return <>{children}</>
