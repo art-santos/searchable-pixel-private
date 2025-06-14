@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Mail, ArrowRight, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase/client'
 
 function VerifyEmailContent() {
@@ -16,17 +17,9 @@ function VerifyEmailContent() {
   const supabase = createClient()
 
   useEffect(() => {
-    // Get email from URL params or localStorage
     const emailParam = searchParams.get('email')
     if (emailParam) {
       setEmail(emailParam)
-    } else {
-      // Try to get from onboarding data
-      const onboardingData = localStorage.getItem('onboardingData')
-      if (onboardingData) {
-        const data = JSON.parse(onboardingData)
-        setEmail(data.email || '')
-      }
     }
   }, [searchParams])
 
@@ -95,10 +88,17 @@ function VerifyEmailContent() {
               <p className="text-balance text-sm text-gray-400">
                 We sent a verification link to
               </p>
-              {email && (
+              {email ? (
                 <p className="text-sm text-white font-medium bg-[#1a1a1a] border border-[#333] px-3 py-2 rounded">
                   {email}
                 </p>
+              ) : (
+                <Input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="bg-[#1a1a1a] border-[#333] text-white placeholder:text-gray-500 mt-2"
+                />
               )}
             </div>
 

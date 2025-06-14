@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 import { Tables, TablesInsert } from '../../../supabase/supabase'
+import { isValidDomain } from '@/lib/utils/domain'
 
 export interface OnboardingData {
   // User and workspace data
@@ -59,6 +60,11 @@ export async function saveOnboardingData(
       cleanDomain = cleanDomain.substring(8)
     }
     cleanDomain = cleanDomain.replace(/\/$/, '')
+
+    if (!isValidDomain(cleanDomain)) {
+      console.error('❌ Invalid domain provided:', cleanDomain)
+      return { success: false, error: 'Invalid domain provided' }
+    }
     
     // 1. Create/Update user profile with comprehensive data
     const profileData: TablesInsert<'profiles'> = {
@@ -374,10 +380,10 @@ export async function saveOnboardingData(
       const { error: subscriptionError } = await supabase
         .from('subscription_info')
         .insert(subscriptionData)
-      
+
       if (subscriptionError && subscriptionError.code !== '23505') {
-        console.error('⚠️ Warning: Could not create subscription_info:', subscriptionError)
-        // Don't fail the entire onboarding for this
+        console.error('❌ Error creating subscription_info:', subscriptionError)
+        return { success: false, error: `Failed to create subscription info: ${subscriptionError.message}` }
       } else {
         console.log('✅ Subscription info created successfully')
       }
@@ -418,8 +424,8 @@ export async function saveOnboardingData(
         .insert(usageData)
 
       if (usageError && usageError.code !== '23505') {
-        console.error('⚠️ Warning: Could not create subscription_usage:', usageError)
-        // Don't fail the entire onboarding for this
+        console.error('❌ Error creating subscription_usage:', usageError)
+        return { success: false, error: `Failed to create subscription usage: ${usageError.message}` }
       } else {
         console.log('✅ Subscription usage tracking initialized')
       }
@@ -437,8 +443,8 @@ export async function saveOnboardingData(
       .eq('id', user.id)
     
     if (completionError) {
-      console.error('⚠️ Warning: Could not mark onboarding as completed:', completionError)
-      // Don't fail for this
+      console.error('❌ Error marking onboarding as completed:', completionError)
+      return { success: false, error: `Failed to finalize onboarding: ${completionError.message}` }
     } else {
       console.log('✅ Onboarding marked as completed')
     }
