@@ -130,16 +130,16 @@ export async function POST(request: NextRequest) {
         const twoWeeksAgo = new Date()
         twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
         
-        const { data: previousWeekVisits, error: prevError } = await supabase
+        const { count: previousWeekCount, error: prevError } = await supabase
           .from('crawler_visits')
-          .select('id', { count: 'exact' })
+          .select('id', { count: 'exact', head: true })
           .eq('user_id', userId)
           .gte('timestamp', twoWeeksAgo.toISOString())
           .lt('timestamp', oneWeekAgo.toISOString())
 
         let growth = 0
-        if (!prevError && previousWeekVisits) {
-          const previousCount = previousWeekVisits.length
+        if (!prevError && previousWeekCount !== null) {
+          const previousCount = previousWeekCount
           if (previousCount > 0) {
             growth = Math.round(((totalVisits - previousCount) / previousCount) * 100)
           } else if (totalVisits > 0) {

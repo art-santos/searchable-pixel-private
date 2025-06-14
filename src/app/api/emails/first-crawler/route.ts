@@ -18,9 +18,9 @@ export async function POST(request: NextRequest) {
     const supabase = createClient()
     
     // Check if this is actually the user's first crawler
-    const { data: existingCrawlers, error: crawlerError } = await supabase
+    const { count: existingCrawlerCount, error: crawlerError } = await supabase
       .from('crawler_visits')
-      .select('id', { count: 'exact' })
+      .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
 
     if (crawlerError) {
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     // If there are existing crawlers beyond the current batch, this isn't the first one
-    if (existingCrawlers && existingCrawlers.length > 1) {
+    if (existingCrawlerCount && existingCrawlerCount > 1) {
       return NextResponse.json({
         success: false,
         message: 'Not the first crawler for this user'
