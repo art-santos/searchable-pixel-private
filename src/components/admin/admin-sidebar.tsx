@@ -31,12 +31,28 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
     return pathname.startsWith(href)
   }
 
-  const handleLogout = () => {
-    // Clear admin verification
-    localStorage.removeItem('admin_verified')
-    localStorage.removeItem('admin_verified_at')
-    // Redirect to login
-    router.push('/login')
+  const handleLogout = async () => {
+    try {
+      // Import createClient
+      const { createClient } = await import('@/lib/supabase/client')
+      const supabase = createClient()
+      
+      // Clear admin verification
+      localStorage.removeItem('admin_verified')
+      localStorage.removeItem('admin_verified_at')
+      
+      // Sign out from Supabase
+      await supabase.auth.signOut()
+      
+      // Redirect to home page (not login, to avoid middleware redirect)
+      router.push('/')
+    } catch (error) {
+      console.error('Error during logout:', error)
+      // Fallback: still clear localStorage and redirect
+      localStorage.removeItem('admin_verified')
+      localStorage.removeItem('admin_verified_at')
+      router.push('/')
+    }
   }
 
   return (
