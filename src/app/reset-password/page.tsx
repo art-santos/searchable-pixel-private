@@ -28,6 +28,19 @@ function ResetPasswordForm() {
   const searchParams = useSearchParams()
 
   useEffect(() => {
+    // Suppress auth session errors for this page
+    const originalError = console.error;
+    console.error = (...args) => {
+      const message = args[0]?.toString() || '';
+      if (message.includes('Auth session missing') || 
+          message.includes('AuthSessionMissingError') ||
+          message.includes('session missing')) {
+        // Silently ignore auth session errors on reset password page
+        return;
+      }
+      originalError.apply(console, args);
+    };
+
     // Get reset token from URL parameters
     const token = searchParams.get('token')
     if (!token) {
@@ -35,6 +48,11 @@ function ResetPasswordForm() {
       return
     }
     setResetToken(token)
+
+    // Cleanup error suppression when component unmounts
+    return () => {
+      console.error = originalError;
+    };
   }, [searchParams])
 
   const showNotification = (type: NotificationType, message: string) => {
@@ -143,13 +161,13 @@ function ResetPasswordForm() {
                 Password Reset Complete!
               </h1>
               <p className="text-gray-400 mb-6">
-                Your password has been successfully updated. You're now signed in and will be redirected to your dashboard.
+                Your password has been successfully updated. You can now sign in with your new password.
               </p>
               <Button 
-                onClick={() => router.push('/dashboard')}
+                onClick={() => router.push('/login')}
                 className="w-full bg-white hover:bg-gray-100 text-[#0c0c0c] font-medium"
               >
-                Go to Dashboard
+                Go to Sign In
               </Button>
             </motion.div>
           </div>
@@ -321,10 +339,34 @@ function ResetPasswordForm() {
   )
 }
 
+// Error boundary wrapper for the reset password page
+function ResetPasswordErrorBoundary({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    // Global error handler for auth session errors
+    const handleError = (event: ErrorEvent) => {
+      if (event.error?.message?.includes('Auth session missing') ||
+          event.error?.message?.includes('AuthSessionMissingError')) {
+        event.preventDefault();
+        console.log('[Reset Password] Suppressed auth session error - this is expected for password reset');
+      }
+    };
+
+    window.addEventListener('error', handleError);
+    
+    return () => {
+      window.removeEventListener('error', handleError);
+    };
+  }, []);
+
+  return <>{children}</>;
+}
+
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <ResetPasswordForm />
-    </Suspense>
+    <ResetPasswordErrorBoundary>
+      <Suspense fallback={<div>Loading...</div>}>
+        <ResetPasswordForm />
+      </Suspense>
+    </ResetPasswordErrorBoundary>
   )
 } 

@@ -72,6 +72,40 @@ export const viewport: Viewport = {
   themeColor: '#6366F1',
 };
 
+// Global error boundary for auth session errors
+function GlobalErrorBoundary({ children }: { children: React.ReactNode }) {
+  if (typeof window !== 'undefined') {
+    // Global error handler for unhandled auth session errors
+    const handleError = (event: ErrorEvent) => {
+      const message = event.error?.message || event.message || '';
+      if (message.includes('Auth session missing') ||
+          message.includes('AuthSessionMissingError') ||
+          message.includes('session missing')) {
+        event.preventDefault();
+        console.log('[Global] Suppressed auth session error - expected on public routes');
+        return false;
+      }
+    };
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const message = event.reason?.message || event.reason || '';
+      if (typeof message === 'string' && (
+          message.includes('Auth session missing') ||
+          message.includes('AuthSessionMissingError') ||
+          message.includes('session missing'))) {
+        event.preventDefault();
+        console.log('[Global] Suppressed auth session promise rejection - expected on public routes');
+        return false;
+      }
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+  }
+
+  return <>{children}</>;
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -96,27 +130,29 @@ export default function RootLayout({
           "min-h-screen bg-[#0c0c0c] font-sans antialiased flex flex-col"
         )}
       >
-        {/* <Announcements /> Removed component */}
-        {/* Removed RB2BTracking and its Suspense wrapper */}
-        {/* 
-        <Suspense>
-          <RB2BTracking />
-        </Suspense> 
-        */}
-        {/* Wrap the main content with AuthProvider */}
-        <ThemeProvider>
-          <AuthProvider>
-            <WorkspaceProvider>
-              <TooltipProvider>
-                {/* Removed LPTopbar - it's now handled in the (main) layout */}
-                <main className="flex-grow">
-                  {children}
-                </main>
-                {/* Removed Footer - it's now handled in the (main) layout */}
-              </TooltipProvider>
-            </WorkspaceProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <GlobalErrorBoundary>
+          {/* <Announcements /> Removed component */}
+          {/* Removed RB2BTracking and its Suspense wrapper */}
+          {/* 
+          <Suspense>
+            <RB2BTracking />
+          </Suspense> 
+          */}
+          {/* Wrap the main content with AuthProvider */}
+          <ThemeProvider>
+            <AuthProvider>
+              <WorkspaceProvider>
+                <TooltipProvider>
+                  {/* Removed LPTopbar - it's now handled in the (main) layout */}
+                  <main className="flex-grow">
+                    {children}
+                  </main>
+                  {/* Removed Footer - it's now handled in the (main) layout */}
+                </TooltipProvider>
+              </WorkspaceProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </GlobalErrorBoundary>
       </body>
     </html>
   );

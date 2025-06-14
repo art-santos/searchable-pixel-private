@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { createClient } from '@/lib/supabase/client'
+import { usePathname } from 'next/navigation'
 
 interface Workspace {
   id: string
@@ -37,15 +38,33 @@ interface WorkspaceProviderProps {
 
 export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
   const { user } = useAuth()
+  const pathname = usePathname()
   const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null)
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [loading, setLoading] = useState(true)
   const [switching, setSwitching] = useState(false)
   const supabase = createClient()
 
+  // Routes that don't need workspace data
+  const publicRoutes = [
+    '/reset-password',
+    '/forgot-password',
+    '/login',
+    '/signup',
+    '/',
+    '/privacy',
+    '/terms',
+    '/verify-email'
+  ];
+
+  const isPublicRoute = publicRoutes.some(route => 
+    pathname === route || pathname.startsWith(route + '/')
+  );
+
   // Fetch workspaces from API
   const fetchWorkspaces = async () => {
-    if (!user) {
+    // Don't fetch workspaces on public routes or without user
+    if (!user || isPublicRoute) {
       setLoading(false)
       return
     }
@@ -81,7 +100,10 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
         console.error('Failed to fetch workspaces:', response.status)
       }
     } catch (error) {
-      console.error('Error fetching workspaces:', error)
+      // Only log errors for non-public routes
+      if (!isPublicRoute) {
+        console.error('Error fetching workspaces:', error)
+      }
     } finally {
       setLoading(false)
     }
@@ -89,7 +111,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
 
   // Switch to a different workspace
   const switchWorkspace = async (workspace: Workspace) => {
-    if (switching) {
+    if (switching || isPublicRoute) {
       return
     }
 
@@ -116,24 +138,30 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
 
   // Refresh workspaces (useful after creating/deleting)
   const refreshWorkspaces = async () => {
-    await fetchWorkspaces()
+    if (!isPublicRoute) {
+      await fetchWorkspaces()
+    }
   }
 
   // Initialize workspaces when user is available
   useEffect(() => {
-    if (user) {
+    if (user && !isPublicRoute) {
       fetchWorkspaces()
     } else {
-      // Clear state when user logs out
+      // Clear state when user logs out or on public routes
       setCurrentWorkspace(null)
       setWorkspaces([])
       setLoading(false)
-      localStorage.removeItem('currentWorkspaceId')
+      if (!user) {
+        localStorage.removeItem('currentWorkspaceId')
+      }
     }
-  }, [user])
+  }, [user, isPublicRoute])
 
-  // Listen for workspace changes from other tabs
+  // Listen for workspace changes from other tabs (only on non-public routes)
   useEffect(() => {
+    if (isPublicRoute) return;
+
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'currentWorkspaceId' && e.newValue) {
         const newWorkspaceId = e.newValue
@@ -146,7 +174,7 @@ export function WorkspaceProvider({ children }: WorkspaceProviderProps) {
 
     window.addEventListener('storage', handleStorageChange)
     return () => window.removeEventListener('storage', handleStorageChange)
-  }, [workspaces, currentWorkspace])
+  }, [workspaces, currentWorkspace, isPublicRoute])
 
   const value: WorkspaceContextType = {
     currentWorkspace,

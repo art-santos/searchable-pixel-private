@@ -8,7 +8,8 @@ import {
   Home, 
   Users, 
   LogOut,
-  User
+  User,
+  Mail
 } from 'lucide-react'
 
 interface AdminSidebarProps {
@@ -22,6 +23,7 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
   const navItems = [
     { href: '/admin/dashboard', icon: Home, label: 'Dashboard' },
     { href: '/admin/users', icon: Users, label: 'Users' },
+    { href: '/admin/email-testing', icon: Mail, label: 'Email Testing' },
   ]
 
   const isActiveLink = (href: string) => {

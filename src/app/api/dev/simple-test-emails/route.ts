@@ -18,7 +18,8 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createClient()
-    const testUserId = `test-${Date.now()}`
+    // Generate proper UUID for test user
+    const testUserId = crypto.randomUUID()
     
     let result: any
 
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
             email_type: 'first_crawler',
             recipient_email: testEmail,
             subject: emailData.subject,
-            resend_id: emailResult.data?.id,
+                         resend_id: (emailResult.data as any)?.id,
             status: 'sent',
             metadata: { 
               crawler_name: 'Googlebot',
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
             email_type: 'weekly_summary',
             recipient_email: testEmail,
             subject: weeklyData.subject,
-            resend_id: weeklyResult.data?.id,
+                         resend_id: (weeklyResult.data as any)?.id,
             status: 'sent'
           })
         }

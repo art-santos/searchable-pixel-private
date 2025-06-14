@@ -22,18 +22,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Routes that don't require authentication and shouldn't show auth errors
+  const publicRoutes = [
+    '/reset-password',
+    '/forgot-password',
+    '/login',
+    '/signup',
+    '/',
+    '/privacy',
+    '/terms',
+    '/verify-email'
+  ];
+
+  const isPublicRoute = publicRoutes.some(route => 
+    pathname === route || pathname.startsWith(route + '/')
+  );
+
   useEffect(() => {
     if (!supabase) {
       setLoading(false);
       return;
     }
 
+    // If this is a public route we can skip attempting to fetch/refresh the session entirely.
+    if (isPublicRoute) {
+      setLoading(false);
+      return; // <-- do NOT call supabase.auth.getUser() on public pages
+    }
+
     const fetchInitialSession = async () => {
       try {
         // Get the authenticated user (secure)
         const { data: { user }, error } = await supabase.auth.getUser();
+        
         if (error) {
-          console.error('Auth error:', error);
+          // Only log auth errors for protected routes
+          if (!isPublicRoute) {
+            console.error('Auth error:', error);
+          }
           setSession(null);
           setUser(null);
         } else {
@@ -50,7 +76,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(user);
         }
       } catch (error) {
-        console.error('Error fetching initial session:', error);
+        // Only log errors for protected routes
+        if (!isPublicRoute) {
+          console.error('Error fetching initial session:', error);
+        }
         setSession(null);
         setUser(null);
       }
@@ -61,7 +90,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log(`Auth state change event: ${event}`);
+        // Only log auth state changes for non-public routes to reduce noise
+        if (!isPublicRoute) {
+          console.log(`Auth state change event: ${event}`);
+        }
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -71,7 +103,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       authListener?.subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, [supabase, pathname, isPublicRoute]);
 
   const value = {
     supabase,

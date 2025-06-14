@@ -18,8 +18,8 @@ export async function POST(request: NextRequest) {
     const supabase = createClient()
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
     
-    // Create test user if needed
-    const testUserId = userId || `test-${Date.now()}`
+    // Create test user if needed - generate proper UUID
+    const testUserId = userId || crypto.randomUUID()
     
     let result: any
 

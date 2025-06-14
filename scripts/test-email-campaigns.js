@@ -19,8 +19,8 @@ const TEST_EMAIL = process.env.TEST_EMAIL || 'test@example.com'
 async function testFirstCrawlerEmail() {
   console.log('\n🤖 Testing First Crawler Email...')
   
-  // Create test user
-  const testUserId = `test-user-${Date.now()}`
+  // Create test user with proper UUID format
+  const testUserId = crypto.randomUUID()
   
   try {
     // Insert test user

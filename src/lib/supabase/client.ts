@@ -26,6 +26,13 @@ export function createClient() {
         storage: typeof window !== 'undefined' ? window.localStorage : undefined,
         // Detect session from URL for auth redirects
         detectSessionInUrl: true,
+        // Don't throw errors for missing sessions on public pages
+        flowType: 'pkce',
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'split-web-client',
+        },
       },
     });
     

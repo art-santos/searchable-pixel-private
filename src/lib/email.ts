@@ -6,7 +6,7 @@ export const sendEmail = async ({
   to,
   subject,
   html,
-  from = process.env.FROM_EMAIL,
+  from = process.env.FROM_EMAIL || 'onboarding@resend.dev',
   senderName = 'Sam from Split',
   replyTo = 'sam@split.dev'
 }: {
