@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createServiceClient } from '@/lib/supabase/service'
 import { sendEmail } from '@/lib/email'
 import { templates } from '@/lib/email-templates'
 import crypto from 'crypto'
@@ -29,10 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Use service role client to bypass RLS
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+    const supabase = createServiceClient()
 
     // Check if user exists
     console.log('🔍 Looking up user profile...')
