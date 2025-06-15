@@ -266,14 +266,7 @@ export default function CreateWorkspacePage() {
                 )}
               </Button>
 
-              <div className="text-center pt-4">
-                <Link 
-                  href="/dashboard" 
-                  className="text-sm text-gray-400 hover:text-white transition-colors"
-                >
-                  Back to dashboard
-                </Link>
-              </div>
+
             </div>
           </motion.div>
         </div>
