@@ -70,7 +70,7 @@ export default function AdminVerifyPage() {
           <div className="text-center mb-8">
             <div className="w-12 h-12 bg-white rounded-md flex items-center justify-center mx-auto mb-4">
               <Image 
-                src="/images/split-icon-white.svg" 
+                src="/images/split-icon-black.svg" 
                 width={24} 
                 height={24} 
                 alt="Split Logo" 

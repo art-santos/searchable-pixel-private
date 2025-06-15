@@ -17,6 +17,7 @@ export default function AdminEmailTestingPage() {
   const [user, setUser] = useState<any>(null)
   const [testEmail, setTestEmail] = useState('')
   const [emailType, setEmailType] = useState('')
+  const [useRealUser, setUseRealUser] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [results, setResults] = useState<any[]>([])
   const router = useRouter()
@@ -85,14 +86,17 @@ export default function AdminEmailTestingPage() {
 
     setIsSending(true)
     try {
+      const requestData = {
+        type: emailType,
+        testEmail: testEmail,
+        adminUserId: user?.id,
+        useRealUser: useRealUser
+      }
+      
       const response = await fetch('/api/admin/test-emails', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: emailType,
-          testEmail: testEmail,
-          adminUserId: user?.id
-        })
+        body: JSON.stringify(requestData)
       })
 
       const result = await response.json()
@@ -135,7 +139,8 @@ export default function AdminEmailTestingPage() {
           body: JSON.stringify({
             type: type.value,
             testEmail: testEmail,
-            adminUserId: user?.id
+            adminUserId: user?.id,
+            useRealUser: useRealUser
           })
         })
 
@@ -235,6 +240,24 @@ export default function AdminEmailTestingPage() {
                   </Select>
                 </div>
 
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      id="use-real-user"
+                      type="checkbox"
+                      checked={useRealUser}
+                      onChange={(e) => setUseRealUser(e.target.checked)}
+                      className="w-4 h-4 text-white bg-[#0c0c0c] border-[#222222] rounded focus:ring-white focus:ring-2"
+                    />
+                    <Label htmlFor="use-real-user" className="text-[#888888] text-sm">
+                      Use real user data for weekly reports
+                    </Label>
+                  </div>
+                  <p className="text-xs text-[#666666] ml-6">
+                    When enabled, weekly report emails will use actual crawler visit data from a real user instead of hardcoded test data.
+                  </p>
+                </div>
+
                 <div className="flex gap-3 pt-4">
                   <Button 
                     onClick={sendTestEmail} 
@@ -294,6 +317,11 @@ export default function AdminEmailTestingPage() {
                             </div>
                             <div className="text-sm text-[#888888]">
                               {result.email} • {result.timestamp}
+                              {result.result?.realUserData && (
+                                <span className="ml-2 text-blue-400">
+                                  • Real data from {result.result.realUserData.email}
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>

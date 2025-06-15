@@ -63,7 +63,7 @@ export function AdminSidebar({ user }: AdminSidebarProps) {
       <div className="p-6 border-b border-[#1a1a1a]">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-white rounded-md flex items-center justify-center">
-            <Image src="/images/split-icon-white.svg" width={20} height={20} alt="Split Logo" />
+            <Image src="/images/split-icon-black.svg" width={20} height={20} alt="Split Logo" />
           </div>
           <div>
             <h2 className="text-lg font-semibold text-white">Admin Panel</h2>

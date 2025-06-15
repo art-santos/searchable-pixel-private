@@ -3,12 +3,11 @@ import { createClient } from '@/lib/supabase/server'
 import { sendEmail } from '@/lib/email'
 import { templates } from '@/lib/email-templates'
 
-// Only allow in development
-if (process.env.NODE_ENV === 'production') {
-  throw new Error('Test email endpoint should not be available in production')
-}
-
 export async function POST(request: NextRequest) {
+  // Only allow in development
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Test endpoint not available in production' }, { status: 404 })
+  }
   try {
     const body = await request.json()
     const { type, testEmail } = body

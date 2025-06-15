@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-// Only allow in development
-if (process.env.NODE_ENV === 'production') {
-  throw new Error('Test email endpoint should not be available in production')
-}
-
 export async function POST(request: NextRequest) {
+  // Only allow in development
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Test endpoint not available in production' }, { status: 404 })
+  }
   try {
     const body = await request.json()
     const { type, testEmail, userId } = body
