@@ -8,10 +8,10 @@ export default function NotFound() {
         <div className="max-w-md w-full text-center">
           <div className="mb-6 flex justify-center">
             <Image 
-              src="/Origamisvg.svg" 
-              alt="Origami" 
-              width={200} 
-              height={50} 
+              src="/images/split-icon-white.svg" 
+              alt="Split Logo" 
+              width={80} 
+              height={80} 
               className="opacity-60"
             />
           </div>
