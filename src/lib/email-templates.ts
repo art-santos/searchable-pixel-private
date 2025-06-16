@@ -1,5 +1,5 @@
 export const templates = {
-  welcome: (name: string, workspaceName?: string) => ({
+  welcome: (name: string, workspaceName?: string, domain?: string) => ({
     subject: "Welcome to Split Analytics",
     html: `
       <!DOCTYPE html>
@@ -33,6 +33,25 @@ export const templates = {
 
             <!-- Content Section -->
             <div style="padding: 48px;">
+              
+              ${workspaceName && domain ? `
+              <!-- Workspace Details -->
+              <div style="margin-bottom: 40px; padding: 24px; background: linear-gradient(135deg, #fafafa 0%, #f4f4f5 100%); border-radius: 12px; border: 1px solid rgba(0, 0, 0, 0.04);">
+                <h2 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600; color: #09090b; letter-spacing: -0.01em;">
+                  Your workspace details
+                </h2>
+                
+                <div style="margin-bottom: 12px;">
+                  <p style="margin: 0; font-size: 14px; color: #71717a;">Workspace name</p>
+                  <p style="margin: 0; font-size: 15px; font-weight: 500; color: #09090b;">${workspaceName}</p>
+                </div>
+                
+                <div>
+                  <p style="margin: 0; font-size: 14px; color: #71717a;">Domain</p>
+                  <p style="margin: 0; font-size: 15px; font-weight: 500; color: #09090b; font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;">${domain}</p>
+                </div>
+              </div>
+              ` : ''}
               
               <!-- Value Proposition -->
               <div style="margin-bottom: 40px; padding: 24px; background: linear-gradient(135deg, #fafafa 0%, #f4f4f5 100%); border-radius: 12px; border: 1px solid rgba(0, 0, 0, 0.04);">

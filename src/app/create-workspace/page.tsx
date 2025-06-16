@@ -98,7 +98,8 @@ export default function CreateWorkspacePage() {
           body: JSON.stringify({
             email: user.email,
             name: workspaceData.name,
-            workspaceName: workspaceData.workspaceName
+            workspaceName: workspaceData.workspaceName,
+            domain: workspaceData.domain
           })
         })
         

@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, name, workspaceName } = body
+    const { email, name, workspaceName, domain } = body
 
     if (!email) {
       return NextResponse.json(
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     // But we'll log the email for tracking
     
     // Generate welcome email
-    const emailData = templates.welcome(name || email.split('@')[0], workspaceName)
+    const emailData = templates.welcome(name || email.split('@')[0], workspaceName, domain)
     
     // Send the email
     const result = await sendEmail({
