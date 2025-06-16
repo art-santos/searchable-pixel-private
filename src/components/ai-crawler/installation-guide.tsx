@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, ArrowRight, Copy, CheckCircle2, ExternalLink, Terminal, FileText, Code2, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Copy, CheckCircle2, ExternalLink, Terminal, FileText, Code2, X, Settings, Zap } from 'lucide-react'
 
 interface InstallationGuideProps {
   platform?: 'vercel' | 'node' | 'webflow' | 'framer' | null
@@ -12,6 +12,38 @@ interface InstallationGuideProps {
 }
 
 type PackageManager = 'npm' | 'pnpm' | 'yarn'
+
+type StepType = 'install' | 'env' | 'code' | 'instruction'
+
+interface BaseStep {
+  title: string
+  description: string
+  type: StepType
+  icon: any
+}
+
+interface InstallStep extends BaseStep {
+  type: 'install'
+}
+
+interface EnvStep extends BaseStep {
+  type: 'env'
+  code: string
+  filename: string
+}
+
+interface CodeStep extends BaseStep {
+  type: 'code'
+  code: string
+  filename: string
+}
+
+interface InstructionStep extends BaseStep {
+  type: 'instruction'
+  content: string
+}
+
+type Step = InstallStep | EnvStep | CodeStep | InstructionStep
 
 const packageManagers = {
   npm: { name: 'npm', command: 'npm install' },
@@ -105,52 +137,79 @@ app.use(async (req, res, next) => {
     ]
   },
   webflow: {
-    title: 'Webflow Setup (Lite)',
-    description: 'Basic AI crawler tracking for Webflow sites',
+    title: 'Webflow Setup',
+    description: 'Track AI crawlers on your Webflow site with our lightweight tracking pixel',
     steps: [
       {
-        title: 'Add Tracking Script',
-        description: 'Add the tracking script to your Webflow site',
+        title: 'Get Your Tracking Code',
+        description: 'Get your workspace-specific tracking pixel',
+        type: 'instruction' as const,
+        content: `1. Go to your Split Dashboard
+2. Navigate to Settings → Tracking Pixel
+3. Copy your tracking code`,
+        icon: Settings
+      },
+      {
+        title: 'Add to Webflow',
+        description: 'Paste the tracking pixel in your site settings',
         type: 'code' as const,
-        code: `<!-- Add this to your site's custom code in the <head> tag -->
-<script>
-(function() {
-  var splitKey = 'your_api_key_here';
-  var script = document.createElement('script');
-  script.src = 'https://cdn.split.dev/analytics.js';
-  script.setAttribute('data-key', splitKey);
-  document.head.appendChild(script);
-})();
-</script>`,
-        filename: 'Custom Code (Head)',
+        code: `<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" 
+     style="display:none" 
+     width="1" 
+     height="1" 
+     alt="" />`,
+        filename: 'Site Settings → Custom Code → Head Code',
         icon: Code2
+      },
+      {
+        title: 'Publish Your Site',
+        description: 'Make tracking live on your Webflow site',
+        type: 'instruction' as const,
+        content: `1. Go to Site Settings
+2. Navigate to Custom Code tab
+3. Paste in "Head Code" section
+4. Publish your site`,
+        icon: Zap
       }
     ]
   },
   framer: {
-    title: 'Framer Setup (Beta)',
-    description: 'Beta AI crawler tracking for Framer sites',
+    title: 'Framer Setup',
+    description: 'Enable AI crawler detection on your Framer site with our tracking pixel',
     steps: [
       {
-        title: 'Add Tracking Script',
-        description: 'Add the tracking script to your Framer site',
+        title: 'Get Your Tracking Code',
+        description: 'Get your workspace-specific tracking pixel',
+        type: 'instruction' as const,
+        content: `1. Go to your Split Dashboard
+2. Navigate to Settings → Tracking Pixel
+3. Copy your tracking code`,
+        icon: Settings
+      },
+      {
+        title: 'Add to Framer',
+        description: 'Paste the tracking pixel in your SEO settings',
         type: 'code' as const,
-        code: `<!-- Add this to your site's custom code -->
-<script>
-(function() {
-  var splitKey = 'your_api_key_here';
-  var script = document.createElement('script');
-  script.src = 'https://cdn.split.dev/analytics.js';
-  script.setAttribute('data-key', splitKey);
-  document.head.appendChild(script);
-})();
-</script>`,
-        filename: 'Custom Code',
+        code: `<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" 
+     style="display:none" 
+     width="1" 
+     height="1" 
+     alt="" />`,
+        filename: 'Site Settings → SEO & Meta → Head',
         icon: Code2
+      },
+      {
+        title: 'Publish Your Site',
+        description: 'Make tracking live on your Framer site',
+        type: 'instruction' as const,
+        content: `1. Go to Settings → SEO & Meta
+2. Paste code in "Head" field
+3. Publish your site`,
+        icon: Zap
       }
     ]
   }
-}
+} as const
 
 export function InstallationGuide({ platform, onComplete, onBack, onClose }: InstallationGuideProps) {
   const [currentStep, setCurrentStep] = useState(0)
@@ -341,6 +400,7 @@ export function InstallationGuide({ platform, onComplete, onBack, onClose }: Ins
     }
 
     if (step.type === 'env') {
+      const envStep = step as EnvStep
       return (
         <div className="space-y-4 animate-in slide-in-from-right-4 fade-in duration-300">
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -352,15 +412,15 @@ export function InstallationGuide({ platform, onComplete, onBack, onClose }: Ins
               <div className="flex items-center justify-between px-4 py-3 bg-gray-800/80 dark:bg-gray-900/80 border-b border-gray-700/60">
                 <div className="flex items-center gap-2 text-gray-400">
                   <FileText className="w-4 h-4" />
-                  <span className="text-sm font-mono">{step.filename}</span>
+                  <span className="text-sm font-mono">{envStep.filename}</span>
                 </div>
                 <Button
-                  onClick={() => copyToClipboard(step.code!)}
+                  onClick={() => copyToClipboard(envStep.code)}
                   variant="ghost"
                   size="sm"
                   className="h-7 w-7 p-0 flex items-center justify-center text-gray-400 hover:text-white transition-colors duration-200"
                 >
-                  {copiedCode === step.code ? (
+                  {copiedCode === envStep.code ? (
                     <CheckCircle2 className="w-4 h-4 text-green-400" />
                   ) : (
                     <Copy className="w-4 h-4" />
@@ -368,7 +428,7 @@ export function InstallationGuide({ platform, onComplete, onBack, onClose }: Ins
                 </Button>
               </div>
               <pre className="px-3 py-4 text-sm text-gray-100 overflow-x-auto">
-                <code>{step.code}</code>
+                <code>{envStep.code}</code>
               </pre>
             </div>
           </div>
@@ -376,22 +436,45 @@ export function InstallationGuide({ platform, onComplete, onBack, onClose }: Ins
       )
     }
 
+    if (step.type === 'instruction') {
+      return (
+        <div className="animate-in slide-in-from-right-4 fade-in duration-300">
+          <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
+            <div className="space-y-3">
+              {(step as InstructionStep).content?.split('\n').map((line, index) => (
+                <div key={index} className="flex items-start gap-3">
+                  <span className="text-gray-500 dark:text-gray-400 font-mono text-sm">{line}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Additional help text */}
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
+            {step.title === 'Get Your Tracking Code' && 'You need access to your Split Dashboard to get your tracking code.'}
+            {step.title === 'Publish Your Site' && 'Changes will only take effect after publishing.'}
+          </p>
+        </div>
+      )
+    }
+
     if (step.type === 'code') {
+      const codeStep = step as CodeStep
       return (
         <div className="animate-in slide-in-from-right-4 fade-in duration-300">
           <div className="bg-gray-900/95 dark:bg-black/95 rounded-lg border border-gray-800/60 dark:border-gray-700/60 overflow-hidden transition-all duration-200 ease-out hover:shadow-lg">
             <div className="flex items-center justify-between px-4 py-3 bg-gray-800/80 dark:bg-gray-900/80 border-b border-gray-700/60">
               <div className="flex items-center gap-2 text-gray-400">
                 <Code2 className="w-4 h-4" />
-                <span className="text-sm font-mono">{step.filename}</span>
+                <span className="text-sm font-mono">{codeStep.filename}</span>
               </div>
               <Button
-                onClick={() => copyToClipboard(step.code!)}
+                onClick={() => copyToClipboard(codeStep.code)}
                 variant="ghost"
                 size="sm"
                 className="h-7 w-7 p-0 flex items-center justify-center text-gray-400 hover:text-white transition-colors duration-200"
               >
-                {copiedCode === step.code ? (
+                {copiedCode === codeStep.code ? (
                   <CheckCircle2 className="w-4 h-4 text-green-400" />
                 ) : (
                   <Copy className="w-4 h-4" />
@@ -399,9 +482,18 @@ export function InstallationGuide({ platform, onComplete, onBack, onClose }: Ins
               </Button>
             </div>
             <pre className="px-3 py-4 text-sm text-gray-100 overflow-x-auto max-h-80">
-              <code>{step.code}</code>
+              <code>{codeStep.code}</code>
             </pre>
           </div>
+          
+          {/* Additional notes */}
+          {(platform === 'webflow' || platform === 'framer') && (
+            <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                <strong>Note:</strong> The tracking pixel is a 1x1 invisible image (43 bytes) that won't affect your site's appearance or performance. It tracks 25+ AI crawlers including GPTBot, ClaudeBot, and PerplexityBot.
+              </p>
+            </div>
+          )}
         </div>
       )
     }
@@ -430,17 +522,19 @@ export function InstallationGuide({ platform, onComplete, onBack, onClose }: Ins
             {instructions.description}
           </p>
           
-          {/* Progress indicator */}
-          <div className="flex gap-2">
-            {instructions.steps.map((_, index) => (
-              <div
-                key={index}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ease-out ${
-                  index <= currentStep ? "bg-gray-900 dark:bg-white scale-110" : "bg-gray-300 dark:bg-gray-600"
-                }`}
-              />
-            ))}
-          </div>
+          {/* Progress indicator - only show if more than one step */}
+          {instructions.steps.length > 1 && (
+            <div className="flex gap-2">
+              {instructions.steps.map((_, index) => (
+                <div
+                  key={index}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ease-out ${
+                    index <= currentStep ? "bg-gray-900 dark:bg-white scale-110" : "bg-gray-300 dark:bg-gray-600"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
         </div>
         {onClose && (
           <Button
@@ -456,18 +550,13 @@ export function InstallationGuide({ platform, onComplete, onBack, onClose }: Ins
 
       {/* Current Step */}
       <div className="mb-8">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-10 h-10 bg-gray-900 dark:bg-white rounded-lg flex items-center justify-center transition-transform duration-200 ease-out hover:scale-110">
-            <step.icon className="w-5 h-5 text-white dark:text-black" />
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              {step.title}
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              {step.description}
-            </p>
-          </div>
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            {step.title}
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            {step.description}
+          </p>
         </div>
 
         {renderStepContent()}

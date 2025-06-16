@@ -56,14 +56,14 @@ export default function PaymentRequiredPage() {
       try {
         // Get workspace name for personalization
         if (supabase) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('workspace_name, first_name')
-            .eq('id', user.id)
-            .single()
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('workspace_name, first_name')
+          .eq('id', user.id)
+          .single()
 
-          if (profile) {
-            setWorkspaceName(profile.workspace_name || profile.first_name || 'your workspace')
+        if (profile) {
+          setWorkspaceName(profile.workspace_name || profile.first_name || 'your workspace')
           }
         }
 
@@ -162,6 +162,23 @@ export default function PaymentRequiredPage() {
         className="min-h-screen bg-[#0c0c0c] flex items-center justify-center p-6 relative cursor-pointer"
         onClick={() => showButton && setShowModal(true)}
       >
+        {/* Sign out link in top right */}
+        <div className="absolute top-6 right-6 z-20">
+          <button
+            onClick={async (e) => {
+              e.stopPropagation()
+              if (supabase) {
+                await supabase.auth.signOut()
+              }
+              router.push('/login')
+            }}
+            className="text-xs text-white/40 hover:text-white/80 transition-colors duration-200 font-mono"
+            style={{ letterSpacing: '-0.05em' }}
+          >
+            Sign out
+          </button>
+          </div>
+          
         {/* Subtle grid pattern */}
         <div 
           className="absolute inset-0 opacity-[0.02]"
@@ -172,7 +189,7 @@ export default function PaymentRequiredPage() {
           }}
         />
 
-        <motion.div 
+        <motion.div
           className="relative z-10 w-full max-w-2xl"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -273,11 +290,11 @@ export default function PaymentRequiredPage() {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
-          </div>
+                  </div>
+                    </div>
         </motion.div>
-      </div>
-
+                  </div>
+                  
       {/* Pricing Modal - minimal design */}
       <AnimatePresence>
         {showModal && (
@@ -315,7 +332,7 @@ export default function PaymentRequiredPage() {
                   >
                     <X className="w-5 h-5" />
                   </button>
-                </div>
+              </div>
 
                 {/* Modal Content */}
                 <div className="p-6">
@@ -342,10 +359,10 @@ export default function PaymentRequiredPage() {
                       Annual
                       <span className="text-[#666] ml-1">(save 20%)</span>
                     </span>
-                  </div>
+              </div>
 
-                  {/* Error display */}
-                  {error && (
+              {/* Error display */}
+              {error && (
                     <div className="bg-[#111] border border-[#222] rounded-sm p-3 mb-6">
                       <p className="text-xs text-[#999] font-mono" style={{ letterSpacing: '-0.05em' }}>{error}</p>
                     </div>
@@ -370,9 +387,9 @@ export default function PaymentRequiredPage() {
                             <div className="bg-white text-black px-3 py-0.5 text-[10px] font-medium rounded-sm font-mono uppercase" style={{ letterSpacing: '-0.05em' }}>
                               Recommended
                             </div>
-                          </div>
-                        )}
-                        
+                </div>
+              )}
+
                         <div className="mb-6">
                           <h3 className="text-lg font-medium text-white mb-1 font-mono" style={{ letterSpacing: '-0.05em' }}>{plan.name}</h3>
                           <p className="text-xs text-[#666] mb-4 font-mono" style={{ letterSpacing: '-0.05em' }}>{plan.description}</p>
@@ -396,7 +413,7 @@ export default function PaymentRequiredPage() {
                           )}
                         </div>
 
-                        <Button
+              <Button
                           onClick={() => handleSelectPlan(plan.id)}
                           disabled={isLoading && selectedPlan === plan.id}
                           className={`w-full h-9 text-xs font-medium rounded-sm transition-all duration-200 font-mono ${
@@ -410,34 +427,47 @@ export default function PaymentRequiredPage() {
                             <>
                               <Loader2 className="w-3 h-3 animate-spin mr-1.5" />
                               Processing...
-                            </>
-                          ) : (
+                  </>
+                ) : (
                             `Start with ${plan.name}`
-                          )}
-                        </Button>
+                )}
+              </Button>
                       </motion.div>
                     ))}
                   </div>
 
-                  {/* Trust indicators */}
+          {/* Trust indicators */}
                   <div className="text-center pt-4 border-t border-[#1a1a1a]">
                     <div className="flex items-center justify-center gap-4 text-xs text-[#666] mb-3 font-mono" style={{ letterSpacing: '-0.05em' }}>
                       <span className="flex items-center gap-1.5">
-                        <Lock className="w-3 h-3" />
-                        Secure payment
-                      </span>
-                      <span>•</span>
-                      <span>SSL encrypted</span>
-                      <span>•</span>
-                      <span>Cancel anytime</span>
-                    </div>
+                <Lock className="w-3 h-3" />
+                Secure payment
+              </span>
+              <span>•</span>
+              <span>SSL encrypted</span>
+              <span>•</span>
+              <span>Cancel anytime</span>
+            </div>
+            
+                    <p className="text-[10px] text-[#444] font-mono mb-3" style={{ letterSpacing: '-0.05em' }}>
+              Powered by Stripe • We never store your card details
+            </p>
                     
-                    <p className="text-[10px] text-[#444] font-mono" style={{ letterSpacing: '-0.05em' }}>
-                      Powered by Stripe • We never store your card details
-                    </p>
-                  </div>
-                </div>
-              </div>
+                    <button
+                      onClick={async () => {
+                        if (supabase) {
+                          await supabase.auth.signOut()
+                        }
+                        router.push('/login')
+                      }}
+                      className="text-[10px] text-[#666] hover:text-white transition-colors duration-200 font-mono"
+                      style={{ letterSpacing: '-0.05em' }}
+                    >
+                      Sign out and return to login
+                    </button>
+          </div>
+      </div>
+    </div>
             </motion.div>
           </>
         )}

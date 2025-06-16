@@ -369,17 +369,22 @@ export function WelcomeCard() {
           <div className="mt-8 pt-6 border-t border-gray-200 dark:border-[#1a1a1a]">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <Link 
-                  href="/changelog" 
-                  className="text-xs text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white transition-colors font-mono tracking-tight flex items-center gap-1"
-                >
-                  <Rocket className="w-3 h-3" />
-                  What's New
-                </Link>
+                <div className="relative group">
+                  <Link 
+                    href="/changelog" 
+                    className="text-xs text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white transition-colors font-mono tracking-tight flex items-center gap-1 cursor-not-allowed"
+                  >
+                    <Rocket className="w-3 h-3" />
+                    What's New
+                  </Link>
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                    <div className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-2 py-1 rounded-sm font-mono tracking-tight whitespace-nowrap shadow-lg border border-gray-700 dark:border-gray-300">
+                      Changelog coming soon!
+                    </div>
+                  </div>
+                </div>
                 <a 
-                  href="https://cal.com/sam-hogan/15min" 
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="mailto:sam@split.dev"
                   className="text-xs text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white transition-colors font-mono tracking-tight flex items-center gap-1"
                 >
                   <HelpCircle className="w-3 h-3" />
