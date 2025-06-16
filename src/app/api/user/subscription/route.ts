@@ -58,11 +58,24 @@ export async function GET(request: NextRequest) {
       effectivePlan: effectivePlan
     })
 
+    // If no stripe_customer_id from subscription_info, try to get it from profiles
+    let stripeCustomerId = subscription.stripe_customer_id
+    if (!stripeCustomerId) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('stripe_customer_id')
+        .eq('id', user.id)
+        .single()
+      
+      stripeCustomerId = profile?.stripe_customer_id || null
+      console.log('Fetched stripe_customer_id from profiles:', stripeCustomerId)
+    }
+
     // Return data from centralized subscription system
     return NextResponse.json({
       subscriptionPlan: effectivePlan,
       subscriptionStatus: subscription.plan_status,
-      stripeCustomerId: subscription.stripe_customer_id,
+      stripeCustomerId: stripeCustomerId,
       stripeSubscriptionId: subscription.stripe_subscription_id,
       currentPeriodStart: subscription.current_period_start,
       currentPeriodEnd: subscription.current_period_end,

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
-import { Loader2, Plus, Minus, Globe, Zap, X, CheckCircle2 } from 'lucide-react'
+import { Loader2, Plus, Minus, Globe, Zap, X, CheckCircle2, Check, Lock as LockIcon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { PRICING_PLANS } from '@/components/onboarding/utils/onboarding-constants'
@@ -41,6 +41,8 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
         const response = await fetch('/api/user/subscription')
         if (response.ok) {
           const data = await response.json()
+          console.log('Subscription data:', data) // Debug log
+          console.log('Stripe Customer ID from API:', data.stripeCustomerId) // More specific debug
           setStripeCustomerId(data.stripeCustomerId)
           const plan = data.subscriptionPlan || null
           setCurrentPlan(plan || 'starter') // Default for display, but will force upgrade
@@ -578,6 +580,7 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                           ? 'Admin Account' 
                           : 'Change Plan'}
                     </Button>
+
                   </div>
                 </div>
               </div>
@@ -950,125 +953,173 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
         </div>
       )}
 
-      {/* Pricing Modal */}
+      {/* Pricing Modal - matching payment-required design */}
       <AnimatePresence>
         {showPricingModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-6"
-          >
+          <>
+            {/* Backdrop */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50"
+              onClick={() => setShowPricingModal(false)}
+            />
+            
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98, y: 8 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
             >
-              {/* Modal Header */}
-              <div className="sticky top-0 bg-[#0a0a0a] border-b border-[#1a1a1a] p-6">
-                <div className="flex items-center justify-between">
+              <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-sm max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+                {/* Modal Header */}
+                <div className="sticky top-0 bg-[#0a0a0a] border-b border-[#1a1a1a] p-6 flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-medium text-black dark:text-white">Choose Your Plan</h2>
-                    <p className="text-sm text-[#666] mt-1">Track AI visibility. Attribute real traffic. Enrich what matters.</p>
+                    <h2 className="text-xl font-medium text-white font-mono" style={{ letterSpacing: '-0.05em' }}>Choose Your Plan</h2>
+                    <p className="text-[#666] text-xs mt-1 font-mono" style={{ letterSpacing: '-0.05em' }}>
+                      Update your subscription
+                    </p>
                   </div>
                   <button
                     onClick={() => setShowPricingModal(false)}
-                    className="text-[#666] hover:text-white transition-colors"
+                    className="text-[#666] hover:text-white transition-colors duration-200 p-1"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                {/* Billing Toggle */}
-                <div className="flex items-center justify-center mt-6">
-                  <span className={`text-sm mr-3 ${!isAnnualBilling ? 'text-white' : 'text-[#666]'}`}>Monthly</span>
-                  <button
-                    onClick={() => setIsAnnualBilling(!isAnnualBilling)}
-                    className={`relative w-12 h-6 rounded-full transition-colors ${
-                      isAnnualBilling ? 'bg-[#1a1a1a] border border-[#333]' : 'bg-[#333]'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                        isAnnualBilling ? 'translate-x-7' : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                  <span className={`text-sm ml-3 ${isAnnualBilling ? 'text-white' : 'text-[#666]'}`}>
-                    Annual
-                    <span className="text-xs text-[#888] ml-1">(save 20%)</span>
-                  </span>
-                </div>
-              </div>
-              
-              {/* Pricing Plans */}
-              <div className="p-6">
-                <div className="grid grid-cols-3 gap-6">
-                  {PRICING_PLANS.map((plan) => (
-                    <div
-                      key={plan.id}
-                      className={`relative bg-[#0c0c0c] border rounded-lg p-6 ${
-                        plan.isRecommended ? 'border-white' : 'border-[#333]'
+                {/* Modal Content */}
+                <div className="p-6">
+                  {/* Billing Toggle */}
+                  <div className="flex items-center justify-center gap-4 mb-8">
+                    <span className={`text-xs font-mono ${!isAnnualBilling ? 'text-white' : 'text-[#666]'}`} style={{ letterSpacing: '-0.05em' }}>
+                      Monthly
+                    </span>
+                    <button
+                      onClick={() => setIsAnnualBilling(!isAnnualBilling)}
+                      className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${
+                        isAnnualBilling ? 'bg-[#333]' : 'bg-[#222]'
                       }`}
                     >
-                      {plan.isRecommended && (
-                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                          <div className="bg-white text-black px-3 py-1 text-xs font-medium rounded">
-                            RECOMMENDED
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="text-center mb-6">
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                          <h3 className="text-lg font-medium text-black dark:text-white">{plan.name}</h3>
-                        </div>
-                        <p className="text-xs text-[#666] mb-4 leading-relaxed">{plan.description}</p>
-                        <div className="flex items-end justify-center gap-1 mt-3">
-                          <span className="text-3xl font-semibold text-white">
-                            ${isAnnualBilling ? plan.annualPrice : plan.monthlyPrice}
-                          </span>
-                          <span className="text-[#666] mb-1">/month</span>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2 mb-6">
-                        {plan.features.map((feature, index) => (
-                          <div key={index} className="flex items-start gap-3">
-                            <div className="w-1.5 h-1.5 bg-[#666] rounded-full mt-2 flex-shrink-0" />
-                            <span className="text-sm text-[#ccc]">
-                              {feature}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-
-                      <Button
-                        onClick={() => handlePlanChange(plan.id)}
-                        className={`w-full h-10 text-sm font-medium ${
-                          currentPlan === plan.id
-                            ? 'bg-[#333] text-white cursor-default border border-[#555]'
-                            : plan.buttonStyle
+                      <div
+                        className={`absolute top-0.5 w-4 h-4 rounded-full transition-transform duration-200 ${
+                          isAnnualBilling 
+                            ? 'translate-x-5 bg-white' 
+                            : 'translate-x-0.5 bg-[#666]'
                         }`}
-                        disabled={currentPlan === plan.id || isLoading}
-                      >
-                        {isLoading ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : currentPlan === plan.id ? (
-                          'Current Plan'
-                        ) : (
-                          plan.buttonText
-                        )}
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-                
+                      />
+                    </button>
+                    <span className={`text-xs font-mono ${isAnnualBilling ? 'text-white' : 'text-[#666]'}`} style={{ letterSpacing: '-0.05em' }}>
+                      Annual
+                      <span className="text-[#666] ml-1">(save 20%)</span>
+                    </span>
+                  </div>
 
+                  {/* Pricing Plans - minimal design */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    {PRICING_PLANS.map((plan) => (
+                      <motion.div
+                        key={plan.id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: PRICING_PLANS.indexOf(plan) * 0.03, duration: 0.15, ease: "easeOut" }}
+                        className={`bg-[#111] p-6 relative rounded-sm transition-all duration-200 ${
+                          plan.isRecommended 
+                            ? 'border border-white' 
+                            : 'border border-[#222] hover:border-[#333]'
+                        }`}
+                      >
+                        {plan.isRecommended && (
+                          <div className="absolute -top-2.5 left-6">
+                            <div className="bg-white text-black px-3 py-0.5 text-[10px] font-medium rounded-sm font-mono uppercase" style={{ letterSpacing: '-0.05em' }}>
+                              Recommended
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="mb-6">
+                          <h3 className="text-lg font-medium text-white mb-1 font-mono" style={{ letterSpacing: '-0.05em' }}>{plan.name}</h3>
+                          <p className="text-xs text-[#666] mb-4 font-mono" style={{ letterSpacing: '-0.05em' }}>{plan.description}</p>
+                          <div className="text-3xl font-bold text-white mb-0.5 font-mono" style={{ letterSpacing: '-0.05em' }}>
+                            ${isAnnualBilling ? plan.annualPrice : plan.monthlyPrice}
+                          </div>
+                          <div className="text-xs text-[#666] font-mono" style={{ letterSpacing: '-0.05em' }}>per month</div>
+                        </div>
+                        
+                        <div className="space-y-2 mb-6">
+                          {plan.features.slice(0, 6).map((feature, index) => (
+                            <div key={index} className="flex items-start gap-2">
+                              <Check className="w-3 h-3 text-[#666] mt-0.5 flex-shrink-0" />
+                              <span className="text-xs text-[#999] font-mono leading-relaxed" style={{ letterSpacing: '-0.05em' }}>{feature}</span>
+                            </div>
+                          ))}
+                          {plan.features.length > 6 && (
+                            <p className="text-xs text-[#666] font-mono pl-5" style={{ letterSpacing: '-0.05em' }}>
+                              +{plan.features.length - 6} more features
+                            </p>
+                          )}
+                        </div>
+
+                        <Button
+                          onClick={() => handlePlanChange(plan.id)}
+                          disabled={(currentPlan === plan.id) || isLoading}
+                          className={`w-full h-9 text-xs font-medium rounded-sm transition-all duration-200 font-mono ${
+                            currentPlan === plan.id
+                              ? 'bg-[#222] text-[#666] border border-[#333] cursor-not-allowed'
+                              : plan.isRecommended
+                                ? 'bg-white hover:bg-gray-100 text-black border-0'
+                                : 'bg-[#1a1a1a] hover:bg-[#222] text-white border border-[#333]'
+                          }`}
+                          style={{ letterSpacing: '-0.05em' }}
+                        >
+                          {isLoading ? (
+                            <>
+                              <Loader2 className="w-3 h-3 animate-spin mr-1.5" />
+                              Processing...
+                            </>
+                          ) : currentPlan === plan.id ? (
+                            'Current Plan'
+                          ) : (
+                            'Select Plan'
+                          )}
+                        </Button>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  {/* Trust indicators */}
+                  <div className="text-center pt-4 border-t border-[#1a1a1a]">
+                    <div className="flex items-center justify-center gap-4 text-xs text-[#666] mb-3 font-mono" style={{ letterSpacing: '-0.05em' }}>
+                      <span>Secure payment</span>
+                      <span>•</span>
+                      <span>SSL encrypted</span>
+                      <span>•</span>
+                      <span>Cancel anytime</span>
+                    </div>
+                    
+                    <button
+                      onClick={() => {
+                        if (stripeCustomerId) {
+                          handleManageSubscription()
+                        } else {
+                          // If no Stripe customer ID, show a message
+                          showToast('Please contact support to manage your subscription')
+                        }
+                      }}
+                      className="text-[#666] hover:text-[#999] text-[10px] font-mono transition-colors duration-200"
+                      style={{ letterSpacing: '-0.05em' }}
+                    >
+                      Need to cancel or manage payment methods?
+                    </button>
+                  </div>
+                </div>
               </div>
             </motion.div>
-          </motion.div>
+          </>
         )}
       </AnimatePresence>
 
