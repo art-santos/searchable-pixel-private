@@ -346,89 +346,95 @@ export async function saveOnboardingData(
       }
     }
 
-    // 4. Initialize comprehensive subscription system
+    // 4. Initialize comprehensive subscription system (non-blocking)
     console.log('💳 Initializing subscription system for user:', user.id)
     
-    // First check if subscription_info already exists
-    const { data: existingSubscription } = await supabase
-      .from('subscription_info')
-      .select('id')
-      .eq('user_id', user.id)
-      .single()
-    
-    if (!existingSubscription) {
-      // Create new subscription_info record
-      const subscriptionData: TablesInsert<'subscription_info'> = {
-        user_id: user.id,
-        plan_type: 'free',
-        plan_status: 'active',
-        current_period_start: new Date().toISOString(),
-        current_period_end: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
-        domains_included: 1,
-        domains_used: 1, // Count the primary domain
-        workspaces_included: 1,
-        workspaces_used: 1, // Count the primary workspace
-        team_members_included: 1,
-        team_members_used: 1, // Count the user themselves
-        ai_logs_included: 100,
-        ai_logs_used: 0,
-        extra_domains: 0,
-        edge_alerts_enabled: false,
-        cancel_at_period_end: false,
-      }
-      
-      const { error: subscriptionError } = await supabase
+    try {
+      // First check if subscription_info already exists
+      const { data: existingSubscription } = await supabase
         .from('subscription_info')
-        .insert(subscriptionData)
-
-      if (subscriptionError && subscriptionError.code !== '23505') {
-        console.error('❌ Error creating subscription_info:', subscriptionError)
-        return { success: false, error: `Failed to create subscription info: ${subscriptionError.message}` }
-      } else {
-        console.log('✅ Subscription info created successfully')
-      }
-    }
-
-    // Initialize subscription usage tracking (separate table for billing periods)
-    const { data: existingUsage } = await supabase
-      .from('subscription_usage')
-      .select('id')
-      .eq('user_id', user.id)
-      .gte('billing_period_end', new Date().toISOString())
-      .single()
-    
-    if (!existingUsage) {
-      const usageData: TablesInsert<'subscription_usage'> = {
-        user_id: user.id,
-        plan_type: 'free',
-        plan_status: 'active',
-        billing_period_start: new Date().toISOString(),
-        billing_period_end: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
-        next_billing_date: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
-        domains_included: 1,
-        domains_used: 1, // Count the primary domain
-        domains_purchased: 0,
-        ai_logs_included: 100,
-        ai_logs_used: 0,
-        article_credits_included: 10,
-        article_credits_used: 0,
-        article_credits_purchased: 0,
-        daily_scans_used: 0,
-        max_scans_used: 0,
-        overage_amount_cents: 0,
-        overage_blocked: false,
-      }
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
       
-      const { error: usageError } = await supabase
-        .from('subscription_usage')
-        .insert(usageData)
+      if (!existingSubscription) {
+        // Create new subscription_info record
+        const subscriptionData: TablesInsert<'subscription_info'> = {
+          user_id: user.id,
+          plan_type: 'starter',
+          plan_status: 'active',
+          current_period_start: new Date().toISOString(),
+          current_period_end: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
+          domains_included: 1,
+          domains_used: 1, // Count the primary domain
+          workspaces_included: 1,
+          workspaces_used: 1, // Count the primary workspace
+          team_members_included: 1,
+          team_members_used: 1, // Count the user themselves
+          ai_logs_included: 1000,
+          ai_logs_used: 0,
+          extra_domains: 0,
+          edge_alerts_enabled: false,
+          cancel_at_period_end: false,
+        }
+        
+        const { error: subscriptionError } = await supabase
+          .from('subscription_info')
+          .insert(subscriptionData)
 
-      if (usageError && usageError.code !== '23505') {
-        console.error('❌ Error creating subscription_usage:', usageError)
-        return { success: false, error: `Failed to create subscription usage: ${usageError.message}` }
-      } else {
-        console.log('✅ Subscription usage tracking initialized')
+        if (subscriptionError && subscriptionError.code !== '23505') {
+          console.warn('⚠️ Warning: Could not create subscription_info (will be created later):', subscriptionError.message)
+          // Note: Not returning error - subscription will be created lazily when needed
+        } else {
+          console.log('✅ Subscription info created successfully')
+        }
       }
+
+      // Initialize subscription usage tracking (separate table for billing periods)
+      const { data: existingUsage } = await supabase
+        .from('subscription_usage')
+        .select('id')
+        .eq('user_id', user.id)
+        .gte('billing_period_end', new Date().toISOString())
+        .single()
+      
+      if (!existingUsage) {
+        const usageData: TablesInsert<'subscription_usage'> = {
+          user_id: user.id,
+          plan_type: 'starter',
+          plan_status: 'active',
+          billing_period_start: new Date().toISOString(),
+          billing_period_end: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
+          next_billing_date: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
+          domains_included: 1,
+          domains_used: 1, // Count the primary domain
+          domains_purchased: 0,
+          ai_logs_included: 1000,
+          ai_logs_used: 0,
+          article_credits_included: 0,
+          article_credits_used: 0,
+          article_credits_purchased: 0,
+          daily_scans_used: 0,
+          max_scans_used: 0,
+          overage_amount_cents: 0,
+          overage_blocked: false,
+        }
+        
+        const { error: usageError } = await supabase
+          .from('subscription_usage')
+          .insert(usageData)
+
+        if (usageError && usageError.code !== '23505') {
+          console.warn('⚠️ Warning: Could not create subscription_usage (will be created later):', usageError.message)
+          // Note: Not returning error - subscription will be created lazily when needed
+        } else {
+          console.log('✅ Subscription usage tracking initialized')
+        }
+      }
+    } catch (subscriptionInitError) {
+      console.warn('⚠️ Warning: Subscription initialization failed during onboarding (will be initialized later):', subscriptionInitError)
+      // Don't fail the entire onboarding process for subscription initialization issues
+      // The subscription system has triggers and functions that will initialize it when needed
     }
 
     // 5. Mark onboarding as completed
