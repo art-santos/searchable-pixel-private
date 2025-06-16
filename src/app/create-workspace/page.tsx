@@ -308,7 +308,7 @@ export default function CreateWorkspacePage() {
         <div className="absolute bottom-8 left-0 right-0 text-center">
           <h2 className="text-xl font-semibold text-white mb-2">Almost there!</h2>
           <p className="text-gray-400 max-w-sm mx-auto">
-            Just a few details and you'll be ready to optimize your site's AI visibility.
+            Add some additional workspace details to begin tracking your AI visibility.
           </p>
         </div>
       </div>

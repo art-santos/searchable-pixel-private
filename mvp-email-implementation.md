@@ -293,7 +293,7 @@ export async function sendWeeklyReports() {
 ### Core Emails (Day 2-3)
 - [x] Welcome email on signup ✅
 - [ ] Email verification flow
-- [ ] Password reset flow  
+- [ ] Password reset flow
 - [x] First crawler detection email ✅
 
 ### Weekly Reports (Day 4)

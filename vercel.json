@@ -6,7 +6,7 @@
   "crons": [
     {
       "path": "/api/cron/weekly-emails",
-      "schedule": "0 9 * * MON"
+      "schedule": "0 9 * * 1"
     },
     {
       "path": "/api/cron/cleanup-tokens",

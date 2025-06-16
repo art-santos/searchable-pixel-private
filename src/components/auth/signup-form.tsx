@@ -186,7 +186,7 @@ export function SignupForm({
               Create your account
             </h1>
             <p className="text-balance text-sm text-gray-400">
-              Almost there! Create your account to see your AI visibility score.
+              Almost there! Create your account to start tracking your AI visibility.
             </p>
           </div>
           
