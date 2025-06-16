@@ -71,21 +71,33 @@ export async function POST(request: Request) {
     })
 
     // Create Stripe Checkout session for payment method setup with Link support
-    const session = await stripe.checkout.sessions.create({
+    const sessionParams: any = {
       customer: customerId,
       mode: 'setup',
       payment_method_types: ['card', 'link'],
-      success_url: `${normalizedBaseUrl}/dashboard?setup=success`,
-      cancel_url: `${normalizedBaseUrl}/dashboard?setup=canceled`,
+      success_url: `${normalizedBaseUrl}/dashboard?payment=success`,
+      cancel_url: `${normalizedBaseUrl}/payment-required?setup=canceled`,
       metadata: {
         user_id: user.id,
         setup_intent_id: setupIntent.id
       },
-      // Add configuration to better handle errors and Link payments
-      payment_method_configuration: undefined, // Use default configuration
-      locale: 'auto', // Auto-detect locale to fix the localization error
+      locale: 'auto',
       billing_address_collection: 'auto'
+    }
+
+    // Explicitly ensure customer_creation is not set
+    delete sessionParams.customer_creation
+    
+    // Explicitly ensure allow_promotion_codes is not set (not valid for setup mode)
+    delete sessionParams.allow_promotion_codes
+
+    console.log('🔍 [SETUP-INTENT] Creating checkout session with params:', {
+      ...sessionParams,
+      // Don't log sensitive metadata
+      metadata: { user_id: 'REDACTED', setup_intent_id: 'REDACTED' }
     })
+
+    const session = await stripe.checkout.sessions.create(sessionParams)
 
     return NextResponse.json({ 
       setupIntent: {

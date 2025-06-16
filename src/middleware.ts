@@ -271,27 +271,47 @@ export async function middleware(request: NextRequest) {
       // Cast to any to avoid TypeScript errors
       const subscription = subscriptionData as any
       
+      // Get user profile for payment method verification
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_plan, is_admin, payment_method_verified, requires_payment_method')
+        .eq('id', user.id)
+        .single()
+      
       // Fallback to profiles table if centralized data not available
       let userPlan: PlanType = 'starter'
+      let isAdmin = false
       
       if (subscription?.plan_type) {
         userPlan = subscription.plan_type as PlanType
-      } else {
-        // Fallback to profiles table
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('subscription_plan, is_admin')
-          .eq('id', user.id)
-          .single()
+      } else if (profile?.subscription_plan) {
+        userPlan = profile.subscription_plan as PlanType
+      }
+      
+      isAdmin = profile?.is_admin || false
+      
+      // Payment method verification for non-admin users
+      if (!isAdmin && profile?.requires_payment_method !== false) {
+        const requiresPaymentMethod = profile?.requires_payment_method !== false
+        const hasPaymentMethod = profile?.payment_method_verified === true
         
-        if (profile?.is_admin) {
-          userPlan = 'admin' as PlanType
-        } else {
-          userPlan = (profile?.subscription_plan || 'starter') as PlanType
+        // Check if they're trying to access dashboard routes without payment method
+        const isDashboardRoute = pathname.startsWith('/dashboard') || 
+                                pathname.startsWith('/settings') || 
+                                pathname.startsWith('/api-keys') || 
+                                pathname.startsWith('/analytics') || 
+                                pathname.startsWith('/domains')
+        
+        if (isDashboardRoute && requiresPaymentMethod && !hasPaymentMethod) {
+          console.log(`[MIDDLEWARE] Payment method required for ${pathname} - User: ${user.id}`)
+          
+          const redirectUrl = request.nextUrl.clone();
+          redirectUrl.pathname = '/payment-required';
+          return NextResponse.redirect(redirectUrl);
         }
       }
       
-      // Check route access
+      // Check route access based on subscription plan
       const accessCheck = checkRouteAccess(pathname, userPlan)
       
       if (accessCheck.shouldRedirect) {

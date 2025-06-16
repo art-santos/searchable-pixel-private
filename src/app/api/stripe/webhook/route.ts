@@ -34,6 +34,25 @@ export async function POST(req: NextRequest) {
 
   try {
     switch (event.type) {
+      case 'setup_intent.succeeded': {
+        const setupIntent = event.data.object as Stripe.SetupIntent
+        
+        console.log('Setup intent succeeded:', setupIntent.id)
+        console.log('Customer:', setupIntent.customer)
+        console.log('Payment method:', setupIntent.payment_method)
+        
+        // Mark payment method as verified for this user
+        if (setupIntent.customer && setupIntent.payment_method) {
+          await markPaymentMethodVerified(
+            setupIntent.customer as string, 
+            setupIntent.payment_method as string,
+            setupIntent.id
+          )
+        }
+        
+        break
+      }
+
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
         
@@ -42,6 +61,11 @@ export async function POST(req: NextRequest) {
         console.log('Customer:', session.customer)
         console.log('Subscription:', session.subscription)
         console.log('Metadata:', session.metadata)
+        
+        // Mark payment method as verified (subscription checkout includes payment method)
+        if (session.customer) {
+          await markPaymentMethodVerifiedForCustomer(session.customer as string)
+        }
         
         // Update user's subscription in the database
         await updateUserSubscription({
@@ -445,5 +469,90 @@ async function updateSubscriptionAddOns(subscription: Stripe.Subscription) {
 
   } catch (error) {
     console.error('Error updating subscription add-ons:', error)
+  }
+}
+
+// ✅ NEW: Function to mark payment method as verified for a specific customer
+async function markPaymentMethodVerified(
+  stripeCustomerId: string, 
+  paymentMethodId: string,
+  setupIntentId: string
+) {
+  try {
+    const serviceSupabase = createServiceRoleClient()
+    
+    console.log('🔐 [WEBHOOK] Marking payment method as verified for customer:', stripeCustomerId)
+    
+    // Find user by Stripe customer ID
+    const { data: profile, error: profileError } = await serviceSupabase
+      .from('profiles')
+      .select('id')
+      .eq('stripe_customer_id', stripeCustomerId)
+      .single()
+    
+    if (profileError || !profile) {
+      console.error('❌ [WEBHOOK] Could not find user for Stripe customer:', stripeCustomerId)
+      return
+    }
+
+    // Mark payment method as verified
+    const { error: updateError } = await serviceSupabase
+      .from('profiles')
+      .update({
+        payment_method_verified: true,
+        payment_method_verified_at: new Date().toISOString(),
+        stripe_setup_intent_id: setupIntentId,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', profile.id)
+    
+    if (updateError) {
+      console.error('❌ [WEBHOOK] Error marking payment method verified:', updateError)
+    } else {
+      console.log('✅ [WEBHOOK] Payment method marked as verified for user:', profile.id)
+    }
+
+  } catch (error) {
+    console.error('❌ [WEBHOOK] Error in markPaymentMethodVerified:', error)
+  }
+}
+
+// ✅ NEW: Function to mark payment method as verified for customer (when we don't have payment method ID)
+async function markPaymentMethodVerifiedForCustomer(stripeCustomerId: string) {
+  try {
+    const serviceSupabase = createServiceRoleClient()
+    
+    console.log('🔐 [WEBHOOK] Marking payment method as verified for customer:', stripeCustomerId)
+    
+    // Find user by Stripe customer ID
+    const { data: profile, error: profileError } = await serviceSupabase
+      .from('profiles')
+      .select('id')
+      .eq('stripe_customer_id', stripeCustomerId)
+      .single()
+    
+    if (profileError || !profile) {
+      console.error('❌ [WEBHOOK] Could not find user for Stripe customer:', stripeCustomerId)
+      return
+    }
+
+    // Mark payment method as verified (subscription checkout means they have a payment method)
+    const { error: updateError } = await serviceSupabase
+      .from('profiles')
+      .update({
+        payment_method_verified: true,
+        payment_method_verified_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', profile.id)
+    
+    if (updateError) {
+      console.error('❌ [WEBHOOK] Error marking payment method verified:', updateError)
+    } else {
+      console.log('✅ [WEBHOOK] Payment method marked as verified for user:', profile.id)
+    }
+
+  } catch (error) {
+    console.error('❌ [WEBHOOK] Error in markPaymentMethodVerifiedForCustomer:', error)
   }
 } 

@@ -76,7 +76,7 @@ export default function CTASection() {
             Get your site ranked
           </a>
           <span className="text-xs sm:text-sm text-gray-400">
-            Free trial • No credit card required
+            Free trial
           </span>
         </div>
       </div>

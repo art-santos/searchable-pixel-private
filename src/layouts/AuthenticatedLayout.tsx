@@ -16,6 +16,7 @@ export default function AuthenticatedLayout({
   const supabase = createClient()
   
   const [onboardingStatus, setOnboardingStatus] = useState<'loading' | 'complete' | 'incomplete'>('loading')
+  const [paymentStatus, setPaymentStatus] = useState<'loading' | 'required' | 'verified'>('loading')
 
   useEffect(() => {
     // 1. Wait for auth to finish loading
@@ -31,46 +32,39 @@ export default function AuthenticatedLayout({
       return
     }
 
-    // 3. Check onboarding status comprehensively
     const checkOnboarding = async () => {
-      console.log('🛡️ AuthenticatedLayout: Checking onboarding status for user', user.id)
-      
       try {
-        // First, check if user has any workspaces (primary indicator)
-        const { data: workspaces, error: workspaceError } = await supabase
-          .from('workspaces')
-          .select('id, is_primary')
-          .eq('user_id', user.id)
-          .limit(1)
-
-        if (workspaceError) {
-          console.error('❌ Error checking workspaces:', workspaceError)
-        }
-
-        // Also check the profile flag
+        // Get user profile to check onboarding status
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('onboarding_completed')
+          .select('onboarding_completed, is_admin')
           .eq('id', user.id)
           .single()
 
-        if (profileError && profileError.code !== 'PGRST116') {
-          console.error('❌ Error fetching profile for onboarding check:', profileError)
+        if (profileError) {
+          console.error('❌ Error fetching profile:', profileError)
+          setOnboardingStatus('incomplete')
+          return
         }
 
-        // Determine onboarding status with multiple checks
-        const hasWorkspaces = workspaces && workspaces.length > 0
-        const profileSaysComplete = profile && profile.onboarding_completed === true
-        
-        console.log('📊 Onboarding status check:', {
-          hasWorkspaces,
-          profileSaysComplete,
-          workspaceCount: workspaces?.length || 0,
-          profileData: profile
-        })
+        const profileSaysComplete = profile?.onboarding_completed
+        const isAdminUser = profile?.is_admin
 
-        // If user has workspaces, they should be considered onboarded
-        // regardless of the profile flag (handles inconsistent states)
+        // Get user's workspaces to double-check onboarding status
+        const { data: workspaces, error: workspaceError } = await supabase
+          .from('workspaces')
+          .select('id')
+          .eq('user_id', user.id)
+
+        if (workspaceError) {
+          console.error('❌ Error fetching workspaces:', workspaceError)
+          setOnboardingStatus('incomplete')
+          return
+        }
+
+        const hasWorkspaces = workspaces && workspaces.length > 0
+
+        // Determine onboarding status
         if (hasWorkspaces) {
           console.log('✅ User has workspaces - onboarding complete')
           
@@ -94,21 +88,56 @@ export default function AuthenticatedLayout({
           }
           
           setOnboardingStatus('complete')
+
+          // Now check payment method status (only for non-admin users)
+          if (!isAdminUser) {
+            checkPaymentMethodStatus()
+          } else {
+            setPaymentStatus('verified') // Admins don't need payment methods
+          }
         } else if (profileSaysComplete) {
           // Profile says complete but no workspaces - this is inconsistent
           // but let them proceed (maybe workspaces were deleted)
           console.log('⚠️ Profile says onboarding complete but no workspaces found')
           setOnboardingStatus('complete')
+          
+          if (!isAdminUser) {
+            checkPaymentMethodStatus()
+          } else {
+            setPaymentStatus('verified')
+          }
         } else {
           // No workspaces and profile says incomplete
           console.log('ℹ️ Onboarding incomplete - no workspaces found')
           setOnboardingStatus('incomplete')
+          setPaymentStatus('verified') // Skip payment check if onboarding incomplete
         }
 
       } catch (error) {
         console.error('❌ Unexpected error checking onboarding status:', error)
         // Default to incomplete on error to be safe
         setOnboardingStatus('incomplete')
+        setPaymentStatus('verified') // Skip payment check on error
+      }
+    }
+
+    const checkPaymentMethodStatus = async () => {
+      try {
+        const response = await fetch('/api/payment-method/verify')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.verified || data.isAdmin || !data.requiresPaymentMethod) {
+            setPaymentStatus('verified')
+          } else {
+            setPaymentStatus('required')
+          }
+        } else {
+          // If API call fails, require payment method to be safe
+          setPaymentStatus('required')
+        }
+      } catch (error) {
+        console.error('❌ Error checking payment method status:', error)
+        setPaymentStatus('required')
       }
     }
 
@@ -117,12 +146,13 @@ export default function AuthenticatedLayout({
   }, [user, authLoading, supabase, router, pathname])
 
   useEffect(() => {
-    if (onboardingStatus === 'loading') {
+    if (onboardingStatus === 'loading' || paymentStatus === 'loading') {
       return
     }
 
-    // --- Onboarding Redirection Logic ---
+    // --- Routing Logic ---
     const isAtCreateWorkspace = pathname === '/create-workspace'
+    const isAtPaymentRequired = pathname === '/payment-required'
     const isAdminEmail = user?.email?.endsWith('@split.dev')
     const isAtAdminVerify = pathname === '/admin/verify'
     const isAtAdminDashboard = pathname.startsWith('/admin/dashboard')
@@ -136,27 +166,44 @@ export default function AuthenticatedLayout({
         return
       }
     } else {
-      // Regular user flow - If onboarding is incomplete, they MUST be at the create-workspace page.
+      // Regular user flow
+      
+      // 1. If onboarding is incomplete, they MUST be at the create-workspace page
       if (onboardingStatus === 'incomplete' && !isAtCreateWorkspace) {
         console.log('📍 Redirecting to /create-workspace - onboarding incomplete')
         router.push('/create-workspace')
+        return
       }
-    }
 
-    // If onboarding IS complete, they MUST NOT be at the create-workspace page.
-    if (onboardingStatus === 'complete' && isAtCreateWorkspace) {
-      if (isAdminEmail) {
-        console.log('📍 Redirecting admin user to /admin/verify - should not be at create-workspace')
-        router.push('/admin/verify')
-      } else {
-        console.log('📍 Redirecting to /dashboard - onboarding already complete')
+      // 2. If onboarding IS complete but they're at create-workspace, redirect them
+      if (onboardingStatus === 'complete' && isAtCreateWorkspace) {
+        console.log('📍 Redirecting from /create-workspace - onboarding already complete')
+        if (paymentStatus === 'required') {
+          router.push('/payment-required')
+        } else {
+          router.push('/dashboard')
+        }
+        return
+      }
+
+      // 3. If payment method is required and they're not at the payment page, redirect them
+      if (paymentStatus === 'required' && !isAtPaymentRequired) {
+        console.log('📍 Redirecting to /payment-required - payment method required')
+        router.push('/payment-required')
+        return
+      }
+
+      // 4. If payment method is verified but they're at the payment page, redirect to dashboard
+      if (paymentStatus === 'verified' && isAtPaymentRequired) {
+        console.log('📍 Redirecting to /dashboard - payment method verified')
         router.push('/dashboard')
+        return
       }
     }
-  }, [onboardingStatus, pathname, router])
+  }, [onboardingStatus, paymentStatus, pathname, router, user])
   
-  // Show a loading screen while we verify auth and onboarding status
-  if (authLoading || onboardingStatus === 'loading') {
+  // Show a loading screen while we verify auth, onboarding, and payment status
+  if (authLoading || onboardingStatus === 'loading' || paymentStatus === 'loading') {
     return (
       <div className="flex h-screen items-center justify-center bg-[#0c0c0c]">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent text-white" />
@@ -169,33 +216,5 @@ export default function AuthenticatedLayout({
     return null
   }
 
-  // Check if user is admin
-  const isAdminEmail = user?.email?.endsWith('@split.dev')
-  const isAtAdminVerify = pathname === '/admin/verify'
-  const isAtAdminDashboard = pathname.startsWith('/admin/dashboard')
-
-  // Admin user logic
-  if (isAdminEmail) {
-    // Admin users should only see content if they're at admin verify or admin dashboard
-    if (!isAtAdminVerify && !isAtAdminDashboard) {
-      return null // Will redirect in useEffect
-    }
-  } else {
-    // Regular user logic
-    // If their onboarding status is incomplete and they're not on the create workspace page, return null
-    if (onboardingStatus === 'incomplete' && pathname !== '/create-workspace') {
-      return null
-    }
-
-    // If onboarding is complete but they are on the create-workspace page, return null
-    if (onboardingStatus === 'complete' && pathname === '/create-workspace') {
-      return null
-    }
-  }
-  
-  return (
-    <div className="h-screen bg-[#0c0c0c] flex">
-        {children}
-    </div>
-  )
+  return <>{children}</>
 } 

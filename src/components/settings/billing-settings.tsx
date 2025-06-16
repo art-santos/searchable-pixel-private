@@ -33,8 +33,6 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
   const [highlightedSection, setHighlightedSection] = useState<string | null>(null)
   const [showWorkspaceDeletionDialog, setShowWorkspaceDeletionDialog] = useState(false)
   const [domainsToRemove, setDomainsToRemove] = useState(0)
-  const [isSyncing, setIsSyncing] = useState(false)
-  const [syncStatus, setSyncStatus] = useState<'unknown' | 'synced' | 'out-of-sync'>('unknown')
 
   // Fetch subscription data on mount
   useEffect(() => {
@@ -374,48 +372,6 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
     setTimeout(() => setShowSuccessToast(false), 3000)
   }
 
-  // Check billing sync status
-  const checkSyncStatus = async () => {
-    try {
-      const response = await fetch('/api/billing/sync')
-      if (response.ok) {
-        const data = await response.json()
-        setSyncStatus(data.inSync ? 'synced' : 'out-of-sync')
-      }
-    } catch (error) {
-      console.error('Error checking sync status:', error)
-    }
-  }
-
-  // Manual billing sync
-  const handleManualSync = async () => {
-    setIsSyncing(true)
-    try {
-      const response = await fetch('/api/billing/sync', { method: 'POST' })
-      const data = await response.json()
-      
-      if (response.ok) {
-        showToast(data.message || 'Billing data synced successfully!')
-        setSyncStatus('synced')
-        await onRefreshUsage() // Refresh the usage data
-      } else {
-        showToast(data.error || 'Failed to sync billing data')
-      }
-    } catch (error) {
-      console.error('Error syncing billing:', error)
-      showToast('Failed to sync billing data')
-    } finally {
-      setIsSyncing(false)
-    }
-  }
-
-  // Check sync status on mount
-  useEffect(() => {
-    if (user) {
-      checkSyncStatus()
-    }
-  }, [user])
-
   // Dynamic billing data
   const getBillingData = () => {
     if (!usageData) {
@@ -602,24 +558,6 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                               Next billing: {billingPlan.nextBilling}
                             </p>
                           )}
-                          
-                          {/* Sync Status Indicator */}
-                          {syncStatus === 'out-of-sync' && (
-                            <div className="mt-2 flex items-center gap-2">
-                              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                              <p className="text-xs text-orange-500 font-mono tracking-tight">
-                                Billing data out of sync
-                              </p>
-                            </div>
-                          )}
-                          {syncStatus === 'synced' && (
-                            <div className="mt-2 flex items-center gap-2">
-                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                              <p className="text-xs text-green-500 font-mono tracking-tight">
-                                Billing data synchronized
-                              </p>
-                            </div>
-                          )}
                         </>
                       )}
                     </div>
@@ -640,17 +578,6 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                           ? 'Admin Account' 
                           : 'Change Plan'}
                     </Button>
-                    
-                    {/* Status-based sync button */}
-                    {syncStatus === 'out-of-sync' && (
-                      <Button
-                        onClick={handleManualSync}
-                        disabled={isSyncing}
-                        className="h-8 px-3 font-mono tracking-tight text-xs bg-orange-600 hover:bg-orange-700 text-white border-orange-500"
-                      >
-                        {isSyncing ? 'Syncing...' : 'Fix Billing'}
-                      </Button>
-                    )}
                   </div>
                 </div>
               </div>
