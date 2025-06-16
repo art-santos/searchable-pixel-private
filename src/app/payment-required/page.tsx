@@ -109,31 +109,40 @@ export default function PaymentRequiredPage() {
     setError(null)
 
     try {
-      // Create setup intent for payment method
-      const response = await fetch('/api/stripe/setup-intent', {
+      // Create checkout session for the selected plan
+      const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           planId,
-          isAnnual 
+          isAnnual,
+          customerEmail: user?.email || '',
+          // Success URL will redirect to dashboard after payment
+          successUrl: `${window.location.origin}/dashboard?payment=success`,
+          cancelUrl: window.location.href
         })
       })
 
       if (!response.ok) {
-        throw new Error('Failed to create payment setup session')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create checkout session')
       }
 
-      const { setupIntent } = await response.json()
+      const { url, error: sessionError } = await response.json()
       
-      if (setupIntent?.url) {
-        // Redirect to Stripe Checkout for payment method setup
-        window.location.href = setupIntent.url
+      if (sessionError) {
+        throw new Error(sessionError)
+      }
+      
+      if (url) {
+        // Redirect to Stripe Checkout for subscription creation
+        window.location.href = url
       } else {
-        throw new Error('No setup URL received')
+        throw new Error('No checkout URL received')
       }
     } catch (error) {
-      console.error('Error setting up payment method:', error)
-      setError(error instanceof Error ? error.message : 'Failed to setup payment method')
+      console.error('Error creating checkout session:', error)
+      setError(error instanceof Error ? error.message : 'Failed to create checkout session')
       setIsLoading(false)
     }
   }
@@ -400,10 +409,10 @@ export default function PaymentRequiredPage() {
                           {isLoading && selectedPlan === plan.id ? (
                             <>
                               <Loader2 className="w-3 h-3 animate-spin mr-1.5" />
-                              Setting up...
+                              Processing...
                             </>
                           ) : (
-                            'Select Plan'
+                            `Start with ${plan.name}`
                           )}
                         </Button>
                       </motion.div>
