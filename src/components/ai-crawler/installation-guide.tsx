@@ -188,23 +188,29 @@ app.use(async (req, res, next) => {
       },
       {
         title: 'Add to Framer',
-        description: 'Paste the tracking pixel in your SEO settings',
+        description: 'Use JavaScript implementation for the head section',
         type: 'code' as const,
-        code: `<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" 
-     style="display:none" 
-     width="1" 
-     height="1" 
-     alt="" />`,
-        filename: 'Site Settings → SEO & Meta → Head',
+        code: `<script>
+  (function() {
+    var img = new Image();
+    img.src = 'https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif';
+    img.style.display = 'none';
+    img.width = 1;
+    img.height = 1;
+    img.alt = '';
+  })();
+</script>`,
+        filename: 'Site Settings → Custom Code → Start of <head> tag',
         icon: Code2
       },
       {
         title: 'Publish Your Site',
         description: 'Make tracking live on your Framer site',
         type: 'instruction' as const,
-        content: `1. Go to Settings → SEO & Meta
-2. Paste code in "Head" field
-3. Publish your site`,
+        content: `1. Go to Settings → Site Settings
+2. Navigate to Custom Code section
+3. Paste code in "Start of <head> tag" field
+4. Publish your site`,
         icon: Zap
       }
     ]

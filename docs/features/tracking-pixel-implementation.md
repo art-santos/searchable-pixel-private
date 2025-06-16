@@ -70,14 +70,59 @@ The quickest way to get started:
 
 #### Framer
 1. Open your Framer project
-2. Click Settings (⚙️) → SEO & Meta
-3. Paste code in "Head" field
-4. Publish your site
+2. Click Settings (⚙️) → Site Settings
+3. Navigate to the "Custom Code" section
+4. Use one of these two options:
+
+**Option 1: JavaScript Implementation (Recommended for <head>)**
+```javascript
+<script>
+  (function() {
+    var img = new Image();
+    img.src = 'https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif';
+    img.style.display = 'none';
+    img.width = 1;
+    img.height = 1;
+    img.alt = '';
+  })();
+</script>
+```
+- Paste this in the "Start of <head> tag" field
+
+**Option 2: HTML Implementation (For <body>)**
+```html
+<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" style="display:none" width="1" height="1" alt="" />
+```
+- Paste this in the "End of <body> tag" field
+
+5. Publish your site
 
 #### Webflow
-1. Go to Site Settings → Custom Code
-2. Paste code in "Head Code" section
-3. Publish your site
+1. Go to **Site Settings** → **Custom Code**
+2. Choose one of these options:
+
+**Option 1: HTML Implementation (Recommended)**
+```html
+<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" style="display:none" width="1" height="1" alt="" />
+```
+- Paste this in the "Head Code" section
+
+**Option 2: JavaScript Implementation**
+```javascript
+<script>
+  (function() {
+    var img = new Image();
+    img.src = 'https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif';
+    img.style.display = 'none';
+    img.width = 1;
+    img.height = 1;
+    img.alt = '';
+  })();
+</script>
+```
+- Also paste this in the "Head Code" section
+
+3. **Publish** your site
 
 #### WordPress
 1. Appearance → Theme Editor → header.php

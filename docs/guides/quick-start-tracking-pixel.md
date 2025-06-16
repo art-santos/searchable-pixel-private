@@ -10,26 +10,35 @@ Get AI crawler tracking working on your website in under 5 minutes.
 
 ## Step 1: Get Your Tracking Code
 
-1. Go to [Settings → Tracking Pixel](../settings?tab=tracking-pixel) in your Split.dev dashboard
-2. Copy the basic tracking code (looks like this):
+1. Go to **Settings → Tracking Pixel** in your Split.dev dashboard
+2. Your tracking code is automatically generated with your workspace ID included
+3. Choose between **HTML** or **JavaScript** implementation based on your platform
+4. Click **Copy Code** to copy the ready-to-use tracking pixel
 
-```html
-<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" style="display:none" width="1" height="1" alt="" />
-```
+> **Note:** The tracking code you copy already includes your unique workspace ID. No need to replace anything!
+
+### What you'll see:
+- **Workspace Info**: Shows which workspace the pixel is configured for
+- **Implementation Options**: HTML (for body sections) or JavaScript (for head sections)
+- **Ready-to-use Code**: Your actual tracking code with workspace ID included
 
 ## Step 2: Add to Your Website
 
 Choose your platform and follow the steps:
 
-### Framer ⚡️ Most Popular
+### Framer ⚡️ 
 1. Open your Framer project
-2. Click **Settings** (⚙️) → **SEO & Meta**
-3. Paste code in **"Head"** field
-4. **Publish** your site
+2. Click **Settings** → **Site Settings**
+3. Navigate to **Custom Code**
+4. **Important:** Use the JavaScript version
+5. Paste code in **"Start of <head> tag"** field
+6. **Publish** your site
+
+> **Why JavaScript for Framer?** Framer doesn't allow `<img>` tags in the head section, so use the JavaScript implementation.
 
 ### Webflow
 1. Go to **Site Settings** → **Custom Code**
-2. Paste code in **"Head Code"** section
+2. Paste code in **"Head Code"** section (either HTML or JavaScript works)
 3. **Publish** your site
 
 ### WordPress
