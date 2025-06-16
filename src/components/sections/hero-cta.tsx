@@ -97,7 +97,7 @@ export default function HeroCTA() {
       </div>
       
       <div className="blur-in-up-delay-2 text-xs md:text-sm text-gray-400 mt-3 md:mt-4 mb-6 md:mb-24 flex items-center justify-center gap-1">
-        Get mentioned by 
+        See who's finding you on 
         <span className="text-white logo-flip-container">
           <span key={currentLogo} className="logo-flip">
             <img 
