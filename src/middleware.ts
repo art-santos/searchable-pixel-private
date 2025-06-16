@@ -302,7 +302,12 @@ export async function middleware(request: NextRequest) {
                                 pathname.startsWith('/analytics') || 
                                 pathname.startsWith('/domains')
         
-        if (isDashboardRoute && requiresPaymentMethod && !hasPaymentMethod) {
+        // Allow temporary access to dashboard if coming from Stripe with payment=success
+        // This gives the webhook time to process and update the database
+        const isPaymentSuccessRedirect = pathname === '/dashboard' && 
+                                       request.nextUrl.searchParams.get('payment') === 'success'
+        
+        if (isDashboardRoute && requiresPaymentMethod && !hasPaymentMethod && !isPaymentSuccessRedirect) {
           console.log(`[MIDDLEWARE] Payment method required for ${pathname} - User: ${user.id}`)
           
           const redirectUrl = request.nextUrl.clone();

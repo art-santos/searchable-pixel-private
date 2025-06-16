@@ -22,28 +22,107 @@ export async function updateUserSubscription({
 }) {
   const supabase = createServiceClient()
   
-  // First, get the user by email if provided
-  let userId: string | null = null
+  console.log('[updateUserSubscription] Starting with:', {
+    email,
+    stripeCustomerId,
+    subscriptionId,
+    planId,
+    billing
+  })
   
-  if (email) {
-    const { data: { users } } = await supabase.auth.admin.listUsers()
-    const user = users.find(u => u.email === email)
-    userId = user?.id || null
+  // Strategy 1: Try to find user by Stripe customer metadata (most reliable)
+  let userId: string | null = null
+  let userEmail: string | null = email || null
+  
+  try {
+    const customer = await stripe.customers.retrieve(stripeCustomerId)
+    if (customer && !customer.deleted) {
+      // Get user ID from metadata if available
+      if (customer.metadata?.supabase_user_id) {
+        userId = customer.metadata.supabase_user_id
+        console.log('[updateUserSubscription] Found user ID from Stripe metadata:', userId)
+      }
+      
+      // Get email from Stripe customer if we don't have it
+      if (!userEmail && customer.email) {
+        userEmail = customer.email
+      }
+    }
+  } catch (error) {
+    console.error('[updateUserSubscription] Error retrieving Stripe customer:', error)
   }
   
-  // If no userId from email, try to find by existing stripe_customer_id
+  // Strategy 2: Find by existing stripe_customer_id in profiles
   if (!userId) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id')
+      .select('id, email')
       .eq('stripe_customer_id', stripeCustomerId)
       .single()
     
-    userId = profile?.id || null
+    if (profile) {
+      userId = profile.id
+      if (!userEmail && profile.email) {
+        userEmail = profile.email
+      }
+      console.log('[updateUserSubscription] Found user by stripe_customer_id:', userId)
+    }
+  }
+  
+  // Strategy 3: Find by email in profiles table
+  if (!userId && userEmail) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', userEmail)
+      .single()
+    
+    if (profile) {
+      userId = profile.id
+      console.log('[updateUserSubscription] Found user by email in profiles:', userId)
+    }
+  }
+  
+  // Strategy 4: Find by email in auth.users
+  if (!userId && userEmail) {
+    const { data: { users } } = await supabase.auth.admin.listUsers()
+    const user = users.find(u => u.email === userEmail)
+    if (user) {
+      userId = user.id
+      console.log('[updateUserSubscription] Found user by email in auth.users:', userId)
+      
+      // Create/update profile with email if it doesn't exist
+      await supabase
+        .from('profiles')
+        .upsert({
+          id: userId,
+          email: userEmail,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'id'
+        })
+    }
   }
   
   if (!userId) {
-    console.error('Unable to find user for Stripe customer:', stripeCustomerId)
+    console.error('[updateUserSubscription] Unable to find user for Stripe customer:', stripeCustomerId, 'with email:', userEmail)
+    
+    // Log this as a critical error that needs manual intervention
+    await supabase
+      .from('stripe_webhook_errors')
+      .insert({
+        error_type: 'user_not_found',
+        stripe_customer_id: stripeCustomerId,
+        email: userEmail,
+        subscription_id: subscriptionId,
+        error_details: {
+          message: 'Could not find user for Stripe customer',
+          planId,
+          billing
+        },
+        created_at: new Date().toISOString()
+      })
+    
     return
   }
   
@@ -59,14 +138,47 @@ export async function updateUserSubscription({
       subscription_status: subscription.status,
       subscription_plan: planId,
       subscription_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-      updated_by: userId,
+      payment_method_verified: true, // If they have a subscription, they have a payment method
+      payment_method_verified_at: new Date().toISOString(),
+      email: userEmail, // Ensure email is set
+      updated_at: new Date().toISOString(),
     })
     .eq('id', userId)
   
   if (error) {
-    console.error('Error updating user subscription:', error)
+    console.error('[updateUserSubscription] Error updating user subscription:', error)
+    
+    // Log the error for debugging
+    await supabase
+      .from('stripe_webhook_errors')
+      .insert({
+        error_type: 'update_failed',
+        stripe_customer_id: stripeCustomerId,
+        email: userEmail,
+        subscription_id: subscriptionId,
+        error_details: {
+          message: 'Failed to update user subscription',
+          error: error.message,
+          userId,
+          planId,
+          billing
+        },
+        created_at: new Date().toISOString()
+      })
   } else {
-    console.log('Successfully updated subscription for user:', userId)
+    console.log('[updateUserSubscription] Successfully updated subscription for user:', userId)
+    
+    // Also update the Stripe customer metadata to ensure future lookups work
+    try {
+      await stripe.customers.update(stripeCustomerId, {
+        metadata: {
+          supabase_user_id: userId
+        }
+      })
+      console.log('[updateUserSubscription] Updated Stripe customer metadata')
+    } catch (stripeError) {
+      console.error('[updateUserSubscription] Error updating Stripe customer metadata:', stripeError)
+    }
   }
 }
 

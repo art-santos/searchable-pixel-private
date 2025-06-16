@@ -163,21 +163,32 @@ export default function PaymentRequiredPage() {
         onClick={() => showButton && setShowModal(true)}
       >
         {/* Sign out link in top right */}
-        <div className="absolute top-6 right-6 z-20">
+        <div 
+          className="absolute top-6 right-6 z-20"
+          onClick={(e) => e.stopPropagation()}
+        >
           <button
             onClick={async (e) => {
+              e.preventDefault()
               e.stopPropagation()
-              if (supabase) {
-                await supabase.auth.signOut()
+              setIsLoading(true) // Show loading state
+              try {
+                if (supabase) {
+                  await supabase.auth.signOut()
+                }
+                router.push('/login')
+              } catch (error) {
+                console.error('Error signing out:', error)
+                setIsLoading(false)
               }
-              router.push('/login')
             }}
-            className="text-xs text-white/40 hover:text-white/80 transition-colors duration-200 font-mono"
+            disabled={isLoading}
+            className="text-xs text-white/40 hover:text-white/80 transition-colors duration-200 font-mono disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ letterSpacing: '-0.05em' }}
           >
-            Sign out
+            {isLoading ? 'Signing out...' : 'Sign out'}
           </button>
-          </div>
+        </div>
           
         {/* Subtle grid pattern */}
         <div 
@@ -454,16 +465,25 @@ export default function PaymentRequiredPage() {
             </p>
                     
                     <button
-                      onClick={async () => {
-                        if (supabase) {
-                          await supabase.auth.signOut()
+                      onClick={async (e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setIsLoading(true)
+                        try {
+                          if (supabase) {
+                            await supabase.auth.signOut()
+                          }
+                          router.push('/login')
+                        } catch (error) {
+                          console.error('Error signing out:', error)
+                          setIsLoading(false)
                         }
-                        router.push('/login')
                       }}
-                      className="text-[10px] text-[#666] hover:text-white transition-colors duration-200 font-mono"
+                      disabled={isLoading}
+                      className="text-[10px] text-[#666] hover:text-white transition-colors duration-200 font-mono disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{ letterSpacing: '-0.05em' }}
                     >
-                      Sign out and return to login
+                      {isLoading ? 'Signing out...' : 'Sign out and return to login'}
                     </button>
           </div>
       </div>

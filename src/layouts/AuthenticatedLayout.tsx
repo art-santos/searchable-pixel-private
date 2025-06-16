@@ -187,7 +187,12 @@ export default function AuthenticatedLayout({
       }
 
       // 3. If payment method is required and they're not at the payment page, redirect them
-      if (paymentStatus === 'required' && !isAtPaymentRequired) {
+      // Allow temporary access to dashboard if coming from Stripe with payment=success
+      const isPaymentSuccessRedirect = pathname === '/dashboard' && 
+                                     typeof window !== 'undefined' &&
+                                     new URLSearchParams(window.location.search).get('payment') === 'success'
+      
+      if (paymentStatus === 'required' && !isAtPaymentRequired && !isPaymentSuccessRedirect) {
         console.log('📍 Redirecting to /payment-required - payment method required')
         router.push('/payment-required')
         return

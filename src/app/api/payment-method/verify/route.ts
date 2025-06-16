@@ -11,10 +11,10 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user's profile data
+    // Get user's profile data with subscription info
     const { data: profile } = await supabase
       .from('profiles')
-      .select('stripe_customer_id, payment_method_verified, requires_payment_method, is_admin')
+      .select('stripe_customer_id, payment_method_verified, requires_payment_method, is_admin, subscription_id, subscription_status')
       .eq('id', user.id)
       .single()
 
@@ -28,7 +28,8 @@ export async function GET() {
         hasPaymentMethod: true,
         verified: true,
         requiresPaymentMethod: false,
-        isAdmin: true
+        isAdmin: true,
+        hasActiveSubscription: true
       })
     }
 
@@ -37,7 +38,88 @@ export async function GET() {
       return NextResponse.json({
         hasPaymentMethod: true,
         verified: true,
-        requiresPaymentMethod: false
+        requiresPaymentMethod: false,
+        hasActiveSubscription: true
+      })
+    }
+
+    // Check if user has an active subscription ID (most reliable check)
+    let hasActiveSubscription = !!(profile.subscription_id && profile.subscription_status === 'active')
+    
+    // Also check subscription_usage table for more recent data
+    if (!hasActiveSubscription) {
+      const { data: subscriptionUsage } = await supabase
+        .from('subscription_usage')
+        .select('stripe_subscription_id, plan_status')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+      
+      if (subscriptionUsage?.stripe_subscription_id && subscriptionUsage?.plan_status === 'active') {
+        hasActiveSubscription = true
+        
+        // Update profile with this subscription info
+        await supabase
+          .from('profiles')
+          .update({ 
+            subscription_id: subscriptionUsage.stripe_subscription_id,
+            subscription_status: 'active',
+            payment_method_verified: true,
+            payment_method_verified_at: new Date().toISOString()
+          })
+          .eq('id', user.id)
+      }
+    }
+    
+    // Final check: Query Stripe directly if we have a customer ID but no active subscription in DB
+    if (!hasActiveSubscription && profile.stripe_customer_id) {
+      try {
+        const subscriptions = await stripe.subscriptions.list({
+          customer: profile.stripe_customer_id,
+          status: 'active',
+          limit: 1
+        })
+        
+        if (subscriptions.data.length > 0) {
+          const activeSubscription = subscriptions.data[0]
+          hasActiveSubscription = true
+          
+          // Update profile with this subscription info
+          await supabase
+            .from('profiles')
+            .update({ 
+              subscription_id: activeSubscription.id,
+              subscription_status: 'active',
+              payment_method_verified: true,
+              payment_method_verified_at: new Date().toISOString()
+            })
+            .eq('id', user.id)
+        }
+      } catch (stripeError) {
+        console.error('Error checking Stripe subscriptions:', stripeError)
+      }
+    }
+    
+    if (hasActiveSubscription) {
+      // User has active subscription, they definitely have payment method
+      // Update payment_method_verified if it's not already true
+      if (!profile.payment_method_verified) {
+        await supabase
+          .from('profiles')
+          .update({ 
+            payment_method_verified: true,
+            payment_method_verified_at: new Date().toISOString()
+          })
+          .eq('id', user.id)
+      }
+      
+      return NextResponse.json({
+        hasPaymentMethod: true,
+        verified: true,
+        requiresPaymentMethod: true,
+        hasActiveSubscription: true,
+        subscriptionId: profile.subscription_id
       })
     }
 
@@ -67,7 +149,8 @@ export async function GET() {
         return NextResponse.json({
           hasPaymentMethod: hasValidPaymentMethod,
           verified: hasValidPaymentMethod,
-          requiresPaymentMethod: true
+          requiresPaymentMethod: true,
+          hasActiveSubscription: false
         })
       } catch (stripeError) {
         console.error('Error checking Stripe payment methods:', stripeError)
@@ -75,7 +158,8 @@ export async function GET() {
         return NextResponse.json({
           hasPaymentMethod: profile.payment_method_verified,
           verified: profile.payment_method_verified,
-          requiresPaymentMethod: true
+          requiresPaymentMethod: true,
+          hasActiveSubscription: false
         })
       }
     }
@@ -105,14 +189,16 @@ export async function GET() {
         return NextResponse.json({
           hasPaymentMethod: hasValidPaymentMethod,
           verified: hasValidPaymentMethod,
-          requiresPaymentMethod: true
+          requiresPaymentMethod: true,
+          hasActiveSubscription: false
         })
       } catch (stripeError) {
         console.error('Error checking Stripe payment methods:', stripeError)
         return NextResponse.json({
           hasPaymentMethod: false,
           verified: false,
-          requiresPaymentMethod: true
+          requiresPaymentMethod: true,
+          hasActiveSubscription: false
         })
       }
     }
@@ -121,7 +207,8 @@ export async function GET() {
     return NextResponse.json({
       hasPaymentMethod: false,
       verified: false,
-      requiresPaymentMethod: true
+      requiresPaymentMethod: true,
+      hasActiveSubscription: false
     })
 
   } catch (error) {

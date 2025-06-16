@@ -975,7 +975,10 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
               transition={{ duration: 0.2, ease: "easeOut" }}
               className="fixed inset-0 z-50 flex items-center justify-center p-4"
             >
-              <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-sm max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+              <div 
+                className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-sm max-w-5xl w-full max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
                 {/* Modal Header */}
                 <div className="sticky top-0 bg-[#0a0a0a] border-b border-[#1a1a1a] p-6 flex items-center justify-between">
                   <div>
@@ -1102,7 +1105,8 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                     </div>
                     
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation()
                         if (stripeCustomerId) {
                           handleManageSubscription()
                         } else {

@@ -7,7 +7,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check:payments": "node scripts/check-payment-status.js",
+    "backfill:customers": "node scripts/backfill-stripe-customers.js",
+    "fix:stripe": "node scripts/fix-stripe-customers-enhanced.js",
+    "test:signup": "node scripts/test-user-creation.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

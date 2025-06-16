@@ -17,12 +17,14 @@ export default function Dashboard() {
   const { switching } = useWorkspace()
   const shouldReduceMotion = useReducedMotion()
   const [setupStatus, setSetupStatus] = useState<'success' | 'canceled' | null>(null)
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false)
 
-  // Check for setup status from URL parameters
+  // Check for setup status from URL parameters and handle payment success
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search)
       const setup = urlParams.get('setup')
+      const payment = urlParams.get('payment')
       
       if (setup === 'vercel' || setup === 'node') {
         // Redirect to installation guide for specific platform
@@ -35,6 +37,57 @@ export default function Dashboard() {
         setSetupStatus('canceled')
         // Clean up URL
         window.history.replaceState({}, '', '/dashboard')
+      }
+
+      // Handle payment success - poll for verification due to webhook timing
+      if (payment === 'success') {
+        setIsVerifyingPayment(true)
+        
+        let timeoutId: NodeJS.Timeout
+        
+        const pollPaymentVerification = async (attempts = 0, maxAttempts = 10) => {
+          try {
+            const response = await fetch('/api/payment-method/verify')
+            if (response.ok) {
+              const data = await response.json()
+              if (data.verified) {
+                setSetupStatus('success')
+                setIsVerifyingPayment(false)
+                // Clean up URL
+                window.history.replaceState({}, '', '/dashboard')
+                return
+              }
+            }
+            
+            // If not verified yet and we haven't exceeded max attempts, try again
+            if (attempts < maxAttempts) {
+              timeoutId = setTimeout(() => {
+                pollPaymentVerification(attempts + 1, maxAttempts)
+              }, 1000) // Wait 1 second between attempts
+            } else {
+              // Max attempts reached, payment verification failed
+              console.warn('Payment verification polling timed out')
+              setIsVerifyingPayment(false)
+              // Clean up URL anyway
+              window.history.replaceState({}, '', '/dashboard')
+            }
+          } catch (error) {
+            console.error('Error polling payment verification:', error)
+            setIsVerifyingPayment(false)
+            // Clean up URL anyway
+            window.history.replaceState({}, '', '/dashboard')
+          }
+        }
+        
+        pollPaymentVerification()
+        
+        // Cleanup function to stop polling if component unmounts
+        return () => {
+          if (timeoutId) {
+            clearTimeout(timeoutId)
+          }
+          setIsVerifyingPayment(false)
+        }
       }
     }
   }, [])
@@ -88,8 +141,23 @@ export default function Dashboard() {
       animate="visible"
       variants={containerVariants}
     >
+      {/* Payment Verification Banner */}
+      {isVerifyingPayment && (
+        <motion.div
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -50 }}
+          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-4 py-3 rounded-lg border flex items-center gap-3 bg-blue-900/20 border-blue-500/30 text-blue-300"
+        >
+          <div className="w-5 h-5 animate-spin rounded-full border-2 border-blue-500/30 border-t-blue-500" />
+          <span className="text-sm font-medium">
+            Verifying payment...
+          </span>
+        </motion.div>
+      )}
+
       {/* Setup Status Banner */}
-      {setupStatus && (
+      {setupStatus && !isVerifyingPayment && (
         <motion.div
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
@@ -107,7 +175,7 @@ export default function Dashboard() {
           )}
           <span className="text-sm font-medium">
             {setupStatus === 'success' 
-              ? 'Setup completed successfully!' 
+              ? 'Payment completed successfully!' 
               : 'Setup was canceled'}
           </span>
           <button

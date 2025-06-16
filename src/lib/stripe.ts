@@ -160,6 +160,11 @@ export async function createCheckoutSession({
         plan_id: planId,
         billing_period: isAnnual ? 'annual' : 'monthly',
       }
+    },
+    // Add metadata to help link the customer back to the user
+    metadata: {
+      plan_id: planId,
+      billing_period: isAnnual ? 'annual' : 'monthly',
     }
   }
 
@@ -172,6 +177,9 @@ export async function createCheckoutSession({
   if (customerId) {
     sessionParams.customer = customerId
     delete sessionParams.customer_email
+  } else {
+    // If creating a new customer, ensure email is set
+    sessionParams.customer_email = customerEmail
   }
 
   return await stripe.checkout.sessions.create(sessionParams)
