@@ -631,7 +631,7 @@ export const middleware = splitAnalytics({
                     <Button 
                       className="flex-1" 
                       variant="outline"
-                      onClick={() => window.open('https://docs.split.dev/wordpress', '_blank')}
+                      onClick={() => window.open('https://split.dev/docs#wordpress-plugin', '_blank')}
                     >
                       <ExternalLink className="w-4 h-4 mr-2" />
                       View full documentation

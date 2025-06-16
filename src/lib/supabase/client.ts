@@ -36,7 +36,7 @@ export function createClient() {
       },
     });
     
-    console.log('[Supabase] Client created successfully');
+    // console.log('[Supabase] Client created successfully');
     return client;
   } catch (error) {
     console.error('[Supabase] Error creating client:', error);
