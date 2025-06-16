@@ -67,6 +67,47 @@ function getCrawlerInfo(userAgent: string | null) {
   return null
 }
 
+// Enhanced function to detect human visitors from AI platforms
+function detectAITrafficSource(referer: string | null, userAgent: string | null): 
+  { isFromAI: boolean; sourceInfo?: { platform: string; aiSource: string; category: string } } {
+  
+  if (!referer || !userAgent) return { isFromAI: false }
+  
+  // Check if this is a human user agent (not an AI crawler)
+  const isHumanUA = userAgent.includes('Mozilla') && 
+                    !getCrawlerInfo(userAgent) &&
+                    (userAgent.includes('Chrome') || userAgent.includes('Safari') || userAgent.includes('Firefox'))
+  
+  if (!isHumanUA) return { isFromAI: false }
+  
+  // Known patterns for AI-originated traffic
+  const aiPlatforms = {
+    'chat.openai.com': { platform: 'ChatGPT', aiSource: 'OpenAI', category: 'ai-chat' },
+    'perplexity.ai': { platform: 'Perplexity', aiSource: 'Perplexity', category: 'ai-search' },
+    'claude.ai': { platform: 'Claude', aiSource: 'Anthropic', category: 'ai-chat' },
+    'bard.google.com': { platform: 'Bard', aiSource: 'Google', category: 'ai-chat' },
+    'gemini.google.com': { platform: 'Gemini', aiSource: 'Google', category: 'ai-chat' },
+    'copilot.microsoft.com': { platform: 'Copilot', aiSource: 'Microsoft', category: 'ai-assistant' },
+    'bing.com/chat': { platform: 'Bing Chat', aiSource: 'Microsoft', category: 'ai-search' },
+    'you.com': { platform: 'You.com', aiSource: 'You.com', category: 'ai-search' }
+  }
+  
+  try {
+    const refererUrl = new URL(referer)
+    const refererHost = refererUrl.hostname.toLowerCase()
+    
+    for (const [pattern, info] of Object.entries(aiPlatforms)) {
+      if (refererHost === pattern || refererHost.includes(pattern)) {
+        return { isFromAI: true, sourceInfo: info }
+      }
+    }
+  } catch (e) {
+    // Invalid URL, continue with other checks
+  }
+  
+  return { isFromAI: false }
+}
+
 // 1x1 transparent GIF in base64
 const TRANSPARENT_GIF = 'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
 const TRANSPARENT_GIF_BUFFER = Buffer.from(TRANSPARENT_GIF, 'base64')
@@ -98,88 +139,74 @@ export async function GET(
 
     // Detect AI crawler
     const crawlerInfo = getCrawlerInfo(userAgent)
+    // Detect human traffic from AI sources
+    const aiTrafficSource = detectAITrafficSource(referer, userAgent)
     
-    if (crawlerInfo) {
-      console.log(`[Tracking Pixel ${requestId}] 🤖 AI Crawler detected: ${crawlerInfo.name} (${crawlerInfo.company})`)
+    // Check if service role client is available
+    if (!supabaseServiceRole) {
+      console.error(`[Tracking Pixel ${requestId}] ❌ Service role client not initialized`)
+      return new Response(TRANSPARENT_GIF_BUFFER, {
+        headers: {
+          'Content-Type': 'image/gif',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Content-Length': '43',
+          'Access-Control-Allow-Origin': '*'
+        }
+      })
+    }
+    
+    // Only proceed with database operations if we have something to track
+    if (crawlerInfo || aiTrafficSource.isFromAI) {
+      if (crawlerInfo) {
+        console.log(`[Tracking Pixel ${requestId}] 🤖 AI Crawler detected: ${crawlerInfo.name} (${crawlerInfo.company})`)
+      }
       
-      // Check if service role client is available
-      if (!supabaseServiceRole) {
-        console.error(`[Tracking Pixel ${requestId}] ❌ Service role client not initialized`)
+      if (aiTrafficSource.isFromAI && aiTrafficSource.sourceInfo) {
+        console.log(`[Tracking Pixel ${requestId}] 🏆 HUMAN FROM AI DETECTED: ${aiTrafficSource.sourceInfo.platform}`)
+      }
+      
+      // Get workspace info
+      const { data: workspace, error: workspaceError } = await supabaseServiceRole
+        .from('workspaces')
+        .select('id, user_id, domain, workspace_name')
+        .eq('id', workspaceId)
+        .single()
+      
+      if (workspaceError || !workspace) {
+        console.error(`[Tracking Pixel ${requestId}] ❌ Workspace not found: ${workspaceId}`)
         return new Response(TRANSPARENT_GIF_BUFFER, {
           headers: {
             'Content-Type': 'image/gif',
             'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Content-Length': '43',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET',
-            'Access-Control-Allow-Headers': 'User-Agent, Referer'
+            'Content-Length': '43'
           }
         })
       }
       
-      // Get workspace and user info - using service role client to bypass RLS
-      console.log(`[Tracking Pixel ${requestId}] 📊 Looking up workspace...`)
+      // Parse URL to extract domain and path
+      let domain = workspace.domain
+      let path = '/'
       
       try {
-        const { data: workspace, error: workspaceError } = await supabaseServiceRole
-          .from('workspaces')
-          .select('id, user_id, domain, workspace_name')
-          .eq('id', workspaceId)
-          .single()
-        
-        if (workspaceError) {
-          console.error(`[Tracking Pixel ${requestId}] ❌ Workspace query error:`, workspaceError)
-          console.log(`[Tracking Pixel ${requestId}] 🔍 Trying alternative workspace lookup...`)
-          
-          // Try a broader query to see if workspace exists at all
-          const { data: allWorkspaces, error: listError } = await supabaseServiceRole
-            .from('workspaces')
-            .select('id, workspace_name')
-            .eq('id', workspaceId)
-          
-          console.log(`[Tracking Pixel ${requestId}] 📋 Workspace query result:`, { allWorkspaces, listError })
-        }
-        
-        if (workspaceError || !workspace) {
-          console.error(`[Tracking Pixel ${requestId}] ❌ Workspace not found: ${workspaceId}`, workspaceError)
-          return new Response(TRANSPARENT_GIF_BUFFER, {
-            headers: {
-              'Content-Type': 'image/gif',
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-              'Content-Length': '43',
-              'Access-Control-Allow-Origin': '*',
-              'Access-Control-Allow-Methods': 'GET',
-              'Access-Control-Allow-Headers': 'User-Agent, Referer'
-            }
-          })
-        }
-        
-        console.log(`[Tracking Pixel ${requestId}] ✅ Workspace found: ${workspace.workspace_name} (${workspace.domain})`)
-        
-        // Parse URL to extract domain and path
-        let domain = workspace.domain
-        let path = '/'
-        
-        try {
-          const parsedUrl = new URL(url)
-          domain = parsedUrl.hostname
-          path = parsedUrl.pathname
-        } catch (e) {
-          // If URL parsing fails, use referer or fallback
-          if (referer) {
-            try {
-              const parsedReferer = new URL(referer)
-              domain = parsedReferer.hostname
-              path = parsedReferer.pathname
-            } catch (e2) {
-              // Use workspace domain as fallback
-            }
+        const parsedUrl = new URL(url)
+        domain = parsedUrl.hostname
+        path = parsedUrl.pathname
+      } catch (e) {
+        if (referer) {
+          try {
+            const parsedReferer = new URL(referer)
+            domain = parsedReferer.hostname
+            path = parsedReferer.pathname
+          } catch (e2) {
+            // Use workspace domain as fallback
           }
         }
+      }
+      
+      if (crawlerInfo) {
+        // This is an AI crawler visit
+        console.log(`[Tracking Pixel ${requestId}] 🤖 AI Crawler detected: ${crawlerInfo.name}`)
         
-        console.log(`[Tracking Pixel ${requestId}] 🌐 Domain: ${domain}, Path: ${path}`)
-        
-        // Track the crawler visit
         const crawlerVisit = {
           user_id: workspace.user_id,
           workspace_id: workspace.id,
@@ -191,27 +218,19 @@ export async function GET(
           user_agent: userAgent || '',
           timestamp: new Date().toISOString(),
           status_code: 200,
-          response_time_ms: null, // Will be calculated at the end
-          country: null, // Could be enhanced with IP geolocation
+          response_time_ms: null,
+          country: null,
           metadata: {
             source: 'tracking_pixel',
             page: page,
             campaign: campaign,
             referer: referer,
             tracking_method: 'html_pixel',
-            pixel_load_time: null as number | null, // Will be set below
+            pixel_load_time: Date.now() - startTime,
             request_id: requestId,
             ip_address: ip
           }
         }
-        
-        // Calculate response time before database insert
-        const responseTime = Date.now() - startTime
-        if (crawlerVisit.metadata) {
-          crawlerVisit.metadata.pixel_load_time = responseTime
-        }
-        
-        console.log(`[Tracking Pixel ${requestId}] 💾 Inserting crawler visit to database...`)
         
         // Insert into database (non-blocking)
         const insertVisit = async () => {
@@ -233,13 +252,61 @@ export async function GET(
         // Execute insert without blocking response
         insertVisit()
         
-        console.log(`[Tracking Pixel ${requestId}] 📊 Pixel served in ${responseTime}ms`)
+      } else if (aiTrafficSource.isFromAI && aiTrafficSource.sourceInfo) {
+        // This is a human visitor from an AI platform - GOLD MINE! 🏆
+        console.log(`[Tracking Pixel ${requestId}] 🏆 HUMAN FROM AI DETECTED: ${aiTrafficSource.sourceInfo.platform}`)
         
-      } catch (dbError) {
-        console.error(`[Tracking Pixel ${requestId}] ❌ Database connection error:`, dbError)
+        const aiConversionEvent = {
+          user_id: workspace.user_id,
+          workspace_id: workspace.id,
+          domain: domain,
+          path: path,
+          crawler_name: `${aiTrafficSource.sourceInfo.platform} → Human`,
+          crawler_company: aiTrafficSource.sourceInfo.aiSource,
+          crawler_category: 'ai-to-human-conversion',
+          user_agent: userAgent || '',
+          timestamp: new Date().toISOString(),
+          status_code: 200,
+          response_time_ms: null,
+          country: null,
+          metadata: {
+            source: 'tracking_pixel',
+            page: page,
+            campaign: campaign,
+            referer: referer,
+            tracking_method: 'html_pixel',
+            pixel_load_time: Date.now() - startTime,
+            request_id: requestId,
+            ip_address: ip,
+            conversion_type: 'ai_to_human',
+            ai_platform: aiTrafficSource.sourceInfo.platform,
+            ai_source_company: aiTrafficSource.sourceInfo.aiSource,
+            ai_category: aiTrafficSource.sourceInfo.category,
+            is_conversion: true
+          }
+        }
+        
+        // Insert conversion tracking (non-blocking)
+        const insertConversion = async () => {
+          try {
+            const { error } = await supabaseServiceRole
+              .from('crawler_visits')
+              .insert(aiConversionEvent)
+            
+            if (error) {
+              console.error(`[Tracking Pixel ${requestId}] ❌ Failed to insert conversion:`, error)
+            } else {
+              console.log(`[Tracking Pixel ${requestId}] 🎉 Successfully tracked AI-to-Human conversion`)
+            }
+          } catch (err: any) {
+            console.error(`[Tracking Pixel ${requestId}] ❌ Conversion tracking error:`, err)
+          }
+        }
+        
+        insertConversion()
       }
     } else {
-      console.log(`[Tracking Pixel ${requestId}] 👤 Human visitor (not an AI crawler)`)
+      console.log(`[Tracking Pixel ${requestId}] 👤 Regular human visitor (no AI source detected)`)
     }
     
     // Always return the transparent GIF

@@ -288,7 +288,7 @@ export function APIKeysSettings() {
             </div>
             <div className="flex items-center gap-6">
         <a
-          href="https://docs.split.dev#api-keys"
+          href="https://split.dev/docs"
                 className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white transition-colors font-mono tracking-tight"
         >
           <FileText className="w-3.5 h-3.5" />

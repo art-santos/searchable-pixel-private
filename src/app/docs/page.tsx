@@ -20,7 +20,8 @@ import {
   Download,
   Users,
   Activity,
-  Settings
+  Settings,
+  Target
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -45,7 +46,8 @@ const sections = [
       { title: 'Installation', href: '#installation', description: 'Install the Split Analytics package' },
       { title: 'Configuration', href: '#configuration', description: 'Set up your API key and basic config' },
       { title: 'WordPress Plugin', href: '#wordpress-plugin', description: 'WordPress plugin installation guide' },
-      { title: 'Platform Guides', href: '#configuration', description: 'Next.js, Node.js, and WordPress setup' }
+      { title: 'Tracking Pixel', href: '#tracking-pixel', description: 'Universal HTML pixel for Framer, Webflow & more' },
+      { title: 'Platform Guides', href: '#configuration', description: 'Next.js, Node.js, WordPress, and Tracking Pixel setup' }
     ]
   },
   {
@@ -74,7 +76,7 @@ const sections = [
 export default function DocsPage() {
   const [selectedPackageManager, setSelectedPackageManager] = useState<PackageManager>('npm')
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
-  const [selectedPlatform, setSelectedPlatform] = useState<'nextjs' | 'nodejs' | 'wordpress'>('nextjs')
+  const [selectedPlatform, setSelectedPlatform] = useState<'nextjs' | 'nodejs' | 'wordpress' | 'tracking-pixel'>('nextjs')
 
   const handleSearchNavigate = (sectionId: string) => {
     const element = document.getElementById(sectionId)
@@ -414,10 +416,10 @@ export default function DocsPage() {
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Quick Setup</h3>
                 
                 {/* Platform Tabs */}
-                <div className="flex gap-2 mb-6 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                   <button
                     onClick={() => setSelectedPlatform('nextjs')}
-                    className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                       selectedPlatform === 'nextjs'
                         ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
@@ -427,7 +429,7 @@ export default function DocsPage() {
                   </button>
                   <button
                     onClick={() => setSelectedPlatform('nodejs')}
-                    className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                       selectedPlatform === 'nodejs'
                         ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
@@ -437,13 +439,28 @@ export default function DocsPage() {
                   </button>
                   <button
                     onClick={() => setSelectedPlatform('wordpress')}
-                    className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                       selectedPlatform === 'wordpress'
                         ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                     }`}
                   >
                     WordPress
+                  </button>
+                  <button
+                    onClick={() => setSelectedPlatform('tracking-pixel')}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                      selectedPlatform === 'tracking-pixel'
+                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>Tracking Pixel</span>
+                      <span className="px-1.5 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
+                        Beta
+                      </span>
+                    </div>
                   </button>
                 </div>
 
@@ -661,6 +678,140 @@ app.listen(3000, () => {
                     </div>
                   </div>
                 )}
+
+                {/* Tracking Pixel Tab Content */}
+                {selectedPlatform === 'tracking-pixel' && (
+                  <div className="space-y-4">
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Universal HTML tracking pixel that works with any website platform. Perfect for Framer, Webflow, and custom sites.
+                    </p>
+                    
+                    <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800/40 p-4">
+                      <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">Beta Feature</h4>
+                      <p className="text-sm text-blue-800 dark:text-blue-200">
+                        This tracking pixel is currently in beta. It provides reliable AI crawler detection but may receive updates and improvements.
+                      </p>
+                    </div>
+
+                    <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#1a1a1a] rounded-lg p-4">
+                      <h4 className="font-medium text-gray-900 dark:text-white mb-3">Quick Setup</h4>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">1. Get Your Tracking Code</h5>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                            Get your workspace-specific tracking pixel from your Split Dashboard:
+                          </p>
+                          <div className="bg-gray-900 dark:bg-black rounded-lg p-3">
+                            <code className="text-sm text-gray-100">
+                              Dashboard → Settings → Tracking Pixel → Copy Code
+                            </code>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">2. Add to Your Website</h5>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                            Your tracking code will look like this:
+                          </p>
+                          <div className="bg-gray-900 dark:bg-black rounded-lg overflow-hidden">
+                            <div className="flex items-center justify-between px-4 py-2 bg-gray-800 dark:bg-gray-900 border-b border-gray-700">
+                              <div className="flex items-center gap-2 text-gray-400">
+                                <Code2 className="w-4 h-4" />
+                                <span className="text-sm font-mono">HTML</span>
+                              </div>
+                              <Button
+                                onClick={() => copyToClipboard(`<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" style="display:none" width="1" height="1" alt="" />`)}
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
+                            </div>
+                            <pre className="px-4 py-3 text-sm text-gray-100 overflow-x-auto">
+                              <code>{`<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" 
+     style="display:none" 
+     width="1" 
+     height="1" 
+     alt="" />`}</code>
+                            </pre>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">3. Platform Instructions</h5>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Framer Card */}
+                            <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-[#333] rounded-lg p-4">
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                                  <Image src="/images/framer.svg" alt="Framer" width={16} height={16} className="w-4 h-4" />
+                                </div>
+                                <div>
+                                  <h6 className="font-semibold text-gray-900 dark:text-white">Framer</h6>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">Site Settings → SEO & Meta</p>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <div className="flex items-start gap-2">
+                                  <span className="text-xs text-gray-400 mt-0.5">1.</span>
+                                  <span className="text-xs text-gray-600 dark:text-gray-300">Go to Settings → SEO & Meta</span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <span className="text-xs text-gray-400 mt-0.5">2.</span>
+                                  <span className="text-xs text-gray-600 dark:text-gray-300">Paste code in "Head" field</span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <span className="text-xs text-gray-400 mt-0.5">3.</span>
+                                  <span className="text-xs text-gray-600 dark:text-gray-300">Publish your site</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Webflow Card */}
+                            <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-[#333] rounded-lg p-4">
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
+                                  <Image src="/images/webflow.svg" alt="Webflow" width={16} height={16} className="w-4 h-4" />
+                                </div>
+                                <div>
+                                  <h6 className="font-semibold text-gray-900 dark:text-white">Webflow</h6>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">Site Settings → Custom Code</p>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <div className="flex items-start gap-2">
+                                  <span className="text-xs text-gray-400 mt-0.5">1.</span>
+                                  <span className="text-xs text-gray-600 dark:text-gray-300">Go to Site Settings</span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <span className="text-xs text-gray-400 mt-0.5">2.</span>
+                                  <span className="text-xs text-gray-600 dark:text-gray-300">Navigate to Custom Code</span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <span className="text-xs text-gray-400 mt-0.5">3.</span>
+                                  <span className="text-xs text-gray-600 dark:text-gray-300">Paste in "Head Code" section</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">What Gets Tracked:</h4>
+                      <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                        <li>• <strong>AI Crawlers:</strong> GPTBot, ClaudeBot, PerplexityBot, and 20+ more</li>
+                        <li>• <strong>Universal:</strong> Works with any website platform</li>
+                        <li>• <strong>Lightweight:</strong> 1x1 invisible pixel (43 bytes)</li>
+                        <li>• <strong>Fast:</strong> No JavaScript dependencies required</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
                 
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
                   That's it! AI crawler visits will appear in your Split Dashboard within 5-10 seconds.
@@ -668,6 +819,8 @@ app.listen(3000, () => {
               </div>
             </div>
           </section>
+
+
 
           {/* WordPress Plugin Section */}
           <section id="wordpress-plugin" className="mb-12">
@@ -795,6 +948,200 @@ app.listen(3000, () => {
                         <li>• PHP 7.4 or higher</li>
                         <li>• HTTPS recommended (required for production)</li>
                         <li>• Valid Split Analytics API key</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Tracking Pixel Section */}
+          <section id="tracking-pixel" className="mb-12">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                <Target className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  Tracking Pixel
+                  <span className="ml-2 px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">
+                    Beta
+                  </span>
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Universal HTML pixel tracking for Framer, Webflow & more
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
+                  The Split Analytics tracking pixel provides the easiest way to add AI crawler tracking to any website. Works with Framer, Webflow, and any HTML-based platform.
+                </p>
+
+                <div className="bg-white dark:bg-[#111] rounded-xl border border-gray-200/60 dark:border-[#1a1a1a] p-6 mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Pixel Features</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Universal HTML pixel (1x1 invisible)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">25+ AI crawler detection</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">AI-to-Human conversion tracking</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Works with any website platform</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">No JavaScript dependencies</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Fast & lightweight (43 bytes)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-[#111]/50 rounded-xl border border-gray-200/60 dark:border-[#1a1a1a] p-6">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Quick Setup</h3>
+                  
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="font-medium text-gray-900 dark:text-white mb-3">1. Get Your Tracking Code</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        Get your workspace-specific tracking pixel from your Split Dashboard:
+                      </p>
+                      <div className="bg-gray-900 dark:bg-black rounded-lg p-3">
+                        <code className="text-sm text-gray-100">
+                          Dashboard → Settings → Tracking Pixel → Copy Code
+                        </code>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="font-medium text-gray-900 dark:text-white mb-3">2. Basic Tracking Code</h4>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        Your tracking code will look like this:
+                      </p>
+                      <div className="bg-gray-900 dark:bg-black rounded-lg overflow-hidden">
+                        <div className="flex items-center justify-between px-4 py-2 bg-gray-800 dark:bg-gray-900 border-b border-gray-700">
+                          <div className="flex items-center gap-2 text-gray-400">
+                            <Code2 className="w-4 h-4" />
+                            <span className="text-sm font-mono">HTML</span>
+                          </div>
+                          <Button
+                            onClick={() => copyToClipboard(`<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" style="display:none" width="1" height="1" alt="" />`)}
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <pre className="px-4 py-3 text-sm text-gray-100 overflow-x-auto">
+                          <code>{`<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" 
+     style="display:none" 
+     width="1" 
+     height="1" 
+     alt="" />`}</code>
+                        </pre>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="font-medium text-gray-900 dark:text-white mb-3">3. Platform Integration</h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Framer Card */}
+                        <div className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#333] rounded-lg p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                              <Image src="/images/framer.svg" alt="Framer" width={16} height={16} className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <h5 className="font-semibold text-gray-900 dark:text-white">Framer</h5>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">Site Settings → SEO & Meta</p>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex items-start gap-2">
+                              <span className="text-xs text-gray-400 mt-0.5">1.</span>
+                              <span className="text-xs text-gray-600 dark:text-gray-300">Open your Framer project</span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <span className="text-xs text-gray-400 mt-0.5">2.</span>
+                              <span className="text-xs text-gray-600 dark:text-gray-300">Go to Settings → SEO & Meta</span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <span className="text-xs text-gray-400 mt-0.5">3.</span>
+                              <span className="text-xs text-gray-600 dark:text-gray-300">Paste code in "Head" field</span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <span className="text-xs text-gray-400 mt-0.5">4.</span>
+                              <span className="text-xs text-gray-600 dark:text-gray-300">Publish your site</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Webflow Card */}
+                        <div className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#333] rounded-lg p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
+                              <Image src="/images/webflow.svg" alt="Webflow" width={16} height={16} className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <h5 className="font-semibold text-gray-900 dark:text-white">Webflow</h5>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">Site Settings → Custom Code</p>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex items-start gap-2">
+                              <span className="text-xs text-gray-400 mt-0.5">1.</span>
+                              <span className="text-xs text-gray-600 dark:text-gray-300">Open your Webflow project</span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <span className="text-xs text-gray-400 mt-0.5">2.</span>
+                              <span className="text-xs text-gray-600 dark:text-gray-300">Go to Site Settings</span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <span className="text-xs text-gray-400 mt-0.5">3.</span>
+                              <span className="text-xs text-gray-600 dark:text-gray-300">Navigate to Custom Code</span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <span className="text-xs text-gray-400 mt-0.5">4.</span>
+                              <span className="text-xs text-gray-600 dark:text-gray-300">Paste in "Head Code" section</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-800/40 p-6">
+                  <div className="flex items-start gap-3">
+                    <Activity className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">What Gets Tracked</h4>
+                      <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                        <li>• <strong>AI Crawlers:</strong> GPTBot, ClaudeBot, PerplexityBot, and 20+ more</li>
+                        <li>• <strong>AI-to-Human Conversions:</strong> When ChatGPT users visit your site (🏆 Gold!)</li>
+                        <li>• <strong>Universal Compatibility:</strong> Works with any website platform</li>
+                        <li>• <strong>Lightweight:</strong> 1x1 invisible pixel (only 43 bytes)</li>
+                        <li>• <strong>Fast Performance:</strong> No JavaScript dependencies required</li>
                       </ul>
                     </div>
                   </div>
