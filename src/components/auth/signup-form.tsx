@@ -80,96 +80,80 @@ export function SignupForm({
     setNotificationMessage(null)
     setIsLoading(true)
 
-    console.log('🚀 SIGNUP DEBUG: Starting signup process...')
-    console.log('📧 Email:', email)
-    console.log('🔒 Password length:', password.length)
-    console.log('✅ Password valid:', isPasswordValid())
-    console.log('🔄 Passwords match:', password === confirmPassword)
-
     try {
       if (!supabase) {
-        console.error('❌ SIGNUP DEBUG: Supabase client not available')
         showNotification("error", "Authentication client not available")
         return
       }
       
-      console.log('✅ SIGNUP DEBUG: Supabase client is available')
-      
       // Handle signup
       if (password !== confirmPassword) {
-        console.error('❌ SIGNUP DEBUG: Passwords do not match')
         showNotification("error", "Passwords don't match")
         setIsLoading(false)
         return
       }
 
       if (!isPasswordValid()) {
-        console.error('❌ SIGNUP DEBUG: Password does not meet requirements')
         showNotification("error", "Password doesn't meet all requirements")
         setIsLoading(false)
         return
       }
-
-      console.log('🔄 SIGNUP DEBUG: About to call supabase.auth.signUp...')
-      console.log('📝 SIGNUP DEBUG: signUp payload:', { email, password: '[HIDDEN]' })
 
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
       })
 
-      console.log('📋 SIGNUP DEBUG: signUp response received')
-      console.log('👤 SIGNUP DEBUG: data:', data)
-      console.log('❌ SIGNUP DEBUG: error:', signUpError)
-
       if (signUpError) {
-        console.error('❌ SIGNUP DEBUG: SignUp error details:', {
-          message: signUpError.message,
-          status: signUpError.status,
-          code: (signUpError as any).code,
-          details: (signUpError as any).details
-        })
         showNotification("error", signUpError.message)
         return
       }
 
       // Check if user was created and signed in
       if (data.user) {
-        console.log('✅ SIGNUP SUCCESS:')
-        console.log('👤 User created:', data.user?.email)
-        console.log('🆔 User ID:', data.user?.id)
-        
         // Welcome email will be sent after workspace setup is complete
         
         // Call success callback
         onSignupSuccess?.()
         
+        // Wait for auth state to be properly updated
+        // Give the auth context time to update by waiting for the next auth state change
+        // or using a timeout as fallback
+        await new Promise<void>((resolve) => {
+          let resolved = false
+          
+          const authListener = supabase.auth.onAuthStateChange((event, session) => {
+            if (!resolved && session?.user?.id === data.user?.id) {
+              resolved = true
+              authListener.data.subscription.unsubscribe()
+              resolve()
+            }
+          })
+          
+          // Fallback timeout in case the auth state change doesn't fire
+          setTimeout(() => {
+            if (!resolved) {
+              resolved = true
+              authListener.data.subscription.unsubscribe()
+              resolve()
+            }
+          }, 1000)
+        })
+        
         // Check if user has @split.dev email for admin access
         if (data.user.email?.endsWith('@split.dev')) {
-          console.log('🔄 SIGNUP DEBUG: Admin email detected, redirecting to admin verification...')
           router.push('/admin/verify')
         } else {
-          console.log('🔄 SIGNUP DEBUG: Regular user, redirecting to create workspace...')
           router.push('/create-workspace')
         }
       } else {
-        console.error('❌ SIGNUP DEBUG: No user in response data')
-        console.log('📋 SIGNUP DEBUG: Full data object:', data)
         showNotification("error", "Failed to create account")
       }
 
     } catch (err: any) {
-      console.error('❌ SIGNUP DEBUG: Unexpected error in try/catch:', err)
-      console.error('📋 SIGNUP DEBUG: Error details:', {
-        message: err.message,
-        stack: err.stack,
-        name: err.name,
-        cause: err.cause
-      })
       showNotification("error", err.message || "An error occurred")
     } finally {
       setIsLoading(false)
-      console.log('🏁 SIGNUP DEBUG: Process completed, loading set to false')
     }
   }
 
