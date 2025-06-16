@@ -44,7 +44,8 @@ const sections = [
     articles: [
       { title: 'Installation', href: '#installation', description: 'Install the Split Analytics package' },
       { title: 'Configuration', href: '#configuration', description: 'Set up your API key and basic config' },
-      { title: 'Platform Guides', href: '#nextjs', description: 'Platform-specific setup instructions' }
+      { title: 'WordPress Plugin', href: '#wordpress-plugin', description: 'WordPress plugin installation guide' },
+      { title: 'Platform Guides', href: '#configuration', description: 'Next.js, Node.js, and WordPress setup' }
     ]
   },
   {
@@ -73,7 +74,7 @@ const sections = [
 export default function DocsPage() {
   const [selectedPackageManager, setSelectedPackageManager] = useState<PackageManager>('npm')
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
-  const [selectedPlatform, setSelectedPlatform] = useState<'nextjs' | 'nodejs'>('nextjs')
+  const [selectedPlatform, setSelectedPlatform] = useState<'nextjs' | 'nodejs' | 'wordpress'>('nextjs')
 
   const handleSearchNavigate = (sectionId: string) => {
     const element = document.getElementById(sectionId)
@@ -89,6 +90,42 @@ export default function DocsPage() {
       setTimeout(() => setCopiedCode(null), 2000)
     } catch (err) {
       console.error('Failed to copy:', err)
+    }
+  }
+
+  const downloadWordPressPlugin = () => {
+    try {
+      // Create a temporary anchor element
+      const link = document.createElement('a')
+      link.href = '/wp-plugin/split-analytics.zip'
+      link.download = 'split-analytics.zip'
+      link.style.display = 'none'
+      
+      // Add to DOM, click, and remove
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      // Show success feedback
+      console.log('✅ WordPress plugin download started')
+      
+      // Optional: Show user feedback (you can add a toast notification here)
+      if (typeof window !== 'undefined') {
+        // Simple alert for now - you can replace with a proper toast notification
+        setTimeout(() => {
+          console.log('📦 Split Analytics WordPress plugin should be downloading...')
+        }, 100)
+      }
+    } catch (error) {
+      console.error('❌ Failed to download WordPress plugin:', error)
+      // Fallback: open in new tab
+      try {
+        window.open('/wp-plugin/split-analytics.zip', '_blank')
+        console.log('🔄 Opened download in new tab as fallback')
+      } catch (fallbackError) {
+        console.error('❌ Fallback download also failed:', fallbackError)
+        alert('Download failed. Please try again or contact support.')
+      }
     }
   }
 
@@ -338,6 +375,11 @@ export default function DocsPage() {
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Configuration</h2>
             
             <div className="space-y-6">
+              <div className="bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-800/40 p-4">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  <strong>WordPress users:</strong> Looking for an easy setup? Check out our <a href="#wordpress-plugin" className="underline hover:no-underline">WordPress Plugin</a> - no coding required!
+                </p>
+              </div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Environment Variables</h3>
                 <div className="bg-gray-900 dark:bg-black rounded-lg overflow-hidden">
@@ -392,6 +434,16 @@ export default function DocsPage() {
                     }`}
                   >
                     Node.js/Express
+                  </button>
+                  <button
+                    onClick={() => setSelectedPlatform('wordpress')}
+                    className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                      selectedPlatform === 'wordpress'
+                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                  >
+                    WordPress
                   </button>
                 </div>
 
@@ -540,10 +592,213 @@ app.listen(3000, () => {
                     </div>
                   </div>
                 )}
+
+                {/* WordPress Tab Content */}
+                {selectedPlatform === 'wordpress' && (
+                  <div className="space-y-4">
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Install the Split Analytics WordPress plugin to automatically track AI crawler visits on your WordPress site.
+                    </p>
+                    
+                    <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#1a1a1a] rounded-lg p-4">
+                      <h4 className="font-medium text-gray-900 dark:text-white mb-3">Installation Steps</h4>
+                      <ol className="space-y-3">
+                        <li className="flex gap-3">
+                          <span className="text-gray-500 dark:text-gray-400 flex-shrink-0">1.</span>
+                          <div>
+                            <p className="text-sm text-gray-700 dark:text-gray-300">Download the Split Analytics plugin:</p>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="mt-2"
+                              onClick={downloadWordPressPlugin}
+                            >
+                              <Download className="w-4 h-4 mr-2" />
+                              Download Plugin (.zip)
+                            </Button>
+                          </div>
+                        </li>
+                        <li className="flex gap-3">
+                          <span className="text-gray-500 dark:text-gray-400 flex-shrink-0">2.</span>
+                          <div>
+                            <p className="text-sm text-gray-700 dark:text-gray-300">Install the plugin in your WordPress admin:</p>
+                            <div className="bg-gray-900 dark:bg-black rounded-md p-3 mt-2">
+                              <code className="text-sm text-gray-100">
+                                WordPress Admin → Plugins → Add New → Upload Plugin
+                              </code>
+                            </div>
+                          </div>
+                        </li>
+                        <li className="flex gap-3">
+                          <span className="text-gray-500 dark:text-gray-400 flex-shrink-0">3.</span>
+                          <div>
+                            <p className="text-sm text-gray-700 dark:text-gray-300">Activate and configure your API key:</p>
+                            <div className="bg-gray-900 dark:bg-black rounded-md p-3 mt-2">
+                              <code className="text-sm text-gray-100">
+                                Settings → Split Analytics → Enter API Key
+                              </code>
+                            </div>
+                          </div>
+                        </li>
+                        <li className="flex gap-3">
+                          <span className="text-gray-500 dark:text-gray-400 flex-shrink-0">4.</span>
+                          <div>
+                            <p className="text-sm text-gray-700 dark:text-gray-300">Save settings and you're done!</p>
+                          </div>
+                        </li>
+                      </ol>
+                    </div>
+                    
+                    <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Key Features:</h4>
+                      <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                        <li>• No coding required - simple plugin installation</li>
+                        <li>• Automatic AI crawler detection (25+ crawlers)</li>
+                        <li>• Lightweight and optimized for WordPress</li>
+                        <li>• Works with any WordPress theme or hosting</li>
+                        <li>• Respects WordPress performance best practices</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
                 
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
                   That's it! AI crawler visits will appear in your Split Dashboard within 5-10 seconds.
                 </p>
+              </div>
+            </div>
+          </section>
+
+          {/* WordPress Plugin Section */}
+          <section id="wordpress-plugin" className="mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">WordPress Plugin</h2>
+            
+            <div className="space-y-6">
+              <div>
+                <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
+                  The Split Analytics WordPress plugin provides the easiest way to add AI crawler tracking to your WordPress site. No coding required.
+                </p>
+
+                <div className="bg-white dark:bg-[#111] rounded-xl border border-gray-200/60 dark:border-[#1a1a1a] p-6 mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Plugin Features</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Zero coding required</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Automatic AI crawler detection (25+ crawlers)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Lightweight and optimized</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Works with any WordPress theme</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Compatible with all hosting providers</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Non-blocking tracking</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-[#111]/50 rounded-xl border border-gray-200/60 dark:border-[#1a1a1a] p-6">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Installation Guide</h3>
+                  
+                  <div className="space-y-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-8 h-8 bg-gray-900 dark:bg-white text-white dark:text-black rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">
+                        1
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">Download the Plugin</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                          Download the official Split Analytics WordPress plugin.
+                        </p>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={downloadWordPressPlugin}
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download Plugin (.zip)
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4">
+                      <div className="w-8 h-8 bg-gray-900 dark:bg-white text-white dark:text-black rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">
+                        2
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">Install in WordPress</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                          Upload and install the plugin through your WordPress admin panel.
+                        </p>
+                        <div className="bg-gray-900 dark:bg-black rounded-lg p-3">
+                          <code className="text-sm text-gray-100">
+                            WordPress Admin → Plugins → Add New → Upload Plugin → Choose File → Install Now
+                          </code>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4">
+                      <div className="w-8 h-8 bg-gray-900 dark:bg-white text-white dark:text-black rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">
+                        3
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">Activate & Configure</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                          Activate the plugin and enter your Split Analytics API key.
+                        </p>
+                        <div className="bg-gray-900 dark:bg-black rounded-lg p-3">
+                          <code className="text-sm text-gray-100">
+                            Plugins → Activate → Settings → Split Analytics → Enter API Key → Save
+                          </code>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4">
+                      <div className="w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">
+                        ✓
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900 dark:text-white mb-2">You're Done!</h4>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          AI crawler visits will now be automatically tracked and appear in your Split Dashboard within 5-10 seconds.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-800/40 p-6">
+                  <div className="flex items-start gap-3">
+                    <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">WordPress Requirements</h4>
+                      <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                        <li>• WordPress 5.0 or higher</li>
+                        <li>• PHP 7.4 or higher</li>
+                        <li>• HTTPS recommended (required for production)</li>
+                        <li>• Valid Split Analytics API key</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </section>

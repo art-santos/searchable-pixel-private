@@ -569,10 +569,30 @@ export const middleware = splitAnalytics({
                             size="sm"
                             className="mt-2"
                             onClick={() => {
-                              const link = document.createElement('a')
-                              link.href = '/wp-plugin/split-analytics.zip'
-                              link.download = 'split-analytics.zip'
-                              link.click()
+                              try {
+                                // Create a temporary anchor element
+                                const link = document.createElement('a')
+                                link.href = '/wp-plugin/split-analytics.zip'
+                                link.download = 'split-analytics.zip'
+                                link.style.display = 'none'
+                                
+                                // Add to DOM, click, and remove
+                                document.body.appendChild(link)
+                                link.click()
+                                document.body.removeChild(link)
+                                
+                                console.log('✅ WordPress plugin download started')
+                              } catch (error) {
+                                console.error('❌ Failed to download WordPress plugin:', error)
+                                // Fallback: open in new tab
+                                try {
+                                  window.open('/wp-plugin/split-analytics.zip', '_blank')
+                                  console.log('🔄 Opened download in new tab as fallback')
+                                } catch (fallbackError) {
+                                  console.error('❌ Fallback download also failed:', fallbackError)
+                                  alert('Download failed. Please try again or contact support.')
+                                }
+                              }
                             }}
                           >
                             Download Plugin (.zip)
