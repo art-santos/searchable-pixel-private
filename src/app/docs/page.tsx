@@ -688,149 +688,111 @@ app.listen(3000, () => {
                         </div>
 
                         <div>
-                          <h5 className="text-sm font-medium text-gray-500 dark:text-[#666] mb-2 font-mono tracking-tight">2. Basic Tracking Code</h5>
+                          <h5 className="text-sm font-medium text-gray-500 dark:text-[#666] mb-2 font-mono tracking-tight">2. Add to Your Website</h5>
                           <p className="text-sm text-gray-500 dark:text-[#666] mb-3 font-mono tracking-tight">
-                            Choose the implementation that works best for your platform:
+                            Your tracking code will look like this:
                           </p>
-                          
-                          {/* HTML Implementation */}
-                          <div className="mb-3">
-                            <p className="text-xs text-gray-500 dark:text-[#666] mb-2 font-mono tracking-tight">
-                              <strong>Option 1: HTML Implementation</strong> (Works in body sections)
-                            </p>
-                            <div className="bg-[#0a0a0a] rounded-sm overflow-hidden border border-[#333]">
-                              <div className="flex items-center justify-between px-4 py-2 bg-[#111] border-b border-[#333]">
-                                <div className="flex items-center gap-2 text-[#666]">
-                                  <Code2 className="w-4 h-4" />
-                                  <span className="text-sm font-mono">HTML</span>
-                                </div>
-                                <Button
-                                  onClick={() => copyToClipboard(`<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" style="display:none" width="1" height="1" alt="" />`)}
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0 text-[#666] hover:text-white"
-                                >
-                                  <Copy className="w-4 h-4" />
-                                </Button>
+                          <div className="bg-gray-900 dark:bg-black rounded-sm overflow-hidden">
+                            <div className="flex items-center justify-between px-4 py-2 bg-gray-800 dark:bg-gray-900 border-b border-gray-700">
+                              <div className="flex items-center gap-2 text-[#666]">
+                                <Code2 className="w-4 h-4" />
+                                <span className="text-sm font-mono">HTML</span>
                               </div>
-                              <pre className="px-4 py-3 text-sm text-[#ccc] overflow-x-auto">
-                                <code>{`<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" 
-     style="display:none" width="1" height="1" alt="" />`}</code>
-                              </pre>
+                              <Button
+                                onClick={() => copyToClipboard(`<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" style="display:none" width="1" height="1" alt="" />`)}
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-[#666] hover:text-white"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </Button>
                             </div>
-                          </div>
-                          
-                          {/* JavaScript Implementation */}
-                          <div>
-                            <p className="text-xs text-gray-500 dark:text-[#666] mb-2 font-mono tracking-tight">
-                              <strong>Option 2: JavaScript Implementation</strong> (Works in head sections - Required for Framer)
-                            </p>
-                            <div className="bg-[#0a0a0a] rounded-sm overflow-hidden border border-[#333]">
-                              <div className="flex items-center justify-between px-4 py-2 bg-[#111] border-b border-[#333]">
-                                <div className="flex items-center gap-2 text-[#666]">
-                                  <Code2 className="w-4 h-4" />
-                                  <span className="text-sm font-mono">JavaScript</span>
-                                </div>
-                                <Button
-                                  onClick={() => copyToClipboard(`<script>
-  (function() {
-    var img = new Image();
-    img.src = 'https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif';
-    img.style.display = 'none';
-    img.width = 1;
-    img.height = 1;
-    img.alt = '';
-  })();
-</script>`)}
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0 text-[#666] hover:text-white"
-                                >
-                                  <Copy className="w-4 h-4" />
-                                </Button>
-                              </div>
-                              <pre className="px-4 py-3 text-sm text-[#ccc] overflow-x-auto">
-                                <code>{`<script>
-  (function() {
-    var img = new Image();
-    img.src = 'https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif';
-    img.style.display = 'none';
-    img.width = 1;
-    img.height = 1;
-    img.alt = '';
-  })();
-</script>`}</code>
-                              </pre>
-                            </div>
+                            <pre className="px-4 py-3 text-sm text-gray-100 overflow-x-auto">
+                              <code>{`<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" 
+     style="display:none" 
+     width="1" 
+     height="1" 
+     alt="" />`}</code>
+                            </pre>
                           </div>
                         </div>
 
                         <div>
-                          <h4 className="font-medium text-black dark:text-white mb-3 font-mono tracking-tight">3. Platform Integration</h4>
+                          <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">3. Platform Instructions</h5>
                           
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {/* Framer Card */}
-                            <div className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#333] rounded-sm p-4">
+                            <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-[#333] rounded-lg p-4">
                               <div className="flex items-center gap-3 mb-3">
-                                <div className="w-8 h-8 bg-gray-100 dark:bg-[#222] rounded-sm flex items-center justify-center">
+                                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
                                   <Image src="/images/framer.svg" alt="Framer" width={16} height={16} className="w-4 h-4" />
                                 </div>
                                 <div>
-                                  <h5 className="font-medium text-black dark:text-white font-mono tracking-tight">Framer</h5>
-                                  <p className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Site Settings → Custom Code</p>
+                                  <h6 className="font-semibold text-gray-900 dark:text-white">Framer</h6>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">Site Settings → Custom Code</p>
                                 </div>
                               </div>
                               <div className="space-y-2">
                                 <div className="flex items-start gap-2">
-                                  <span className="text-xs text-gray-500 dark:text-[#666] mt-0.5 font-mono">1.</span>
-                                  <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Open your Framer project</span>
+                                  <span className="text-xs text-gray-400 mt-0.5">1.</span>
+                                  <span className="text-xs text-gray-600 dark:text-gray-300">
+                                    Open your Framer project
+                                  </span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                  <span className="text-xs text-gray-500 dark:text-[#666] mt-0.5 font-mono">2.</span>
-                                  <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Go to Settings → Site Settings</span>
+                                  <span className="text-xs text-gray-400 mt-0.5">2.</span>
+                                  <span className="text-xs text-gray-600 dark:text-gray-300">
+                                    Go to Site Settings (gear icon)
+                                  </span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                  <span className="text-xs text-gray-500 dark:text-[#666] mt-0.5 font-mono">3.</span>
-                                  <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Navigate to Custom Code</span>
+                                  <span className="text-xs text-gray-400 mt-0.5">3.</span>
+                                  <span className="text-xs text-gray-600 dark:text-gray-300">
+                                    Scroll down to Custom Code section
+                                  </span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                  <span className="text-xs text-gray-500 dark:text-[#666] mt-0.5 font-mono">4.</span>
-                                  <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Use JavaScript version in "Start of &lt;head&gt; tag"</span>
+                                  <span className="text-xs text-gray-400 mt-0.5">4.</span>
+                                  <span className="text-xs text-gray-600 dark:text-gray-300">
+                                    Paste the code in the "End of &lt;body&gt; tag" field
+                                  </span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                  <span className="text-xs text-gray-500 dark:text-[#666] mt-0.5 font-mono">5.</span>
-                                  <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Publish your site</span>
+                                  <span className="text-xs text-gray-400 mt-0.5">5.</span>
+                                  <span className="text-xs text-gray-600 dark:text-gray-300">
+                                    Save &amp; Publish your site
+                                  </span>
                                 </div>
                               </div>
                             </div>
 
                             {/* Webflow Card */}
-                            <div className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#333] rounded-sm p-4">
+                            <div className="bg-white dark:bg-[#111] border border-gray-200 dark:border-[#333] rounded-lg p-4">
                               <div className="flex items-center gap-3 mb-3">
-                                <div className="w-8 h-8 bg-gray-100 dark:bg-[#222] rounded-sm flex items-center justify-center">
+                                <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
                                   <Image src="/images/webflow.svg" alt="Webflow" width={16} height={16} className="w-4 h-4" />
                                 </div>
                                 <div>
-                                  <h5 className="font-medium text-black dark:text-white font-mono tracking-tight">Webflow</h5>
-                                  <p className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Site Settings → Custom Code</p>
+                                  <h6 className="font-semibold text-gray-900 dark:text-white">Webflow</h6>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">Page Settings → Custom Code</p>
                                 </div>
                               </div>
                               <div className="space-y-2">
                                 <div className="flex items-start gap-2">
-                                  <span className="text-xs text-gray-500 dark:text-[#666] mt-0.5 font-mono">1.</span>
-                                  <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Open your Webflow project</span>
+                                  <span className="text-xs text-gray-400 mt-0.5">1.</span>
+                                  <span className="text-xs text-gray-600 dark:text-gray-300">Open your site in the Designer</span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                  <span className="text-xs text-gray-500 dark:text-[#666] mt-0.5 font-mono">2.</span>
-                                  <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Go to Site Settings</span>
+                                  <span className="text-xs text-gray-400 mt-0.5">2.</span>
+                                  <span className="text-xs text-gray-600 dark:text-gray-300">Open Page settings for the page</span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                  <span className="text-xs text-gray-500 dark:text-[#666] mt-0.5 font-mono">3.</span>
-                                  <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Navigate to Custom Code</span>
+                                  <span className="text-xs text-gray-400 mt-0.5">3.</span>
+                                  <span className="text-xs text-gray-600 dark:text-gray-300">Add code to "Before &lt;/body&gt; tag" section</span>
                                 </div>
                                 <div className="flex items-start gap-2">
-                                  <span className="text-xs text-gray-500 dark:text-[#666] mt-0.5 font-mono">4.</span>
-                                  <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Paste in "Head Code" section</span>
+                                  <span className="text-xs text-gray-400 mt-0.5">4.</span>
+                                  <span className="text-xs text-gray-600 dark:text-gray-300">Save your changes</span>
                                 </div>
                               </div>
                             </div>
@@ -1072,78 +1034,30 @@ app.listen(3000, () => {
                     <div>
                       <h4 className="font-medium text-black dark:text-white mb-3 font-mono tracking-tight">2. Basic Tracking Code</h4>
                       <p className="text-sm text-gray-500 dark:text-[#666] mb-3 font-mono tracking-tight">
-                        Choose the implementation that works best for your platform:
+                        Your tracking code will look like this:
                       </p>
-                      
-                      {/* HTML Implementation */}
-                      <div className="mb-3">
-                        <p className="text-xs text-gray-500 dark:text-[#666] mb-2 font-mono tracking-tight">
-                          <strong>Option 1: HTML Implementation</strong> (Works in body sections)
-                        </p>
-                        <div className="bg-[#0a0a0a] rounded-sm overflow-hidden border border-[#333]">
-                          <div className="flex items-center justify-between px-4 py-2 bg-[#111] border-b border-[#333]">
-                            <div className="flex items-center gap-2 text-[#666]">
-                              <Code2 className="w-4 h-4" />
-                              <span className="text-sm font-mono">HTML</span>
-                            </div>
-                            <Button
-                              onClick={() => copyToClipboard(`<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" style="display:none" width="1" height="1" alt="" />`)}
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0 text-[#666] hover:text-white"
-                            >
-                              <Copy className="w-4 h-4" />
-                            </Button>
+                      <div className="bg-[#0a0a0a] rounded-sm overflow-hidden border border-[#333]">
+                        <div className="flex items-center justify-between px-4 py-2 bg-[#111] border-b border-[#333]">
+                          <div className="flex items-center gap-2 text-[#666]">
+                            <Code2 className="w-4 h-4" />
+                            <span className="text-sm font-mono">HTML</span>
                           </div>
-                          <pre className="px-4 py-3 text-sm text-[#ccc] overflow-x-auto">
-                            <code>{`<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" 
-     style="display:none" width="1" height="1" alt="" />`}</code>
-                          </pre>
+                          <Button
+                            onClick={() => copyToClipboard(`<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" style="display:none" width="1" height="1" alt="" />`)}
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-[#666] hover:text-white"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
                         </div>
-                      </div>
-                      
-                      {/* JavaScript Implementation */}
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-[#666] mb-2 font-mono tracking-tight">
-                          <strong>Option 2: JavaScript Implementation</strong> (Works in head sections - Required for Framer)
-                        </p>
-                        <div className="bg-[#0a0a0a] rounded-sm overflow-hidden border border-[#333]">
-                          <div className="flex items-center justify-between px-4 py-2 bg-[#111] border-b border-[#333]">
-                            <div className="flex items-center gap-2 text-[#666]">
-                              <Code2 className="w-4 h-4" />
-                              <span className="text-sm font-mono">JavaScript</span>
-                            </div>
-                            <Button
-                              onClick={() => copyToClipboard(`<script>
-  (function() {
-    var img = new Image();
-    img.src = 'https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif';
-    img.style.display = 'none';
-    img.width = 1;
-    img.height = 1;
-    img.alt = '';
-  })();
-</script>`)}
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0 text-[#666] hover:text-white"
-                            >
-                              <Copy className="w-4 h-4" />
-                            </Button>
-                          </div>
-                          <pre className="px-4 py-3 text-sm text-[#ccc] overflow-x-auto">
-                            <code>{`<script>
-  (function() {
-    var img = new Image();
-    img.src = 'https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif';
-    img.style.display = 'none';
-    img.width = 1;
-    img.height = 1;
-    img.alt = '';
-  })();
-</script>`}</code>
-                          </pre>
-                        </div>
+                        <pre className="px-4 py-3 text-sm text-[#ccc] overflow-x-auto">
+                          <code>{`<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" 
+     style="display:none" 
+     width="1" 
+     height="1" 
+     alt="" />`}</code>
+                        </pre>
                       </div>
                     </div>
 
@@ -1169,53 +1083,53 @@ app.listen(3000, () => {
                             </div>
                             <div className="flex items-start gap-2">
                               <span className="text-xs text-gray-500 dark:text-[#666] mt-0.5 font-mono">2.</span>
-                              <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Go to Settings → Site Settings</span>
+                              <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Go to Site Settings (gear icon)</span>
                             </div>
                             <div className="flex items-start gap-2">
                               <span className="text-xs text-gray-500 dark:text-[#666] mt-0.5 font-mono">3.</span>
-                              <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Navigate to Custom Code</span>
+                              <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Scroll down to Custom Code section</span>
                             </div>
                             <div className="flex items-start gap-2">
                               <span className="text-xs text-gray-500 dark:text-[#666] mt-0.5 font-mono">4.</span>
-                              <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Use JavaScript version in "Start of &lt;head&gt; tag"</span>
+                              <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Paste code in "End of &lt;body&gt; tag" field</span>
                             </div>
                             <div className="flex items-start gap-2">
                               <span className="text-xs text-gray-500 dark:text-[#666] mt-0.5 font-mono">5.</span>
-                              <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Publish your site</span>
+                              <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Save & Publish your site</span>
                             </div>
                           </div>
                         </div>
 
-                        {/* Webflow Card */}
-                        <div className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#333] rounded-sm p-4">
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-8 h-8 bg-gray-100 dark:bg-[#222] rounded-sm flex items-center justify-center">
-                              <Image src="/images/webflow.svg" alt="Webflow" width={16} height={16} className="w-4 h-4" />
+                                                    {/* Webflow Card */}
+                            <div className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#333] rounded-sm p-4">
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="w-8 h-8 bg-gray-100 dark:bg-[#222] rounded-sm flex items-center justify-center">
+                                  <Image src="/images/webflow.svg" alt="Webflow" width={16} height={16} className="w-4 h-4" />
+                                </div>
+                                <div>
+                                  <h5 className="font-medium text-black dark:text-white font-mono tracking-tight">Webflow</h5>
+                                  <p className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Page Settings → Custom Code</p>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <div className="flex items-start gap-2">
+                                  <span className="text-xs text-gray-500 dark:text-[#666] mt-0.5 font-mono">1.</span>
+                                  <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Open your site in the Designer</span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <span className="text-xs text-gray-500 dark:text-[#666] mt-0.5 font-mono">2.</span>
+                                  <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Open Page settings for the page</span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <span className="text-xs text-gray-500 dark:text-[#666] mt-0.5 font-mono">3.</span>
+                                  <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Add code to "Before &lt;/body&gt; tag" section</span>
+                                </div>
+                                <div className="flex items-start gap-2">
+                                  <span className="text-xs text-gray-500 dark:text-[#666] mt-0.5 font-mono">4.</span>
+                                  <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Save your changes</span>
+                                </div>
+                              </div>
                             </div>
-                            <div>
-                              <h5 className="font-medium text-black dark:text-white font-mono tracking-tight">Webflow</h5>
-                              <p className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Site Settings → Custom Code</p>
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex items-start gap-2">
-                              <span className="text-xs text-gray-500 dark:text-[#666] mt-0.5 font-mono">1.</span>
-                              <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Open your Webflow project</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <span className="text-xs text-gray-500 dark:text-[#666] mt-0.5 font-mono">2.</span>
-                              <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Go to Site Settings</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <span className="text-xs text-gray-500 dark:text-[#666] mt-0.5 font-mono">3.</span>
-                              <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Navigate to Custom Code</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <span className="text-xs text-gray-500 dark:text-[#666] mt-0.5 font-mono">4.</span>
-                              <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">Paste in "Head Code" section</span>
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   </div>

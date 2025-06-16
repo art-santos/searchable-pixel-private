@@ -151,24 +151,24 @@ app.use(async (req, res, next) => {
       },
       {
         title: 'Add to Webflow',
-        description: 'Paste the tracking pixel in your site settings',
+        description: 'Paste the tracking pixel in your page settings',
         type: 'code' as const,
         code: `<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" 
      style="display:none" 
      width="1" 
      height="1" 
      alt="" />`,
-        filename: 'Site Settings → Custom Code → Head Code',
+        filename: 'Page Settings → Custom Code → "Before </body> tag"',
         icon: Code2
       },
       {
-        title: 'Publish Your Site',
-        description: 'Make tracking live on your Webflow site',
+        title: 'Add to Webflow',
+        description: 'Add custom code to your page settings',
         type: 'instruction' as const,
-        content: `1. Go to Site Settings
-2. Navigate to Custom Code tab
-3. Paste in "Head Code" section
-4. Publish your site`,
+        content: `1. Open your site in the Designer
+2. Open Page settings for the page where you'd like to add your code
+3. Add your custom code to the "Before </body> tag" section under Custom code
+4. Save your changes and publish`,
         icon: Zap
       }
     ]
@@ -188,29 +188,25 @@ app.use(async (req, res, next) => {
       },
       {
         title: 'Add to Framer',
-        description: 'Use JavaScript implementation for the head section',
+        description: 'Paste the tracking pixel in your Custom Code settings',
         type: 'code' as const,
-        code: `<script>
-  (function() {
-    var img = new Image();
-    img.src = 'https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif';
-    img.style.display = 'none';
-    img.width = 1;
-    img.height = 1;
-    img.alt = '';
-  })();
-</script>`,
-        filename: 'Site Settings → Custom Code → Start of <head> tag',
+        code: `<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" 
+     style="display:none" 
+     width="1" 
+     height="1" 
+     alt="" />`,
+        filename: 'Site Settings → Custom Code → "End of <body> tag"',
         icon: Code2
       },
       {
         title: 'Publish Your Site',
         description: 'Make tracking live on your Framer site',
         type: 'instruction' as const,
-        content: `1. Go to Settings → Site Settings
-2. Navigate to Custom Code section
-3. Paste code in "Start of <head> tag" field
-4. Publish your site`,
+        content: `1. Open your Framer project
+2. Go to Site Settings (gear icon)
+3. Scroll down to Custom Code section
+4. Paste the code in the "End of <body> tag" field
+5. Save & Publish your site`,
         icon: Zap
       }
     ]

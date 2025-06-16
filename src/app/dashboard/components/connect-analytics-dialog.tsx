@@ -711,7 +711,7 @@ app.use(splitAnalytics({
                         <div>
                           <p className="text-sm text-gray-700 dark:text-[#ccc]">Add tracking script to your site:</p>
                           <code className="block mt-1 text-xs bg-gray-100 dark:bg-[#1a1a1a] px-3 py-2 rounded font-mono text-gray-600 dark:text-[#888]">
-                            Site Settings → Custom Code → Head Code
+                            Site Settings → Custom Code → "End of &lt;body&gt; tag"
                           </code>
                         </div>
                       </li>
