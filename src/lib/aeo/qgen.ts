@@ -1,5 +1,6 @@
 import OpenAI from 'openai'
-import { saveAeoQuestions } from '../onboarding/database'
+// NOTE: AEO functions are not yet implemented in the database
+// import { saveAeoQuestions } from '../onboarding/database'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -61,18 +62,22 @@ export async function generateQuestions(
   
   // Save to database if runId is provided
   if (runId && processedQuestions.length > 0) {
-    try {
-      console.log(`💾 Saving ${processedQuestions.length} questions to database...`)
-      const saveResult = await saveAeoQuestions(runId, processedQuestions)
-      
-      if (saveResult.success) {
-        console.log('✅ Questions saved to database successfully')
-      } else {
-        console.error('❌ Failed to save questions to database:', saveResult.error)
-      }
-    } catch (error) {
-      console.error('❌ Error saving questions to database:', error)
-    }
+    console.log(`💾 AEO database functions not yet implemented - skipping save for runId: ${runId}`)
+    console.log(`📝 Generated ${processedQuestions.length} questions that would be saved`)
+    
+    // TODO: Uncomment when AEO database tables are implemented
+    // try {
+    //   console.log(`💾 Saving ${processedQuestions.length} questions to database...`)
+    //   const saveResult = await saveAeoQuestions(runId, processedQuestions)
+    //   
+    //   if (saveResult.success) {
+    //     console.log('✅ Questions saved to database successfully')
+    //   } else {
+    //     console.error('❌ Failed to save questions to database:', saveResult.error)
+    //   }
+    // } catch (error) {
+    //   console.error('❌ Error saving questions to database:', error)
+    // }
   }
   
   console.log(`✅ Generated ${processedQuestions.length} total questions (mix of direct brand-specific + indirect competitive)`)

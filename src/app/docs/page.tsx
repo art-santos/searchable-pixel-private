@@ -54,7 +54,7 @@ const sections = [
     icon: BookOpen,
     articles: [
       { title: 'trackCrawlerVisit()', href: '#js-api', description: 'Main tracking function' },
-      { title: 'SplitAnalytics Class', href: '#js-api-advanced', description: 'Advanced usage class' },
+      
       { title: 'Utility Functions', href: '#js-api-utils', description: 'Helper functions like ping()' }
     ]
   },
@@ -65,8 +65,7 @@ const sections = [
     icon: Activity,
     articles: [
       { title: 'Supported Crawlers', href: '#supported-crawlers', description: '25+ AI crawlers detected' },
-      { title: 'Troubleshooting', href: '#troubleshooting', description: 'Common issues and solutions' },
-      { title: 'Platform Integration', href: '#nextjs', description: 'Next.js and Node.js guides' }
+      { title: 'Troubleshooting', href: '#troubleshooting', description: 'Common issues and solutions' }
     ]
   }
 ]
@@ -74,6 +73,7 @@ const sections = [
 export default function DocsPage() {
   const [selectedPackageManager, setSelectedPackageManager] = useState<PackageManager>('npm')
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
+  const [selectedPlatform, setSelectedPlatform] = useState<'nextjs' | 'nodejs'>('nextjs')
 
   const handleSearchNavigate = (sectionId: string) => {
     const element = document.getElementById(sectionId)
@@ -369,37 +369,179 @@ export default function DocsPage() {
               </div>
 
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Quick Setup with Middleware</h3>
-                <div className="bg-gray-900 dark:bg-black rounded-lg overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-2 bg-gray-800 dark:bg-gray-900 border-b border-gray-700">
-                    <div className="flex items-center gap-2 text-gray-400">
-                      <Code2 className="w-4 h-4" />
-                      <span className="text-sm font-mono">middleware.ts</span>
-                    </div>
-                    <Button
-                      onClick={() => copyToClipboard(`import { createSplitMiddleware } from '@split.dev/analytics/middleware'
-
-export const middleware = createSplitMiddleware({
-  apiKey: process.env.SPLIT_API_KEY!,
-  debug: process.env.NODE_ENV === 'development'
-})`)}
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-white"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <pre className="px-4 py-3 text-sm text-gray-100 overflow-x-auto">
-                    <code>{`import { createSplitMiddleware } from '@split.dev/analytics/middleware'
-
-export const middleware = createSplitMiddleware({
-  apiKey: process.env.SPLIT_API_KEY!,
-  debug: process.env.NODE_ENV === 'development'
-})`}</code>
-                  </pre>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Quick Setup</h3>
+                
+                {/* Platform Tabs */}
+                <div className="flex gap-2 mb-6 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                  <button
+                    onClick={() => setSelectedPlatform('nextjs')}
+                    className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                      selectedPlatform === 'nextjs'
+                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                  >
+                    Next.js
+                  </button>
+                  <button
+                    onClick={() => setSelectedPlatform('nodejs')}
+                    className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                      selectedPlatform === 'nodejs'
+                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                  >
+                    Node.js/Express
+                  </button>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+
+                {/* Next.js Tab Content */}
+                {selectedPlatform === 'nextjs' && (
+                  <div className="space-y-4">
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Complete setup guide for Next.js middleware with proper configuration.
+                    </p>
+                    
+                    <div className="bg-gray-900 dark:bg-black rounded-lg overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-2 bg-gray-800 dark:bg-gray-900 border-b border-gray-700">
+                        <div className="flex items-center gap-2 text-gray-400">
+                          <Code2 className="w-4 h-4" />
+                          <span className="text-sm font-mono">middleware.ts</span>
+                        </div>
+                        <Button
+                          onClick={() => copyToClipboard(`import { createSplitMiddleware } from '@split.dev/analytics/middleware'
+
+export const middleware = createSplitMiddleware({
+  apiKey: process.env.SPLIT_API_KEY!,
+  debug: process.env.NODE_ENV === 'development'
+})
+
+export const config = {
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)']
+}`)}
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <pre className="px-4 py-3 text-sm text-gray-100 overflow-x-auto">
+                        <code>{`import { createSplitMiddleware } from '@split.dev/analytics/middleware'
+
+export const middleware = createSplitMiddleware({
+  apiKey: process.env.SPLIT_API_KEY!,
+  debug: process.env.NODE_ENV === 'development'
+})
+
+export const config = {
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)']
+}`}</code>
+                      </pre>
+                    </div>
+                    
+                    <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Key Features:</h4>
+                      <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                        <li>• Automatic AI crawler detection (25+ crawlers)</li>
+                        <li>• Non-blocking requests (won't slow your site)</li>
+                        <li>• Batched for performance (5-second default)</li>
+                        <li>• Excludes static files for efficiency</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                {/* Node.js Tab Content */}
+                {selectedPlatform === 'nodejs' && (
+                  <div className="space-y-4">
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Add AI crawler tracking to your Express.js application with proper error handling.
+                    </p>
+                    
+                    <div className="bg-gray-900 dark:bg-black rounded-lg overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-2 bg-gray-800 dark:bg-gray-900 border-b border-gray-700">
+                        <div className="flex items-center gap-2 text-gray-400">
+                          <Code2 className="w-4 h-4" />
+                          <span className="text-sm font-mono">server.js</span>
+                        </div>
+                        <Button
+                          onClick={() => copyToClipboard(`const express = require('express')
+const { trackCrawlerVisit } = require('@split.dev/analytics')
+
+const app = express()
+
+app.use(async (req, res, next) => {
+  // Track crawler visits (non-blocking)
+  if (process.env.SPLIT_API_KEY) {
+    trackCrawlerVisit({
+      url: req.url,
+      userAgent: req.headers['user-agent'],
+      method: req.method
+    }, {
+      apiKey: process.env.SPLIT_API_KEY,
+      debug: process.env.NODE_ENV === 'development'
+    }).catch((error) => {
+      console.error('Split Analytics error:', error)
+    })
+  }
+  
+  next()
+})
+
+app.listen(3000, () => {
+  console.log('Server running on port 3000')
+})`)}
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <pre className="px-4 py-3 text-sm text-gray-100 overflow-x-auto">
+                        <code>{`const express = require('express')
+const { trackCrawlerVisit } = require('@split.dev/analytics')
+
+const app = express()
+
+app.use(async (req, res, next) => {
+  // Track crawler visits (non-blocking)
+  if (process.env.SPLIT_API_KEY) {
+    trackCrawlerVisit({
+      url: req.url,
+      userAgent: req.headers['user-agent'],
+      method: req.method
+    }, {
+      apiKey: process.env.SPLIT_API_KEY,
+      debug: process.env.NODE_ENV === 'development'
+    }).catch((error) => {
+      console.error('Split Analytics error:', error)
+    })
+  }
+  
+  next()
+})
+
+app.listen(3000, () => {
+  console.log('Server running on port 3000')
+})`}</code>
+                      </pre>
+                    </div>
+                    
+                    <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Key Features:</h4>
+                      <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                        <li>• Works with any Express.js application</li>
+                        <li>• Automatic AI crawler detection (25+ crawlers)</li>
+                        <li>• Non-blocking requests (won't slow your server)</li>
+                        <li>• Built-in error handling and retry logic</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
+                
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
                   That's it! AI crawler visits will appear in your Split Dashboard within 5-10 seconds.
                 </p>
               </div>
@@ -531,75 +673,7 @@ app.use(async (req, res, next) => {
                 </div>
               </div>
 
-              {/* SplitAnalytics Class for Advanced Usage */}
-              <div id="js-api-advanced" className="bg-white dark:bg-[#111] rounded-xl border border-gray-200/60 dark:border-[#1a1a1a] p-6">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">SplitAnalytics Class (Advanced)</h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  For custom tracking scenarios and advanced configuration.
-                </p>
-                
-                <div className="bg-gray-900 dark:bg-black rounded-lg overflow-hidden mb-4">
-                  <div className="flex items-center justify-between px-4 py-2 bg-gray-800 dark:bg-gray-900 border-b border-gray-700">
-                    <div className="flex items-center gap-2 text-gray-400">
-                      <Code2 className="w-4 h-4" />
-                      <span className="text-sm font-mono">Custom Tracking</span>
-                    </div>
-                    <Button
-                      onClick={() => copyToClipboard(`import { SplitAnalytics } from '@split.dev/analytics'
 
-const analytics = new SplitAnalytics({
-  apiKey: process.env.SPLIT_API_KEY,
-  debug: true,
-  batchIntervalMs: 1000 // Custom batching interval
-})
-
-// Manual tracking with metadata
-await analytics.track({
-  url: 'https://example.com/page',
-  userAgent: 'GPTBot/1.0',
-  crawler: {
-    name: 'GPTBot',
-    company: 'OpenAI', 
-    category: 'ai-training'
-  },
-  metadata: {
-    source: 'manual-tracking',
-    custom: 'data'
-  }
-})`)}
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-white"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <pre className="px-4 py-3 text-sm text-gray-100 overflow-x-auto text-xs">
-                    <code>{`import { SplitAnalytics } from '@split.dev/analytics'
-
-const analytics = new SplitAnalytics({
-  apiKey: process.env.SPLIT_API_KEY,
-  debug: true,
-  batchIntervalMs: 1000 // Custom batching interval
-})
-
-// Manual tracking with metadata
-await analytics.track({
-  url: 'https://example.com/page',
-  userAgent: 'GPTBot/1.0',
-  crawler: {
-    name: 'GPTBot',
-    company: 'OpenAI', 
-    category: 'ai-training'
-  },
-  metadata: {
-    source: 'manual-tracking',
-    custom: 'data'
-  }
-})`}</code>
-                  </pre>
-                </div>
-              </div>
 
               {/* Utility Functions */}
               <div id="js-api-utils" className="bg-white dark:bg-[#111] rounded-xl border border-gray-200/60 dark:border-[#1a1a1a] p-6">
@@ -655,61 +729,270 @@ console.log('Connection:', result.status) // 'ok' or 'error'`}</code>
               The package automatically detects 25+ AI crawlers from major companies:
             </p>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 gap-6 mb-8">
               {/* OpenAI */}
-              <div className="bg-white dark:bg-[#111] rounded-lg border border-gray-200/60 dark:border-[#1a1a1a] p-4">
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-3">OpenAI</h3>
-                <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                  <li>• <code className="text-xs bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded">GPTBot</code> (training)</li>
-                  <li>• <code className="text-xs bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded">ChatGPT-User</code> (search)</li>
-                  <li>• <code className="text-xs bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded">OAI-SearchBot</code> (search)</li>
-                </ul>
-              </div>
+              <div className="bg-white dark:bg-[#111] rounded-lg border border-gray-200/60 dark:border-[#1a1a1a] p-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">OpenAI User Agents</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  OpenAI uses multiple user agents for different purposes across their services.
+                </p>
+                
+                <div className="space-y-4">
+                  <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <code className="text-sm bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 px-2 py-1 rounded">GPTBot</code>
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 px-2 py-1 rounded">Training</span>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                      <strong>Purpose:</strong> Crawling content for training OpenAI's generative AI foundation models
+                    </p>
+                    <div className="bg-gray-900 dark:bg-black rounded-md p-2">
+                      <code className="text-xs text-gray-300 break-all">
+                        Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; GPTBot/1.1; +https://openai.com/gptbot
+                      </code>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      IP addresses: <a href="https://openai.com/gptbot.json" className="text-blue-600 dark:text-blue-400 underline">openai.com/gptbot.json</a>
+                    </p>
+                  </div>
 
-              {/* Anthropic */}
-              <div className="bg-white dark:bg-[#111] rounded-lg border border-gray-200/60 dark:border-[#1a1a1a] p-4">
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Anthropic</h3>
-                <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                  <li>• <code className="text-xs bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded">ClaudeBot</code> (training)</li>
-                  <li>• <code className="text-xs bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded">Claude-Web</code> (assistant)</li>
-                </ul>
-              </div>
+                  <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <code className="text-sm bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 px-2 py-1 rounded">OAI-SearchBot</code>
+                      <span className="text-xs bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-300 px-2 py-1 rounded">Search</span>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                      <strong>Purpose:</strong> Search functionality in ChatGPT's search features
+                    </p>
+                    <div className="bg-gray-900 dark:bg-black rounded-md p-2">
+                      <code className="text-xs text-gray-300 break-all">
+                        Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot
+                      </code>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      IP addresses: <a href="https://openai.com/searchbot.json" className="text-blue-600 dark:text-blue-400 underline">openai.com/searchbot.json</a>
+                    </p>
+                  </div>
 
-              {/* Google */}
-              <div className="bg-white dark:bg-[#111] rounded-lg border border-gray-200/60 dark:border-[#1a1a1a] p-4">
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Google</h3>
-                <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                  <li>• <code className="text-xs bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded">Google-Extended</code> (training)</li>
-                  <li>• <code className="text-xs bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded">Googlebot</code> (search)</li>
-                </ul>
-              </div>
-
-              {/* Microsoft */}
-              <div className="bg-white dark:bg-[#111] rounded-lg border border-gray-200/60 dark:border-[#1a1a1a] p-4">
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Microsoft</h3>
-                <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                  <li>• <code className="text-xs bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded">Bingbot</code> (search)</li>
-                  <li>• <code className="text-xs bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded">BingPreview</code> (search)</li>
-                </ul>
-              </div>
-
-              {/* Others */}
-              <div className="bg-white dark:bg-[#111] rounded-lg border border-gray-200/60 dark:border-[#1a1a1a] p-4">
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-3">Others</h3>
-                <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                  <li>• <code className="text-xs bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded">PerplexityBot</code> (Perplexity)</li>
-                  <li>• <code className="text-xs bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded">FacebookBot</code> (Meta)</li>
-                  <li>• <code className="text-xs bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded">Bytespider</code> (ByteDance)</li>
-                </ul>
-              </div>
-
-              {/* More */}
-              <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-lg border border-gray-200/60 dark:border-[#1a1a1a] p-4 flex items-center justify-center">
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">And 15+ more...</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-500">Including Common Crawl, academic crawlers, and emerging AI services</p>
+                  <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <code className="text-sm bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 px-2 py-1 rounded">ChatGPT-User</code>
+                      <span className="text-xs bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 px-2 py-1 rounded">User Request</span>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                      <strong>Purpose:</strong> When users ask ChatGPT or Custom GPT to visit a web page
+                    </p>
+                    <div className="bg-gray-900 dark:bg-black rounded-md p-2">
+                      <code className="text-xs text-gray-300 break-all">
+                        Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ChatGPT-User/1.0; +https://openai.com/bot
+                      </code>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      IP addresses: <a href="https://openai.com/chatgpt-user.json" className="text-blue-600 dark:text-blue-400 underline">openai.com/chatgpt-user.json</a>
+                    </p>
+                  </div>
                 </div>
               </div>
+
+              {/* Anthropic (Claude) */}
+              <div className="bg-white dark:bg-[#111] rounded-lg border border-gray-200/60 dark:border-[#1a1a1a] p-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Claude User Agents (Anthropic)</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Anthropic's Claude AI assistant uses this user agent for web browsing capabilities.
+                </p>
+                
+                <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <code className="text-sm bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 px-2 py-1 rounded">Claude</code>
+                    <span className="text-xs bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 px-2 py-1 rounded">Web Browsing</span>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                    <strong>Purpose:</strong> Primary user agent for Claude's web browsing capability
+                  </p>
+                  <div className="bg-gray-900 dark:bg-black rounded-md p-2">
+                    <code className="text-xs text-gray-300 break-all">
+                      Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude/1.0; https://claude.ai/)
+                    </code>
+                  </div>
+                </div>
+              </div>
+
+              {/* Microsoft (Bing AI) */}
+              <div className="bg-white dark:bg-[#111] rounded-lg border border-gray-200/60 dark:border-[#1a1a1a] p-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Bing AI User Agents (Microsoft)</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Microsoft uses several user agents for Bing Search, Bing Chat, and related services.
+                </p>
+                
+                <div className="space-y-4">
+                  <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <code className="text-sm bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 px-2 py-1 rounded">Bingbot</code>
+                      <span className="text-xs bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-300 px-2 py-1 rounded">Search & Chat</span>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                      <strong>Purpose:</strong> Standard crawler that powers Bing Search and Bing Chat (Microsoft Copilot)
+                    </p>
+                    <div className="bg-gray-900 dark:bg-black rounded-md p-2">
+                      <code className="text-xs text-gray-300 break-all">
+                        Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm) Chrome/W.X.Y.Z Safari/537.36
+                      </code>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <code className="text-sm bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 px-2 py-1 rounded">BingPreview</code>
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 px-2 py-1 rounded">Preview</span>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                      <strong>Purpose:</strong> Generates page snapshots for Bing
+                    </p>
+                    <div className="bg-gray-900 dark:bg-black rounded-md p-2">
+                      <code className="text-xs text-gray-300 break-all">
+                        Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm) Chrome/W.X.Y.Z Safari/537.36
+                      </code>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <code className="text-sm bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 px-2 py-1 rounded">MicrosoftPreview</code>
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 px-2 py-1 rounded">Preview</span>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                      <strong>Purpose:</strong> Generates page snapshots for Microsoft products
+                    </p>
+                    <div className="bg-gray-900 dark:bg-black rounded-md p-2">
+                      <code className="text-xs text-gray-300 break-all">
+                        Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; MicrosoftPreview/2.0; +https://aka.ms/MicrosoftPreview) Chrome/W.X.Y.Z Safari/537.36
+                      </code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Perplexity */}
+              <div className="bg-white dark:bg-[#111] rounded-lg border border-gray-200/60 dark:border-[#1a1a1a] p-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Perplexity User Agents</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Perplexity AI uses different user agents for crawling and AI assistant interactions.
+                </p>
+                
+                <div className="space-y-4">
+                  <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <code className="text-sm bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 px-2 py-1 rounded">PerplexityBot</code>
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 px-2 py-1 rounded">Crawling</span>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                      <strong>Purpose:</strong> Primary user agent for crawling websites
+                    </p>
+                    <div className="bg-gray-900 dark:bg-black rounded-md p-2">
+                      <code className="text-xs text-gray-300 break-all">
+                        Mozilla/5.0 (compatible; PerplexityBot/1.0; +https://www.perplexity.ai/bot)
+                      </code>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <code className="text-sm bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 px-2 py-1 rounded">Perplexity AI Assistant</code>
+                      <span className="text-xs bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 px-2 py-1 rounded">Assistant</span>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                      <strong>Purpose:</strong> Used when Perplexity's AI assistant browses the web in response to user queries
+                    </p>
+                    <div className="bg-gray-900 dark:bg-black rounded-md p-2">
+                      <code className="text-xs text-gray-300 break-all">
+                        Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Perplexity/1.0; +https://www.perplexity.ai)
+                      </code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Meta (Llama) */}
+              <div className="bg-white dark:bg-[#111] rounded-lg border border-gray-200/60 dark:border-[#1a1a1a] p-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Llama User Agents (Meta)</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Meta's Llama AI uses these user agents for web browsing and crawling operations.
+                </p>
+                
+                <div className="space-y-4">
+                  <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <code className="text-sm bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 px-2 py-1 rounded">Meta Llama</code>
+                      <span className="text-xs bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 px-2 py-1 rounded">Web Browsing</span>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                      <strong>Purpose:</strong> Primary user agent for web browsing
+                    </p>
+                    <div className="bg-gray-900 dark:bg-black rounded-md p-2">
+                      <code className="text-xs text-gray-300 break-all">
+                        Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Meta Llama/1.0; +https://ai.meta.com)
+                      </code>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <code className="text-sm bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 px-2 py-1 rounded">MetaAIBot</code>
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 px-2 py-1 rounded">Crawling</span>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                      <strong>Purpose:</strong> Web crawling operations for Meta AI
+                    </p>
+                    <div className="bg-gray-900 dark:bg-black rounded-md p-2">
+                      <code className="text-xs text-gray-300 break-all">
+                        Mozilla/5.0 (compatible; MetaAIBot/1.0; +https://www.meta.com/ai/bot)
+                      </code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Deepseek */}
+              <div className="bg-white dark:bg-[#111] rounded-lg border border-gray-200/60 dark:border-[#1a1a1a] p-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Deepseek User Agents</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Deepseek AI uses these user agents for web browsing and crawling operations.
+                </p>
+                
+                <div className="space-y-4">
+                  <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <code className="text-sm bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 px-2 py-1 rounded">Deepseek</code>
+                      <span className="text-xs bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 px-2 py-1 rounded">Web Browsing</span>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                      <strong>Purpose:</strong> Primary user agent for web browsing
+                    </p>
+                    <div className="bg-gray-900 dark:bg-black rounded-md p-2">
+                      <code className="text-xs text-gray-300 break-all">
+                        Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Deepseek/1.0; +https://www.deepseek.com)
+                      </code>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <code className="text-sm bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 px-2 py-1 rounded">DeepseekBot</code>
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 px-2 py-1 rounded">Crawling</span>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                      <strong>Purpose:</strong> Web crawling operations
+                    </p>
+                    <div className="bg-gray-900 dark:bg-black rounded-md p-2">
+                      <code className="text-xs text-gray-300 break-all">
+                        Mozilla/5.0 (compatible; DeepseekBot/1.0; +https://www.deepseek.com/bot)
+                      </code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+
             </div>
           </section>
 
@@ -808,146 +1091,7 @@ curl -H "User-Agent: Mozilla/5.0 (compatible; ChatGPT-User/1.0; +https://openai.
             </div>
           </section>
 
-          {/* Platform Guides */}
-          <section id="platform-guides" className="mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Platform Integration Guides</h2>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Next.js */}
-              <div id="nextjs" className="bg-white dark:bg-[#111] rounded-xl border border-gray-200/60 dark:border-[#1a1a1a] p-6">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Next.js Integration</h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Complete setup guide for Next.js middleware with proper configuration.
-                </p>
-                
-                <div className="bg-gray-900 dark:bg-black rounded-lg overflow-hidden mb-4">
-                  <div className="flex items-center justify-between px-4 py-2 bg-gray-800 dark:bg-gray-900 border-b border-gray-700">
-                    <div className="flex items-center gap-2 text-gray-400">
-                      <Code2 className="w-4 h-4" />
-                      <span className="text-sm font-mono">middleware.ts</span>
-                    </div>
-                    <Button
-                      onClick={() => copyToClipboard(`import { createSplitMiddleware } from '@split.dev/analytics/middleware'
 
-export const middleware = createSplitMiddleware({
-  apiKey: process.env.SPLIT_API_KEY!,
-  debug: process.env.NODE_ENV === 'development'
-})
-
-export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)']
-}`)}
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-white"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <pre className="px-4 py-3 text-sm text-gray-100 overflow-x-auto text-xs">
-                    <code>{`import { createSplitMiddleware } from '@split.dev/analytics/middleware'
-
-export const middleware = createSplitMiddleware({
-  apiKey: process.env.SPLIT_API_KEY!,
-  debug: process.env.NODE_ENV === 'development'
-})
-
-export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)']
-}`}</code>
-                  </pre>
-                </div>
-                
-                <div className="bg-gray-50 dark:bg-[#0a0a0a] rounded-lg p-4">
-                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Key Features:</h4>
-                  <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                    <li>• Automatic AI crawler detection (25+ crawlers)</li>
-                    <li>• Non-blocking requests (won't slow your site)</li>
-                    <li>• Batched for performance (5-second default)</li>
-                    <li>• Excludes static files for efficiency</li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* Node.js */}
-              <div id="nodejs" className="bg-white dark:bg-[#111] rounded-xl border border-gray-200/60 dark:border-[#1a1a1a] p-6">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Node.js/Express</h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Add AI crawler tracking to your Express.js application with proper error handling.
-                </p>
-                
-                <div className="bg-gray-900 dark:bg-black rounded-lg overflow-hidden mb-4">
-                  <div className="flex items-center justify-between px-4 py-2 bg-gray-800 dark:bg-gray-900 border-b border-gray-700">
-                    <div className="flex items-center gap-2 text-gray-400">
-                      <Code2 className="w-4 h-4" />
-                      <span className="text-sm font-mono">server.js</span>
-                    </div>
-                    <Button
-                      onClick={() => copyToClipboard(`const express = require('express')
-const { trackCrawlerVisit } = require('@split.dev/analytics')
-
-const app = express()
-
-app.use(async (req, res, next) => {
-  // Track crawler visits (non-blocking)
-  if (process.env.SPLIT_API_KEY) {
-    trackCrawlerVisit({
-      url: req.url,
-      userAgent: req.headers['user-agent'],
-      method: req.method
-    }, {
-      apiKey: process.env.SPLIT_API_KEY,
-      debug: process.env.NODE_ENV === 'development'
-    }).catch((error) => {
-      console.error('Split Analytics error:', error)
-    })
-  }
-  
-  next()
-})
-
-app.listen(3000, () => {
-  console.log('Server running on port 3000')
-})`)}
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-white"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <pre className="px-4 py-3 text-sm text-gray-100 overflow-x-auto text-xs">
-                    <code>{`const express = require('express')
-const { trackCrawlerVisit } = require('@split.dev/analytics')
-
-const app = express()
-
-app.use(async (req, res, next) => {
-  // Track crawler visits (non-blocking)
-  if (process.env.SPLIT_API_KEY) {
-    trackCrawlerVisit({
-      url: req.url,
-      userAgent: req.headers['user-agent'],
-      method: req.method
-    }, {
-      apiKey: process.env.SPLIT_API_KEY,
-      debug: process.env.NODE_ENV === 'development'
-    }).catch((error) => {
-      console.error('Split Analytics error:', error)
-    })
-  }
-  
-  next()
-})
-
-app.listen(3000, () => {
-  console.log('Server running on port 3000')
-})`}</code>
-                  </pre>
-                </div>
-              </div>
-            </div>
-          </section>
 
           {/* Footer */}
           <DocsFooter />

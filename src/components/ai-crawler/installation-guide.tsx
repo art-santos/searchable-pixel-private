@@ -84,19 +84,17 @@ export const config = {
         title: 'Add Middleware',
         description: 'Set up Express middleware for tracking',
         type: 'code' as const,
-        code: `import { SplitAnalytics, isAICrawler } from '@split.dev/analytics'
-
-const analytics = new SplitAnalytics({
-  apiKey: process.env.SPLIT_API_KEY
-})
+        code: `import { trackCrawlerVisit, isAICrawler } from '@split.dev/analytics'
 
 app.use(async (req, res, next) => {
   const userAgent = req.get('User-Agent')
   if (isAICrawler(userAgent)) {
-    analytics.autoTrack({
+    trackCrawlerVisit({
       url: req.url,
       userAgent,
       method: req.method
+    }, {
+      apiKey: process.env.SPLIT_API_KEY
     }).catch(console.error)
   }
   next()

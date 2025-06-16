@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
@@ -13,7 +13,7 @@ import Link from 'next/link'
 
 type NotificationType = "error" | "success" | "info" | null;
 
-export default function ForgotPasswordPage() {
+function ForgotPasswordContent() {
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
@@ -254,5 +254,13 @@ export default function ForgotPasswordPage() {
         }
       `}</style>
     </div>
+  )
+}
+
+export default function ForgotPasswordPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ForgotPasswordContent />
+    </Suspense>
   )
 } 

@@ -9,12 +9,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Loader2, Mail, CheckCircle, XCircle } from 'lucide-react'
 
-// Only show in development
-if (process.env.NODE_ENV === 'production') {
-  throw new Error('Email tester should not be available in production')
-}
-
 export default function EmailTesterPage() {
+  // Only show in development - check inside component to avoid build errors
+  if (process.env.NODE_ENV === 'production') {
+    return (
+      <div className="container max-w-4xl mx-auto py-8">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold mb-2">Page Not Available</h1>
+          <p className="text-muted-foreground">
+            This development tool is not available in production.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   const [testEmail, setTestEmail] = useState('')
   const [emailType, setEmailType] = useState('')
   const [isLoading, setIsLoading] = useState(false)
