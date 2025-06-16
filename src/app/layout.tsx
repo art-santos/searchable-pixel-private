@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "@/fonts/cal-sans.css"; // Changed the import to use a local CSS file
 import "./globals.css";
 // import Announcements from "@/components/announcements"; // Removed import again
@@ -130,6 +131,21 @@ export default function RootLayout({
           "min-h-screen bg-[#0c0c0c] font-sans antialiased flex flex-col"
         )}
       >
+        {/* Microsoft Clarity Analytics */}
+        <Script
+          id="clarity-script"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function(c,l,a,r,i,t,y){
+                  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+              })(window, document, "clarity", "script", "s07bt60hpe");
+            `,
+          }}
+        />
+        
         <GlobalErrorBoundary>
           {/* <Announcements /> Removed component */}
           {/* Removed RB2BTracking and its Suspense wrapper */}
