@@ -2,13 +2,13 @@ import { Metadata } from 'next'
 import { getAllTags, getBlogPosts, getFeaturedPosts } from '@/lib/blog'
 import ResourcesClientContent from './resources-client-content'
 
-// This generates metadata for the page - good for SEO and AEO
+// This generates metadata for the page - good for SEO and LLM search attribution
 export const metadata: Metadata = {
-  title: 'Resources & Blog | Split',
-  description: 'Explore our resources and blog posts about AI Engine Optimization (AEO), AI content strategy, and Next.js development best practices.',
+  title: 'Guides & Resources | LLM-Search Attribution Playbooks – Split.dev',
+  description: 'Learn LLM-search attribution, AI crawler tracking, and contact mapping strategies for B2B growth.',
   openGraph: {
-    title: 'Resources & Blog | Split',
-    description: 'Explore our resources and blog posts about AI Engine Optimization (AEO), AI content strategy, and Next.js development.',
+    title: 'Guides & Resources | LLM-Search Attribution Playbooks – Split.dev',
+    description: 'Learn LLM-search attribution, AI crawler tracking, and contact mapping strategies for B2B growth.',
     url: '/resources',
     type: 'website',
   },

@@ -17,13 +17,13 @@ const faqSchema = {
   mainEntity: [
     {
       "@type": "Question",
-      name: "What is Split?",
-      acceptedAnswer: { "@type": "Answer", text: "Split is an autonomous AEO engine that optimises content for AI visibility." }
+      name: "How does Split.dev attribute AI-driven search visits?",
+      acceptedAnswer: { "@type": "Answer", text: "Split.dev inspects AI crawler visits and citations, then resolves them to real people inside your CRM within seconds." }
     },
     {
       "@type": "Question",
-      name: "How does Split help with LLM visibility?",
-      acceptedAnswer: { "@type": "Answer", text: "Split audits your site and publishes optimised content that AI crawlers can index and cite." }
+      name: "What is LLM-Search Attribution?",
+      acceptedAnswer: { "@type": "Answer", text: "LLM-Search Attribution tracks AI crawler visits, maps citations to real contacts, and identifies companies visiting from AI platforms like ChatGPT and Perplexity." }
     }
   ]
 };

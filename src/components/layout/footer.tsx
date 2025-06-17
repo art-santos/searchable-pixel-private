@@ -104,7 +104,7 @@ export default function Footer() {
             <span className="text-lg sm:text-xl font-bold text-white">Split</span>
           </Link>
           <p className="text-gray-400 mb-4 md:mb-6 leading-relaxed max-w-md text-sm sm:text-base">
-            The first autonomous AEO engineer.
+            Always-on LLM-Search Attribution layer.
           </p>
           
           {/* Newsletter Signup */}
@@ -141,7 +141,7 @@ export default function Footer() {
               )}
               {status === 'idle' && (
                 <p className="text-xs text-gray-500 mt-1.5 sm:mt-2">
-                  Get AEO insights and product updates
+                  Get attribution insights and product updates
                 </p>
               )}
             </form>

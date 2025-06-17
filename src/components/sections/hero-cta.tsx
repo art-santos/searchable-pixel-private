@@ -78,10 +78,10 @@ export default function HeroCTA() {
   return (
     <div className="text-center">
       <h1 className="blur-in-up text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-3 md:mb-6 md:max-w-[70%] mx-auto">
-        Attribution Infrastructure for <span className="font-serif font-light italic tracking-tight"> LLM-Powered Search </span>
+        LLM-Search <span className="font-serif font-light italic tracking-tight"> Attribution Infrastructure </span>
       </h1>
       <p className="blur-in-up-delay-1 text-sm md:text-lg lg:text-xl text-gray-200 md:max-w-[85%] mx-auto mb-6 md:mb-8 px-2 md:px-0">
-        Built for AEO and GEO teams that want more than just visibility. See who's citing you, who's visiting, and where your content actually lands across ChatGPT, Perplexity, Google, and more.
+      Track every ChatGPT, Perplexity, or AI crawler visit, map it to real buyers, and prove which AI answers drive pipeline.
       </p>
       
       <div className="blur-in-up-delay-2 flex flex-col md:flex-row gap-4 justify-center items-center">
@@ -124,7 +124,7 @@ export default function HeroCTA() {
       )}
       
       <div className="blur-in-up-delay-2 text-xs md:text-sm text-gray-400 mt-3 md:mt-4 mb-6 md:mb-24 flex items-center justify-center gap-1">
-        See who's finding you on 
+        Track bot-to-person journeys from 
         <span className="text-white logo-flip-container">
           <span key={currentLogo} className="logo-flip">
             <img 

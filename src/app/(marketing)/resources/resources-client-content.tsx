@@ -112,12 +112,12 @@ export default function ResourcesClientContent({
           <div className="text-center">
             <div className={`fade-in ${isLoaded ? 'visible' : ''}`}>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 md:mb-6">
-                The Cutting Edge of<span className="font-serif font-light italic tracking-tight"> Visibility</span>
+                LLM-Search Attribution<span className="font-serif font-light italic tracking-tight"> Playbooks</span>
               </h1>
             </div>
             <div className={`fade-in stagger-1 ${isLoaded ? 'visible' : ''}`}>
               <p className="text-lg md:text-xl text-gray-200 max-w-3xl mx-auto mb-8 md:mb-12">
-                Discover proven strategies to get your content cited by AI engines and dominate the new search landscape
+                Master AI crawler tracking, contact mapping, and attribution strategies to turn AI citations into qualified pipeline
               </p>
             </div>
           </div>
@@ -166,7 +166,7 @@ export default function ResourcesClientContent({
               </h2>
               <div className="w-16 h-px bg-gray-600 mx-auto mb-8"></div>
               <p className="text-gray-300 text-lg max-w-2xl mx-auto">
-                Expert insights on AI Engine Optimization, content strategy, and the future of search
+                Expert insights on LLM-search attribution, crawler tracking, and contact identification strategies
               </p>
             </div>
           </div>

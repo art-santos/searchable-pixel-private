@@ -54,12 +54,12 @@ const hostingPlatforms = [
 ]
 
 const interestOptions = [
-  { id: 'llm-visitors', label: 'Seeing what LLMs are visiting my site' },
-  { id: 'visibility-score', label: 'Checking my site\'s overall visibility score' },
-  { id: 'improve-aeo', label: 'Improving my AEO visibility' },
-  { id: 'ai-content', label: 'Getting AI-generated content recommendations' },
-  { id: 'competitor-tracking', label: 'Tracking competitor AI visibility' },
-  { id: 'citation-sources', label: 'Understanding AI citation sources' }
+  { id: 'llm-visitors', label: 'Tracking AI crawler visits to my site' },
+  { id: 'attribution-tracking', label: 'Mapping AI citations to real contacts' },
+  { id: 'improve-visibility', label: 'Improving LLM-search attribution coverage' },
+  { id: 'visitor-identification', label: 'Identifying companies visiting from AI platforms' },
+  { id: 'competitor-tracking', label: 'Monitoring competitor AI attribution' },
+  { id: 'citation-sources', label: 'Understanding AI citation patterns' }
 ]
 
 export default function WaitlistPage() {
@@ -236,7 +236,7 @@ export default function WaitlistPage() {
             </div>
             <div className="flex items-start gap-3">
               <div className="w-px h-4 bg-[#333] mt-0.5" />
-              <p>Early access includes free visibility analysis</p>
+              <p>Early access includes free attribution analysis</p>
             </div>
             <div className="flex items-start gap-3">
               <div className="w-px h-4 bg-[#333] mt-0.5" />
@@ -246,7 +246,7 @@ export default function WaitlistPage() {
           
           {/* Resources CTA */}
           <div className="mt-8 p-6 bg-[#111] border border-[#1a1a1a] rounded-lg">
-            <h3 className="text-white font-medium mb-2">Want to improve your AI visibility now?</h3>
+            <h3 className="text-white font-medium mb-2">Want to improve your attribution tracking now?</h3>
             <p className="text-[#888] text-sm mb-4">
               Check out our free resources and guides while you wait.
             </p>
@@ -284,10 +284,10 @@ export default function WaitlistPage() {
               </Link>
             </div>
             <h1 className="text-3xl font-medium text-white mb-2">
-              Sign up for early access
+              Join the Split.dev Waitlist
             </h1>
             <p className="text-[#888] text-sm">
-              Be among the first to track your AI visibility.
+              Be among the first to track AI-crawler attribution.
             </p>
           </div>
 
