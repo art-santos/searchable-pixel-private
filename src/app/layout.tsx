@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import "@/fonts/cal-sans.css"; // Changed the import to use a local CSS file
 import "./globals.css";
 // import Announcements from "@/components/announcements"; // Removed import again
@@ -169,6 +170,7 @@ export default function RootLayout({
             </AuthProvider>
           </ThemeProvider>
         </GlobalErrorBoundary>
+        <SpeedInsights />
       </body>
     </html>
   );
