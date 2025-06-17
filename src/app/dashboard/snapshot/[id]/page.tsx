@@ -30,7 +30,8 @@ import {
   Image,
   Link as LinkIcon,
   Settings,
-  ChevronDown
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import Link from 'next/link';
 import { 
@@ -50,6 +51,45 @@ import {
 import { SnapshotReportSkeleton, SnapshotProcessingSkeleton } from '@/components/skeletons';
 
 type TabType = 'visibility' | 'technical';
+
+// Helper functions for safe URL handling
+const safeParseUrl = (url: string): URL | null => {
+  try {
+    // If URL doesn't have protocol, assume https
+    if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+      url = `https://${url}`;
+    }
+    return new URL(url);
+  } catch {
+    return null;
+  }
+};
+
+const getSafeHostname = (url: string): string => {
+  const parsed = safeParseUrl(url);
+  return parsed ? parsed.hostname : url;
+};
+
+const getSafeFaviconUrl = (url: string, size: number = 128): string => {
+  try {
+    const hostname = getSafeHostname(url);
+    return `https://www.google.com/s2/favicons?domain=${hostname}&sz=${size}`;
+  } catch {
+    return '/images/split-icon-white.svg';
+  }
+};
+
+const getCompetitorFavicon = (name: string): string => {
+  try {
+    const cleanName = name.toLowerCase()
+      .replace(/^(the\s+)?/, '')
+      .replace(/\s+/g, '')
+      .replace(/[^a-zA-Z0-9]/g, '');
+    return `https://www.google.com/s2/favicons?domain=${cleanName}.com&sz=128`;
+  } catch {
+    return '/images/split-icon-white.svg';
+  }
+};
 
 export default function EnhancedSnapshotReportPage() {
   const params = useParams();
@@ -113,20 +153,20 @@ export default function EnhancedSnapshotReportPage() {
     if (name.includes('meta description')) {
       return 'Add a compelling meta description between 120-160 characters. Write it like ad copy - describe what users will find on your page and include your main keyword naturally. Example: "Learn how to optimize your website for search engines with our comprehensive SEO guide. Improve rankings, drive traffic, and boost conversions today."';
     }
-    if (name.includes('title') && name.includes('length')) {
-      return 'Optimize your page title to 30-60 characters (about 600 pixels). Put your primary keyword near the beginning, make it descriptive and compelling. Avoid keyword stuffing. Example: "SEO Guide 2024: Complete Website Optimization Tips" instead of "Website SEO Search Engine Optimization Guide Tips Tricks"';
+    if (name.includes('title')) {
+      return 'Optimize your page title to 50-60 characters with your main keyword near the beginning. Make it descriptive and compelling for both search engines and users. Include your brand name at the end. Example: "Complete SEO Guide 2024: Boost Rankings & Traffic | YourBrand"';
     }
     if (name.includes('h1')) {
-      return 'Add exactly one H1 tag per page that clearly describes your main topic. Make it descriptive, include your primary keyword naturally, and ensure it matches user intent. Place it prominently at the top of your content. Use H2-H6 for subheadings in hierarchical order.';
+      return 'Add a clear, descriptive H1 tag that includes your main keyword and tells users what the page is about. Only use one H1 per page. Example: <h1>Complete Guide to Search Engine Optimization in 2024</h1>. Make sure it\'s unique and matches the page content.';
     }
     if (name.includes('image') && name.includes('alt')) {
-      return 'Add descriptive alt text to all images. Describe what the image shows in 10-15 words, include context about how it relates to your content, and use keywords naturally when relevant. For decorative images, use alt="". Example: alt="Person typing on laptop showing SEO analytics dashboard"';
+      return 'Add descriptive alt text to all images for accessibility and SEO. Describe what\'s in the image naturally, include relevant keywords when appropriate, and keep it under 125 characters. Example: alt="Modern office workspace with laptop showing analytics dashboard". Don\'t use "image of" or "picture of".';
     }
-    if (name.includes('canonical')) {
-      return 'Add a canonical tag to prevent duplicate content issues. Place <link rel="canonical" href="https://yourdomain.com/page-url" /> in your <head> section. Use your preferred URL version (with or without www, trailing slash, etc.) and ensure it\'s an absolute URL.';
+    if (name.includes('loading') || name.includes('speed')) {
+      return 'Improve page loading speed by optimizing images (use WebP format, compress files), minifying CSS/JS, enabling compression, using a CDN, and optimizing server response times. Aim for under 3 seconds load time. Use Google PageSpeed Insights to identify specific issues.';
     }
-    if (name.includes('robots')) {
-      return 'Add a robots meta tag to control search engine crawling. Use <meta name="robots" content="index, follow" /> for pages you want indexed, or "noindex, nofollow" for pages you want to hide. You can also use specific directives like "noarchive" or "nosnippet" for more control.';
+    if (name.includes('mobile') || name.includes('responsive')) {
+      return 'Ensure your site is fully responsive and mobile-friendly. Test on various devices, use responsive design principles, ensure touch targets are at least 44px, and make sure content fits without horizontal scrolling. Use Google\'s Mobile-Friendly Test to verify.';
     }
     if (name.includes('viewport')) {
       return 'Add a viewport meta tag for mobile optimization: <meta name="viewport" content="width=device-width, initial-scale=1.0" />. This ensures your page displays correctly on mobile devices and is required for mobile-first indexing. Place it in your <head> section.';
@@ -223,30 +263,36 @@ export default function EnhancedSnapshotReportPage() {
       
       // Load additional data if completed
       if (targetSnapshot.status === 'completed' && targetSnapshot.url) {
-        const [issuesData, recsData, visData, checklistData] = await Promise.all([
-          getTechnicalIssues(targetSnapshot.url),
-          getTechnicalRecommendations(targetSnapshot.url),
-          getVisibilityResults(snapshotId),
-          getTechnicalChecklistResults(targetSnapshot.url)
-        ]);
-        
-        setIssues(issuesData);
-        setRecommendations(recsData);
-        setVisibilityResults(visData);
-        setChecklistResults(checklistData);
-        
-        // Debug checklist data
-        console.log('Checklist data loaded:', {
-          url: targetSnapshot.url,
-          checklistCount: checklistData.length,
-          passed: checklistData.filter(c => c.passed).length,
-          failed: checklistData.filter(c => !c.passed).length,
-          categories: [...new Set(checklistData.map(c => c.category))],
-          sample: checklistData.slice(0, 5)
-        });
+        try {
+          const [issuesData, recsData, visData, checklistData] = await Promise.all([
+            getTechnicalIssues(targetSnapshot.url).catch(() => []),
+            getTechnicalRecommendations(targetSnapshot.url).catch(() => []),
+            getVisibilityResults(snapshotId).catch(() => []),
+            getTechnicalChecklistResults(targetSnapshot.url).catch(() => [])
+          ]);
+          
+          setIssues(issuesData);
+          setRecommendations(recsData);
+          setVisibilityResults(visData);
+          setChecklistResults(checklistData);
+          
+          // Debug checklist data
+          console.log('Checklist data loaded:', {
+            url: targetSnapshot.url,
+            checklistCount: checklistData.length,
+            passed: checklistData.filter(c => c.passed).length,
+            failed: checklistData.filter(c => !c.passed).length,
+            categories: [...new Set(checklistData.map(c => c.category))],
+            sample: checklistData.slice(0, 5)
+          });
+        } catch (dataError) {
+          console.error('Error loading additional data:', dataError);
+          // Continue anyway - we have the main snapshot data
+        }
       }
     } catch (err: any) {
-      setError(err.message);
+      console.error('Error loading snapshot data:', err);
+      setError(err.message || 'Failed to load snapshot data');
     } finally {
       setLoading(false);
     }
@@ -340,8 +386,6 @@ export default function EnhancedSnapshotReportPage() {
   // Calculate initial combined score
   let combinedScore = snapshot.status === 'completed' ? getCombinedScore(snapshot, checklistResults) : null;
 
-
-
   return (
     <main className="min-h-screen bg-[#0c0c0c]">
       <div className="max-w-7xl mx-auto p-6">
@@ -403,12 +447,9 @@ export default function EnhancedSnapshotReportPage() {
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-2">
                   <img
-                    src={`https://www.google.com/s2/favicons?domain=${new URL(snapshot.url).hostname}&sz=128`}
+                    src={getSafeFaviconUrl(snapshot.url)}
                     alt=""
                     className="w-4 h-4 rounded"
-                    onError={(e) => {
-                      e.currentTarget.src = '/images/split-icon-white.svg';
-                    }}
                   />
                   <div className="text-zinc-400 text-sm font-mono">{snapshot.url}</div>
                 </div>
@@ -440,117 +481,10 @@ export default function EnhancedSnapshotReportPage() {
               )}
               </div>
               
-            {/* Skeleton Results Preview */}
+            {/* Use the consistent dark skeleton component */}
             {(snapshot.status === 'pending' || snapshot.status === 'processing') && (
-              <div className="space-y-6">
-                {/* Skeleton Score Overview */}
-                <div className="py-8">
-                  <div className="grid grid-cols-12 gap-12 items-center">
-                    {/* Skeleton Circular Score */}
-                    <div className="col-span-12 lg:col-span-4 flex items-center justify-center">
-                      <div className="relative w-64 h-64">
-                        <svg className="w-64 h-64 transform -rotate-90" viewBox="0 0 100 100">
-                          <circle
-                            cx="50"
-                            cy="50"
-                            r="40"
-                            stroke="currentColor"
-                            strokeWidth="6"
-                            fill="none"
-                            className="text-zinc-800"
-                          />
-                          <circle
-                            cx="50"
-                            cy="50"
-                            r="40"
-                            stroke="currentColor"
-                            strokeWidth="6"
-                            fill="none"
-                            strokeDasharray={`${2 * Math.PI * 40}`}
-                            strokeDashoffset={`${2 * Math.PI * 40 * 0.7}`}
-                            className="text-zinc-700 animate-pulse"
-                          />
-                        </svg>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="text-center">
-                            <div className="w-16 h-8 bg-zinc-700 rounded animate-pulse"></div>
-                </div>
-                        </div>
-                </div>
-              </div>
-              
-                    {/* Skeleton Site Info */}
-                    <div className="col-span-12 lg:col-span-8 space-y-6">
-                      <div>
-                        <div className="w-48 h-4 bg-zinc-800 rounded animate-pulse mb-4"></div>
-                        <div className="w-3/4 h-8 bg-zinc-700 rounded animate-pulse mb-4"></div>
-                        <div className="w-full h-4 bg-zinc-800 rounded animate-pulse mb-2"></div>
-                        <div className="w-2/3 h-4 bg-zinc-800 rounded animate-pulse mb-4"></div>
-                        <div className="w-24 h-6 bg-zinc-800 rounded animate-pulse"></div>
-            </div>
-
-                      {/* Skeleton Breakdown Grid */}
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                        {[1, 2, 3, 4].map((i) => (
-                          <div key={i}>
-                            <div className="w-20 h-3 bg-zinc-800 rounded animate-pulse mb-2"></div>
-                            <div className="w-12 h-6 bg-zinc-700 rounded animate-pulse"></div>
-                    </div>
-                        ))}
-                  </div>
-                </div>
-              </div>
-                </div>
-
-                {/* Skeleton Tab Navigation */}
-                <div className="border border-zinc-800 rounded-lg p-1 bg-zinc-900/30">
-                  <div className="grid grid-cols-2 gap-1">
-                    <div className="h-12 bg-zinc-800 rounded-lg animate-pulse"></div>
-                    <div className="h-12 bg-zinc-800 rounded-lg animate-pulse"></div>
-                  </div>
-            </div>
-
-                {/* Skeleton Content Area */}
-            <div className="space-y-6">
-                  <div className="bg-zinc-900/20 rounded-lg p-8">
-                    <div className="grid grid-cols-12 gap-8">
-                      <div className="col-span-12 lg:col-span-5 space-y-4">
-                        <div className="w-32 h-4 bg-zinc-800 rounded animate-pulse"></div>
-                        <div className="w-24 h-12 bg-zinc-700 rounded animate-pulse"></div>
-                        <div className="w-full h-16 bg-zinc-800 rounded animate-pulse"></div>
-                      </div>
-                      <div className="col-span-12 lg:col-span-7">
-                        <div className="grid grid-cols-2 gap-6">
-                          {[1, 2].map((i) => (
-                            <div key={i} className="space-y-3">
-                              <div className="w-24 h-3 bg-zinc-800 rounded animate-pulse"></div>
-                              <div className="w-16 h-8 bg-zinc-700 rounded animate-pulse"></div>
-                              <div className="w-20 h-3 bg-zinc-800 rounded animate-pulse"></div>
-                              <div className="w-full h-1 bg-zinc-800 rounded animate-pulse"></div>
-                      </div>
-                          ))}
-                        </div>
-                      </div>
-                      </div>
-                    </div>
-                    
-                  {/* Skeleton Results Cards */}
-                  <div className="grid gap-4">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="bg-zinc-900/20 border border-zinc-800 rounded-lg p-4">
-                        <div className="flex items-start gap-4">
-                          <div className="w-8 h-8 bg-zinc-700 rounded animate-pulse flex-shrink-0"></div>
-                          <div className="flex-1 space-y-3">
-                            <div className="w-3/4 h-4 bg-zinc-700 rounded animate-pulse"></div>
-                            <div className="w-full h-3 bg-zinc-800 rounded animate-pulse"></div>
-                            <div className="w-1/2 h-3 bg-zinc-800 rounded animate-pulse"></div>
-                      </div>
-                          <div className="w-16 h-6 bg-zinc-800 rounded animate-pulse"></div>
-                      </div>
-                      </div>
-                    ))}
-                    </div>
-                </div>
+              <div className="pt-6">
+                <SnapshotReportSkeleton />
               </div>
             )}
           </div>
@@ -614,12 +548,9 @@ export default function EnhancedSnapshotReportPage() {
                       className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-4 group"
                     >
                       <img
-                        src={`https://www.google.com/s2/favicons?domain=${new URL(snapshot.url).hostname}&sz=128`}
+                        src={getSafeFaviconUrl(snapshot.url)}
                         alt=""
                         className="w-4 h-4 rounded"
-                        onError={(e) => {
-                          e.currentTarget.src = '/images/split-icon-white.svg';
-                        }}
                       />
                       <span className="text-sm">{snapshot.url}</span>
                       <ExternalLink className="w-3 h-3 opacity-50 group-hover:opacity-100" />
@@ -761,27 +692,12 @@ export default function EnhancedSnapshotReportPage() {
                           <div className="text-zinc-400 text-sm mb-3">competing sources found</div>
                           <div className="flex items-center gap-2">
                             {snapshot.top_competitors.slice(0, 4).map((competitor, index) => {
-                              const getCompetitorFavicon = (name: string) => {
-                                try {
-                                  const cleanName = name.toLowerCase()
-                                    .replace(/^(the\s+)?/, '')
-                                    .replace(/\s+/g, '')
-                                    .replace(/[^a-zA-Z0-9]/g, '');
-                                  return `https://www.google.com/s2/favicons?domain=${cleanName}.com&sz=128`;
-                                } catch {
-                                  return '/images/split-icon-white.svg';
-                                }
-                              };
-                              
                               return (
                                 <img
                                   key={index}
                                   src={getCompetitorFavicon(competitor)}
                                   alt=""
                                   className="w-4 h-4 rounded opacity-60"
-                                  onError={(e) => {
-                                    e.currentTarget.src = '/images/split-icon-white.svg';
-                                  }}
                                 />
                               );
                             })}
@@ -840,15 +756,6 @@ export default function EnhancedSnapshotReportPage() {
                                 <div className="pl-4 space-y-2">
                                   <div className="text-zinc-500 text-xs font-medium">Sources:</div>
                                   {result.top_citations.map((citation, index) => {
-                                          const getFaviconUrl = (url: string) => {
-                                            try {
-                                              const domain = new URL(url).hostname;
-                                              return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-                                            } catch {
-                                              return '/images/split-icon-white.svg';
-                                            }
-                                          };
-
                                           return (
                                             <a
                                               key={index}
@@ -859,16 +766,13 @@ export default function EnhancedSnapshotReportPage() {
                                             >
                                               <div className="flex-shrink-0">
                                                 <img
-                                                  src={getFaviconUrl(citation.url)}
+                                                  src={getSafeFaviconUrl(citation.url)}
                                                   alt=""
                                             className="w-3 h-3 rounded"
-                                                  onError={(e) => {
-                                                    e.currentTarget.src = '/images/split-icon-white.svg';
-                                                  }}
                                                 />
                                               </div>
                                         <span className="text-xs truncate flex-1">
-                                                {citation.title || new URL(citation.url).hostname}
+                                                {citation.title || getSafeHostname(citation.url)}
                                               </span>
                                         <ExternalLink className="w-3 h-3 opacity-50 group-hover:opacity-100 ml-auto flex-shrink-0" />
                                             </a>
@@ -941,30 +845,6 @@ export default function EnhancedSnapshotReportPage() {
                               .sort((a, b) => b.mentionRate - a.mentionRate)
                               .slice(0, 5);
 
-                            const getCompetitorFavicon = (name: string) => {
-                              // Try to construct a URL from the competitor name
-                              try {
-                                // Remove common prefixes and clean the name
-                                const cleanName = name.toLowerCase()
-                                  .replace(/^(the\s+)?/, '')
-                                  .replace(/\s+/g, '')
-                                  .replace(/[^a-zA-Z0-9]/g, '');
-                                
-                                // Try common domain patterns
-                                const possibleDomains = [
-                                  `${cleanName}.com`,
-                                  `${cleanName}.ai`,
-                                  `${cleanName}.io`,
-                                  `${cleanName}.co`
-                                ];
-                                
-                                // Use the first domain pattern for favicon
-                                return `https://www.google.com/s2/favicons?domain=${possibleDomains[0]}&sz=128`;
-                              } catch {
-                                return '/images/split-icon-white.svg';
-                              }
-                            };
-
                             return topCompetitors.map((competitor, index) => (
                               <div key={competitor.name} className="flex items-center gap-4 py-3 border-b border-zinc-800/30 last:border-b-0">
                                 <div className="w-6 h-6 bg-zinc-800/50 rounded text-zinc-400 text-xs flex items-center justify-center font-mono">
@@ -974,9 +854,6 @@ export default function EnhancedSnapshotReportPage() {
                                   src={getCompetitorFavicon(competitor.name)}
                                   alt=""
                                   className="w-4 h-4 rounded"
-                                  onError={(e) => {
-                                    e.currentTarget.src = '/images/split-icon-white.svg';
-                                  }}
                                 />
                                 <div className="flex-1">
                                   <div className="text-white text-sm font-medium">{competitor.name}</div>
@@ -1012,10 +889,9 @@ export default function EnhancedSnapshotReportPage() {
                           // Group citations by domain and count frequencies
                           const domainCounts: {[key: string]: {domain: string, count: number, sampleTitle: string, sampleUrl: string}} = {};
                           allCitations.forEach(citation => {
-                            try {
-                              const url = new URL(citation.url);
-                              const domain = url.hostname.toLowerCase().replace('www.', '');
-                              
+                            const domain = getSafeHostname(citation.url).toLowerCase().replace('www.', '');
+                            
+                            if (domain && domain !== citation.url) { // Only process if we got a valid domain
                               if (!domainCounts[domain]) {
                                 domainCounts[domain] = {
                                   domain,
@@ -1025,8 +901,6 @@ export default function EnhancedSnapshotReportPage() {
                                 };
                               }
                               domainCounts[domain].count++;
-                            } catch (error) {
-                              // Skip invalid URLs
                             }
                           });
 
@@ -1051,7 +925,7 @@ export default function EnhancedSnapshotReportPage() {
                                   {index + 1}
                                   </div>
                                 <img
-                                  src={`https://www.google.com/s2/favicons?domain=${source.domain}&sz=128`}
+                                  src={getSafeFaviconUrl(source.domain)}
                                   alt=""
                                   className="w-4 h-4 rounded"
                                   onError={(e) => {

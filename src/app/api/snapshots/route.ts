@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSnapshotRequest, triggerSnapshotProcessing } from '@/lib/snapshot-client';
+import { triggerSnapshotProcessing } from '@/lib/snapshot-client';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
@@ -19,6 +19,41 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Normalize URLs by adding https:// if missing
+    const normalizedUrls = urls.map((url: string) => {
+      let normalizedUrl = url.trim();
+      
+      // Add protocol if missing
+      if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+        normalizedUrl = `https://${normalizedUrl}`;
+      }
+      
+      // Remove trailing slash for consistency
+      if (normalizedUrl.endsWith('/') && normalizedUrl !== 'https://' && normalizedUrl !== 'http://') {
+        normalizedUrl = normalizedUrl.slice(0, -1);
+      }
+      
+      return normalizedUrl;
+    });
+
+    // Validate normalized URLs
+    for (const url of normalizedUrls) {
+      try {
+        new URL(url);
+      } catch (error) {
+        console.error('❌ Invalid URL after normalization:', url);
+        return NextResponse.json(
+          { error: `Invalid URL: ${url}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    console.log('🔧 URL normalization:', {
+      original: urls,
+      normalized: normalizedUrls
+    });
     
     if (!topic || typeof topic !== 'string') {
       console.error('❌ Invalid topic:', topic);
@@ -37,13 +72,15 @@ export async function POST(request: NextRequest) {
     }
     
     console.log('✅ Input validation passed');
-    console.log(`   URLs: ${urls.length} provided`);
+    console.log(`   URLs: ${normalizedUrls.length} provided`);
     console.log(`   Topic: "${topic}"`);
     console.log(`   User ID: ${userId}`);
 
+    // Use service role client for all operations
+    const serviceSupabase = createServiceRoleClient();
+    
     // Check if user has available snapshots before creating
     console.log('🔍 Checking user snapshot usage...');
-    const serviceSupabase = createServiceRoleClient();
     
     const { data: billingPeriod, error: billingError } = await serviceSupabase
       .rpc('get_current_billing_period', { p_user_id: userId })
@@ -82,24 +119,34 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Create snapshot request
+    // Create snapshot request using service role client (bypasses RLS)
     console.log('💾 Creating snapshot request in database...');
-    const { success, requestId, error } = await createSnapshotRequest(urls, topic, userId);
+    const { data: snapshotData, error: createError } = await serviceSupabase
+      .from('snapshot_requests')
+      .insert({
+        user_id: userId,
+        urls: normalizedUrls,
+        topic,
+        status: 'pending'
+      })
+      .select('id')
+      .single();
     
     console.log('📊 Snapshot creation result:', {
-      success,
-      requestId,
-      error: error || 'none'
+      success: !createError,
+      requestId: snapshotData?.id,
+      error: createError?.message || 'none'
     });
     
-    if (!success || !requestId) {
-      console.error('❌ Failed to create snapshot request:', error);
+    if (createError || !snapshotData?.id) {
+      console.error('❌ Failed to create snapshot request:', createError);
       return NextResponse.json(
-        { error: error || 'Failed to create snapshot request' },
+        { error: createError?.message || 'Failed to create snapshot request' },
         { status: 500 }
       );
     }
     
+    const requestId = snapshotData.id;
     console.log(`✅ Snapshot request created with ID: ${requestId}`);
 
     // Track usage in billing system
@@ -111,8 +158,10 @@ export async function POST(request: NextRequest) {
         p_amount: 1,
         p_metadata: { 
           snapshot_id: requestId,
-          urls_count: urls.length,
-          topic: topic
+          urls_count: normalizedUrls.length,
+          topic: topic,
+          original_urls: urls,
+          normalized_urls: normalizedUrls
         }
       });
 
@@ -178,21 +227,27 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const { getUserSnapshots } = await import('@/lib/snapshot-client');
+    // Use service role client for fetching user snapshots
+    const serviceSupabase = createServiceRoleClient();
     console.log('🔍 Fetching user snapshots...');
     
-    const { success, requests, error } = await getUserSnapshots(userId);
+    const { data: requests, error } = await serviceSupabase
+      .from('snapshot_requests')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(10);
     
     console.log('📊 Fetch result:', {
-      success,
+      success: !error,
       count: requests?.length || 0,
-      error: error || 'none'
+      error: error?.message || 'none'
     });
 
-    if (!success) {
+    if (error) {
       console.error('❌ Failed to fetch snapshots:', error);
       return NextResponse.json(
-        { error: error || 'Failed to fetch snapshots' },
+        { error: error.message || 'Failed to fetch snapshots' },
         { status: 500 }
       );
     }

@@ -130,7 +130,7 @@ export default function SnapshotPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          urls: [url.trim()],
+          urls: [url.trim()], // The API will normalize this
           topic: topic.trim(),
           userId: user.id
         }),
@@ -162,12 +162,35 @@ export default function SnapshotPage() {
     })
   }
 
-  const getHostname = (url: string) => {
+  // Helper functions for safe URL handling
+  const safeParseUrl = (url: string): URL | null => {
     try {
-      return new URL(url).hostname
+      // If URL doesn't have protocol, assume https
+      if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+        url = `https://${url}`;
+      }
+      return new URL(url);
     } catch {
-      return url // Return original string if URL parsing fails
+      return null;
     }
+  };
+
+  const getSafeHostname = (url: string): string => {
+    const parsed = safeParseUrl(url);
+    return parsed ? parsed.hostname : url;
+  };
+
+  const getSafeFaviconUrl = (url: string, size: number = 128): string => {
+    try {
+      const hostname = getSafeHostname(url);
+      return `https://www.google.com/s2/favicons?domain=${hostname}&sz=${size}`;
+    } catch {
+      return '/images/split-icon-white.svg';
+    }
+  };
+
+  const getHostname = (url: string) => {
+    return getSafeHostname(url);
   }
 
   if (loading) {
@@ -256,7 +279,7 @@ export default function SnapshotPage() {
                   type="url"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  placeholder="www.example.com"
+                  placeholder="example.com or https://example.com"
                   className="w-full bg-transparent text-black dark:text-white placeholder-gray-500 dark:placeholder-[#666] text-base focus:outline-none py-2 border-b border-transparent focus:border-gray-400 dark:focus:border-[#444] transition-colors"
                 />
               </div>
@@ -419,7 +442,7 @@ export default function SnapshotPage() {
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <div className="relative flex-shrink-0">
                         <img
-                          src={`https://www.google.com/s2/favicons?domain=${new URL(snapshot.url).hostname}&sz=128`}
+                          src={getSafeFaviconUrl(snapshot.url)}
                           alt=""
                           className="w-4 h-4 rounded"
                           onError={(e) => {

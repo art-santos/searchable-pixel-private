@@ -318,7 +318,7 @@ export async function getTechnicalIssues(url: string): Promise<TechnicalIssue[]>
     .single();
 
   if (pageError || !pageData) {
-    console.error('Failed to find page for URL:', url, pageError);
+    // URL not found in pages table - return empty results
     return [];
   }
 
@@ -358,7 +358,7 @@ export async function getTechnicalRecommendations(url: string): Promise<Technica
     .single();
 
   if (pageError || !pageData) {
-    console.error('Failed to find page for URL:', url, pageError);
+    // URL not found in pages table - return empty results
     return [];
   }
 
@@ -438,7 +438,7 @@ export async function getTechnicalChecklistResults(url: string): Promise<Technic
     .single();
 
   if (pageError || !pageData) {
-    console.error('Failed to find page for URL:', url, pageError);
+    // URL not found in pages table - return empty results
     return [];
   }
 
