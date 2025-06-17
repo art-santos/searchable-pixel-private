@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { createClient } from '@/lib/supabase/client'
 import { saveOnboardingData } from '@/lib/onboarding/database'
-import { isValidDomain } from '@/lib/utils/domain'
+import { isValidDomain, cleanDomain } from '@/lib/utils/domain'
 import { ArrowRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
@@ -47,14 +47,16 @@ export default function CreateWorkspacePage() {
     console.log('👤 User:', { id: user.id, email: user.email })
     console.log('📝 Workspace data:', workspaceData)
 
+    const cleanedDomain = cleanDomain(workspaceData.domain)
+
     // Validate required fields
-    if (!workspaceData.name.trim() || !workspaceData.workspaceName.trim() || !workspaceData.domain.trim()) {
+    if (!workspaceData.name.trim() || !workspaceData.workspaceName.trim() || !cleanedDomain) {
       console.error('❌ WORKSPACE CREATION: Missing required fields')
       setErrorMessage('Please fill in all required fields.')
       return
     }
 
-    if (!isValidDomain(workspaceData.domain)) {
+    if (!isValidDomain(cleanedDomain)) {
       console.error('❌ WORKSPACE CREATION: Invalid domain format')
       setErrorMessage('Please enter a valid domain (e.g. example.com).')
       return
@@ -68,7 +70,7 @@ export default function CreateWorkspacePage() {
         userEmail: user.email || '',
         userName: workspaceData.name,
         workspaceName: workspaceData.workspaceName,
-        domain: workspaceData.domain,
+        domain: cleanedDomain,
         profileData: {
           first_name: workspaceData.name
         },
@@ -99,7 +101,7 @@ export default function CreateWorkspacePage() {
             email: user.email,
             name: workspaceData.name,
             workspaceName: workspaceData.workspaceName,
-            domain: workspaceData.domain
+            domain: cleanedDomain
           })
         })
         
@@ -179,11 +181,12 @@ export default function CreateWorkspacePage() {
   }
 
   const canProceed = () => {
+    const cleanedDomain = cleanDomain(workspaceData.domain)
     return (
       workspaceData.name.trim() &&
       workspaceData.workspaceName.trim() &&
-      workspaceData.domain.trim() &&
-      isValidDomain(workspaceData.domain)
+      cleanedDomain.trim() &&
+      isValidDomain(cleanedDomain)
     )
   }
 
@@ -253,64 +256,47 @@ export default function CreateWorkspacePage() {
                   <Input
                     value={workspaceData.domain}
                     onChange={(e) => setWorkspaceData(prev => ({ ...prev, domain: e.target.value }))}
+                    onBlur={() => setWorkspaceData(prev => ({ ...prev, domain: cleanDomain(prev.domain) }))}
                     placeholder="example.com"
                     className="bg-[#1a1a1a] border-[#333] text-white placeholder:text-gray-500"
                     disabled={isLoading}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Enter your domain without http:// or https://
-                  </p>
                 </div>
               </div>
 
               <Button
                 onClick={handleComplete}
                 disabled={!canProceed() || isLoading}
-                className="w-full bg-white hover:bg-gray-100 text-black font-medium h-12"
+                className="w-full bg-white text-black hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                    Creating workspace...
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    Create Workspace
-                    <ArrowRight className="w-4 h-4" />
-                  </div>
-                )}
+                {isLoading ? 'Creating...' : 'Create Workspace'}
+                <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
 
-
+              <p className="text-center text-xs text-gray-500">
+                By continuing, you agree to our{' '}
+                <Link href="/terms" className="underline hover:text-white">
+                  Terms of Service
+                </Link>
+                .
+              </p>
             </div>
           </motion.div>
         </div>
       </div>
-
-      {/* Right side - Visual */}
-      <div className="relative hidden lg:block bg-[#0c0c0c] overflow-hidden">
-        <div 
-          className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-                             linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)`,
-            backgroundSize: '30px 30px'
-          }}
-        ></div>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Image 
-            src="/images/signup.png" 
-            fill
-            alt="Signup" 
-            className="object-cover filter grayscale brightness-50"
-            priority
-          />
-        </div>
-        <div className="absolute bottom-8 left-0 right-0 text-center">
-          <h2 className="text-xl font-semibold text-white mb-2">Almost there!</h2>
-          <p className="text-gray-400 max-w-sm mx-auto">
-            Add some additional workspace details to begin tracking your AI visibility.
-          </p>
+      
+      {/* Right side - Visual/Branding */}
+      <div className="hidden lg:block bg-grid-small-white/[0.05] relative">
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0c] to-transparent"></div>
+        <div className="flex flex-col items-center justify-center h-full p-8">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-white mb-4">
+              Unlock Your Full Potential
+            </h2>
+            <p className="text-gray-400 max-w-md">
+              Join thousands of developers who are streamlining their workflow and gaining visibility with Split.
+            </p>
+          </div>
         </div>
       </div>
     </div>
