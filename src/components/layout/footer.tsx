@@ -2,8 +2,46 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { useState } from 'react'
 
 export default function Footer() {
+  const [email, setEmail] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!email || isSubmitting) return
+    
+    setIsSubmitting(true)
+    setStatus('idle')
+    
+    try {
+      const formData = new FormData()
+      formData.append('email', email)
+      
+      const response = await fetch('/api/subscribe', {
+        method: 'POST',
+        body: formData,
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        setStatus('success')
+        setEmail('')
+      } else {
+        setStatus('error')
+      }
+    } catch (error) {
+      console.error('Subscription error:', error)
+      setStatus('error')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <footer className="bg-[#0c0c0c] border-t border-[#1a1a1a] pt-12 md:pt-20 pb-6 md:pb-8">
       <style jsx global>{`
@@ -72,19 +110,41 @@ export default function Footer() {
           {/* Newsletter Signup */}
           <div className="mb-6 md:mb-8">
             <h4 className="text-white font-semibold mb-2 md:mb-3 text-sm sm:text-base">Stay Updated</h4>
-            <div className="flex gap-2 max-w-sm">
-              <input
-                type="email"
-                placeholder="your@email.com"
-                className="newsletter-input flex-1 px-2.5 sm:px-3 py-2 sm:py-2 bg-[#1a1a1a] border border-[#333333] text-white placeholder-gray-500 focus:outline-none focus:border-[#444444] text-xs sm:text-sm"
-              />
-              <button className="bg-[#2a2a2a] hover:bg-[#333333] text-white px-3 sm:px-4 py-2 sm:py-2 border border-[#444444] hover:border-[#555555] transition-all duration-200 text-xs sm:text-sm font-medium">
-                Subscribe
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 mt-1.5 sm:mt-2">
-              Get AEO insights and product updates
-            </p>
+            <form onSubmit={handleSubscribe} className="max-w-sm">
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isSubmitting}
+                  className="newsletter-input flex-1 px-2.5 sm:px-3 py-2 sm:py-2 bg-[#1a1a1a] border border-[#333333] text-white placeholder-gray-500 focus:outline-none focus:border-[#444444] text-xs sm:text-sm disabled:opacity-50"
+                  required
+                />
+                <button 
+                  type="submit"
+                  disabled={isSubmitting || !email}
+                  className="bg-[#2a2a2a] hover:bg-[#333333] text-white px-3 sm:px-4 py-2 sm:py-2 border border-[#444444] hover:border-[#555555] transition-all duration-200 text-xs sm:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? 'Subscribing...' : 'Subscribe'}
+                </button>
+              </div>
+              {status === 'success' && (
+                <p className="text-xs text-green-400 mt-1.5 sm:mt-2">
+                  ✓ You've been added to our newsletter!
+                </p>
+              )}
+              {status === 'error' && (
+                <p className="text-xs text-red-400 mt-1.5 sm:mt-2">
+                  Failed to subscribe. Please try again.
+                </p>
+              )}
+              {status === 'idle' && (
+                <p className="text-xs text-gray-500 mt-1.5 sm:mt-2">
+                  Get AEO insights and product updates
+                </p>
+              )}
+            </form>
           </div>
 
 

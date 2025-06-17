@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { ArrowRight } from 'lucide-react'
 import Image from 'next/image'
 
@@ -13,10 +12,9 @@ const LOGOS = [
 ]
 
 export default function HeroCTA() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
-  const [isSubmitted, setIsSubmitted] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [currentLogo, setCurrentLogo] = useState(0)
   const [prevLogo, setPrevLogo] = useState<number | null>(null)
 
@@ -33,26 +31,42 @@ export default function HeroCTA() {
     return emailRegex.test(email)
   }
 
-  const handleSubmit = async () => {
-    if (!email || isLoading) return
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    
+    if (!email || isSubmitting) return
 
     if (!validateEmail(email)) {
-      // Could add error state here
+      setStatus('error')
       return
     }
 
-    setIsLoading(true)
-    setIsSubmitted(true)
+    setIsSubmitting(true)
+    setStatus('idle')
 
-    // Store email in sessionStorage
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('waitlistEmail', email)
+    try {
+      const formData = new FormData()
+      formData.append('email', email)
+      
+      const response = await fetch('/api/subscribe', {
+        method: 'POST',
+        body: formData,
+      })
+      
+      const result = await response.json()
+      
+      if (result.success) {
+        setStatus('success')
+        setEmail('')
+      } else {
+        setStatus('error')
+      }
+    } catch (error) {
+      console.error('Subscription error:', error)
+      setStatus('error')
+    } finally {
+      setIsSubmitting(false)
     }
-
-    // Simulate loading animation
-    setTimeout(() => {
-      router.push('/waitlist')
-    }, 800)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -71,30 +85,43 @@ export default function HeroCTA() {
       </p>
       
       <div className="blur-in-up-delay-2 flex flex-col md:flex-row gap-4 justify-center items-center">
-        <div className="relative w-[80%] md:w-[400px] group">
+        <form onSubmit={handleSubmit} className="relative w-[80%] md:w-[400px] group">
           <input
             type="email"
-            placeholder="Enter your email for early access"
-            className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-[#0c0c0c]/80 border border-[#2f2f2f] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[#3f3f3f] pr-12 transition-all duration-200 text-sm md:text-base"
+            placeholder="Enter your email to get started"
+            className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-[#0c0c0c]/80 border border-[#2f2f2f] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[#3f3f3f] pr-12 transition-all duration-200 text-sm md:text-base disabled:opacity-50"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onKeyDown={handleKeyDown}
-            disabled={isLoading}
+            disabled={isSubmitting}
+            required
           />
           <button 
-            onClick={handleSubmit}
-            disabled={!email || isLoading}
+            type="submit"
+            disabled={!email || isSubmitting}
             className="absolute right-[5px] top-1/2 -translate-y-1/2 bg-[#222222] border border-[#333333] text-white w-[34px] h-[34px] md:w-[40px] md:h-[40px] flex items-center justify-center rounded-md hover:bg-[#282828] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-            aria-label="Join early access"
+            aria-label="Get started"
           >
-            {isLoading ? (
+            {isSubmitting ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               <ArrowRight className="w-4 h-4" />
             )}
           </button>
-        </div>
+        </form>
       </div>
+      
+      {/* Status Messages */}
+      {status === 'success' && (
+        <div className="blur-in-up-delay-2 text-sm text-green-400 mt-3 md:mt-4">
+          ✓ You've been added to our newsletter! Check your email for updates.
+        </div>
+      )}
+      {status === 'error' && (
+        <div className="blur-in-up-delay-2 text-sm text-red-400 mt-3 md:mt-4">
+          Failed to subscribe. Please check your email and try again.
+        </div>
+      )}
       
       <div className="blur-in-up-delay-2 text-xs md:text-sm text-gray-400 mt-3 md:mt-4 mb-6 md:mb-24 flex items-center justify-center gap-1">
         See who's finding you on 

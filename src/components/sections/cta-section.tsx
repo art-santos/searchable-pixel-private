@@ -43,8 +43,8 @@ export default function CTASection() {
                 />
               </div>
               <span className="bg-gradient-to-r from-gray-100 to-white bg-clip-text text-transparent font-semibold flex items-center gap-1.5 sm:gap-2">
-                <span className="hidden sm:inline">Join 100+ others in getting ranked on</span>
-                <span className="sm:hidden">Join 100+ others on</span>
+                <span className="hidden sm:inline">See which companies visit from</span>
+                <span className="sm:hidden">Track visitors from</span>
                 <span className="logo-flip-container text-white">
                   <span key={currentLogo} className="logo-flip">
                     <img 
@@ -63,21 +63,18 @@ export default function CTASection() {
         </div>
         
         <h2 className="mb-4 sm:mb-6 text-2xl sm:text-3xl font-normal text-white md:text-4xl lg:text-5xl font-serif leading-tight tracking-tighter">
-          Stop getting overlooked by AI engines
+          Discover who's visiting from AI search
         </h2>
         <p className="mx-auto mb-6 sm:mb-8 max-w-2xl text-base sm:text-lg text-gray-300 md:text-xl leading-relaxed">
-          While your competitors struggle with traditional SEO, you'll be capturing citations from ChatGPT, Claude, and Perplexity. Join the AEO revolution today.
+          Track AI crawler activity, identify companies visiting from ChatGPT and Perplexity citations, and turn attribution insights into qualified pipeline.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
           <a
             href="/waitlist"
             className="w-full sm:w-auto inline-flex items-center justify-center bg-[#0c0c0c] px-5 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base font-semibold text-white transition-all hover:bg-[#161616] hover:scale-105 rounded-lg shadow-lg border border-[#2f2f2f] hover:border-[#3f3f3f] group"
           >
-            Get your site ranked
+            Start tracking
           </a>
-          <span className="text-xs sm:text-sm text-gray-400">
-            Free trial
-          </span>
         </div>
       </div>
     </section>
