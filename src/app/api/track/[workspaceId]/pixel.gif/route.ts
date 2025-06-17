@@ -140,19 +140,61 @@ export async function GET(
       })
     }
     
-    console.log(`[Tracking Pixel ${requestId}] 🔥 INCOMING REQUEST`)
-    console.log(`[Tracking Pixel ${requestId}] Workspace: ${workspaceId}`)
-    console.log(`[Tracking Pixel ${requestId}] IP: ${ip}`)
-    console.log(`[Tracking Pixel ${requestId}] User-Agent: ${userAgent}`)
-    console.log(`[Tracking Pixel ${requestId}] Referer: ${referer}`)
-    console.log(`[Tracking Pixel ${requestId}] URL param: ${url}`)
-    console.log(`[Tracking Pixel ${requestId}] Page param: ${page}`)
-    console.log(`[Tracking Pixel ${requestId}] Campaign param: ${campaign}`)
-
-    // Detect AI crawler
+    // Detect AI crawler and AI traffic source
     const crawlerInfo = getCrawlerInfo(userAgent)
-    // Detect human traffic from AI sources
     const aiTrafficSource = detectAITrafficSource(referer, userAgent)
+    
+    // Parse URL to extract domain and path early for logging
+    let domain = 'unknown'
+    let path = '/'
+    
+    try {
+      const parsedUrl = new URL(url)
+      domain = parsedUrl.hostname
+      path = parsedUrl.pathname
+    } catch (e) {
+      if (referer) {
+        try {
+          const parsedReferer = new URL(referer)
+          domain = parsedReferer.hostname
+          path = parsedReferer.pathname
+        } catch (e2) {
+          // Use unknown as fallback
+          domain = 'unknown'
+        }
+      }
+    }
+    
+    // Differentiated logging based on visitor type
+    if (crawlerInfo) {
+      // AI Crawler - show detailed info with visual separators
+      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`)
+      console.log(`[TP ${requestId}] 🤖 AI CRAWLER: ${crawlerInfo.name} (${crawlerInfo.company})`)
+      console.log(`[TP ${requestId}] 📍 Tracking Pixel URL: ${url}`)
+      console.log(`[TP ${requestId}] 📄 Tracking Pixel Page: ${page || 'not specified'}`)
+      console.log(`[TP ${requestId}] 🎯 Campaign: ${campaign || 'none'}`)
+      console.log(`[TP ${requestId}] 🌐 Domain: ${domain}`)
+      console.log(`[TP ${requestId}] 📱 Category: ${crawlerInfo.category}`)
+      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`)
+    } else if (aiTrafficSource.isFromAI && aiTrafficSource.sourceInfo) {
+      // AI-to-human conversion - use fire emoji borders
+      console.log(`🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥`)
+      console.log(`[TP ${requestId}] 🏆💰 HIGH-VALUE CONVERSION: ${aiTrafficSource.sourceInfo.platform} → Human`)
+      console.log(`[TP ${requestId}] 📍 Tracking Pixel URL: ${url}`)
+      console.log(`[TP ${requestId}] 📄 Tracking Pixel Page: ${page || 'not specified'}`)
+      console.log(`[TP ${requestId}] 🎯 Campaign: ${campaign || 'none'}`)
+      console.log(`[TP ${requestId}] 🌐 AI Source: ${aiTrafficSource.sourceInfo.aiSource}`)
+      console.log(`[TP ${requestId}] 🔄 Referer: ${referer}`)
+      console.log(`🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥`)
+    } else {
+      // Regular human visitor - subtle one-line log
+      try {
+        const logPath = page || new URL(url).pathname
+        console.log(`[TP ${requestId}] visitor • ${ip} • ${logPath} • ${campaign || 'none'}`)
+      } catch (e) {
+        console.log(`[TP ${requestId}] visitor • ${ip} • ${page || path} • ${campaign || 'none'}`)
+      }
+    }
     
     // Check if service role client is available
     if (!supabaseServiceRole) {
@@ -195,24 +237,9 @@ export async function GET(
         })
       }
       
-      // Parse URL to extract domain and path
-      let domain = workspace.domain
-      let path = '/'
-      
-      try {
-        const parsedUrl = new URL(url)
-        domain = parsedUrl.hostname
-        path = parsedUrl.pathname
-      } catch (e) {
-        if (referer) {
-          try {
-            const parsedReferer = new URL(referer)
-            domain = parsedReferer.hostname
-            path = parsedReferer.pathname
-          } catch (e2) {
-            // Use workspace domain as fallback
-          }
-        }
+      // Use domain and path from earlier parsing, fallback to workspace domain if needed
+      if (domain === 'unknown') {
+        domain = workspace.domain
       }
       
       if (crawlerInfo) {
