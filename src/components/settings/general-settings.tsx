@@ -51,6 +51,14 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
   const [showSuccessToast, setShowSuccessToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
 
+  // Additional state for domain change restrictions
+  const [domainChangeInfo, setDomainChangeInfo] = useState<{
+    canChange: boolean
+    daysRemaining: number
+    lastChange: string | null
+  } | null>(null)
+  const [domainChangeLoading, setDomainChangeLoading] = useState(false)
+
   const supabase = createClient()
 
   // Check if there are unsaved changes
@@ -143,6 +151,43 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
     }
   }, [currentWorkspace, user])
 
+  // Fetch domain change info when workspace changes
+  useEffect(() => {
+    const fetchDomainChangeInfo = async () => {
+      if (!currentWorkspace) return
+
+      try {
+        const response = await fetch(`/api/settings/workspace?workspaceId=${currentWorkspace.id}`)
+        if (response.ok) {
+          const data = await response.json()
+          const workspace = data.data
+          
+          // Get domain change status
+          const canChangeResponse = await fetch('/api/user/domain-change-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ workspaceId: currentWorkspace.id })
+          })
+          
+          if (canChangeResponse.ok) {
+            const canChangeData = await canChangeResponse.json()
+            setDomainChangeInfo({
+              canChange: canChangeData.canChange,
+              daysRemaining: canChangeData.daysRemaining || 0,
+              lastChange: workspace.last_domain_change
+            })
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching domain change info:', error)
+      }
+    }
+
+    if (currentWorkspace) {
+      fetchDomainChangeInfo()
+    }
+  }, [currentWorkspace])
+
   // Helper function to show success toast
   const showToast = (message: string) => {
     setToastMessage(message)
@@ -191,7 +236,7 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
     return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
   }
 
-  // Unified function to save all general settings (workspace + profile)
+  // Enhanced save settings function with domain change handling
   const handleSaveSettings = async () => {
     if (!user || !currentWorkspace) return
 
@@ -225,6 +270,13 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
 
       if (!workspaceResponse.ok) {
         const error = await workspaceResponse.json()
+        
+        // Handle domain change cooldown specifically
+        if (workspaceResponse.status === 429 && error.cooldownDays !== undefined) {
+          showToast(`Domain change blocked: ${error.message}`)
+          return
+        }
+        
         throw new Error(error.error || 'Failed to update workspace')
       }
 
@@ -238,11 +290,16 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
       if (workspaceSettings.name !== currentWorkspace.workspace_name || 
           workspaceSettings.domain !== currentWorkspace.domain) {
         window.dispatchEvent(new Event('workspaceChanged'))
+        
+        // Refresh workspace context to get updated domain
+        if (typeof window !== 'undefined' && workspaceSettings.domain !== currentWorkspace.domain) {
+          window.location.reload() // Force reload to ensure all components get updated domain
+        }
       }
 
       showToast('Settings saved successfully')
     } catch (error) {
-      showToast('Failed to save settings')
+      showToast(error instanceof Error ? error.message : 'Failed to save settings')
     } finally {
       setIsLoading(false)
     }
@@ -527,6 +584,11 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
                     <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Primary Domain</div>
                     <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight mt-1">
                       Domain we'll monitor for AI visibility
+                      {domainChangeInfo && !domainChangeInfo.canChange && (
+                        <span className="block text-orange-400 mt-1">
+                          ⚠️ Domain can be changed in {domainChangeInfo.daysRemaining} day{domainChangeInfo.daysRemaining !== 1 ? 's' : ''}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-6">
@@ -537,6 +599,11 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
                 placeholder="example.com"
                         className="bg-white dark:bg-[#0a0a0a] border-gray-300 dark:border-[#2a2a2a] text-black dark:text-white h-8 font-mono tracking-tight text-sm"
               />
+              {domainChangeInfo && !domainChangeInfo.canChange && workspaceSettings.domain !== currentWorkspace.domain && (
+                <div className="text-xs text-orange-400 mt-1 font-mono">
+                  Domain changes limited to once every 7 days
+                </div>
+              )}
             </div>
               </div>
             </div>

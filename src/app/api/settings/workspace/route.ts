@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-// GET /api/settings/workspace - Get workspace settings
+// GET /api/settings/workspace - Get workspace details
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -24,10 +24,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get workspace settings
+    // Get workspace details
     const { data: workspace, error: workspaceError } = await supabase
       .from('workspaces')
-      .select('id, workspace_name, domain, created_at, updated_at')
+      .select('*')
       .eq('id', workspaceId)
       .eq('user_id', user.id)
       .single()
@@ -79,10 +79,10 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Verify user owns this workspace
+    // Get current workspace details to check domain change restrictions
     const { data: existingWorkspace, error: verifyError } = await supabase
       .from('workspaces')
-      .select('id')
+      .select('id, domain, last_domain_change')
       .eq('id', workspaceId)
       .eq('user_id', user.id)
       .single()
@@ -97,7 +97,45 @@ export async function PUT(request: NextRequest) {
     // Build update object
     const updates: any = {}
     if (workspace_name !== undefined) updates.workspace_name = workspace_name
-    if (domain !== undefined) updates.domain = domain
+    
+    // Check domain change restrictions if domain is being updated
+    if (domain !== undefined && domain !== existingWorkspace.domain) {
+      // Check if domain change is allowed (7-day cooldown)
+      const { data: canChange, error: canChangeError } = await supabase
+        .rpc('can_change_domain', { p_workspace_id: workspaceId })
+        .single()
+
+      if (canChangeError) {
+        console.error('Error checking domain change eligibility:', canChangeError)
+        return NextResponse.json(
+          { error: 'Failed to validate domain change request' },
+          { status: 500 }
+        )
+      }
+
+      if (!canChange) {
+        // Get days remaining until next change is allowed
+        const { data: daysRemaining, error: daysError } = await supabase
+          .rpc('days_until_domain_change', { p_workspace_id: workspaceId })
+          .single()
+
+        const remainingDays = daysError ? 'unknown' : daysRemaining
+
+        return NextResponse.json(
+          { 
+            error: 'Domain change not allowed',
+            message: `You can only change your domain once every 7 days. Please wait ${remainingDays} more day${remainingDays !== 1 ? 's' : ''} before changing your domain again.`,
+            cooldownDays: remainingDays,
+            canChangeAt: existingWorkspace.last_domain_change ? 
+              new Date(new Date(existingWorkspace.last_domain_change).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString() : 
+              null
+          },
+          { status: 429 } // Too Many Requests
+        )
+      }
+
+      updates.domain = domain
+    }
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json(
@@ -166,7 +204,9 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: updatedWorkspace,
-      message: 'Workspace settings updated successfully'
+      message: domain !== undefined && domain !== existingWorkspace.domain ? 
+        'Workspace settings updated successfully. Domain change logged.' : 
+        'Workspace settings updated successfully'
     })
 
   } catch (error) {

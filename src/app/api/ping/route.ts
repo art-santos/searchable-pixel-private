@@ -80,7 +80,7 @@ export async function GET(request: Request) {
     let keyName = null
     
     if (keyData.key_type === 'workspace') {
-      // Get workspace details
+      // Get workspace details directly
       const { data: workspace, error: workspaceError } = await supabaseAdmin
         .from('workspaces')
         .select('workspace_name, domain')
@@ -103,17 +103,24 @@ export async function GET(request: Request) {
       
       keyName = apiKeyRecord?.name || 'Workspace API Key'
     } else {
-      // Get user profile info for user keys
-      const { data: profile, error: profileError } = await supabaseAdmin
-        .from('profiles')
+      // For user keys, get the user's PRIMARY workspace (not profile table)
+      const { data: workspace, error: workspaceError } = await supabaseAdmin
+        .from('workspaces')
         .select('workspace_name, domain')
-        .eq('id', keyData.user_id)
+        .eq('user_id', keyData.user_id)
+        .eq('is_primary', true)
         .single()
       
-      if (profile && !profileError) {
+      if (workspace && !workspaceError) {
         workspaceInfo = {
-          workspace: profile.workspace_name || 'Primary Workspace',
-          domain: profile.domain || null
+          workspace: workspace.workspace_name || 'Primary Workspace',
+          domain: workspace.domain
+        }
+      } else {
+        // Fallback if no primary workspace found (shouldn't happen)
+        workspaceInfo = {
+          workspace: 'Primary Workspace',
+          domain: null
         }
       }
       
