@@ -128,6 +128,18 @@ export async function GET(
     const page = request.nextUrl.searchParams.get('page') || ''
     const campaign = request.nextUrl.searchParams.get('c') || ''
     
+    // Silently ignore placeholder workspace IDs from documentation
+    if (workspaceId === 'YOUR_WORKSPACE_ID' || workspaceId === 'workspace-id') {
+      return new Response(TRANSPARENT_GIF_BUFFER, {
+        headers: {
+          'Content-Type': 'image/gif',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Content-Length': '43',
+          'Access-Control-Allow-Origin': '*'
+        }
+      })
+    }
+    
     console.log(`[Tracking Pixel ${requestId}] 🔥 INCOMING REQUEST`)
     console.log(`[Tracking Pixel ${requestId}] Workspace: ${workspaceId}`)
     console.log(`[Tracking Pixel ${requestId}] IP: ${ip}`)
