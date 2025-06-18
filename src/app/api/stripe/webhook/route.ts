@@ -67,6 +67,11 @@ export async function POST(req: NextRequest) {
           await markPaymentMethodVerifiedForCustomer(session.customer as string)
         }
         
+        // ✅ NEW: Cancel existing active subscriptions before creating new one
+        if (session.customer && session.subscription) {
+          await cancelExistingSubscriptions(session.customer as string, session.subscription as string)
+        }
+        
         // Update user's subscription in the database
         await updateUserSubscription({
           email: session.customer_email || session.customer_details?.email,
@@ -554,5 +559,59 @@ async function markPaymentMethodVerifiedForCustomer(stripeCustomerId: string) {
 
   } catch (error) {
     console.error('❌ [WEBHOOK] Error in markPaymentMethodVerifiedForCustomer:', error)
+  }
+}
+
+// ✅ NEW: Function to cancel existing active subscriptions when creating a new one
+async function cancelExistingSubscriptions(stripeCustomerId: string, newSubscriptionId: string) {
+  try {
+    console.log('🚫 [WEBHOOK] Checking for existing subscriptions to cancel for customer:', stripeCustomerId)
+    console.log('🚫 [WEBHOOK] New subscription ID (to keep active):', newSubscriptionId)
+    
+    // List all active subscriptions for this customer
+    const subscriptions = await stripe.subscriptions.list({
+      customer: stripeCustomerId,
+      status: 'active',
+      limit: 100 // Should be plenty for any customer
+    })
+    
+    console.log('🚫 [WEBHOOK] Found', subscriptions.data.length, 'active subscriptions for customer')
+    
+    // Cancel all subscriptions except the new one
+    const subscriptionsToCancel = subscriptions.data.filter(sub => sub.id !== newSubscriptionId)
+    
+    if (subscriptionsToCancel.length === 0) {
+      console.log('✅ [WEBHOOK] No existing subscriptions to cancel')
+      return
+    }
+    
+    console.log('🚫 [WEBHOOK] Cancelling', subscriptionsToCancel.length, 'existing subscriptions')
+    
+    for (const subscription of subscriptionsToCancel) {
+      try {
+        console.log('🚫 [WEBHOOK] Cancelling subscription:', subscription.id)
+        
+        // Cancel the subscription immediately (not at period end)
+        await stripe.subscriptions.update(subscription.id, {
+          cancel_at_period_end: false,
+        })
+        
+        // Then cancel it immediately
+        await stripe.subscriptions.cancel(subscription.id, {
+          prorate: true, // Give them credit for unused time
+        })
+        
+        console.log('✅ [WEBHOOK] Successfully cancelled subscription:', subscription.id)
+        
+      } catch (cancelError) {
+        console.error('❌ [WEBHOOK] Error cancelling subscription', subscription.id, ':', cancelError)
+        // Continue with other subscriptions even if one fails
+      }
+    }
+    
+    console.log('🎉 [WEBHOOK] Finished cancelling existing subscriptions')
+    
+  } catch (error) {
+    console.error('❌ [WEBHOOK] Error in cancelExistingSubscriptions:', error)
   }
 } 
