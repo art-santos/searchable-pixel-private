@@ -219,15 +219,6 @@ export const templates = {
                 <img src="${process.env.NEXT_PUBLIC_APP_URL}/images/split-black.png" alt="Split" style="height: 32px; width: auto; display: block; margin: 0 auto;" />
               </div>
               
-              <!-- Icon -->
-              <div style="width: 64px; height: 64px; border-radius: 50%; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px auto; border: 1px solid #e5e7eb;">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                  <circle cx="12" cy="16" r="1"/>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                </svg>
-              </div>
-              
               <h1 style="margin: 0 0 16px 0; font-size: 28px; font-weight: 700; color: #111827; letter-spacing: -0.025em; line-height: 1.2;">
                 Reset your password, ${name}
               </h1>

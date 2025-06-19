@@ -154,9 +154,6 @@ function ResetPasswordForm() {
               animate={{ opacity: 1, scale: 1 }}
               className="w-full max-w-md text-center"
             >
-              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-6 bg-green-500/10 rounded-full">
-                <CheckCircle2 className="w-8 h-8 text-green-400" />
-              </div>
               <h1 className="text-2xl font-bold text-white mb-2">
                 Password Reset Complete!
               </h1>
@@ -212,9 +209,6 @@ function ResetPasswordForm() {
             >
               <form onSubmit={handleSubmit} className="flex flex-col gap-6">
                 <div className="flex flex-col items-center gap-2 text-center">
-                  <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-blue-500/10 rounded-full">
-                    <Lock className="w-6 h-6 text-blue-400" />
-                  </div>
                   <h1 className="text-2xl font-bold text-white">
                     Reset Your Password
                   </h1>
