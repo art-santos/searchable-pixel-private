@@ -1,15 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
 import { useWorkspace } from '@/contexts/WorkspaceContext'
+import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Loader2, X, ExternalLink, Building, MapPin, Calendar, Mail, Linkedin, Copy, CheckCircle, AlertCircle, Code, Globe, Users, TrendingUp, Activity } from 'lucide-react'
+import { Input } from "@/components/ui/input"
+import { Loader2, X, ExternalLink, Building, MapPin, Calendar, Mail, Linkedin, Copy, CheckCircle, AlertCircle, Code, Globe, Users, TrendingUp, Activity, Settings, User, Download, Search, Target, Plus, Save } from 'lucide-react'
 import Image from 'next/image'
+import { TableSkeleton } from "@/components/skeletons"
+import { Textarea } from "@/components/ui/textarea"
 
 interface Lead {
   id: string
@@ -52,209 +56,194 @@ interface ConnectionStatus {
   eventCount: number
 }
 
-// Mock data for MVP - replace with actual API calls
-const mockLeads: Lead[] = [
-  {
-    id: '1',
-    timestamp: '2024-01-15T10:30:00Z',
-    model: 'GPT-4o',
-    pageVisited: '/pricing',
-    inferredQuery: 'AI pricing for startups',
-    email: 'sarah.chen@acmecorp.com',
-    fullName: 'Sarah Chen',
-    firstName: 'Sarah',
-    lastName: 'Chen',
-    company: 'Acme Corp',
-    jobTitle: 'VP of Engineering',
-    location: 'San Francisco, CA',
-    linkedinUrl: 'https://linkedin.com/in/sarahchen',
-    confidence: 'high',
-    ipAddress: '198.51.100.42',
-    sessionDuration: 420,
-    pagesViewed: 5
-  },
-  {
-    id: '2', 
-    timestamp: '2024-01-15T10:25:00Z',
-    model: 'Claude',
-    pageVisited: '/blog/ai-sales',
-    inferredQuery: 'Best CRM for founders',
-    email: 'mike.rodriguez@techstart.io',
-    fullName: 'Mike Rodriguez',
-    firstName: 'Mike',
-    lastName: 'Rodriguez',
-    company: 'TechStart Inc',
-    jobTitle: 'Founder & CEO',
-    location: 'Austin, TX',
-    linkedinUrl: 'https://linkedin.com/in/mikerodriguez',
-    confidence: 'high',
-    ipAddress: '203.0.113.15',
-    sessionDuration: 180,
-    pagesViewed: 3
-  },
-  {
-    id: '3',
-    timestamp: '2024-01-15T10:20:00Z',
-    model: 'Perplexity',
-    pageVisited: '/features',
-    inferredQuery: 'AI tools comparison',
-    email: 'j.smith@example.com',
-    fullName: 'Jamie Smith',
-    firstName: 'Jamie',
-    lastName: 'Smith',
-    company: 'DataFlow Solutions',
-    jobTitle: 'Product Manager',
-    location: 'New York, NY',
-    confidence: 'medium',
-    ipAddress: '192.0.2.100',
-    sessionDuration: 95,
-    pagesViewed: 2
-  },
-  {
-    id: '4',
-    timestamp: '2024-01-15T10:15:00Z',
-    model: 'GPT-4o',
-    pageVisited: '/integrations',
-    inferredQuery: 'CRM integrations API',
-    fullName: 'Alex Thompson',
-    firstName: 'Alex',
-    lastName: 'Thompson',
-    company: 'Scale Ventures',
-    jobTitle: 'Technical Lead',
-    location: 'Seattle, WA',
-    confidence: 'low',
-    ipAddress: '198.51.100.200',
-    sessionDuration: 320,
-    pagesViewed: 4
-  }
-]
-
-const mockStats: LeadStats = {
-  leadsToday: 12,
-  topModel: 'GPT-4o',
-  topModelCount: 7,
-  mostCrawledPage: '/pricing',
-  topTopic: 'AI pricing'
-}
-
 export default function LeadsPage() {
   const router = useRouter()
   const { user } = useAuth()
-  const { currentWorkspace, switching } = useWorkspace()
+  const { currentWorkspace } = useWorkspace()
   const [leads, setLeads] = useState<Lead[]>([])
   const [stats, setStats] = useState<LeadStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [adminLoading, setAdminLoading] = useState(true)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus | null>(null)
-  const [checkingConnection, setCheckingConnection] = useState(false)
-  const [scriptCopied, setScriptCopied] = useState(false)
-  const [testingTracking, setTestingTracking] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterConfidence, setFilterConfidence] = useState<'all' | 'high' | 'medium' | 'low'>('all')
+  const [filterAttribution, setFilterAttribution] = useState<'all' | 'chatgpt' | 'perplexity' | 'claude' | 'google' | 'direct'>('all')
+  const [showConfig, setShowConfig] = useState(false)
+  const [configTab, setConfigTab] = useState<'icp' | 'tracking'>('icp')
+  const [copied, setCopied] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [newTitle, setNewTitle] = useState('')
 
-  // Redirect if leads feature is disabled
+  // Configuration state
+  const [icpSettings, setIcpSettings] = useState({
+    target_titles: ['CEO', 'CTO', 'VP of Engineering', 'Head of Product'],
+    custom_prompt: '',
+    is_enabled: true // Default to enabled
+  })
+
+  // Admin access check
   useEffect(() => {
-    if (process.env.NEXT_PUBLIC_LEADS_ENABLED !== 'true') {
-      router.push('/dashboard')
-    }
-  }, [router])
+    const checkAdminAccess = async () => {
+      if (!user) {
+        router.push('/login')
+        return
+      }
 
-  // Check connection status
-  const checkConnection = async () => {
-    if (!currentWorkspace?.id) return
+      // Check user's admin status from both email domain and profile
+      const supabase = createClient()
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single()
+
+      const hasAdminEmail = user.email?.endsWith('@split.dev')
+      const hasAdminRole = profile?.is_admin === true
+
+      if (!hasAdminEmail && !hasAdminRole) {
+        router.push('/dashboard')
+        return
+      }
+
+      // For @split.dev users, check admin verification
+      if (hasAdminEmail) {
+        const adminVerified = localStorage.getItem('admin_verified')
+        const adminVerifiedAt = localStorage.getItem('admin_verified_at')
+        
+        if (!adminVerified || adminVerified !== 'true') {
+          router.push('/admin/verify')
+          return
+        }
+
+        if (adminVerifiedAt) {
+          const verifiedTime = new Date(adminVerifiedAt)
+          const now = new Date()
+          const hoursSinceVerification = (now.getTime() - verifiedTime.getTime()) / (1000 * 60 * 60)
+          
+          // Require re-verification after 24 hours
+          if (hoursSinceVerification > 24) {
+            localStorage.removeItem('admin_verified')
+            localStorage.removeItem('admin_verified_at')
+            router.push('/admin/verify')
+            return
+          }
+        }
+      }
+
+      setAdminLoading(false)
+    }
+
+    checkAdminAccess()
+  }, [user, router])
+
+  const copyTrackingCode = () => {
+    if (!currentWorkspace) return
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
+    const code = `<script src="${baseUrl}/api/tracking/script?workspace=${currentWorkspace.id}"></script>`
+    navigator.clipboard.writeText(code)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const addTitle = () => {
+    if (!newTitle.trim()) return
+    if (icpSettings.target_titles.includes(newTitle.trim())) return
     
-    setCheckingConnection(true)
+    setIcpSettings(prev => ({
+      ...prev,
+      target_titles: [...prev.target_titles, newTitle.trim()]
+    }))
+    setNewTitle('')
+  }
+
+  const removeTitle = (title: string) => {
+    setIcpSettings(prev => ({
+      ...prev,
+      target_titles: prev.target_titles.filter(t => t !== title)
+    }))
+  }
+
+  const saveSettings = async () => {
+    if (!currentWorkspace) return
+    
+    setSaving(true)
     try {
-      const response = await fetch(`/api/tracking/status?workspace=${currentWorkspace.id}`)
+      const response = await fetch('/api/leads/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workspace_id: currentWorkspace.id,
+          target_titles: icpSettings.target_titles,
+          custom_prompt: icpSettings.custom_prompt,
+          is_enabled: icpSettings.is_enabled
+        })
+      })
+      
       if (response.ok) {
-        const data = await response.json()
-        setConnectionStatus(data)
+        console.log('Settings saved successfully')
+        setShowConfig(false)
       }
     } catch (error) {
-      console.error('Error checking connection:', error)
+      console.error('Failed to save settings:', error)
     } finally {
-      setCheckingConnection(false)
+      setSaving(false)
     }
   }
 
-  // Fetch leads data (will only run if connected)
   const fetchLeads = async () => {
-    if (!connectionStatus?.connected) return
+    if (!currentWorkspace || adminLoading) return
     
     setLoading(true)
     try {
-      // TODO: Replace with actual API call that fetches real visitor data
-      // For now, we'll show empty state until real data is flowing
-      setLeads([])
-      setStats(null)
+      const response = await fetch(`/api/leads?workspaceId=${currentWorkspace.id}`)
+      if (response.ok) {
+        const data = await response.json()
+        setLeads(data.leads || [])
+        setStats(data.stats || null)
+      }
     } catch (error) {
       console.error('Error fetching leads:', error)
+      setLeads([])
+      setStats(null)
     } finally {
       setLoading(false)
     }
   }
 
-  // Copy tracking script to clipboard
-  const copyTrackingScript = async () => {
-    if (!currentWorkspace?.id) return
-    
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
-    const script = `<script src="${baseUrl.replace(/\/$/, '')}/api/tracking/script?workspace=${currentWorkspace.id}"></script>`
-    
-    try {
-      await navigator.clipboard.writeText(script)
-      setScriptCopied(true)
-      setTimeout(() => setScriptCopied(false), 2000)
-    } catch (error) {
-      console.error('Failed to copy script:', error)
-    }
-  }
-
-  // Test tracking without installing script
-  const testTrackingNow = async () => {
-    if (!currentWorkspace?.id) return
-    
-    setTestingTracking(true)
-    try {
-      const response = await fetch('/api/tracking/test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          workspaceId: currentWorkspace.id
-        })
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        console.log('Test tracking successful:', data)
-        
-        // Refresh connection status after test
-        setTimeout(() => {
-          checkConnection()
-        }, 1000)
-      } else {
-        console.error('Test tracking failed:', await response.text())
-      }
-    } catch (error) {
-      console.error('Test tracking error:', error)
-    } finally {
-      setTestingTracking(false)
-    }
-  }
-
   useEffect(() => {
-    if (user && currentWorkspace) {
-      checkConnection()
-    }
-  }, [user, currentWorkspace])
-
-  useEffect(() => {
-    if (connectionStatus?.connected) {
+    if (currentWorkspace && !adminLoading) {
       fetchLeads()
     }
-  }, [connectionStatus])
+  }, [currentWorkspace, adminLoading])
 
-  // Format relative time
+  const exportToCSV = () => {
+    if (filteredLeads.length === 0) return
+    
+    const headers = ['Name', 'Title', 'Company', 'Email', 'Model', 'Confidence', 'Page', 'Date']
+    const rows = filteredLeads.map(lead => [
+      lead.fullName || 'Unknown',
+      lead.jobTitle || 'Unknown',
+      lead.company || 'Unknown',
+      lead.email || 'Unknown',
+      lead.model,
+      lead.confidence,
+      lead.pageVisited,
+      new Date(lead.timestamp).toLocaleDateString()
+    ])
+    
+    const csvContent = [headers, ...rows].map(row => 
+      row.map(cell => `"${cell}"`).join(',')
+    ).join('\n')
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `leads-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const formatRelativeTime = (timestamp: string) => {
     const now = new Date()
     const time = new Date(timestamp)
@@ -262,22 +251,21 @@ export default function LeadsPage() {
     const minutes = Math.floor(diff / 60000)
     
     if (minutes < 1) return 'Just now'
-    if (minutes < 60) return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`
+    if (minutes < 60) return `${minutes}m ago`
     
     const hours = Math.floor(minutes / 60)
-    if (hours < 24) return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`
+    if (hours < 24) return `${hours}h ago`
     
     const days = Math.floor(hours / 24)
-    return `${days} ${days === 1 ? 'day' : 'days'} ago`
+    return `${days}d ago`
   }
 
-  // Get model logo and styling
   const getModelInfo = (model: string) => {
     const modelConfig = {
       'GPT-4o': { logo: '/images/chatgpt.svg', name: 'ChatGPT' },
       'Claude': { logo: '/images/claude.svg', name: 'Claude' },
       'Perplexity': { logo: '/images/perplexity.svg', name: 'Perplexity' },
-      'Gemini': { logo: '/images/chatgpt.svg', name: 'Gemini' } // Fallback to ChatGPT logo
+      'Gemini': { logo: '/images/chatgpt.svg', name: 'Gemini' }
     }
     
     return modelConfig[model as keyof typeof modelConfig] || {
@@ -286,7 +274,6 @@ export default function LeadsPage() {
     }
   }
 
-  // Get confidence badge styling (only green variations)
   const getConfidenceBadge = (confidence: string) => {
     switch (confidence) {
       case 'high':
@@ -300,336 +287,240 @@ export default function LeadsPage() {
     }
   }
 
-  const handleLeadClick = (lead: Lead) => {
-    setSelectedLead(lead)
-  }
+  // Filter leads based on search and filters
+  const filteredLeads = useMemo(() => {
+    return leads.filter(lead => {
+      const matchesSearch = !searchQuery || 
+        (lead.fullName?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (lead.company?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (lead.email?.toLowerCase().includes(searchQuery.toLowerCase()))
+      
+      const matchesConfidence = filterConfidence === 'all' || lead.confidence === filterConfidence
+      
+      const matchesAttribution = filterAttribution === 'all' || 
+        lead.model?.toLowerCase().includes(filterAttribution)
+      
+      return matchesSearch && matchesConfidence && matchesAttribution
+    })
+  }, [leads, searchQuery, filterConfidence, filterAttribution])
 
-  const handleCloseDrawer = () => {
-    setSelectedLead(null)
+  // Show loading while checking admin access
+  if (adminLoading) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#0c0c0c] flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-zinc-500 mx-auto mb-4" />
+          <p className="text-zinc-600 dark:text-zinc-400">Checking admin access...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <main className="min-h-screen bg-[#0c0c0c] pl-6 pr-4 md:pr-6 lg:pr-8 pb-8 md:pb-12">
-      <div className="mx-auto max-w-[1600px]">
+    <div className="min-h-screen bg-white dark:bg-[#0c0c0c]">
+      <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="mb-6 md:mb-8 pt-6">
-          <h1 className="text-xl md:text-2xl font-medium text-white mb-2">Visitor Intelligence</h1>
-          <p className="text-[#666] text-sm">Identify and track companies visiting your website in real-time.</p>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-semibold text-black dark:text-white mb-1">Leads</h1>
+            <p className="text-zinc-600 dark:text-zinc-400 text-sm">AI-attributed leads from your website visitors</p>
         </div>
 
-        {/* Connection Status or Leads Content */}
-        {switching ? (
-          <Card className="bg-[#1a1a1a] border-[#222222]">
-            <CardContent className="p-0">
-              <div className="flex items-center justify-center h-64">
+          <div className="flex items-center gap-6">
+            {stats && (
+              <div className="flex items-center gap-6 text-sm">
                 <div className="text-center">
-                  <div className="w-8 h-8 mx-auto mb-3">
-                    <img 
-                      src="/images/split-icon-white.svg" 
-                      alt="Split" 
-                      className="w-full h-full animate-spin"
-                      style={{ animation: 'spin 1s linear infinite' }}
-                    />
-                  </div>
-                  <p className="text-[#666] text-sm">Switching workspace...</p>
+                  <div className="text-black dark:text-white font-medium">{stats.leadsToday}</div>
+                  <div className="text-zinc-500">Today</div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ) : checkingConnection ? (
-          <Card className="bg-[#1a1a1a] border-[#222222]">
-            <CardContent className="flex items-center justify-center h-64">
               <div className="text-center">
-                <Loader2 className="w-6 h-6 animate-spin text-[#666] mx-auto mb-3" />
-                <p className="text-[#666] text-sm">Checking connection status...</p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : !connectionStatus?.connected ? (
-          <Card className="bg-[#1a1a1a] border-[#222222]">
-            <CardContent className="p-8">
-              <div className="max-w-3xl mx-auto text-center">
-                {/* Header */}
-                <div className="mb-6">
-                  <div className="w-16 h-16 mx-auto mb-4 bg-[#222222] rounded-full flex items-center justify-center">
-                    <Code className="w-8 h-8 text-[#666]" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-white mb-2">Connect Your Website</h2>
-                  <p className="text-[#666] text-lg">
-                    Add our tracking script to start identifying and enriching your website visitors
-                  </p>
+                  <div className="text-black dark:text-white font-medium">{stats.topModel}</div>
+                  <div className="text-zinc-500">Top Model</div>
                 </div>
-
-                {/* Benefits */}
-                <div className="grid md:grid-cols-3 gap-6 mb-8">
                   <div className="text-center">
-                    <div className="w-12 h-12 mx-auto mb-3 bg-green-500/10 rounded-lg flex items-center justify-center">
-                      <Users className="w-6 h-6 text-green-400" />
-                    </div>
-                    <h3 className="text-white font-medium mb-1">Visitor Identification</h3>
-                    <p className="text-[#666] text-sm">Identify companies visiting your website in real-time</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-12 h-12 mx-auto mb-3 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                      <Building className="w-6 h-6 text-blue-400" />
-                    </div>
-                    <h3 className="text-white font-medium mb-1">Company Enrichment</h3>
-                    <p className="text-[#666] text-sm">Get detailed company data and contact information</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-12 h-12 mx-auto mb-3 bg-purple-500/10 rounded-lg flex items-center justify-center">
-                      <TrendingUp className="w-6 h-6 text-purple-400" />
-                    </div>
-                    <h3 className="text-white font-medium mb-1">Lead Intelligence</h3>
-                    <p className="text-[#666] text-sm">Track visitor behavior and engagement patterns</p>
-                  </div>
+                  <div className="text-black dark:text-white font-medium">{stats.mostCrawledPage}</div>
+                  <div className="text-zinc-500">Top Page</div>
                 </div>
-
-                {/* Installation Instructions */}
-                <div className="bg-[#0c0c0c] border border-[#333333] rounded-lg p-6 mb-6">
-                  <div className="text-left">
-                    <h3 className="text-white font-medium mb-4 flex items-center gap-2">
-                      <span className="bg-green-500/20 text-green-400 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold">1</span>
-                      Copy the tracking script
-                    </h3>
-                    <div className="bg-[#1a1a1a] border border-[#333333] rounded p-4 mb-4 overflow-x-auto">
-                      <pre className="text-green-400 text-sm font-mono whitespace-pre-wrap break-all">
-                        {currentWorkspace ? 
-                          `<script src="${(process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : '')).replace(/\/$/, '')}/api/tracking/script?workspace=${currentWorkspace.id}"></script>`
-                          : 'Loading...'
-                        }
-                      </pre>
                     </div>
+            )}
                     <Button 
-                      onClick={copyTrackingScript}
-                      disabled={!currentWorkspace}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      {scriptCopied ? (
-                        <>
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Copied!
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-4 h-4 mr-2" />
-                          Copy Script
-                        </>
-                      )}
+              onClick={() => setShowConfig(true)}
+              variant="outline"
+              size="sm"
+              className="border-zinc-300 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 hover:text-black dark:hover:text-white"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Configure
                     </Button>
                   </div>
                 </div>
 
-                <div className="bg-[#0c0c0c] border border-[#333333] rounded-lg p-6 mb-6">
-                  <div className="text-left">
-                    <h3 className="text-white font-medium mb-4 flex items-center gap-2">
-                      <span className="bg-green-500/20 text-green-400 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold">2</span>
-                      Add to your website
-                    </h3>
-                    <p className="text-[#666] mb-4">
-                      Paste the script into the <code className="bg-[#1a1a1a] px-2 py-1 rounded text-green-400">&lt;head&gt;</code> section of your website, just before the closing <code className="bg-[#1a1a1a] px-2 py-1 rounded text-green-400">&lt;/head&gt;</code> tag.
-                    </p>
-                    <div className="text-[#666] text-sm space-y-2">
-                      <p><strong className="text-white">For HTML sites:</strong> Add directly to your HTML template</p>
-                      <p><strong className="text-white">For WordPress:</strong> Use a header/footer plugin or theme editor</p>
-                      <p><strong className="text-white">For React/Next.js:</strong> Add to your _document.js or layout component</p>
-                      <p><strong className="text-white">For other platforms:</strong> Check your platform's documentation for adding custom scripts</p>
-                    </div>
-                  </div>
+        {/* Controls */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-500" />
+              <Input
+                placeholder="Search leads..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 w-80 bg-zinc-100/50 dark:bg-zinc-900/50 border-zinc-300 dark:border-zinc-800 text-black dark:text-white placeholder:text-zinc-500 focus:border-zinc-400 dark:focus:border-zinc-700"
+              />
                 </div>
 
-                <div className="bg-[#0c0c0c] border border-[#333333] rounded-lg p-6">
-                  <div className="text-left">
-                    <h3 className="text-white font-medium mb-4 flex items-center gap-2">
-                      <span className="bg-green-500/20 text-green-400 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold">3</span>
-                      Test or verify connection
-                    </h3>
-                    <p className="text-[#666] mb-4">
-                      You can test the tracking system directly from the dashboard, or after installing the script, visit your website to verify it's working.
-                    </p>
-                    
-                    <div className="space-y-3">
-                      {/* Test Now Button */}
-                      <Button 
-                        onClick={testTrackingNow}
-                        disabled={testingTracking}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                      >
-                        {testingTracking ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Testing...
-                          </>
-                        ) : (
-                          <>
-                            <Activity className="w-4 h-4 mr-2" />
-                            Test Tracking Now
-                          </>
-                        )}
-                      </Button>
-                      
-                      {/* Check Connection Button */}
-                      <Button 
-                        onClick={checkConnection}
-                        disabled={checkingConnection}
-                        variant="outline"
-                        className="w-full"
-                      >
-                        {checkingConnection ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Checking...
-                          </>
-                        ) : (
-                          <>
-                            <AlertCircle className="w-4 h-4 mr-2" />
-                            Check Connection Status
-                          </>
-                        )}
-                      </Button>
+            <select
+              value={filterConfidence}
+              onChange={(e) => setFilterConfidence(e.target.value as any)}
+              className="px-3 py-2 bg-zinc-100/50 dark:bg-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-md text-zinc-700 dark:text-zinc-300 text-sm focus:border-zinc-400 dark:focus:border-zinc-700 focus:outline-none"
+            >
+              <option value="all">All Confidence</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+
+            <select
+              value={filterAttribution}
+              onChange={(e) => setFilterAttribution(e.target.value as any)}
+              className="px-3 py-2 bg-zinc-100/50 dark:bg-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-md text-zinc-700 dark:text-zinc-300 text-sm focus:border-zinc-400 dark:focus:border-zinc-700 focus:outline-none"
+            >
+              <option value="all">All Models</option>
+              <option value="chatgpt">ChatGPT</option>
+              <option value="perplexity">Perplexity</option>
+              <option value="claude">Claude</option>
+              <option value="google">Google</option>
+            </select>
                     </div>
                     
-                    <div className="mt-4 text-sm text-[#666]">
-                      <p><strong className="text-white">Test Now:</strong> Simulates a visitor to test the system</p>
-                      <p><strong className="text-white">Check Status:</strong> Verifies if real tracking is working</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          /* Connected State - Show Dashboard */
-          <>
-            {/* Connection Status Banner */}
-            <div className="mb-6 bg-green-500/10 border border-green-500/20 rounded-lg p-4">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="w-5 h-5 text-green-400" />
-                <div className="flex-1">
-                  <p className="text-green-400 font-medium">Tracking Connected</p>
-                  <p className="text-green-300/70 text-sm">
-                    {connectionStatus.eventCount} events tracked • Last activity: {connectionStatus.lastConnection ? formatRelativeTime(connectionStatus.lastConnection) : 'Never'}
-                  </p>
-                </div>
+          <div className="flex items-center gap-2">
+            <span className="text-zinc-500 text-sm">
+              {filteredLeads.length} leads
+            </span>
                 <Button 
-                  onClick={checkConnection}
-                  disabled={checkingConnection}
+              onClick={exportToCSV}
+              disabled={filteredLeads.length === 0}
                   variant="outline"
                   size="sm"
-                  className="border-green-500/30 text-green-400 hover:bg-green-500/10"
+              className="border-zinc-300 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50"
                 >
-                  {checkingConnection ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Refresh'}
+              <Download className="w-4 h-4 mr-2" />
+              Export
                 </Button>
               </div>
             </div>
 
-            {/* Stats Bar */}
-            {stats && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-[#1a1a1a] border border-[#222222] rounded-lg px-4 py-3">
-                  <div className="text-sm text-[#666] mb-1">Visitors Today</div>
-                  <div className="text-white font-medium">{stats.leadsToday}</div>
-                </div>
-                
-                <div className="bg-[#1a1a1a] border border-[#222222] rounded-lg px-4 py-3">
-                  <div className="text-sm text-[#666] mb-1">Top Company</div>
-                  <div className="text-white font-medium">{stats.topModel}</div>
-                </div>
-                
-                <div className="bg-[#1a1a1a] border border-[#222222] rounded-lg px-4 py-3">
-                  <div className="text-sm text-[#666] mb-1">Most Visited Page</div>
-                  <div className="text-white font-medium">{stats.mostCrawledPage}</div>
-                </div>
-                
-                <div className="bg-[#1a1a1a] border border-[#222222] rounded-lg px-4 py-3">
-                  <div className="text-sm text-[#666] mb-1">Active Sessions</div>
-                  <div className="text-white font-medium">Live</div>
-                </div>
-              </div>
-            )}
-
-            {/* Leads Table */}
-            <Card className="bg-[#1a1a1a] border-[#222222]">
-              <CardContent className="p-0">
+        {/* Table */}
+        <div className="bg-zinc-50/50 dark:bg-zinc-950/50 border border-zinc-200/50 dark:border-zinc-800/50 rounded-lg overflow-hidden">
                 {loading ? (
-                  <div className="flex items-center justify-center h-64">
-                    <Loader2 className="w-6 h-6 animate-spin text-[#666]" />
+            <div className="p-6">
+              <TableSkeleton 
+                rows={8}
+                columns={[
+                  { span: 4, align: 'left' },
+                  { span: 2, align: 'center' },
+                  { span: 2, align: 'center' },
+                  { span: 2, align: 'center' },
+                  { span: 2, align: 'right' }
+                ]}
+                showExpandableRows={false}
+              />
                   </div>
-                ) : leads.length === 0 ? (
-                  /* Empty State */
+          ) : filteredLeads.length === 0 ? (
                   <div className="flex items-center justify-center h-64">
                     <div className="text-center max-w-sm">
                       <div className="w-16 h-16 mx-auto mb-4 grid grid-cols-4 gap-1 opacity-40">
                         {[...Array(16)].map((_, i) => (
-                          <div key={i} className="w-3 h-3 bg-[#333] rounded-sm" />
+                    <div key={i} className="w-3 h-3 bg-zinc-300 dark:bg-zinc-700 rounded-sm" />
                         ))}
                       </div>
-                      <h4 className="text-white font-medium mb-2">No visitors yet</h4>
-                      <p className="text-[#666] text-sm leading-relaxed">
-                        Visitors will appear here once your tracking script starts collecting data from your website.
+                <h4 className="text-black dark:text-white font-medium mb-2">
+                  {searchQuery ? 'No leads found' : 'No leads yet'}
+                </h4>
+                <p className="text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed">
+                  {searchQuery 
+                    ? 'Try adjusting your search or filters'
+                    : 'Leads will appear here once visitors are enriched'
+                  }
                       </p>
                     </div>
                   </div>
                 ) : (
-                  /* Leads Table */
                   <div className="overflow-x-auto">
                     <table className="w-full">
-                      <thead className="border-b border-[#222222]">
-                        <tr>
-                          <th className="text-left py-3 px-4 text-xs font-medium text-[#666] uppercase tracking-wider">Time</th>
-                          <th className="text-left py-3 px-4 text-xs font-medium text-[#666] uppercase tracking-wider">Location</th>
-                          <th className="text-left py-3 px-4 text-xs font-medium text-[#666] uppercase tracking-wider">Company</th>
-                          <th className="text-left py-3 px-4 text-xs font-medium text-[#666] uppercase tracking-wider">Page</th>
-                          <th className="text-left py-3 px-4 text-xs font-medium text-[#666] uppercase tracking-wider">Device</th>
-                          <th className="text-left py-3 px-4 text-xs font-medium text-[#666] uppercase tracking-wider">IP Address</th>
+                <thead>
+                  <tr className="border-b border-zinc-200/50 dark:border-zinc-800/50">
+                    <th className="text-left py-3 px-6 text-xs font-medium text-zinc-600 dark:text-zinc-500 uppercase tracking-wider">Contact</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-zinc-600 dark:text-zinc-500 uppercase tracking-wider">Company</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-zinc-600 dark:text-zinc-500 uppercase tracking-wider">Confidence</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-zinc-600 dark:text-zinc-500 uppercase tracking-wider">Model</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-zinc-600 dark:text-zinc-500 uppercase tracking-wider">Page</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-zinc-600 dark:text-zinc-500 uppercase tracking-wider">Time</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {leads.map((lead, index) => {
+                  {filteredLeads.map((lead, index) => {
+                    const modelInfo = getModelInfo(lead.model)
+                    const confidenceBadge = getConfidenceBadge(lead.confidence)
+                    
                           return (
                             <motion.tr
                               key={lead.id}
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: index * 0.1 }}
-                              className="border-b border-[#222222] hover:bg-[#1f2029] transition-colors cursor-pointer"
-                              onClick={() => handleLeadClick(lead)}
+                        transition={{ delay: index * 0.02 }}
+                        className="border-b border-zinc-200/30 dark:border-zinc-800/30 hover:bg-zinc-100/30 dark:hover:bg-zinc-900/30 transition-colors cursor-pointer group"
+                        onClick={() => setSelectedLead(lead)}
                             >
-                              <td className="py-3 px-4 text-sm text-[#666]">
-                                {formatRelativeTime(lead.timestamp)}
-                              </td>
-                              
-                              <td className="py-3 px-4">
-                                <div className="text-sm text-white">
-                                  {lead.location || 'Unknown'}
+                        {/* Contact */}
+                        <td className="py-3 px-6">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center">
+                              <User className="w-4 h-4 text-zinc-500" />
+                            </div>
+                            <div>
+                              <div className="text-black dark:text-white font-medium text-sm">{lead.fullName || 'Unknown'}</div>
+                              <div className="text-zinc-500 text-xs">{lead.jobTitle || 'Unknown'}</div>
+                            </div>
                                 </div>
                               </td>
                               
+                        {/* Company */}
                               <td className="py-3 px-4">
                                 <div>
-                                  <div className="text-sm text-white font-medium">
-                                    {lead.company || 'Unknown Company'}
-                                  </div>
-                                  {lead.confidence && (
-                                    <div className="text-xs text-[#666]">{lead.confidence} confidence</div>
-                                  )}
+                            <div className="text-black dark:text-white font-medium text-sm">{lead.company || 'Unknown'}</div>
+                            <div className="text-zinc-500 text-xs">{lead.location || 'Unknown'}</div>
                                 </div>
                               </td>
                               
-                              <td className="py-3 px-4 text-sm text-[#888] font-mono">
-                                {lead.pageVisited}
+                        {/* Confidence */}
+                        <td className="py-3 px-4">
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${confidenceBadge.bg} ${confidenceBadge.text}`}>
+                            {lead.confidence}
+                          </span>
                               </td>
                               
-                              <td className="py-3 px-4 text-sm text-[#d1d1d6]">
-                                <div className="text-sm text-white">
-                                  Desktop
+                        {/* Model */}
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            {modelInfo.logo && (
+                              <img src={modelInfo.logo} alt={modelInfo.name} className="w-4 h-4" />
+                            )}
+                            <span className="text-black dark:text-white text-sm">{modelInfo.name}</span>
                                 </div>
                               </td>
                               
+                        {/* Page */}
                               <td className="py-3 px-4">
-                                <code className="text-xs text-[#666] font-mono">
-                                  {lead.ipAddress || 'Unknown'}
+                          <code className="text-zinc-600 dark:text-zinc-400 text-xs bg-zinc-100 dark:bg-zinc-900 px-2 py-1 rounded">
+                            {lead.pageVisited}
                                 </code>
+                              </td>
+                        
+                        {/* Time */}
+                        <td className="py-3 px-4">
+                          <div className="text-zinc-600 dark:text-zinc-400 text-sm">
+                            {formatRelativeTime(lead.timestamp)}
+                          </div>
                               </td>
                             </motion.tr>
                           )
@@ -638,55 +529,325 @@ export default function LeadsPage() {
                     </table>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </>
-        )}
+        </div>
       </div>
 
-      {/* Workspace Switching Overlay */}
-      {switching && (
+      {/* Configuration Dialog */}
+      <AnimatePresence>
+        {showConfig && (
+          <>
+            {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center"
-          style={{ pointerEvents: 'all' }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40"
+              onClick={() => setShowConfig(false)}
+            />
+
+            {/* Dialog */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="bg-zinc-950 border border-zinc-800/50 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl">
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b border-zinc-800/50">
+                  <h2 className="text-xl font-semibold text-white">Configure Leads</h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowConfig(false)}
+                    className="text-zinc-400 hover:text-white hover:bg-zinc-800/50"
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+
+                {/* Tabs */}
+                <div className="border-b border-zinc-800/50">
+                  <div className="flex">
+                    <button
+                      onClick={() => setConfigTab('icp')}
+                      className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                        configTab === 'icp'
+                          ? 'border-white text-white'
+                          : 'border-transparent text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      <Target className="w-4 h-4 mr-2 inline" />
+                      ICP Settings
+                    </button>
+                    <button
+                      onClick={() => setConfigTab('tracking')}
+                      className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                        configTab === 'tracking'
+                          ? 'border-white text-white'
+                          : 'border-transparent text-zinc-400 hover:text-white'
+                      }`}
         >
-          <div className="text-center">
-            <div className="w-16 h-16 mx-auto mb-4" style={{ perspective: '300px' }}>
-              <div 
-                className="w-full h-full workspace-flip-animation"
-                style={{ 
-                  transformStyle: 'preserve-3d'
-                }}
-              >
-                <img 
-                  src="/images/split-icon-white.svg" 
-                  alt="Split" 
-                  className="w-full h-full"
-                />
+                      <Code className="w-4 h-4 mr-2 inline" />
+                      Tracking Setup
+                    </button>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="p-6 max-h-[60vh] overflow-y-auto">
+                  {configTab === 'icp' ? (
+                    <div className="space-y-8">
+                      {/* Enable/Disable */}
+                      <div className="flex items-center justify-between p-4 bg-zinc-900/50 border border-zinc-800/50 rounded-lg">
+                        <div>
+                          <h3 className="text-lg font-medium text-white mb-1">Enable Lead Enrichment</h3>
+                          <p className="text-zinc-400 text-sm">
+                            Automatically enrich qualified visitors with contact and company data
+                          </p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={icpSettings.is_enabled}
+                            onChange={(e) => setIcpSettings(prev => ({ ...prev, is_enabled: e.target.checked }))}
+                            className="sr-only peer"
+                          />
+                          <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-zinc-900"></div>
+                        </label>
+                      </div>
+
+                      {/* Target Job Titles */}
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-lg font-medium text-white mb-1">Target Job Titles</h3>
+                          <p className="text-zinc-400 text-sm">
+                            Define which job titles should trigger lead enrichment
+                          </p>
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-2">
+                          {icpSettings.target_titles.map((title, index) => (
+                            <div
+                              key={index} 
+                              className="bg-zinc-800/50 border border-zinc-700/50 text-zinc-300 px-3 py-1.5 rounded-md text-sm flex items-center gap-2 group hover:bg-zinc-700/50 transition-colors"
+                            >
+                              {title}
+                              <button
+                                onClick={() => removeTitle(title)}
+                                className="text-zinc-500 hover:text-white transition-colors"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Add job title (e.g., CEO, CTO)"
+                            value={newTitle}
+                            onChange={(e) => setNewTitle(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && addTitle()}
+                            className="flex-1 bg-zinc-900/50 border-zinc-700/50 text-white placeholder:text-zinc-500 focus:border-zinc-600"
+                          />
+                          <Button 
+                            onClick={addTitle} 
+                            disabled={!newTitle.trim()}
+                            className="bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700/50"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Custom Prompt */}
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-lg font-medium text-white mb-1">Custom Search Prompt</h3>
+                          <p className="text-zinc-400 text-sm">
+                            Describe your ideal customer profile. This works with job titles above to find the right contacts.
+                          </p>
+                        </div>
+                        <Textarea
+                          placeholder="e.g., Senior executive or decision maker who evaluates new technology solutions..."
+                          value={icpSettings.custom_prompt}
+                          onChange={(e) => setIcpSettings(prev => ({ ...prev, custom_prompt: e.target.value }))}
+                          className="bg-zinc-900/50 border-zinc-700/50 text-white placeholder:text-zinc-500 focus:border-zinc-600 resize-none"
+                          rows={3}
+                        />
+                        <div className="text-xs text-zinc-500">
+                          💡 The system combines your job titles and custom prompt to find the most relevant contacts at each company
+                        </div>
               </div>
             </div>
-            <h2 className="text-xl font-semibold text-white mb-2">Switching workspace...</h2>
-            <p className="text-[#888] text-sm">Loading your workspace data</p>
+                  ) : (
+                    <div className="space-y-8">
+                      {/* Tracking Code */}
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-lg font-medium text-white mb-1">Tracking Code</h3>
+                          <p className="text-zinc-400 text-sm">
+                            Add this code to your website to start tracking visitors
+                          </p>
+                        </div>
+                        
+                        <div className="bg-zinc-900 border border-zinc-700/50 rounded-lg p-4">
+                          <code className="text-green-400 text-sm font-mono whitespace-pre-wrap break-all">
+                            {currentWorkspace ? 
+                              `<script src="${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/api/tracking/script?workspace=${currentWorkspace.id}"></script>`
+                              : 'Loading...'
+                            }
+                          </code>
           </div>
-        </motion.div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Button
+                            onClick={copyTrackingCode}
+                            size="sm"
+                            className="bg-white text-zinc-900 hover:bg-zinc-100"
+                          >
+                            {copied ? (
+                              <>
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Copied!
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="h-4 w-4 mr-2" />
+                                Copy Code
+                              </>
       )}
+                          </Button>
+                        </div>
+                      </div>
 
-      <style jsx global>{`
-        @keyframes workspaceFlip {
-          0% { transform: rotateY(0deg); }
-          25% { transform: rotateY(90deg); }
-          50% { transform: rotateY(180deg); }
-          75% { transform: rotateY(270deg); }
-          100% { transform: rotateY(360deg); }
-        }
-        
-        .workspace-flip-animation {
-          animation: workspaceFlip 2s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
-        }
-      `}</style>
-    </main>
+                      {/* Installation Instructions */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-medium text-white">Installation</h3>
+                        <div className="space-y-3">
+                          <div className="bg-zinc-900/50 border border-zinc-700/50 rounded-lg p-4">
+                            <div className="flex items-start gap-3">
+                              <span className="bg-zinc-800 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium mt-0.5">1</span>
+                              <div>
+                                <h4 className="font-medium text-white mb-1">Add to your website</h4>
+                                <p className="text-zinc-400 text-sm">
+                                  Paste the tracking code in the <code className="bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded text-xs">&lt;head&gt;</code> section of your website
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-zinc-900/50 border border-zinc-700/50 rounded-lg p-4">
+                            <div className="flex items-start gap-3">
+                              <span className="bg-zinc-800 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium mt-0.5">2</span>
+                              <div>
+                                <h4 className="font-medium text-white mb-1">Verify installation</h4>
+                                <p className="text-zinc-400 text-sm">
+                                  Visit your website to test the tracking. Leads will appear within minutes.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* What We Track */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-medium text-white">Data Collection</h3>
+                        <p className="text-zinc-400 text-sm">
+                          We collect the following data to identify and enrich your visitors:
+                        </p>
+                        
+                        <div className="grid grid-cols-2 gap-6">
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-3 text-sm">
+                              <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full"></div>
+                              <span className="text-zinc-300">Page visits</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm">
+                              <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full"></div>
+                              <span className="text-zinc-300">Session duration</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm">
+                              <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full"></div>
+                              <span className="text-zinc-300">Referrer source</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm">
+                              <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full"></div>
+                              <span className="text-zinc-300">Device type</span>
+                            </div>
+                          </div>
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-3 text-sm">
+                              <div className="w-1.5 h-1.5 bg-zinc-400 rounded-full"></div>
+                              <span className="text-zinc-300">IP geolocation</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm">
+                              <div className="w-1.5 h-1.5 bg-zinc-400 rounded-full"></div>
+                              <span className="text-zinc-300">Company identification</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm">
+                              <div className="w-1.5 h-1.5 bg-zinc-400 rounded-full"></div>
+                              <span className="text-zinc-300">Contact enrichment</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm">
+                              <div className="w-1.5 h-1.5 bg-zinc-400 rounded-full"></div>
+                              <span className="text-zinc-300">Intent scoring</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Privacy Notice */}
+                      <div className="bg-zinc-900/30 border border-zinc-700/30 rounded-lg p-4">
+                        <h4 className="font-medium text-zinc-300 mb-2 flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full"></div>
+                          Privacy Compliance
+                        </h4>
+                        <p className="text-zinc-400 text-sm">
+                          Our tracking is GDPR and CCPA compliant. We only collect business contact information and do not track personal browsing behavior.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between p-6 border-t border-zinc-800/50">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowConfig(false)}
+                    className="text-zinc-400 hover:text-white border-zinc-700/50 hover:bg-zinc-800/50"
+                  >
+                    Cancel
+                  </Button>
+                  
+                  {configTab === 'icp' && (
+                    <Button
+                      onClick={saveSettings}
+                      disabled={saving}
+                      className="bg-white hover:bg-zinc-200 text-black"
+                    >
+                      {saving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 mr-2" />
+                          Save Settings
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
   )
 } 

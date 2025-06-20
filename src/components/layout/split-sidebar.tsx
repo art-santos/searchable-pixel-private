@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useWorkspace } from "@/contexts/WorkspaceContext"
 import { useState, useEffect } from "react"
 import { getUserInitials } from '@/lib/profile/avatar'
+import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboardIcon,
   SearchIcon,
@@ -80,47 +81,55 @@ interface UserProfile {
   company_domain?: string
   company_category?: string
   updated_at?: string
+  is_admin?: boolean
 }
 
 export function SplitSidebar() {
   const { user, supabase } = useAuth()
   const { currentWorkspace } = useWorkspace()
   const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   const pathname = usePathname()
 
   // Fetch user profile when user changes
   useEffect(() => {
-    if (!user || !supabase) {
-      setProfile(null)
+    const fetchProfile = async () => {
+      if (!user) {
+        setIsLoading(false)
       return
     }
 
-    const fetchProfile = async () => {
       try {
-        const { data: profileData, error } = await supabase
+        const supabase = createClient()
+        const { data, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', user.id)
           .single()
 
-        if (error && error.code !== 'PGRST116') {
+        if (error) {
           console.error('Error fetching profile:', error)
+        } else {
+          setProfile(data)
         }
 
-        if (profileData) {
-          setProfile(profileData)
-        } else {
-          // If no profile exists yet, create default profile with user ID
-          setProfile({ id: user.id })
-        }
-      } catch (err) {
-        console.error('Error fetching profile:', err)
+        // Check if user is admin (has @split.dev email and admin verification OR is_admin=true)
+        const hasAdminEmail = user.email?.endsWith('@split.dev')
+        const adminVerified = localStorage.getItem('admin_verified') === 'true'
+        const hasAdminRole = data?.is_admin === true
+        
+        setIsAdmin((hasAdminEmail && adminVerified) || hasAdminRole)
+      } catch (error) {
+        console.error('Error in fetchProfile:', error)
+      } finally {
+        setIsLoading(false)
       }
     }
 
     fetchProfile()
-  }, [user, supabase])
+  }, [user])
 
   // Generate user initials
   const initials = getUserInitials(
@@ -202,13 +211,13 @@ export function SplitSidebar() {
             </SidebarMenuButton>
           </Link>
 
-          {process.env.NEXT_PUBLIC_LEADS_ENABLED === 'true' && (
+          {isAdmin && (
             <Link href="/dashboard/leads" className="w-full flex justify-center">
               <SidebarMenuButton 
                 tooltip="Leads"
                 className={cn(
                   "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
-                  pathname === "/dashboard/leads" 
+                pathname.startsWith("/dashboard/leads") 
                     ? "bg-gray-100 dark:bg-[#222222] text-black dark:text-white border border-gray-300 dark:border-[#333333] selected-button"
                     : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#161616] hover:text-gray-800 dark:hover:text-gray-200"
                 )}
