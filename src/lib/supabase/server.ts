@@ -14,9 +14,29 @@ export function createClient() {
           try {
             const cookieStore = await cookies()
             const cookie = cookieStore.get(name)
-            return cookie?.value
+            
+            if (!cookie?.value) return undefined
+            
+            // Handle base64 prefixed cookies that might be causing parsing issues
+            if (cookie.value.startsWith('base64-')) {
+              console.warn(`[Supabase Server] Skipping malformed cookie: ${name}`)
+              return undefined
+            }
+            
+            // Handle potential JSON parsing issues in cookie values
+            if (cookie.value.includes('{') || cookie.value.includes('[')) {
+              try {
+                // Test if it's valid JSON
+                JSON.parse(cookie.value)
+              } catch {
+                console.warn(`[Supabase Server] Invalid JSON in cookie ${name}, skipping`)
+                return undefined
+              }
+            }
+            
+            return cookie.value
           } catch (error) {
-            console.error(`Error getting cookie ${name}:`, error)
+            console.error(`[Supabase Server] Error getting cookie ${name}:`, error)
             return undefined
           }
         },
@@ -25,7 +45,7 @@ export function createClient() {
             const cookieStore = await cookies()
             cookieStore.set({ name, value, ...options })
           } catch (error) {
-            console.warn(`Server Component attempt to set cookie: ${name}`, error)
+            console.warn(`[Supabase Server] Server Component attempt to set cookie: ${name}`, error)
           }
         },
         async remove(name: string, options: CookieOptions) {
@@ -33,7 +53,7 @@ export function createClient() {
             const cookieStore = await cookies()
             cookieStore.set({ name, value: '', ...options })
           } catch (error) {
-            console.warn(`Server Component attempt to remove cookie: ${name}`, error)
+            console.warn(`[Supabase Server] Server Component attempt to remove cookie: ${name}`, error)
           }
         },
       },

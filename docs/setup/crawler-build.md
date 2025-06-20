@@ -18,14 +18,8 @@ We need to track AI engine crawler visits to websites and display analytics abou
 - **Shopify** - Would require app
 - **Ghost** - Would require integration
 
-### Community-Driven Development
-We've implemented a **voting system** to prioritize platform support:
-- Users can upvote platforms they want supported
-- Vote counts are tracked in real-time
-- Development priorities based on community demand
-- One vote per user per platform
-
-This ensures we build integrations that users actually want rather than guessing.
+### Future Platform Support
+We're working on expanding platform support based on user demand. More integrations coming soon!
 
 ### Why This Approach
 - Focus on platforms with server-side capabilities

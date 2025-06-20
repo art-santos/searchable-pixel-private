@@ -953,30 +953,7 @@ export type Database = {
         }
         Relationships: []
       }
-      platform_votes: {
-        Row: {
-          id: string
-          ip_hash: string | null
-          platform_id: string
-          user_id: string | null
-          voted_at: string | null
-        }
-        Insert: {
-          id?: string
-          ip_hash?: string | null
-          platform_id: string
-          user_id?: string | null
-          voted_at?: string | null
-        }
-        Update: {
-          id?: string
-          ip_hash?: string | null
-          platform_id?: string
-          user_id?: string | null
-          voted_at?: string | null
-        }
-        Relationships: []
-      }
+
       pricing_migration_backup: {
         Row: {
           id: string | null

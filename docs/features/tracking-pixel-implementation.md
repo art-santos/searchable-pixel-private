@@ -84,6 +84,11 @@ The quickest way to get started:
     img.width = 1;
     img.height = 1;
     img.alt = '';
+    // Ensure the image completes loading
+    img.onload = function() { /* Pixel loaded successfully */ };
+    img.onerror = function() { /* Pixel failed to load */ };
+    // Append to body to ensure it loads
+    document.body.appendChild(img);
   })();
 </script>
 ```
@@ -117,6 +122,11 @@ The quickest way to get started:
     img.width = 1;
     img.height = 1;
     img.alt = '';
+    // Ensure the image completes loading
+    img.onload = function() { /* Pixel loaded successfully */ };
+    img.onerror = function() { /* Pixel failed to load */ };
+    // Append to body to ensure it loads
+    document.body.appendChild(img);
   })();
 </script>
 ```
@@ -286,6 +296,8 @@ const testImg = new Image();
 testImg.onload = () => console.log('Pixel loaded successfully');
 testImg.onerror = () => console.log('Pixel failed to load');
 testImg.src = 'YOUR_PIXEL_URL_HERE';
+// Append to body to ensure it loads
+document.body.appendChild(testImg);
 ```
 
 ### Validation Checklist

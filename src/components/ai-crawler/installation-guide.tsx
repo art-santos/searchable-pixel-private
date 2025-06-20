@@ -146,7 +146,7 @@ app.use(async (req, res, next) => {
         type: 'instruction' as const,
         content: `1. Go to your Split Dashboard
 2. Navigate to Settings → Tracking Pixel
-3. Copy your tracking code`,
+3. Copy your tracking code (it will include your workspace ID)`,
         icon: Settings
       },
       {
@@ -183,19 +183,28 @@ app.use(async (req, res, next) => {
         type: 'instruction' as const,
         content: `1. Go to your Split Dashboard
 2. Navigate to Settings → Tracking Pixel
-3. Copy your tracking code`,
+3. Select "JavaScript" implementation for Framer
+4. Copy your tracking code (it will include your workspace ID)`,
         icon: Settings
       },
       {
         title: 'Add to Framer',
-        description: 'Paste the tracking pixel in your Custom Code settings',
+        description: 'Use the JavaScript version for Framer',
         type: 'code' as const,
-        code: `<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" 
-     style="display:none" 
-     width="1" 
-     height="1" 
-     alt="" />`,
-        filename: 'Site Settings → Custom Code → "End of <body> tag"',
+        code: `<script>
+  (function() {
+    var img = new Image();
+    img.src = 'https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif';
+    img.style.display = 'none';
+    img.width = 1;
+    img.height = 1;
+    img.alt = '';
+    img.onload = function() { /* Pixel loaded */ };
+    img.onerror = function() { /* Pixel failed */ };
+    document.body.appendChild(img);
+  })();
+</script>`,
+        filename: 'Site Settings → Custom Code → "Start of <head> tag"',
         icon: Code2
       },
       {

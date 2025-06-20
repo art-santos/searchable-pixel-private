@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useWorkspace } from '@/contexts/WorkspaceContext'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Copy, Check, ExternalLink, AlertCircle, Loader2, Info, Code2 } from 'lucide-react'
+import { Copy, Check, ExternalLink, AlertCircle, Loader2, Info, Code2, PlayCircle } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 
 interface TrackingPixelSetupProps {
@@ -12,15 +12,19 @@ interface TrackingPixelSetupProps {
 }
 
 export function TrackingPixelSetup({ className }: TrackingPixelSetupProps) {
-  const { currentWorkspace } = useWorkspace()
+  const { currentWorkspace, loading: workspaceLoading } = useWorkspace()
   const { toast } = useToast()
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedOption, setSelectedOption] = useState<'html' | 'javascript'>('html')
+  const [testing, setTesting] = useState(false)
 
   useEffect(() => {
-    setLoading(false)
-  }, [])
+    // Wait for workspace to be loaded
+    if (!workspaceLoading) {
+      setLoading(false)
+    }
+  }, [workspaceLoading])
 
   const generateTrackingCode = (type: 'html' | 'javascript') => {
     if (!currentWorkspace) return ''
@@ -36,6 +40,11 @@ export function TrackingPixelSetup({ className }: TrackingPixelSetupProps) {
     img.width = 1;
     img.height = 1;
     img.alt = '';
+    // Ensure the image completes loading
+    img.onload = function() { /* Pixel loaded successfully */ };
+    img.onerror = function() { /* Pixel failed to load */ };
+    // Append to body to ensure it loads
+    document.body.appendChild(img);
   })();
 </script>`
     }
@@ -45,6 +54,16 @@ export function TrackingPixelSetup({ className }: TrackingPixelSetupProps) {
 
   const handleCopy = async (type: 'html' | 'javascript') => {
     const code = generateTrackingCode(type)
+    
+    if (!code) {
+      toast({
+        title: 'Error',
+        description: 'Please wait for your workspace to load',
+        variant: 'destructive'
+      })
+      return
+    }
+    
     try {
       await navigator.clipboard.writeText(code)
       setCopiedCode(type)
@@ -62,10 +81,13 @@ export function TrackingPixelSetup({ className }: TrackingPixelSetupProps) {
     }
   }
 
-  if (loading) {
+  if (loading || workspaceLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin" />
+        <div className="text-center space-y-4">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto" />
+          <p className="text-sm text-gray-500 dark:text-[#666] font-mono">Loading workspace data...</p>
+        </div>
       </div>
     )
   }
@@ -73,10 +95,10 @@ export function TrackingPixelSetup({ className }: TrackingPixelSetupProps) {
   if (!currentWorkspace) {
     return (
       <div className={className}>
-        <Alert className="bg-gray-900 border-gray-800">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Please select a workspace to set up tracking pixels.
+        <Alert className="bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-900/30">
+          <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+          <AlertDescription className="text-orange-700 dark:text-orange-300">
+            <strong>No workspace selected.</strong> Please create or select a workspace from your dashboard to generate tracking pixels.
           </AlertDescription>
         </Alert>
       </div>
@@ -212,7 +234,7 @@ export function TrackingPixelSetup({ className }: TrackingPixelSetupProps) {
               title="Click to copy"
             >
               <code className="text-sm text-[#ccc] font-mono block overflow-x-auto leading-relaxed select-none whitespace-pre">
-                {generateTrackingCode(selectedOption)}
+                {generateTrackingCode(selectedOption) || 'Loading...'}
               </code>
             </div>
           </div>
@@ -224,6 +246,64 @@ export function TrackingPixelSetup({ className }: TrackingPixelSetupProps) {
               </p>
             </div>
           )}
+        </div>
+
+        {/* Test Pixel */}
+        <div className="flex items-center justify-between py-4 border-t border-gray-200 dark:border-[#1a1a1a]">
+          <div>
+            <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Test Your Pixel</div>
+            <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight mt-1">
+              Verify your tracking pixel is working correctly
+            </div>
+          </div>
+          <Button
+            onClick={async () => {
+              setTesting(true)
+              try {
+                const response = await fetch(`/api/track/${currentWorkspace.id}/test`, {
+                  method: 'POST'
+                })
+                const data = await response.json()
+                
+                if (data.success) {
+                  toast({
+                    title: 'Success!',
+                    description: data.message,
+                  })
+                } else {
+                  toast({
+                    title: 'Test Failed',
+                    description: data.error || 'Unable to test pixel',
+                    variant: 'destructive'
+                  })
+                }
+              } catch (error) {
+                toast({
+                  title: 'Error',
+                  description: 'Failed to run test',
+                  variant: 'destructive'
+                })
+              } finally {
+                setTesting(false)
+              }
+            }}
+            variant="outline"
+            size="sm"
+            disabled={testing}
+            className="text-gray-400 hover:text-white border-[#333] font-mono tracking-tight text-sm h-8 px-4 flex items-center gap-2"
+          >
+            {testing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Testing...
+              </>
+            ) : (
+              <>
+                <PlayCircle className="w-4 h-4" />
+                Test Pixel
+              </>
+            )}
+          </Button>
         </div>
 
         {/* Documentation */}

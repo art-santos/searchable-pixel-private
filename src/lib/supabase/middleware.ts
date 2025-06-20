@@ -15,43 +15,65 @@ export const createClient = (request: NextRequest) => {
     {
       cookies: {
         get(name: string) {
-          return request.cookies.get(name)?.value
+          try {
+            const cookie = request.cookies.get(name)
+            if (!cookie?.value) return undefined
+            
+            // Handle base64 prefixed cookies that might be causing parsing issues
+            if (cookie.value.startsWith('base64-')) {
+              console.warn(`[Supabase Middleware] Skipping malformed cookie: ${name}`)
+              return undefined
+            }
+            
+            return cookie.value
+          } catch (error) {
+            console.error(`[Supabase Middleware] Error getting cookie ${name}:`, error)
+            return undefined
+          }
         },
         set(name: string, value: string, options: CookieOptions) {
-          // If the cookie is updated, update the cookies for the request and response
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-          response = NextResponse.next({ // Recreate response to apply updated cookie
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
+          try {
+            // If the cookie is updated, update the cookies for the request and response
+            request.cookies.set({
+              name,
+              value,
+              ...options,
+            })
+            response = NextResponse.next({ // Recreate response to apply updated cookie
+              request: {
+                headers: request.headers,
+              },
+            })
+            response.cookies.set({
+              name,
+              value,
+              ...options,
+            })
+          } catch (error) {
+            console.error(`[Supabase Middleware] Error setting cookie ${name}:`, error)
+          }
         },
         remove(name: string, options: CookieOptions) {
-          // If the cookie is removed, update the cookies for the request and response
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-           response = NextResponse.next({ // Recreate response to apply updated cookie
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
+          try {
+            // If the cookie is removed, update the cookies for the request and response
+            request.cookies.set({
+              name,
+              value: '',
+              ...options,
+            })
+             response = NextResponse.next({ // Recreate response to apply updated cookie
+              request: {
+                headers: request.headers,
+              },
+            })
+            response.cookies.set({
+              name,
+              value: '',
+              ...options,
+            })
+          } catch (error) {
+            console.error(`[Supabase Middleware] Error removing cookie ${name}:`, error)
+          }
         },
       },
     }
