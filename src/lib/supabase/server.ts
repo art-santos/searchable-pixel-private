@@ -14,27 +14,7 @@ export function createClient() {
           try {
             const cookieStore = await cookies()
             const cookie = cookieStore.get(name)
-            
-            if (!cookie?.value) return undefined
-            
-            // Handle base64 prefixed cookies that might be causing parsing issues
-            if (cookie.value.startsWith('base64-')) {
-              console.warn(`[Supabase Server] Skipping malformed cookie: ${name}`)
-              return undefined
-            }
-            
-            // Handle potential JSON parsing issues in cookie values
-            if (cookie.value.includes('{') || cookie.value.includes('[')) {
-              try {
-                // Test if it's valid JSON
-                JSON.parse(cookie.value)
-              } catch {
-                console.warn(`[Supabase Server] Invalid JSON in cookie ${name}, skipping`)
-                return undefined
-              }
-            }
-            
-            return cookie.value
+            return cookie?.value
           } catch (error) {
             console.error(`[Supabase Server] Error getting cookie ${name}:`, error)
             return undefined

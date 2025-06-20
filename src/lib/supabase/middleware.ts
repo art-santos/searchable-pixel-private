@@ -16,16 +16,7 @@ export const createClient = (request: NextRequest) => {
       cookies: {
         get(name: string) {
           try {
-            const cookie = request.cookies.get(name)
-            if (!cookie?.value) return undefined
-            
-            // Handle base64 prefixed cookies that might be causing parsing issues
-            if (cookie.value.startsWith('base64-')) {
-              console.warn(`[Supabase Middleware] Skipping malformed cookie: ${name}`)
-              return undefined
-            }
-            
-            return cookie.value
+            return request.cookies.get(name)?.value
           } catch (error) {
             console.error(`[Supabase Middleware] Error getting cookie ${name}:`, error)
             return undefined

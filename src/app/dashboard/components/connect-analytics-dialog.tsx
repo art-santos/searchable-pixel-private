@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import {
   Dialog,
   DialogContent,
@@ -12,7 +13,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { InstallationGuide } from '@/components/ai-crawler/installation-guide'
-import { Search, HelpCircle, CheckCircle2, ChevronLeft, X } from 'lucide-react'
+import { Search, HelpCircle, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 
 interface ConnectAnalyticsDialogProps {
@@ -29,6 +30,7 @@ type Platform = {
   iconBg?: string
   available: boolean
   hasBeta?: boolean
+  logoSrc?: string
 }
 
 const platforms: Platform[] = [
@@ -66,7 +68,8 @@ const platforms: Platform[] = [
     category: 'nocode',
     iconBg: 'bg-[#4353FF] text-white',
     available: true,
-    hasBeta: true
+    hasBeta: true,
+    logoSrc: '/images/webflow.svg'
   },
   {
     id: 'framer',
@@ -75,7 +78,8 @@ const platforms: Platform[] = [
     category: 'nocode',
     iconBg: 'bg-[#0055FF] text-white',
     available: true,
-    hasBeta: true
+    hasBeta: true,
+    logoSrc: '/images/framer.svg'
   },
   {
     id: 'netlify',
@@ -211,37 +215,27 @@ export function ConnectAnalyticsDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px] p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-gray-200 dark:border-[#1a1a1a]">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {showInstallationGuide && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleBack}
-                  className="p-0 h-auto hover:bg-transparent"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </Button>
-              )}
-              <div>
-                <DialogTitle className="text-xl">
-                  {showInstallationGuide ? 'Set Up Analytics' : 'Connect Analytics'}
-                </DialogTitle>
-                <DialogDescription className="mt-1">
-                  {showInstallationGuide && selectedPlatformData
-                    ? `Install Split Analytics on ${selectedPlatformData.name}`
-                    : 'Choose your website platform to get started'}
-                </DialogDescription>
-              </div>
+          <div className="flex items-center gap-3">
+            {showInstallationGuide && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBack}
+                className="p-0 h-auto hover:bg-transparent"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+            )}
+            <div>
+              <DialogTitle className="text-xl">
+                {showInstallationGuide ? 'Set Up Analytics' : 'Connect Analytics'}
+              </DialogTitle>
+              <DialogDescription className="mt-1">
+                {showInstallationGuide && selectedPlatformData
+                  ? `Install Split Analytics on ${selectedPlatformData.name}`
+                  : 'Choose your website platform to get started'}
+              </DialogDescription>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClose}
-              className="p-0 h-auto hover:bg-transparent"
-            >
-              <X className="w-5 h-5 text-gray-400" />
-            </Button>
           </div>
         </DialogHeader>
 
@@ -251,7 +245,6 @@ export function ConnectAnalyticsDialog({
               platform={selectedPlatform as any}
               onComplete={handleInstallationComplete}
               onBack={handleBack}
-              onClose={handleClose}
             />
           ) : (
             <>
@@ -266,8 +259,8 @@ export function ConnectAnalyticsDialog({
                 />
               </div>
 
-              {/* Platform grid */}
-              <div className="grid grid-cols-2 gap-3 mb-6">
+              {/* Platform list */}
+              <div className="space-y-2 mb-6 max-h-[400px] overflow-y-auto">
                 {sortedPlatforms.map((platform) => {
                   const isAvailable = platform.available
                   const Component = isAvailable ? 'button' : 'div'
@@ -276,38 +269,53 @@ export function ConnectAnalyticsDialog({
                     <Component
                       key={platform.id}
                       onClick={isAvailable ? () => handlePlatformSelect(platform.id) : undefined}
-                      className={`relative p-4 rounded-lg border transition-all text-left ${
+                      className={`w-full flex items-center gap-4 p-4 rounded-lg border transition-all ${
                         isAvailable
-                          ? 'border-gray-200 dark:border-[#1a1a1a] hover:border-gray-300 dark:hover:border-[#333] cursor-pointer group'
+                          ? 'border-gray-200 dark:border-[#1a1a1a] hover:border-gray-300 dark:hover:border-[#333] hover:bg-gray-50 dark:hover:bg-[#0a0a0a] cursor-pointer group'
                           : 'border-gray-100 dark:border-[#0a0a0a] opacity-60 cursor-not-allowed'
                       }`}
                     >
-                      <div className="flex items-start gap-3">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-semibold ${platform.iconBg || 'bg-gray-100 dark:bg-[#1a1a1a]'}`}>
-                          {platform.icon || platform.name.charAt(0)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-sm text-black dark:text-white truncate">
+                      {/* Icon */}
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-semibold flex-shrink-0 ${platform.iconBg || 'bg-gray-100 dark:bg-[#1a1a1a]'}`}>
+                        {platform.logoSrc ? (
+                          <Image 
+                            src={platform.logoSrc} 
+                            alt={platform.name} 
+                            width={20} 
+                            height={20} 
+                            className="filter brightness-0 invert"
+                          />
+                        ) : (
+                          platform.icon || platform.name.charAt(0)
+                        )}
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="flex-1 text-left">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium text-sm text-black dark:text-white">
                             {platform.name}
                           </h3>
-                          <p className="text-xs text-gray-500 dark:text-[#666] mt-0.5">
-                            {platform.description}
-                          </p>
-                          
-                          {/* Coming soon badge */}
-                          {!isAvailable && (
-                            <span className="inline-block mt-2 px-2 py-0.5 text-xs font-medium bg-gray-100 dark:bg-[#1a1a1a] text-gray-500 dark:text-[#666] rounded">
-                              Coming soon
-                            </span>
-                          )}
-                          
-                          {/* Beta badge */}
                           {isAvailable && platform.hasBeta && (
-                            <span className="inline-block mt-2 px-2 py-0.5 text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded">
-                              Tracking Pixel
+                            <span className="px-2 py-0.5 text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded">
+                              Beta
                             </span>
                           )}
                         </div>
+                        <p className="text-xs text-gray-500 dark:text-[#666] mt-0.5">
+                          {platform.description}
+                        </p>
+                      </div>
+                      
+                      {/* Status/Arrow */}
+                      <div className="flex-shrink-0">
+                        {isAvailable ? (
+                          <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
+                        ) : (
+                          <span className="px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-[#1a1a1a] text-gray-500 dark:text-[#666] rounded">
+                            Coming soon
+                          </span>
+                        )}
                       </div>
                     </Component>
                   )

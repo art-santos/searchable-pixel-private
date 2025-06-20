@@ -1,138 +1,128 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { CheckCircle, CheckCircle2, Code2, Copy, Settings, Zap, ArrowRight, Sparkles, Terminal, Plus, ArrowLeft } from 'lucide-react'
+import { useToast } from '@/components/ui/use-toast'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, ArrowRight, Copy, CheckCircle2, ExternalLink, Terminal, FileText, Code2, X, Settings, Zap } from 'lucide-react'
+import Image from 'next/image'
+import { useWorkspace } from '@/contexts/WorkspaceContext'
 
 interface InstallationGuideProps {
-  platform?: 'vercel' | 'node' | 'webflow' | 'framer' | null
+  platform: 'vercel' | 'node' | 'webflow' | 'framer'
   onComplete?: () => void
   onBack?: () => void
-  onClose?: () => void
 }
 
-type PackageManager = 'npm' | 'pnpm' | 'yarn'
-
-type StepType = 'install' | 'env' | 'code' | 'instruction'
-
-interface BaseStep {
+type InstructionStep = {
   title: string
   description: string
-  type: StepType
-  icon: any
+  type: 'instruction'
+  content: string
+  icon: React.ComponentType<{ className?: string }>
 }
 
-interface InstallStep extends BaseStep {
-  type: 'install'
-}
-
-interface EnvStep extends BaseStep {
-  type: 'env'
-  code: string
-  filename: string
-}
-
-interface CodeStep extends BaseStep {
+type CodeStep = {
+  title: string
+  description: string
   type: 'code'
   code: string
   filename: string
+  icon: React.ComponentType<{ className?: string }>
 }
 
-interface InstructionStep extends BaseStep {
-  type: 'instruction'
-  content: string
+type StepType = InstructionStep | CodeStep
+
+interface PlatformInstructions {
+  title: string
+  description: string
+  steps: StepType[]
 }
 
-type Step = InstallStep | EnvStep | CodeStep | InstructionStep
-
-const packageManagers = {
-  npm: { name: 'npm', command: 'npm install' },
-  pnpm: { name: 'pnpm', command: 'pnpm add' },
-  yarn: { name: 'yarn', command: 'yarn add' }
-}
-
-const platformInstructions = {
+// Helper function to get platform instructions with workspace ID
+const getPlatformInstructions = (workspaceId: string): Record<string, PlatformInstructions> => ({
   vercel: {
-    title: 'Next.js Setup',
-    description: 'Set up AI crawler tracking for your Next.js application',
+    title: 'Vercel / Next.js Setup',
+    description: 'Add AI crawler tracking to your Next.js app on Vercel',
     steps: [
       {
         title: 'Install Package',
-        description: 'Add the Split Analytics package to your project',
-        type: 'install' as const,
+        description: 'Add our SDK to your project',
+        type: 'code' as const,
+        code: 'npm install @split.dev/analytics',
+        filename: 'Terminal',
         icon: Terminal
       },
       {
-        title: 'Add API Key',
-        description: 'Configure your environment variables',
-        type: 'env' as const,
-        code: 'SPLIT_API_KEY=your_api_key_here',
-        filename: '.env.local',
-        icon: FileText
-      },
-      {
         title: 'Create Middleware',
-        description: 'Set up automatic AI crawler detection',
+        description: 'Add crawler tracking to all routes',
         type: 'code' as const,
-        code: `import { NextResponse } from 'next/server'
-import { trackCrawlerVisit } from '@split.dev/analytics/middleware'
-
-export async function middleware(request) {
-  if (process.env.SPLIT_API_KEY) {
-    trackCrawlerVisit(request, {
-      apiKey: process.env.SPLIT_API_KEY
-    }).catch(console.error)
-  }
-  return NextResponse.next()
-}
+        code: `import { splitAnalytics } from '@split.dev/analytics/next'
 
 export const config = {
-  matcher: ['/((?!_next|favicon.ico).*)']
-}`,
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)']
+}
+
+export default splitAnalytics({
+  // Get your API key from the API Keys page
+  apiKey: process.env.SPLIT_API_KEY
+})`,
         filename: 'middleware.ts',
         icon: Code2
+      },
+      {
+        title: 'Deploy',
+        description: 'Push your changes to start tracking',
+        type: 'instruction' as const,
+        content: `1. Add your API key to environment variables
+2. Deploy to Vercel using git push
+3. Crawler visits will appear in your dashboard within minutes`,
+        icon: Zap
       }
     ]
   },
   node: {
-    title: 'Node.js Setup',
-    description: 'Set up AI crawler tracking for your Node.js server',
+    title: 'Custom Server Setup',
+    description: 'Add AI crawler tracking to Express, Fastify, or any Node.js server',
     steps: [
       {
         title: 'Install Package',
-        description: 'Add the Split Analytics package to your project',
-        type: 'install' as const,
+        description: 'Add our SDK to your project',
+        type: 'code' as const,
+        code: 'npm install @split.dev/analytics',
+        filename: 'Terminal',
         icon: Terminal
       },
       {
-        title: 'Add API Key',
-        description: 'Configure your environment variables',
-        type: 'env' as const,
-        code: 'SPLIT_API_KEY=your_api_key_here',
-        filename: '.env',
-        icon: FileText
-      },
-      {
         title: 'Add Middleware',
-        description: 'Set up Express middleware for tracking',
+        description: 'Track all incoming requests',
         type: 'code' as const,
-        code: `import { trackCrawlerVisit, isAICrawler } from '@split.dev/analytics'
+        code: `const { splitAnalytics } = require('@split.dev/analytics')
 
-app.use(async (req, res, next) => {
-  const userAgent = req.get('User-Agent')
-  if (isAICrawler(userAgent)) {
-    trackCrawlerVisit({
-      url: req.url,
-      userAgent,
-      method: req.method
-    }, {
-      apiKey: process.env.SPLIT_API_KEY
-    }).catch(console.error)
-  }
-  next()
-})`,
+// Initialize the middleware
+const analytics = splitAnalytics({
+  apiKey: process.env.SPLIT_API_KEY
+})
+
+// For Express
+app.use(analytics.express())
+
+// For Fastify
+fastify.register(analytics.fastify())
+
+// For raw Node.js
+server.on('request', analytics.node())`,
         filename: 'server.js',
         icon: Code2
+      },
+      {
+        title: 'Start Tracking',
+        description: 'Deploy your server to begin tracking',
+        type: 'instruction' as const,
+        content: `1. Add your API key to environment variables
+2. Restart your server
+3. AI crawler visits will appear in your dashboard`,
+        icon: Zap
       }
     ]
   },
@@ -153,7 +143,7 @@ app.use(async (req, res, next) => {
         title: 'Add to Webflow',
         description: 'Paste the tracking pixel in your page settings',
         type: 'code' as const,
-        code: `<img src="https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif" 
+        code: `<img src="https://split.dev/api/track/${workspaceId}/pixel.gif" 
      style="display:none" 
      width="1" 
      height="1" 
@@ -192,17 +182,17 @@ app.use(async (req, res, next) => {
         description: 'Use the JavaScript version for Framer',
         type: 'code' as const,
         code: `<script>
-  (function() {
-    var img = new Image();
-    img.src = 'https://split.dev/api/track/YOUR_WORKSPACE_ID/pixel.gif';
-    img.style.display = 'none';
-    img.width = 1;
-    img.height = 1;
-    img.alt = '';
-    img.onload = function() { /* Pixel loaded */ };
-    img.onerror = function() { /* Pixel failed */ };
-    document.body.appendChild(img);
-  })();
+(function() {
+  var img = new Image();
+  img.src = 'https://split.dev/api/track/${workspaceId}/pixel.gif';
+  img.style.display = 'none';
+  img.width = 1;
+  img.height = 1;
+  img.alt = '';
+  img.onload = function() { /* Pixel loaded */ };
+  img.onerror = function() { /* Pixel failed */ };
+  document.body.appendChild(img);
+})();
 </script>`,
         filename: 'Site Settings → Custom Code → "Start of <head> tag"',
         icon: Code2
@@ -220,84 +210,75 @@ app.use(async (req, res, next) => {
       }
     ]
   }
-} as const
+})
 
-export function InstallationGuide({ platform, onComplete, onBack, onClose }: InstallationGuideProps) {
+export function InstallationGuide({ platform, onComplete, onBack }: InstallationGuideProps) {
   const [currentStep, setCurrentStep] = useState(0)
-  const [selectedPackageManager, setSelectedPackageManager] = useState<PackageManager>('npm')
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
+  const { toast } = useToast()
+  const { currentWorkspace } = useWorkspace()
+  
+  // Get the workspace ID, fallback to placeholder if not available
+  const workspaceId = currentWorkspace?.id || 'YOUR_WORKSPACE_ID'
+  const platformInstructions = getPlatformInstructions(workspaceId)
 
-  if (!platform) {
-    return (
-      <div className="p-8 animate-in fade-in duration-200">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-3">
-              Choose Your Platform
-            </h2>
+  // Show platform selection if we're on a supported platform
+  if (platform === 'webflow' || platform === 'framer') {
+    if (!platformInstructions[platform]) {
+      return (
+        <div className="space-y-6">
+          <div className="text-center py-12">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              Platform Not Found
+            </h3>
             <p className="text-gray-600 dark:text-gray-400">
-              Select your hosting platform to get setup instructions
+              Instructions for {platform} are not available yet.
             </p>
           </div>
-          {onClose && (
-            <Button
-              onClick={onClose}
-              variant="ghost"
-              size="sm"
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200"
-            >
-              <X className="w-5 h-5" />
-            </Button>
+          {onBack && (
+            <div className="text-center">
+              <Button onClick={onBack} variant="ghost">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+            </div>
           )}
         </div>
+      )
+    }
+  }
 
-        <div className="space-y-4 mb-8">
-          <button
-            onClick={() => window.location.href = '/dashboard?setup=vercel'}
-            className="w-full p-5 text-left bg-white/70 dark:bg-gray-800/70 border border-gray-200/60 dark:border-gray-700/60 rounded-lg transition-all duration-200 ease-out group hover:bg-white/90 dark:hover:bg-gray-800/90 hover:scale-[1.02] hover:shadow-lg"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-black dark:bg-white rounded-lg flex items-center justify-center transition-transform duration-200 ease-out group-hover:scale-110">
-                <Code2 className="w-6 h-6 text-white dark:text-black" />
-              </div>
-              <div>
-                <div className="font-semibold text-gray-900 dark:text-white">Next.js / Vercel</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">React framework with middleware support</div>
-              </div>
-              <ArrowRight className="w-5 h-5 text-gray-400 ml-auto transition-all duration-200 ease-out group-hover:text-gray-600 dark:group-hover:text-gray-300 group-hover:translate-x-1" />
-            </div>
-          </button>
+  // Show alternative options for platforms without installation guides
+  if ((platform as string) === 'wordpress') {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-8">
+          <div className="w-16 h-16 mx-auto mb-4 bg-gray-800/50 rounded-lg flex items-center justify-center">
+            <Sparkles className="w-8 h-8 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            WordPress Support Coming Soon
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+            Our WordPress plugin is in development. In the meantime, you can use one of these alternatives:
+          </p>
+        </div>
 
-          <button
-            onClick={() => window.location.href = '/dashboard?setup=node'}
-            className="w-full p-5 text-left bg-white/70 dark:bg-gray-800/70 border border-gray-200/60 dark:border-gray-700/60 rounded-lg transition-all duration-200 ease-out group hover:bg-white/90 dark:hover:bg-gray-800/90 hover:scale-[1.02] hover:shadow-lg"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center transition-transform duration-200 ease-out group-hover:scale-110">
-                <Terminal className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <div className="font-semibold text-gray-900 dark:text-white">Node.js / Express</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Server-side JavaScript with Express</div>
-              </div>
-              <ArrowRight className="w-5 h-5 text-gray-400 ml-auto transition-all duration-200 ease-out group-hover:text-gray-600 dark:group-hover:text-gray-300 group-hover:translate-x-1" />
-            </div>
-          </button>
-
+        <div className="space-y-3">
           <button
             onClick={() => window.location.href = '/dashboard?setup=webflow'}
             className="w-full p-5 text-left bg-white/70 dark:bg-gray-800/70 border border-gray-200/60 dark:border-gray-700/60 rounded-lg transition-all duration-200 ease-out group hover:bg-white/90 dark:hover:bg-gray-800/90 hover:scale-[1.02] hover:shadow-lg"
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center transition-transform duration-200 ease-out group-hover:scale-110">
+              <div className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center transition-transform duration-200 ease-out group-hover:scale-110">
                 <Code2 className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1">
                 <div className="font-semibold text-gray-900 dark:text-white">Webflow</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">No-code website builder</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Visual web design platform</div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="px-2 py-1 text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded">Lite</span>
+                <span className="px-2 py-1 text-xs bg-gray-700/20 text-gray-300 border border-gray-700/30 rounded">Beta</span>
                 <ArrowRight className="w-5 h-5 text-gray-400 transition-all duration-200 ease-out group-hover:text-gray-600 dark:group-hover:text-gray-300 group-hover:translate-x-1" />
               </div>
             </div>
@@ -308,7 +289,7 @@ export function InstallationGuide({ platform, onComplete, onBack, onClose }: Ins
             className="w-full p-5 text-left bg-white/70 dark:bg-gray-800/70 border border-gray-200/60 dark:border-gray-700/60 rounded-lg transition-all duration-200 ease-out group hover:bg-white/90 dark:hover:bg-gray-800/90 hover:scale-[1.02] hover:shadow-lg"
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center transition-transform duration-200 ease-out group-hover:scale-110">
+              <div className="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center transition-transform duration-200 ease-out group-hover:scale-110">
                 <Code2 className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1">
@@ -316,7 +297,7 @@ export function InstallationGuide({ platform, onComplete, onBack, onClose }: Ins
                 <div className="text-sm text-gray-600 dark:text-gray-400">Design and development platform</div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="px-2 py-1 text-xs bg-orange-500/20 text-orange-300 border border-orange-500/30 rounded">Beta</span>
+                <span className="px-2 py-1 text-xs bg-gray-700/20 text-gray-300 border border-gray-700/30 rounded">Beta</span>
                 <ArrowRight className="w-5 h-5 text-gray-400 transition-all duration-200 ease-out group-hover:text-gray-600 dark:group-hover:text-gray-300 group-hover:translate-x-1" />
               </div>
             </div>
@@ -342,129 +323,48 @@ export function InstallationGuide({ platform, onComplete, onBack, onClose }: Ins
   const instructions = platformInstructions[platform]
   const step = instructions.steps[currentStep]
 
+  const handleNext = () => {
+    if (currentStep < instructions.steps.length - 1) {
+      setCurrentStep(currentStep + 1)
+    } else if (onComplete) {
+      onComplete()
+    }
+  }
+
+  const handlePrevious = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1)
+    }
+  }
+
   const copyToClipboard = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text)
       setCopiedCode(text)
+      toast({
+        title: 'Copied!',
+        description: 'Code copied to clipboard',
+      })
       setTimeout(() => setCopiedCode(null), 2000)
     } catch (err) {
-      console.error('Failed to copy:', err)
+      toast({
+        title: 'Error',
+        description: 'Failed to copy to clipboard',
+        variant: 'destructive',
+      })
     }
-  }
-
-  const getInstallCommand = () => {
-    return `${packageManagers[selectedPackageManager].command} @split.dev/analytics`
   }
 
   const renderStepContent = () => {
-    if (step.type === 'install') {
-      return (
-        <div className="space-y-6 animate-in slide-in-from-right-4 fade-in duration-300">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              Choose your package manager:
-            </label>
-            <div className="flex gap-3 mb-6">
-              {(Object.entries(packageManagers) as [PackageManager, typeof packageManagers[PackageManager]][]).map(([key, pm]) => (
-                <button
-                  key={key}
-                  onClick={() => setSelectedPackageManager(key)}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-200 ease-out ${
-                    selectedPackageManager === key
-                      ? 'bg-gray-900 dark:bg-white text-white dark:text-black border-gray-900 dark:border-white scale-105'
-                      : 'bg-white/60 dark:bg-gray-800/60 text-gray-700 dark:text-gray-300 border-gray-300/60 dark:border-gray-600/60 hover:bg-white/80 dark:hover:bg-gray-800/80 hover:scale-105'
-                  }`}
-                >
-                  {pm.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="relative">
-            <div className="bg-gray-900/95 dark:bg-black/95 rounded-lg border border-gray-800/60 dark:border-gray-700/60 overflow-hidden transition-all duration-200 ease-out hover:shadow-lg">
-              <div className="flex items-center justify-between px-4 py-3 bg-gray-800/80 dark:bg-gray-900/80 border-b border-gray-700/60">
-                <div className="flex items-center gap-2 text-gray-400">
-                  <Terminal className="w-4 h-4" />
-                  <span className="text-sm font-mono">Terminal</span>
-                </div>
-                <Button
-                  onClick={() => copyToClipboard(getInstallCommand())}
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 flex items-center justify-center text-gray-400 hover:text-white transition-colors duration-200"
-                >
-                  {copiedCode === getInstallCommand() ? (
-                    <CheckCircle2 className="w-4 h-4 text-green-400" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
-              <pre className="px-3 py-4 text-sm text-gray-100 overflow-x-auto">
-                <code>{getInstallCommand()}</code>
-              </pre>
-            </div>
-          </div>
-        </div>
-      )
-    }
-
-    if (step.type === 'env') {
-      const envStep = step as EnvStep
-      return (
-        <div className="space-y-4 animate-in slide-in-from-right-4 fade-in duration-300">
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Get your API key from Settings → API Keys in your Split dashboard
-          </p>
-          
-          <div className="relative">
-            <div className="bg-gray-900/95 dark:bg-black/95 rounded-lg border border-gray-800/60 dark:border-gray-700/60 overflow-hidden transition-all duration-200 ease-out hover:shadow-lg">
-              <div className="flex items-center justify-between px-4 py-3 bg-gray-800/80 dark:bg-gray-900/80 border-b border-gray-700/60">
-                <div className="flex items-center gap-2 text-gray-400">
-                  <FileText className="w-4 h-4" />
-                  <span className="text-sm font-mono">{envStep.filename}</span>
-                </div>
-                <Button
-                  onClick={() => copyToClipboard(envStep.code)}
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 flex items-center justify-center text-gray-400 hover:text-white transition-colors duration-200"
-                >
-                  {copiedCode === envStep.code ? (
-                    <CheckCircle2 className="w-4 h-4 text-green-400" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
-              <pre className="px-3 py-4 text-sm text-gray-100 overflow-x-auto">
-                <code>{envStep.code}</code>
-              </pre>
-            </div>
-          </div>
-        </div>
-      )
-    }
-
     if (step.type === 'instruction') {
+      const instructionStep = step as InstructionStep
       return (
         <div className="animate-in slide-in-from-right-4 fade-in duration-300">
-          <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
-            <div className="space-y-3">
-              {(step as InstructionStep).content?.split('\n').map((line, index) => (
-                <div key={index} className="flex items-start gap-3">
-                  <span className="text-gray-500 dark:text-gray-400 font-mono text-sm">{line}</span>
-                </div>
-              ))}
+          <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-6 border border-gray-200 dark:border-gray-700 transition-all duration-200 ease-out hover:shadow-lg">
+            <div className="whitespace-pre-line text-gray-700 dark:text-gray-300 leading-relaxed">
+              {instructionStep.content}
             </div>
           </div>
-          
-          {/* Additional help text */}
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
-            {step.title === 'Get Your Tracking Code' && 'You need access to your Split Dashboard to get your tracking code.'}
-            {step.title === 'Publish Your Site' && 'Changes will only take effect after publishing.'}
-          </p>
         </div>
       )
     }
@@ -486,13 +386,13 @@ export function InstallationGuide({ platform, onComplete, onBack, onClose }: Ins
                 className="h-7 w-7 p-0 flex items-center justify-center text-gray-400 hover:text-white transition-colors duration-200"
               >
                 {copiedCode === codeStep.code ? (
-                  <CheckCircle2 className="w-4 h-4 text-green-400" />
+                  <CheckCircle2 className="w-4 h-4 text-gray-300" />
                 ) : (
                   <Copy className="w-4 h-4" />
                 )}
               </Button>
             </div>
-            <pre className="px-3 py-4 text-sm text-gray-100 overflow-x-auto max-h-80">
+            <pre className="px-3 py-4 text-sm text-gray-100 overflow-x-auto max-h-80 whitespace-pre-wrap break-all">
               <code>{codeStep.code}</code>
             </pre>
           </div>
@@ -513,99 +413,106 @@ export function InstallationGuide({ platform, onComplete, onBack, onClose }: Ins
   }
 
   return (
-    <div className="p-8 animate-in fade-in duration-200">
-      {/* Header */}
+    <div className="space-y-6">
+      {/* Progress indicator */}
       <div className="flex items-center justify-between mb-8">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-              {instructions.title}
-            </h1>
-            <button
-              onClick={() => window.open('https://docs.split.dev', '_blank')}
-              className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-all duration-200 ease-out hover:scale-105 bg-gray-100/60 dark:bg-gray-800/60 hover:bg-gray-100 dark:hover:bg-gray-800 px-3 py-1.5 rounded-lg border border-gray-200/60 dark:border-gray-700/60"
-            >
-              <span>Docs</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </button>
-          </div>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            {instructions.description}
-          </p>
-          
-          {/* Progress indicator - only show if more than one step */}
-          {instructions.steps.length > 1 && (
-            <div className="flex gap-2">
-              {instructions.steps.map((_, index) => (
-                <div
-                  key={index}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ease-out ${
-                    index <= currentStep ? "bg-gray-900 dark:bg-white scale-110" : "bg-gray-300 dark:bg-gray-600"
-                  }`}
-                />
-              ))}
+        <div className="flex items-center gap-2 flex-1">
+          {instructions.steps.map((_, index) => (
+            <React.Fragment key={index}>
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ 
+                  scale: index <= currentStep ? 1 : 0.8,
+                  opacity: index <= currentStep ? 1 : 0.3
+                }}
+                transition={{ 
+                  duration: 0.3,
+                  ease: [0.23, 1, 0.32, 1]
+                }}
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-300 ${
+                  index < currentStep 
+                    ? 'bg-gray-700 text-white' 
+                    : index === currentStep 
+                      ? 'bg-gray-900 dark:bg-white text-white dark:text-black shadow-lg' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
+                }`}
+              >
+                {index < currentStep ? (
+                  <CheckCircle className="w-5 h-5" />
+                ) : (
+                  <span className="text-xs font-semibold">{index + 1}</span>
+                )}
+              </motion.div>
+              {index < instructions.steps.length - 1 && (
+                <div className={`flex-1 h-0.5 transition-colors duration-500 ${
+                  index < currentStep ? 'bg-gray-700' : 'bg-gray-200 dark:bg-gray-700'
+                }`} />
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+
+      {/* Step content */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentStep}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={{ 
+            duration: 0.3,
+            ease: [0.23, 1, 0.32, 1]
+          }}
+          className="space-y-4"
+        >
+          <div className="flex items-start gap-4">
+            <div className={`w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-300 ${
+              currentStep === instructions.steps.length - 1 
+                ? 'bg-gray-900 dark:bg-white shadow-lg' 
+                : 'bg-gray-800 dark:bg-gray-700'
+            }`}>
+              {React.createElement(step.icon, { 
+                className: `w-6 h-6 ${
+                  currentStep === instructions.steps.length - 1 
+                    ? 'text-white dark:text-black' 
+                    : 'text-gray-300'
+                }` 
+              })}
             </div>
-          )}
-        </div>
-        {onClose && (
-          <Button
-            onClick={onClose}
-            variant="ghost"
-            size="sm"
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200"
-          >
-            <X className="w-5 h-5" />
-          </Button>
-        )}
-      </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                {step.title}
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                {step.description}
+              </p>
+            </div>
+          </div>
 
-      {/* Current Step */}
-      <div className="mb-8">
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            {step.title}
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400">
-            {step.description}
-          </p>
-        </div>
+          {renderStepContent()}
+        </motion.div>
+      </AnimatePresence>
 
-        {renderStepContent()}
-      </div>
-
-      {/* Navigation */}
-      <div className="flex items-center justify-between pt-6 border-t border-gray-200/60 dark:border-gray-700/60">
-        <div>
-          {currentStep > 0 && (
-            <button
-              onClick={() => setCurrentStep(currentStep - 1)}
-              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-200 ease-out flex items-center gap-2 group"
-            >
-              <ArrowLeft className="w-4 h-4 transition-transform duration-200 ease-out group-hover:-translate-x-1" />
-              Previous
-            </button>
-          )}
-        </div>
-
-        <div>
-          {currentStep < instructions.steps.length - 1 ? (
-            <button
-              onClick={() => setCurrentStep(currentStep + 1)}
-              className="text-white hover:text-gray-200 transition-all duration-200 ease-out flex items-center gap-2 group"
-            >
-              Next
-              <ArrowRight className="w-4 h-4 transition-transform duration-200 ease-out group-hover:translate-x-1" />
-            </button>
-          ) : (
-            <Button
-              onClick={onComplete}
-              className="bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-100 transition-all duration-200 ease-out hover:scale-105"
-            >
-              Complete Setup
-              <CheckCircle2 className="w-4 h-4 ml-2" />
-            </Button>
-          )}
-        </div>
+      {/* Navigation buttons */}
+      <div className="flex items-center justify-between pt-4">
+        <Button
+          onClick={currentStep === 0 && onBack ? onBack : handlePrevious}
+          variant="ghost"
+          disabled={currentStep === 0 && !onBack}
+          className="transition-all duration-200"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          {currentStep === 0 && onBack ? 'Back' : 'Previous'}
+        </Button>
+        
+        <Button
+          onClick={handleNext}
+          className="bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-black transition-all duration-200 hover:scale-105"
+        >
+          {currentStep === instructions.steps.length - 1 ? 'Complete Setup' : 'Next'}
+          <ArrowRight className="w-4 h-4 ml-2" />
+        </Button>
       </div>
     </div>
   )
