@@ -9,9 +9,9 @@ interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const speedMap = {
-  fast: 1,
-  normal: 2,
-  slow: 3
+  fast: 0.8,
+  normal: 1.5,
+  slow: 2
 }
 
 export function Skeleton({ 

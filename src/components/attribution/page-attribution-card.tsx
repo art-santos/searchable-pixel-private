@@ -95,14 +95,12 @@ export function PageAttributionCard({ pageData, isLoading = false, onConnectAnal
                 initial="hidden"
                 animate="visible"
                 variants={{
-                  hidden: { opacity: 0, y: 10 },
+                  hidden: { opacity: 0 },
                   visible: { 
                     opacity: 1, 
-                    y: 0, 
                     transition: { 
                       duration: 0.2, 
-                      ease: 'easeOut',
-                      delay: index * 0.05 
+                      ease: 'easeOut'
                     } 
                   }
                 }}
@@ -130,7 +128,7 @@ export function PageAttributionCard({ pageData, isLoading = false, onConnectAnal
                         className="w-full bg-black dark:bg-white rounded-full"
                         initial={{ height: 0 }}
                         animate={{ height: `${Math.min((page.totalCrawls / Math.max(...displayData.map(p => p.totalCrawls))) * 100, 100)}%` }}
-                        transition={{ delay: index * 0.1 + 0.3, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
                       />
                     </div>
                   </div>

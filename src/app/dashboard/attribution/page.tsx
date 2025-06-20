@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { motion, useReducedMotion } from "framer-motion"
 import { TimeframeSelector, TimeframeOption } from "@/components/custom/timeframe-selector"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useWorkspace } from "@/contexts/WorkspaceContext"
 import { Loader2 } from "lucide-react"
 import { PlanType } from "@/lib/subscription/config"
@@ -34,6 +34,11 @@ export default function AttributionPage() {
     error,
     handleChartDataChange 
   } = useAttributionData(timeframe)
+
+  // Memoize the callback to prevent unnecessary re-renders
+  const handleConnectAnalytics = useCallback(() => {
+    setShowConnectDialog(true)
+  }, [])
 
   // Fetch user subscription plan
   useEffect(() => {
@@ -168,7 +173,7 @@ export default function AttributionPage() {
                   timeframe={timeframe}
                   onDataChange={handleChartDataChange}
                   className="h-full"
-                  onConnectAnalytics={() => setShowConnectDialog(true)}
+                  onConnectAnalytics={handleConnectAnalytics}
                 />
                 </div>
               </CardContent>
@@ -187,7 +192,7 @@ export default function AttributionPage() {
             <CrawlerAttributionCard 
               crawlerData={crawlerData}
               isLoading={isLoading}
-              onConnectAnalytics={() => setShowConnectDialog(true)}
+              onConnectAnalytics={handleConnectAnalytics}
             />
             </motion.div>
 
@@ -201,7 +206,7 @@ export default function AttributionPage() {
             <PageAttributionCard 
               pageData={pageData}
               isLoading={isLoading}
-              onConnectAnalytics={() => setShowConnectDialog(true)}
+              onConnectAnalytics={handleConnectAnalytics}
             />
             </motion.div>
           </div>

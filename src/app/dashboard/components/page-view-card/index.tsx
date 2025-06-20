@@ -55,10 +55,10 @@ export function PageViewCard() {
     setTimeframe(newTimeframe)
   }
 
-  const handleDataChange = useCallback((data: { totalCrawls: number; periodComparison: any }) => {
+  const handleDataChange = (data: { totalCrawls: number; periodComparison: any }) => {
     setTotalCrawls(data.totalCrawls)
     setIsConnected(data.totalCrawls > 0)
-  }, [])
+  }
 
   const cardVariants = shouldReduceMotion ? {
     hidden: { opacity: 1 },
@@ -118,36 +118,12 @@ export function PageViewCard() {
               </div>
             </div>
           ) : (
-            <div className="relative h-full flex flex-col">
-              {/* Always render the chart so it can fetch data */}
-              <div className="flex-1 relative" style={{ minHeight: '405px' }}>
-                <CrawlerVisitsChart 
-                  timeframe={timeframe}
-                  onDataChange={handleDataChange}
-                  className="h-full"
-                  onConnectAnalytics={() => setShowConnectDialog(true)}
-                />
-              </div>
-
-              {/* Show empty state overlay only when confirmed no data */}
-              {isConnected === false && (
-                <div className="absolute inset-0 flex items-center justify-center z-10 bg-white dark:bg-transparent">
-                  <div className="text-center max-w-sm">
-                    <h4 className="text-black dark:text-white font-medium mb-2">No data yet</h4>
-                    <p className="text-gray-600 dark:text-[#666] text-sm mb-6 leading-relaxed">
-                      Connect your analytics to track every time an AI engine crawls your pages
-                    </p>
-                    <button 
-                      onClick={() => setShowConnectDialog(true)}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
-                    >
-                      <LinkIcon className="w-4 h-4" />
-                      Connect Analytics
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <CrawlerVisitsChart 
+              timeframe={timeframe}
+              onDataChange={handleDataChange}
+              className="h-full"
+              onConnectAnalytics={() => setShowConnectDialog(true)}
+            />
           )}
         </CardContent>
       </motion.div>

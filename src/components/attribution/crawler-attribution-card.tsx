@@ -60,30 +60,27 @@ export function CrawlerAttributionCard({ crawlerData, isLoading = false, onConne
   const itemVariants = shouldReduceMotion
     ? { hidden: {}, visible: {} }
     : {
-        hidden: { opacity: 0, x: -20 },
-        visible: (i: number) => ({
+        hidden: { opacity: 0 },
+        visible: {
           opacity: 1,
-          x: 0,
           transition: {
-            delay: i * 0.05,
-            duration: 0.3,
+            duration: 0.2,
             ease: "easeOut",
           },
-        }),
+        },
       }
 
   const progressVariants = shouldReduceMotion
     ? { hidden: {}, visible: {} }
     : {
         hidden: { width: 0 },
-        visible: (i: number) => ({
+        visible: {
           width: "var(--target-width)",
           transition: {
-            delay: i * 0.05 + 0.2,
-            duration: 0.6,
-            ease: [0.16, 1, 0.3, 1],
+            duration: 0.2,
+            ease: "easeOut",
           },
-        }),
+        },
       }
 
   const hasData = crawlerData.length > 0 && crawlerData.some(crawler => crawler.crawls > 0)
@@ -117,7 +114,6 @@ export function CrawlerAttributionCard({ crawlerData, isLoading = false, onConne
             {displayData.slice(0, 5).map((source, index) => (
               <motion.div
                 key={source.name}
-                custom={index}
                 variants={itemVariants}
                 initial="hidden"
                 animate="visible"
@@ -154,7 +150,7 @@ export function CrawlerAttributionCard({ crawlerData, isLoading = false, onConne
                     className="text-black dark:text-white font-semibold text-sm"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: index * 0.05 + 0.2, duration: 0.3 }}
+                    transition={{ duration: 0.2 }}
                   >
                     {source.percentage.toFixed(1)}%
                   </motion.div>
@@ -169,7 +165,6 @@ export function CrawlerAttributionCard({ crawlerData, isLoading = false, onConne
                     variants={progressVariants}
                     initial="hidden"
                     animate="visible"
-                    custom={index}
                   />
                 </div>
               </motion.div>

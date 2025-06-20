@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useWorkspace } from '@/contexts/WorkspaceContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { TimeframeOption } from '@/components/custom/timeframe-selector'
@@ -32,6 +32,8 @@ export function useAttributionData(timeframe: TimeframeOption): AttributionData 
   const [periodComparison, setPeriodComparison] = useState<PeriodComparison | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
+  const fetchTimeoutRef = useRef<NodeJS.Timeout>()
 
   const handleChartDataChange = useCallback((data: { totalCrawls: number; periodComparison: PeriodComparison | null }) => {
     setPeriodComparison(data.periodComparison)
@@ -41,53 +43,70 @@ export function useAttributionData(timeframe: TimeframeOption): AttributionData 
     })
   }, [])
 
-  const fetchAllData = useCallback(async () => {
-    if (!currentWorkspace) return
-    
-    setIsLoading(true)
-    setError(null)
-    
-    try {
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-      const headers = {
-        'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
-      }
-      
-      // Fetch all data in parallel
-      const [statsResponse, crawlerResponse, pagesResponse] = await Promise.all([
-        fetch(`/api/dashboard/attribution-stats?timeframe=${timeframeMap[timeframe]}&timezone=${encodeURIComponent(timezone)}&workspaceId=${currentWorkspace.id}`, { headers }),
-        fetch(`/api/dashboard/crawler-stats?timeframe=${timeframeMap[timeframe]}&timezone=${encodeURIComponent(timezone)}&workspaceId=${currentWorkspace.id}`, { headers }),
-        fetch(`/api/dashboard/attribution-pages?timeframe=${timeframeMap[timeframe]}&timezone=${encodeURIComponent(timezone)}&workspaceId=${currentWorkspace.id}`, { headers })
-      ])
-      
-      if (statsResponse.ok) {
-        const data = await statsResponse.json()
-        setStats(data)
-      }
-      
-      if (crawlerResponse.ok) {
-        const data = await crawlerResponse.json()
-        setCrawlerData(data.crawlers || [])
-      }
-      
-      if (pagesResponse.ok) {
-        const data = await pagesResponse.json()
-        setPageData(data.pages || [])
-      }
-
-    } catch (error) {
-      console.error('Error fetching attribution data:', error)
-      setError(error instanceof Error ? error.message : 'Failed to fetch attribution data')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [timeframe, currentWorkspace, session?.access_token])
-
   useEffect(() => {
-    if (currentWorkspace) {
-      fetchAllData()
+    // Clear any pending timeout
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current)
     }
-  }, [fetchAllData])
+
+    const fetchAllData = async () => {
+      if (!currentWorkspace) return
+      
+      // Only show loading skeleton on initial load
+      if (!hasLoadedOnce) {
+        setIsLoading(true)
+      }
+      setError(null)
+      
+      try {
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+        const headers = {
+          'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
+        }
+        
+        // Fetch all data in parallel
+        const [statsResponse, crawlerResponse, pagesResponse] = await Promise.all([
+          fetch(`/api/dashboard/attribution-stats?timeframe=${timeframeMap[timeframe]}&timezone=${encodeURIComponent(timezone)}&workspaceId=${currentWorkspace.id}`, { headers }),
+          fetch(`/api/dashboard/crawler-stats?timeframe=${timeframeMap[timeframe]}&timezone=${encodeURIComponent(timezone)}&workspaceId=${currentWorkspace.id}`, { headers }),
+          fetch(`/api/dashboard/attribution-pages?timeframe=${timeframeMap[timeframe]}&timezone=${encodeURIComponent(timezone)}&workspaceId=${currentWorkspace.id}`, { headers })
+        ])
+        
+        if (statsResponse.ok) {
+          const data = await statsResponse.json()
+          setStats(data)
+        }
+        
+        if (crawlerResponse.ok) {
+          const data = await crawlerResponse.json()
+          setCrawlerData(data.crawlers || [])
+        }
+        
+        if (pagesResponse.ok) {
+          const data = await pagesResponse.json()
+          setPageData(data.pages || [])
+        }
+
+      } catch (error) {
+        console.error('Error fetching attribution data:', error)
+        setError(error instanceof Error ? error.message : 'Failed to fetch attribution data')
+      } finally {
+        setIsLoading(false)
+        setHasLoadedOnce(true)
+      }
+    }
+
+    if (currentWorkspace) {
+      // Add a small debounce to prevent rapid fetches
+      fetchTimeoutRef.current = setTimeout(fetchAllData, hasLoadedOnce ? 100 : 0)
+    }
+
+    // Cleanup function
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current)
+      }
+    }
+  }, [timeframe, currentWorkspace?.id, session?.access_token, hasLoadedOnce])
 
   return {
     stats,

@@ -1,5 +1,6 @@
 import { ReactNode } from 'react'
 import { LinkIcon } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 interface EmptyStateBlurProps {
   children: ReactNode
@@ -22,14 +23,24 @@ export function EmptyStateBlur({
 }: EmptyStateBlurProps) {
   return (
     <div className="relative h-full flex flex-col">
-      {/* Preview - takes full height */}
-      <div className={`absolute inset-0 ${hasData ? '' : 'opacity-30 blur-sm pointer-events-none'}`}>
+      {/* Preview */}
+      <motion.div 
+        className={`absolute inset-0 ${hasData ? '' : 'opacity-30 blur-sm pointer-events-none'}`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: hasData ? 1 : 0.3 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+      >
         {children}
-      </div>
+      </motion.div>
 
-      {/* Empty state message - absolute positioned overlay */}
+      {/* Empty state message */}
       {!hasData && (
-        <div className="absolute inset-0 flex items-center justify-center z-10">
+        <motion.div 
+          className="absolute inset-0 flex items-center justify-center z-10"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+        >
           <div className="text-center max-w-sm">
             <h4 className="text-black dark:text-white font-medium mb-2">{title}</h4>
             <p className="text-gray-600 dark:text-[#666] text-sm mb-6 leading-relaxed">
@@ -45,7 +56,7 @@ export function EmptyStateBlur({
               </button>
             )}
           </div>
-        </div>
+        </motion.div>
       )}
     </div>
   )

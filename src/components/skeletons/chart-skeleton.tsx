@@ -17,27 +17,27 @@ export function ChartSkeleton({
 }: ChartSkeletonProps) {
   const shouldReduceMotion = useReducedMotion()
 
-  // Chart data points animation
-  const chartVariants = {
-    hidden: { opacity: 0, scale: 0.95 },
+  // Chart data points animation - fast & responsive per animation principles
+  const chartVariants = shouldReduceMotion ? {} : {
+    hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      scale: 1,
       transition: {
-        duration: 0.3,
+        duration: 0.2,
         ease: "easeOut",
-        staggerChildren: 0.1
+        staggerChildren: 0.02
       }
     }
   }
 
-  const barVariants = {
-    hidden: { scaleY: 0 },
+  const barVariants = shouldReduceMotion ? {} : {
+    hidden: { scaleY: 0.8, opacity: 0 },
     visible: {
       scaleY: 1,
+      opacity: 1,
       transition: {
-        duration: 0.6,
-        ease: [0.16, 1, 0.3, 1]
+        duration: 0.2,
+        ease: "easeOut"
       }
     }
   }
@@ -62,12 +62,7 @@ export function ChartSkeleton({
 
       {/* Chart Area */}
       <div className="flex-1 pt-6 relative">
-        <motion.div
-          variants={chartVariants}
-          initial="hidden"
-          animate="visible"
-          className="h-full relative"
-        >
+        <div className="h-full relative">
           {/* Y-axis labels */}
           <div className="absolute left-0 top-0 h-full w-10 flex flex-col justify-between py-4">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -78,23 +73,20 @@ export function ChartSkeleton({
           {/* Chart bars/lines */}
           <div className="ml-12 mr-4 h-full flex items-end justify-between">
             {Array.from({ length: 12 }).map((_, i) => (
-              <motion.div
+              <div
                 key={i}
-                variants={barVariants}
                 className="flex flex-col items-center gap-2 flex-1 max-w-8"
-                style={{ originY: 1 }}
               >
                 {/* Bar */}
                 <Skeleton 
                   className="w-full"
                   style={{ 
                     height: `${Math.random() * 60 + 20}%`,
-                    transformOrigin: 'bottom'
                   }}
                 />
                 {/* X-axis label */}
                 <Skeleton className="h-3 w-6" />
-              </motion.div>
+              </div>
             ))}
           </div>
 
@@ -108,7 +100,7 @@ export function ChartSkeleton({
               />
             ))}
           </div>
-        </motion.div>
+        </div>
       </div>
     </SkeletonCard>
   )

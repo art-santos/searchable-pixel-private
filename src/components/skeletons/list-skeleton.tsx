@@ -24,8 +24,8 @@ export function ListSkeleton({
     visible: {
       opacity: 1,
       transition: {
-        duration: 0.2,
-        staggerChildren: 0.05
+        duration: 0.15,
+        staggerChildren: 0.02
       }
     }
   }
@@ -33,12 +33,12 @@ export function ListSkeleton({
   const itemVariants = shouldReduceMotion 
     ? { hidden: {}, visible: {} }
     : {
-        hidden: { opacity: 0, x: -20 },
+        hidden: { opacity: 0, x: -10 },
         visible: {
           opacity: 1,
           x: 0,
           transition: {
-            duration: 0.3,
+            duration: 0.2,
             ease: "easeOut"
           }
         }
@@ -51,9 +51,9 @@ export function ListSkeleton({
         visible: {
           scaleX: 1,
           transition: {
-            duration: 0.6,
-            ease: [0.16, 1, 0.3, 1],
-            delay: 0.2
+            duration: 0.25,
+            ease: "easeOut",
+            delay: 0.1
           }
         }
       }
@@ -192,9 +192,9 @@ function PageListItem({
               initial={{ height: 0 }}
               animate={{ height: `${Math.random() * 80 + 20}%` }}
               transition={{ 
-                delay: index * 0.1 + 0.3, 
-                duration: 0.6, 
-                ease: [0.16, 1, 0.3, 1] 
+                delay: index * 0.02 + 0.1, 
+                duration: 0.25, 
+                ease: "easeOut" 
               }}
               style={{ transformOrigin: 'bottom' }}
             />
