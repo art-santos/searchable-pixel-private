@@ -442,6 +442,27 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
           </div>
         </div>
       </div>
+
+            {/* Password */}
+            <div className="flex items-center justify-between py-4 border-b border-gray-200 dark:border-[#1a1a1a]">
+              <div>
+                <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Password</div>
+                <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight mt-1">
+                  Reset your password via email
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="text-right min-w-[16rem]">
+                  <Button
+                    onClick={() => router.push(`/forgot-password?email=${encodeURIComponent(user?.email || '')}`)}
+                    variant="outline"
+                    className="bg-white dark:bg-[#0a0a0a] border-gray-300 dark:border-[#2a2a2a] text-black dark:text-white hover:bg-gray-50 dark:hover:bg-[#111] h-8 font-mono tracking-tight text-sm px-4"
+                  >
+                    Reset Password
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Account Overview Section */}
