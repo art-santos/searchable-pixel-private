@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { BlogPost } from '@/types/blog'
-import { BlogImage } from './blog-image'
+import { OptimizedBlogImage } from './optimized-blog-image'
 
 interface BlogCardProps {
   post: BlogPost
@@ -17,23 +17,19 @@ export function BlogCard({ post }: BlogCardProps) {
     >
       <div className="relative h-48 w-full overflow-hidden">
         {post.coverImage ? (
-          <div className="relative h-full w-full">
-            <Image
-              src={post.coverImage}
-              alt={post.title}
-              fill
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-              sizes="(min-width: 768px) 384px, 100vw"
-              quality={85}
-            />
-          </div>
+          <OptimizedBlogImage
+            src={post.coverImage}
+            alt={post.title}
+            isCard={true}
+            className=""
+          />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-b from-[#1f1f1f] to-[#0c0c0c]">
             <span className="text-lg font-bold text-gray-500">Split</span>
           </div>
         )}
         {post.featured && (
-          <div className="absolute top-0 right-0 bg-white px-3 py-1 text-xs font-medium text-[#0c0c0c] z-10">
+          <div className="absolute top-2 right-2 bg-white px-2 py-1 text-xs font-medium text-[#0c0c0c] z-10 rounded">
             Featured
           </div>
         )}
@@ -64,6 +60,7 @@ export function BlogCard({ post }: BlogCardProps) {
                 width={24}
                 height={24}
                 className="rounded-full"
+                loading="lazy"
               />
             </div>
           ) : (

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import CTASection from '@/components/sections/cta-section'
+import { OptimizedBackground } from '@/components/ui/optimized-background'
 
 export default function CustomersPage() {
   const [isLoaded, setIsLoaded] = useState(false)
@@ -68,13 +69,9 @@ export default function CustomersPage() {
       `}</style>
 
       {/* Hero Section */}
-      <section 
+      <OptimizedBackground
+        src="/images/split-bg.png"
         className="min-h-[50vh] md:min-h-[60vh] w-full relative flex items-center justify-center pt-32 md:pt-40"
-        style={{
-          backgroundImage: 'url(/images/split-bg.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
       >
         {/* Overlay with gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#0c0c0c]/50 via-[#0c0c0c]/80 to-[#0c0c0c]" />
@@ -93,7 +90,7 @@ export default function CustomersPage() {
             </div>
           </div>
         </div>
-      </section>
+      </OptimizedBackground>
 
       {/* Customer Showcase Section - Moved closer to header */}
       <section className="w-full py-8 md:py-12 bg-[#0c0c0c] relative">
