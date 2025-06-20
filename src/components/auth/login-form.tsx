@@ -115,14 +115,6 @@ export function LoginForm({
         console.log('📧 User email:', data.user.email)
         console.log('🔑 Session exists:', !!data.session)
         
-        // Ensure session is properly set in Supabase client
-        if (data.session) {
-          await supabase.auth.setSession(data.session)
-        }
-        
-        // Force a router refresh to update the auth state
-        router.refresh()
-        
         // Determine redirect URL
         const redirectUrl = data.user.email?.endsWith('@split.dev') 
           ? '/admin/verify' 
@@ -134,13 +126,14 @@ export function LoginForm({
           : "Welcome back! Redirecting to your dashboard..."
         showNotification("success", message)
         
-        // Call success callback
-        onLoginSuccess?.()
+        // Call success callback if provided
+        if (onLoginSuccess) {
+          onLoginSuccess()
+        }
         
-        // Redirect after a short delay to ensure auth state propagates
-        setTimeout(() => {
-          router.push(redirectUrl)
-        }, 300)
+        // Force an immediate page refresh/redirect
+        // Since auth is successful, we can redirect right away
+        window.location.href = redirectUrl
       }
 
     } catch (err: any) {
