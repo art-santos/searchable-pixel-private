@@ -113,29 +113,34 @@ export function LoginForm({
         console.log('✅ Login successful!')
         console.log('👤 User ID:', data.user.id)
         console.log('📧 User email:', data.user.email)
+        console.log('🔑 Session exists:', !!data.session)
         
-        // Check if user has @split.dev email for admin access
-        if (data.user.email?.endsWith('@split.dev')) {
-          showNotification("success", "Welcome admin! Redirecting to verification...")
-          
-          // Call success callback
-          onLoginSuccess?.()
-          
-          // Redirect to admin verification after a brief delay
-          setTimeout(() => {
-            router.push('/admin/verify')
-          }, 1000)
-        } else {
-          showNotification("success", "Welcome back! Redirecting to your dashboard...")
-          
-          // Call success callback
-          onLoginSuccess?.()
-          
-          // Redirect to dashboard after a brief delay
-          setTimeout(() => {
-            router.push('/dashboard')
-          }, 1000)
+        // Ensure session is properly set in Supabase client
+        if (data.session) {
+          await supabase.auth.setSession(data.session)
         }
+        
+        // Force a router refresh to update the auth state
+        router.refresh()
+        
+        // Determine redirect URL
+        const redirectUrl = data.user.email?.endsWith('@split.dev') 
+          ? '/admin/verify' 
+          : '/dashboard'
+        
+        // Show notification
+        const message = data.user.email?.endsWith('@split.dev')
+          ? "Welcome admin! Redirecting to verification..."
+          : "Welcome back! Redirecting to your dashboard..."
+        showNotification("success", message)
+        
+        // Call success callback
+        onLoginSuccess?.()
+        
+        // Redirect after a short delay to ensure auth state propagates
+        setTimeout(() => {
+          router.push(redirectUrl)
+        }, 300)
       }
 
     } catch (err: any) {

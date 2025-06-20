@@ -176,9 +176,15 @@ export async function middleware(request: NextRequest) {
     
     const { supabase, response } = createClient(request)
     
-    // Initialize auth state properly
+    // Initialize auth state properly and refresh session if needed
     try {
-      await supabase.auth.getUser()
+      // First try to get session
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      // If we have a session, verify it's still valid
+      if (session) {
+        await supabase.auth.getUser()
+      }
     } catch (error) {
       console.error('[Middleware] Auth initialization error:', error)
       // Continue processing but with null user
