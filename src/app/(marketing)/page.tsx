@@ -10,6 +10,7 @@ import CTASection from '@/components/sections/cta-section'
 import HeroCTA from '@/components/sections/hero-cta'
 import { StepOneAudit, StepTwoMonitor, StepThreeImplement } from '@/components/sections/step-cards'
 import { Analytics } from "@vercel/analytics/next"
+import { OptimizedBackground } from '@/components/ui/optimized-background'
 
 const faqSchema = {
   "@context": "https://schema.org",
@@ -204,13 +205,9 @@ export default function LandingPage() {
       `}</style>
       
       {/* Hero Section with Gradient Transition */}
-      <section 
+      <OptimizedBackground
+        src="/images/split-bg.png"
         className="min-h-[70vh] md:min-h-[90vh] w-full relative flex items-start md:items-center justify-center pt-48 md:pt-64 lg:pt-80"
-        style={{
-          backgroundImage: 'url(/images/split-bg.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
       >
         {/* Overlay with gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#0c0c0c]/50 via-[#0c0c0c]/80 to-[#0c0c0c]" />
@@ -242,7 +239,7 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+      </OptimizedBackground>
 
       {/* How It Works Header */}
       <section data-section="how-it-works" className="w-full py-16 md:py-32 bg-[#0c0c0c] relative overflow-hidden scroll-mt-20">

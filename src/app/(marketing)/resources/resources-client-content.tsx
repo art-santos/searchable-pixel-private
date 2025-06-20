@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { BlogCard } from '@/components/blog/blog-card'
 import { TagBadge } from '@/components/blog/tag-badge'
 import CTASection from '@/components/sections/cta-section'
+import { OptimizedBackground } from '@/components/ui/optimized-background'
 import type { BlogPost } from '@/types/blog'
 
 interface ResourcesClientContentProps {
@@ -98,13 +99,9 @@ export default function ResourcesClientContent({
       `}</style>
 
       {/* Hero Section */}
-      <section 
+      <OptimizedBackground
+        src="/images/split-bg.png"
         className="min-h-[50vh] md:min-h-[60vh] w-full relative flex items-center justify-center pt-48 md:pt-52"
-        style={{
-          backgroundImage: 'url(/images/split-bg.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-[#0c0c0c]/50 via-[#0c0c0c]/80 to-[#0c0c0c]" />
         
@@ -122,7 +119,7 @@ export default function ResourcesClientContent({
             </div>
           </div>
         </div>
-      </section>
+      </OptimizedBackground>
 
       {/* Featured Posts */}
       {featuredPosts.length > 0 && (

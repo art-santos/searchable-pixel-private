@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation'
 import { getBlogPostBySlug, getBlogPosts, getAllTags } from '@/lib/blog'
 import { TagBadge } from '@/components/blog/tag-badge'
 import { LPTopBar } from '@/components/layout/lp-topbar'
-import { BlogImage } from '@/components/blog/blog-image'
+import { OptimizedBlogImage } from '@/components/blog/optimized-blog-image'
 import { ShareButton } from '@/components/blog/share-button'
 import { TableRenderer } from './table-renderer'
 
@@ -90,11 +90,12 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             
             {/* Featured image */}
             {post.coverImage && (
-              <BlogImage
+              <OptimizedBlogImage
                 src={post.coverImage}
                 alt={post.title}
                 priority
                 className="mb-6"
+                isCard={false}
               />
             )}
             
