@@ -36,6 +36,43 @@ interface Lead {
   userAgent?: string
   sessionDuration?: number
   pagesViewed?: number
+  // Extended enrichment data
+  picture_url?: string
+  headline?: string
+  summary?: string
+  lead_source?: string
+  exa_webset_id?: string
+  exa_raw?: any
+  enrichment_data?: any
+  confidence_score?: number
+  // Media and activity data
+  media_content?: Array<{
+    type: string
+    title: string
+    url?: string
+    description?: string
+    published_date?: string
+    platform?: string
+    quote?: string
+    event?: string
+    publication?: string
+    snippet?: string
+  }>
+  work_experience?: Array<{
+    company: string
+    role: string
+    start_date?: string
+    end_date?: string
+    is_current: boolean
+    description?: string
+  }>
+  education?: Array<{
+    institution: string
+    degree: string
+    field_of_study?: string
+    start_year?: number
+    end_year?: number
+  }>
 }
 
 interface LeadStats {
@@ -44,6 +81,8 @@ interface LeadStats {
   topModelCount: number
   mostCrawledPage: string
   topTopic: string
+  websetsEnriched?: number
+  total?: number
 }
 
 interface ConnectionStatus {
@@ -91,6 +130,11 @@ export default function LeadsPage() {
 
       // Check user's admin status from both email domain and profile
       const supabase = createClient()
+      if (!supabase) {
+        router.push('/login')
+        return
+      }
+      
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('is_admin')
@@ -333,15 +377,17 @@ export default function LeadsPage() {
                   <div className="text-black dark:text-white font-medium">{stats.leadsToday}</div>
                   <div className="text-zinc-500">Today</div>
                 </div>
-              <div className="text-center">
+                <div className="text-center">
                   <div className="text-black dark:text-white font-medium">{stats.topModel}</div>
                   <div className="text-zinc-500">Top Model</div>
                 </div>
-                  <div className="text-center">
-                  <div className="text-black dark:text-white font-medium">{stats.mostCrawledPage}</div>
-                  <div className="text-zinc-500">Top Page</div>
+                <div className="text-center">
+                  <div className="text-black dark:text-white font-medium">
+                    {stats.websetsEnriched || 0}/{stats.total || 0}
+                  </div>
+                  <div className="text-zinc-500">Enhanced</div>
                 </div>
-                    </div>
+              </div>
             )}
                     <Button 
               onClick={() => setShowConfig(true)}
@@ -474,12 +520,33 @@ export default function LeadsPage() {
                         {/* Contact */}
                         <td className="py-3 px-6">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center">
+                            {lead.picture_url ? (
+                              <img 
+                                src={lead.picture_url} 
+                                alt={lead.fullName || 'Contact'} 
+                                className="w-8 h-8 rounded-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <div className={`w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center ${lead.picture_url ? 'hidden' : ''}`}>
                               <User className="w-4 h-4 text-zinc-500" />
                             </div>
                             <div>
-                              <div className="text-black dark:text-white font-medium text-sm">{lead.fullName || 'Unknown'}</div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-black dark:text-white font-medium text-sm">{lead.fullName || 'Unknown'}</span>
+                                {lead.exa_webset_id && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-600/20 text-purple-400">
+                                    Enhanced
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-zinc-500 text-xs">{lead.jobTitle || 'Unknown'}</div>
+                              {lead.headline && (
+                                <div className="text-zinc-600 dark:text-zinc-400 text-xs mt-0.5 truncate max-w-[300px]">{lead.headline}</div>
+                              )}
                             </div>
                                 </div>
                               </td>
@@ -843,6 +910,505 @@ export default function LeadsPage() {
                     </Button>
                   )}
                 </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Lead Detail Side Panel */}
+      <AnimatePresence>
+        {selectedLead && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+              onClick={() => setSelectedLead(null)}
+            />
+
+            {/* Side Panel */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="fixed right-0 top-0 h-full w-full max-w-lg bg-white dark:bg-zinc-950 shadow-xl z-50 flex flex-col"
+            >
+              {/* Header */}
+              <div className="flex items-center gap-4 p-6 border-b border-zinc-200 dark:border-zinc-800/50">
+                <button
+                  onClick={() => setSelectedLead(null)}
+                  className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-zinc-500" />
+                </button>
+                {selectedLead?.picture_url ? (
+                  <img 
+                    src={selectedLead.picture_url} 
+                    alt={selectedLead.fullName || 'Contact'} 
+                    className="w-14 h-14 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center">
+                    <User className="w-7 h-7 text-zinc-500" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold text-black dark:text-white">
+                    {selectedLead?.fullName || 'Unknown Contact'}
+                  </h2>
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                    {selectedLead?.jobTitle || 'Unknown Title'} at {selectedLead?.company || 'Unknown Company'}
+                  </p>
+                </div>
+                {selectedLead?.exa_webset_id && (
+                  <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-600/20 text-purple-400">
+                    Enhanced
+                  </span>
+                )}
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="space-y-6">
+                  {/* Quick Actions */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => window.open(`mailto:${selectedLead?.email}`, '_blank')}
+                    >
+                      <Mail className="w-4 h-4 mr-2" />
+                      Send Email
+                    </Button>
+                    {selectedLead?.linkedinUrl && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => window.open(selectedLead.linkedinUrl, '_blank')}
+                      >
+                        <Linkedin className="w-4 h-4 mr-2" />
+                        View LinkedIn
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(selectedLead?.email || '');
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                    >
+                      {copied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </Button>
+                  </div>
+
+                  {/* Contact Info Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <span className="text-xs text-zinc-500 uppercase tracking-wide">Email</span>
+                      <p className="text-sm text-zinc-900 dark:text-zinc-100 font-medium">
+                        {selectedLead?.email || 'No email'}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-xs text-zinc-500 uppercase tracking-wide">Location</span>
+                      <p className="text-sm text-zinc-900 dark:text-zinc-100">
+                        {selectedLead?.location || 'Unknown'}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-xs text-zinc-500 uppercase tracking-wide">Attribution</span>
+                      <p className="text-sm text-zinc-900 dark:text-zinc-100">
+                        {selectedLead?.model} → {selectedLead?.pageVisited}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-xs text-zinc-500 uppercase tracking-wide">Confidence</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          selectedLead?.confidence === 'high' ? 'bg-green-600/20 text-green-400' :
+                          selectedLead?.confidence === 'medium' ? 'bg-green-600/10 text-green-500' :
+                          'bg-gray-600/20 text-gray-400'
+                        }`}>
+                          {selectedLead?.confidence}
+                        </span>
+                        {selectedLead?.confidence_score && (
+                          <span className="text-xs text-zinc-500">
+                            ({(selectedLead.confidence_score * 100).toFixed(0)}%)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Enhanced Profile Data */}
+                  {selectedLead?.exa_webset_id && (
+                    <div className="space-y-4">
+                      {selectedLead.headline && (
+                        <div className="space-y-1">
+                          <span className="text-xs text-zinc-500 uppercase tracking-wide">LinkedIn Headline</span>
+                          <p className="text-sm text-zinc-900 dark:text-zinc-100">{selectedLead.headline}</p>
+                        </div>
+                      )}
+                      
+                      {selectedLead.summary && (
+                        <div className="space-y-1">
+                          <span className="text-xs text-zinc-500 uppercase tracking-wide">Professional Summary</span>
+                          <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                            {selectedLead.summary}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Display enrichment data from Websets */}
+                      {selectedLead.enrichment_data && (
+                        <>
+                          {/* Current Focus Areas */}
+                          {selectedLead.enrichment_data.focus_areas && (
+                            <div className="space-y-1">
+                              <span className="text-xs text-zinc-500 uppercase tracking-wide">Current Focus Areas</span>
+                              <div className="bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg">
+                                <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                                  {selectedLead.enrichment_data.focus_areas}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Recent LinkedIn Posts */}
+                          {selectedLead.enrichment_data.linkedin_posts && (
+                            <div className="space-y-1">
+                              <span className="text-xs text-zinc-500 uppercase tracking-wide">Recent LinkedIn Activity</span>
+                              <div className="space-y-2">
+                                {selectedLead.enrichment_data.linkedin_posts.split('\n\n').slice(0, 3).map((post: string, idx: number) => (
+                                  <div key={idx} className="bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg">
+                                    <p className="text-sm text-zinc-700 dark:text-zinc-300">
+                                      {post.replace(/URL:\s*https:\/\/[^\s]+/, '').trim()}
+                                    </p>
+                                    {post.includes('URL:') && (
+                                      <a href={post.match(/URL:\s*(https:\/\/[^\s]+)/)?.[1]} 
+                                         target="_blank" 
+                                         rel="noopener noreferrer"
+                                         className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 inline-block">
+                                        View Post →
+                                      </a>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Press Quotes */}
+                          {selectedLead.enrichment_data.press_quotes && (
+                            <div className="space-y-1">
+                              <span className="text-xs text-zinc-500 uppercase tracking-wide">Press Quotes</span>
+                              <div className="space-y-2">
+                                {selectedLead.enrichment_data.press_quotes.split('\n\n').slice(0, 2).map((quote: string, idx: number) => {
+                                  const quoteMatch = quote.match(/"([^"]+)"/);
+                                  const sourceMatch = quote.match(/quoted in\s+([^(]+)/i);
+                                  const dateMatch = quote.match(/\(([^)]+)\)/);
+                                  
+                                  return (
+                                    <div key={idx} className="bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg">
+                                      {quoteMatch && (
+                                        <>
+                                          <p className="text-sm italic text-zinc-700 dark:text-zinc-300">
+                                            "{quoteMatch[1]}"
+                                          </p>
+                                          <p className="text-xs text-zinc-500 mt-1">
+                                            {sourceMatch ? `— ${sourceMatch[1].trim()}` : '— Press'} 
+                                            {dateMatch && ` (${dateMatch[1]})`}
+                                          </p>
+                                        </>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Key Works */}
+                          {selectedLead.enrichment_data.key_works && (
+                            <div className="space-y-1">
+                              <span className="text-xs text-zinc-500 uppercase tracking-wide">Key Works & Projects</span>
+                              <div className="space-y-2">
+                                {selectedLead.enrichment_data.key_works.split('\n\n').slice(0, 3).map((work: string, idx: number) => {
+                                  const titleMatch = work.match(/"([^"]+)"/);
+                                  const typeMatch = work.match(/\(([^,]+),/);
+                                  
+                                  return (
+                                    <div key={idx} className="bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg">
+                                      <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                                        {titleMatch ? titleMatch[1] : work.split('(')[0].trim()}
+                                      </p>
+                                      {typeMatch && (
+                                        <p className="text-xs text-zinc-500 mt-0.5">
+                                          {typeMatch[1]}
+                                        </p>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Public Activity */}
+                  {selectedLead.media_content && selectedLead.media_content.length > 0 && (
+                    <div className="space-y-3">
+                      <span className="text-xs text-zinc-500 uppercase tracking-wide">Public Activity & Media</span>
+                      <div className="space-y-3">
+                        {/* LinkedIn Posts */}
+                        {selectedLead.media_content
+                          .filter((media: any) => media.type === 'linkedin_post' || media.type === 'post')
+                          .slice(0, 3)
+                          .map((post: any, idx: number) => (
+                            <div key={`linkedin-${idx}`} className="space-y-2">
+                              <div className="flex items-start gap-2">
+                                <div className="w-8 h-8 rounded bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                                  <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                                  </svg>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  {post.url ? (
+                                    <a href={post.url} target="_blank" rel="noopener noreferrer" 
+                                       className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline line-clamp-2">
+                                      {post.title || post.snippet || 'LinkedIn Post'}
+                                    </a>
+                                  ) : (
+                                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 line-clamp-2">
+                                      {post.title || post.snippet || 'LinkedIn Post'}
+                                    </p>
+                                  )}
+                                  {(post.description || post.snippet) && (
+                                    <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400 line-clamp-3">
+                                      {post.description || post.snippet}
+                                    </p>
+                                  )}
+                                  {post.published_date && (
+                                    <p className="mt-1 text-xs text-zinc-500">
+                                      {new Date(post.published_date).toLocaleDateString()}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+
+                        {/* Articles & Thought Leadership */}
+                        {selectedLead.media_content
+                          .filter((media: any) => ['article', 'blog', 'interview', 'podcast', 'webinar', 'talk'].includes(media.type))
+                          .slice(0, 3)
+                          .map((article: any, idx: number) => (
+                            <div key={`article-${idx}`} className="space-y-2">
+                              <div className="flex items-start gap-2">
+                                <div className="w-8 h-8 rounded bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+                                  {article.type === 'podcast' ? '🎙️' : 
+                                   article.type === 'webinar' ? '🖥️' :
+                                   article.type === 'talk' ? '🎤' : '📝'}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <a href={article.url} target="_blank" rel="noopener noreferrer" 
+                                     className="text-sm font-medium text-purple-600 dark:text-purple-400 hover:underline line-clamp-2">
+                                    {article.title}
+                                  </a>
+                                  {article.description && (
+                                    <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400 line-clamp-3">
+                                      {article.description}
+                                    </p>
+                                  )}
+                                  <p className="mt-1 text-xs text-zinc-500">
+                                    {article.type.charAt(0).toUpperCase() + article.type.slice(1)} • {new Date(article.published_date).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+
+                        {/* Press Quotes & Media Mentions */}
+                        {selectedLead.media_content
+                          .filter((media: any) => media.type === 'quote' || media.type === 'news' || media.type === 'article')
+                          .slice(0, 5)
+                          .map((item: any, idx: number) => (
+                            <div key={`media-${idx}`} className="space-y-2">
+                              <div className="flex items-start gap-2">
+                                <div className="w-8 h-8 rounded bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                                  {item.type === 'quote' ? '💬' : '📰'}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  {item.type === 'quote' && item.quote ? (
+                                    <>
+                                      <p className="text-sm italic text-zinc-700 dark:text-zinc-300">
+                                        "{item.quote}"
+                                      </p>
+                                      <p className="mt-1 text-xs text-zinc-500">
+                                        — {item.publication || item.platform || 'Press'} 
+                                        {item.published_date && ` • ${new Date(item.published_date).toLocaleDateString()}`}
+                                      </p>
+                                    </>
+                                  ) : (
+                                    <>
+                                      {item.url ? (
+                                        <a href={item.url} target="_blank" rel="noopener noreferrer" 
+                                           className="text-sm font-medium text-green-600 dark:text-green-400 hover:underline line-clamp-2">
+                                          {item.title || 'Media Mention'}
+                                        </a>
+                                      ) : (
+                                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 line-clamp-2">
+                                          {item.title || 'Media Mention'}
+                                        </p>
+                                      )}
+                                      {item.description && !item.quote && (
+                                        <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400 line-clamp-3">
+                                          {item.description}
+                                        </p>
+                                      )}
+                                      <p className="mt-1 text-xs text-zinc-500">
+                                        {item.platform || item.publication || 'Media'} • {new Date(item.published_date).toLocaleDateString()}
+                                      </p>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+
+                        {/* Patents */}
+                        {selectedLead.media_content
+                          .filter((media: any) => media.type === 'patent')
+                          .slice(0, 2)
+                          .map((patent: any, idx: number) => (
+                            <div key={`patent-${idx}`} className="space-y-2">
+                              <div className="flex items-start gap-2">
+                                <div className="w-8 h-8 rounded bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+                                  🔬
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <a href={patent.url} target="_blank" rel="noopener noreferrer" 
+                                     className="text-sm font-medium text-orange-600 dark:text-orange-400 hover:underline line-clamp-2">
+                                    {patent.title}
+                                  </a>
+                                  <p className="mt-1 text-xs text-zinc-500">
+                                    Patent • {new Date(patent.published_date).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Work Experience */}
+                  {selectedLead.work_experience && selectedLead.work_experience.length > 0 && (
+                    <div className="space-y-3">
+                      <span className="text-xs text-zinc-500 uppercase tracking-wide">Work Experience</span>
+                      <div className="space-y-3">
+                        {selectedLead.work_experience.map((exp, idx) => (
+                          <div key={`exp-${idx}`} className="bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h4 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{exp.role}</h4>
+                                <p className="text-sm text-zinc-600 dark:text-zinc-400">{exp.company}</p>
+                              </div>
+                              {exp.is_current && (
+                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-600/20 text-green-400">
+                                  Current
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-1 text-xs text-zinc-500">
+                              {exp.start_date} - {exp.end_date || 'Present'}
+                            </p>
+                            {exp.description && (
+                              <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">{exp.description}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Education */}
+                  {selectedLead.education && selectedLead.education.length > 0 && (
+                    <div className="space-y-3">
+                      <span className="text-xs text-zinc-500 uppercase tracking-wide">Education</span>
+                      <div className="space-y-3">
+                        {selectedLead.education.map((edu, idx) => (
+                          <div key={`edu-${idx}`} className="bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg">
+                            <h4 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{edu.institution}</h4>
+                            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                              {edu.degree} {edu.field_of_study && `in ${edu.field_of_study}`}
+                            </p>
+                            {(edu.start_year || edu.end_year) && (
+                              <p className="mt-1 text-xs text-zinc-500">
+                                {edu.start_year} - {edu.end_year}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Engagement Details */}
+                  <div className="space-y-3">
+                    <span className="text-xs text-zinc-500 uppercase tracking-wide">Engagement Details</span>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg">
+                        <p className="text-xs text-zinc-500 mb-1">Session Duration</p>
+                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                          {selectedLead?.sessionDuration ? `${selectedLead.sessionDuration}s` : 'Unknown'}
+                        </p>
+                      </div>
+                      <div className="bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg">
+                        <p className="text-xs text-zinc-500 mb-1">Pages Viewed</p>
+                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                          {selectedLead?.pagesViewed || 'Unknown'}
+                        </p>
+                      </div>
+                      <div className="bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg">
+                        <p className="text-xs text-zinc-500 mb-1">First Seen</p>
+                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                          {selectedLead ? new Date(selectedLead.timestamp).toLocaleDateString() : ''}
+                        </p>
+                      </div>
+                      <div className="bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg">
+                        <p className="text-xs text-zinc-500 mb-1">Time</p>
+                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                          {selectedLead ? new Date(selectedLead.timestamp).toLocaleTimeString() : ''}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-6 border-t border-zinc-200 dark:border-zinc-800/50">
+                <Button
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => setSelectedLead(null)}
+                >
+                  Close
+                </Button>
               </div>
             </motion.div>
           </>

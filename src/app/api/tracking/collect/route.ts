@@ -27,13 +27,39 @@ async function getLocationFromIP(ip: string) {
   return null
 }
 
-// Extract company info from IP (placeholder - will expand later)
-async function getCompanyFromIP(ip: string, locationData: any) {
-  // For now, we'll just return the ISP/organization info
-  // Later this can be enhanced with services like Clearbit Reveal
+// Extract company info from IP using IPInfo
+async function getCompanyFromIP(ip: string) {
+  try {
+    // Use IPInfo for better company detection
+    const response = await fetch(`https://ipinfo.io/${ip}/json?token=${process.env.IPINFO_API_KEY}`)
+    if (response.ok) {
+      const data = await response.json()
+      
+      // Check if it's a business/hosting provider
+      const isBusinessIP = data.company && 
+        !data.org?.toLowerCase().includes('residential') &&
+        !data.org?.toLowerCase().includes('broadband') &&
+        !data.org?.toLowerCase().includes('telecom');
+      
+      return {
+        company: data.company?.name || data.org || null,
+        domain: data.company?.domain || null,
+        type: data.company?.type || (data.asn?.type === 'hosting' ? 'hosting' : 'isp'),
+        confidence: data.company ? 'high' : (isBusinessIP ? 'medium' : 'low'),
+        location: {
+          city: data.city,
+          region: data.region,
+          country: data.country
+        }
+      }
+    }
+  } catch (error) {
+    console.error('IPInfo lookup failed:', error)
+  }
+  
   return {
-    company: locationData?.org || locationData?.isp || null,
-    confidence: locationData?.org ? 'medium' : 'low'
+    company: null,
+    confidence: 'low'
   }
 }
 
@@ -56,12 +82,12 @@ export async function POST(request: NextRequest) {
       timestamp: visitorData.t
     })
 
-    // Get location data
+    // Get location data (optional, we can use IPInfo for everything)
     const locationData = await getLocationFromIP(ip)
     console.log('📍 Location data:', locationData)
 
-    // Attempt company identification
-    const companyData = await getCompanyFromIP(ip, locationData)
+    // Get company data from IPInfo (better data quality)
+    const companyData = await getCompanyFromIP(ip)
     console.log('🏢 Company data:', companyData)
 
     // Enhanced visitor information
@@ -103,9 +129,6 @@ export async function POST(request: NextRequest) {
 
     console.log('✨ Enriched visitor data:', JSON.stringify(enrichedData, null, 2))
 
-    // TODO: Store in database once schema is ready
-    // For now, we'll just log and maybe store basic info for connection verification
-
     // Verify workspace exists and user has access
     const supabase = createClient()
     const { data: workspace } = await supabase
@@ -114,27 +137,96 @@ export async function POST(request: NextRequest) {
       .eq('id', visitorData.w)
       .single()
 
-    if (workspace) {
-      console.log('✅ Workspace verified:', workspace.domain)
-      
-      // Store connection verification (simple approach)
-      // We could use this to verify the connection is working
-      await supabase
-        .from('usage_events')
-        .insert({
-          user_id: workspace.user_id,
-          event_type: 'visitor_tracked',
-          metadata: {
-            workspace_id: visitorData.w,
-            visitor_id: visitorData.v,
-            url: visitorData.u,
-            ip: ip,
-            timestamp: visitorData.t
-          }
-        })
-        .select()
-    } else {
+    if (!workspace) {
       console.warn('⚠️  Workspace not found:', visitorData.w)
+      return NextResponse.json({ error: 'Invalid workspace' }, { status: 400 })
+    }
+
+    console.log('✅ Workspace verified:', workspace.domain)
+
+    // Parse URL parameters for attribution
+    const url = new URL(visitorData.u)
+    const utm_source = url.searchParams.get('utm_source')
+    const utm_medium = url.searchParams.get('utm_medium')
+    const utm_campaign = url.searchParams.get('utm_campaign')
+
+    // Save to user_visits table
+    const { data: userVisit, error: visitError } = await supabase
+      .from('user_visits')
+      .insert({
+        workspace_id: visitorData.w,
+        ip_address: ip,
+        page_url: visitorData.u,
+        referrer: visitorData.r || null,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        enrichment_status: 'pending',
+        session_duration: 0,
+        pages_viewed: 1,
+        country: locationData?.countryCode || null,
+        city: locationData?.city || null,
+        region: locationData?.regionName || null
+      })
+      .select()
+      .single()
+
+    if (visitError) {
+      console.error('❌ Failed to save visit:', visitError)
+      return NextResponse.json({ error: 'Failed to save visit' }, { status: 500 })
+    }
+
+    console.log('✅ Visit saved:', userVisit.id)
+
+    // Trigger enrichment if this looks like a business IP
+    const isBusinessIP = companyData.company && 
+      (companyData.confidence === 'high' || companyData.confidence === 'medium') &&
+      companyData.type !== 'isp'
+      
+    if (isBusinessIP) {
+      console.log('🏢 Business IP detected, triggering enrichment...')
+      console.log(`   Company: ${companyData.company}`)
+      console.log(`   Domain: ${companyData.domain}`)
+      console.log(`   Confidence: ${companyData.confidence}`)
+      
+      // Update visit with company info
+      await supabase
+        .from('user_visits')
+        .update({
+          company_name: companyData.company,
+          company_domain: companyData.domain,
+          enrichment_status: 'processing'
+        })
+        .eq('id', userVisit.id)
+      
+      // Call the websets enrichment endpoint asynchronously
+      // Don't wait for response to keep tracking fast
+      fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/leads/enrich-websets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userVisitId: userVisit.id,
+          icpDescription: 'Senior executive or decision maker',
+          internalApiKey: process.env.INTERNAL_API_KEY
+        })
+      }).then(response => {
+        if (response.ok) {
+          response.json().then(result => {
+            console.log('✅ Enrichment completed:', result.status)
+          })
+        } else {
+          console.warn('⚠️  Enrichment failed:', response.status)
+        }
+      }).catch(error => {
+        console.error('❌ Error triggering enrichment:', error)
+      })
+    } else {
+      console.log('ℹ️  Not a business IP, skipping enrichment')
+      console.log(`   Company: ${companyData.company || 'none'}`)
+      console.log(`   Type: ${companyData.type}`)
+      console.log(`   Confidence: ${companyData.confidence}`)
     }
 
     return NextResponse.json({ success: true }, { status: 200 })

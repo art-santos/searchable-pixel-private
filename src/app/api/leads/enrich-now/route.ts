@@ -328,8 +328,8 @@ export async function POST(request: NextRequest) {
               media_type: item.type,
               title: item.title,
               url: item.url,
-              published_at: item.date,
-              snippet: item.snippet
+              published_date: item.date,
+              description: item.snippet
             }))
           );
       }
@@ -344,9 +344,9 @@ export async function POST(request: NextRequest) {
               media_type: 'news',
               title: item.title,
               url: item.url,
-              publication: item.publication,
-              published_at: item.date,
-              snippet: item.snippet
+              platform: item.publication,
+              published_date: item.date,
+              description: item.snippet
             }))
           );
       }
@@ -361,7 +361,23 @@ export async function POST(request: NextRequest) {
               media_type: 'patent',
               title: item.title,
               url: item.url,
-              published_at: item.date
+              published_date: item.date
+            }))
+          );
+      }
+
+      // Save LinkedIn posts
+      if (deepInsights.linkedinPosts?.length > 0) {
+        await supabase
+          .from('contact_media')
+          .insert(
+            deepInsights.linkedinPosts.map((item: any) => ({
+              contact_id: contact.id,
+              media_type: 'linkedin_post',
+              title: item.title,
+              url: item.url,
+              published_date: item.date,
+              description: item.snippet
             }))
           );
       }

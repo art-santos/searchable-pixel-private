@@ -44,6 +44,9 @@ export interface LeadCandidate {
   headline?: string;
   enrichment?: any;        // JSON from Webset enrichment block
   confidence: number;      // 0-1 combined score
+  summary?: string;
+  focusAreas?: string;
+  _raw?: any;              // Full raw webset item
 }
 
 // ────────────────────────────────────────────────────────────
@@ -68,7 +71,7 @@ export class ExaWebsetsClient {
     const body = {
       search: {
         query,
-        count: 5,  // Limit to 5 results to control costs
+        count: 3,  // Limit to 3 results as requested
         entity: { type: 'person' }  // Specify we're looking for people
       },
       enrichments: [
@@ -81,7 +84,39 @@ export class ExaWebsetsClient {
           format: 'text'
         },
         {
-          description: 'Professional background and experience',
+          description: 'Professional headline and summary from LinkedIn',
+          format: 'text'
+        },
+        {
+          description: 'List the 3 most recent LinkedIn posts with title, date, URL, and snippet',
+          format: 'text'
+        },
+        {
+          description: 'Recent media mentions and articles featuring this person (2023-2025) with title, publication, date, and URL',
+          format: 'text'
+        },
+        {
+          description: 'Recent press quotes by this person with the actual quote, article title, publication, and date',
+          format: 'text'
+        },
+        {
+          description: 'Speaking appearances, podcasts, or conferences this person participated in with event name, date, and topic',
+          format: 'text'
+        },
+        {
+          description: 'Patents, research papers, or key projects by this person with title, type, year, and brief description',
+          format: 'text'
+        },
+        {
+          description: 'Current key focus areas and initiatives this person is working on based on recent public activity',
+          format: 'text'
+        },
+        {
+          description: 'Work experience history with company names, roles, and dates',
+          format: 'text'
+        },
+        {
+          description: 'Education background including degrees, institutions, and graduation years',
           format: 'text'
         }
       ]
@@ -120,10 +155,10 @@ export class ExaWebsetsClient {
     return id;
   }
 
-  // Poll until completion (≤ 10 s) then return ≤ 5 items
+  // Poll until completion (≤ 30 s) then return ≤ 5 items
   async pollWebsetResults(websetId: string): Promise<WebsetItem[]> {
     console.log(`[EXA-WEBSETS] Polling webset: ${websetId}`);
-    const deadline = Date.now() + 10_000;
+    const deadline = Date.now() + 30_000; // Increased to 30 seconds
     
     while (Date.now() < deadline) {
       // Check webset status
@@ -154,14 +189,41 @@ export class ExaWebsetsClient {
         
         const itemsData = await itemsRes.json();
         console.log(`[EXA-WEBSETS] Completed! Found ${itemsData.data?.length || 0} items`);
+        
+        // LOG RAW WEBSETS RESPONSE
+        console.log('\n🔍 RAW WEBSETS API RESPONSE:');
+        console.log('=====================================');
+        console.log(JSON.stringify(itemsData, null, 2));
+        console.log('=====================================\n');
+        
         return itemsData.data as WebsetItem[];
       }
       
-      await this.sleep(750);
+      await this.sleep(1500); // Increased polling interval
     }
     
-    console.error(`[EXA-WEBSETS] Timeout after 10s for webset: ${websetId}`);
-    throw new Error('Webset timed-out (>10 s)');
+    // If we timeout, try to get partial results anyway
+    console.log(`[EXA-WEBSETS] Timeout reached, attempting to fetch partial results...`);
+    
+    try {
+      const itemsRes = await fetch(
+        `${this.base}/websets/${websetId}/items?limit=5`,
+        { headers: this.headers() }
+      );
+      
+      if (itemsRes.ok) {
+        const itemsData = await itemsRes.json();
+        if (itemsData.data && itemsData.data.length > 0) {
+          console.log(`[EXA-WEBSETS] Retrieved ${itemsData.data.length} partial results`);
+          return itemsData.data as WebsetItem[];
+        }
+      }
+    } catch (e) {
+      console.error(`[EXA-WEBSETS] Failed to get partial results:`, e);
+    }
+    
+    console.error(`[EXA-WEBSETS] Timeout after 30s for webset: ${websetId}`);
+    throw new Error('Webset timed-out (>30 s)');
   }
 
   // Combine Exa score + our weighting (title heavy)
@@ -187,8 +249,8 @@ export class ExaWebsetsClient {
         if (i.properties?.person) {
           const p = i.properties.person;
           name = p.name || '';
-          title = p.headline || p.title || '';
-          linkedinUrl = p.linkedinUrl || '';
+          title = p.position || p.headline || p.title || '';
+          linkedinUrl = i.properties?.url || p.linkedinUrl || '';
           pictureUrl = p.pictureUrl || '';
           location = p.location || '';
         }
@@ -203,16 +265,60 @@ export class ExaWebsetsClient {
           return null;
         }
         
-        // Extract enrichment data
-        let enrichmentData: Record<string, any> = {};
+        // Process ALL enrichment data with proper structure
+        let enrichmentData: Record<string, any> = {
+          raw_enrichments: i.enrichments || [],
+          webset_id: i.websetId,
+          item_id: i.id,
+          properties: i.properties || {}
+        };
+        
+        // Parse each enrichment type properly
         if (i.enrichments && Array.isArray(i.enrichments)) {
           i.enrichments.forEach((e, idx) => {
-            if (e.result) {
-              // Try to extract job title from enrichments if not in properties
-              if (!title && e.description?.includes('job title')) {
-                title = e.result;
+            if (e.result && e.result.length > 0) {
+              const resultText = e.result[0];
+              const description = e.description || '';
+              
+              // Map enrichments by type
+              if (description.includes('LinkedIn URL') || description.includes('Linkedin Url')) {
+                enrichmentData.linkedin_url = resultText;
               }
-              enrichmentData[`enrichment_${idx}`] = e.result;
+              else if (description.includes('Current Title & Company')) {
+                enrichmentData.current_title = resultText;
+              }
+              else if (description.includes('Headline & Summary')) {
+                enrichmentData.headline_summary = resultText;
+              }
+              else if (description.includes('Recent LinkedIn Posts')) {
+                enrichmentData.linkedin_posts = resultText;
+              }
+              else if (description.includes('Media Mentions')) {
+                enrichmentData.media_mentions = resultText;
+              }
+              else if (description.includes('Press Quotes')) {
+                enrichmentData.press_quotes = resultText;
+              }
+              else if (description.includes('Speaking Engagements')) {
+                enrichmentData.speaking_engagements = resultText;
+              }
+              else if (description.includes('Key Works')) {
+                enrichmentData.key_works = resultText;
+              }
+              else if (description.includes('Work History')) {
+                enrichmentData.work_history = resultText;
+              }
+              else if (description.includes('Education History')) {
+                enrichmentData.education_history = resultText;
+              }
+              else if (description.includes('Current Focus Areas')) {
+                enrichmentData.focus_areas = resultText;
+              }
+              
+              // Try to extract job title from enrichments if not in properties
+              if (!title && description.includes('Current Title')) {
+                title = resultText;
+              }
             }
           });
         }
@@ -222,7 +328,7 @@ export class ExaWebsetsClient {
         const titleScore = hit ? 1 : 0.4;
 
         // Freshness – whether enrichment exists (10%)
-        const hasEnrich = Object.keys(enrichmentData).length > 0;
+        const hasEnrich = i.enrichments && i.enrichments.length > 0;
         const freshScore = hasEnrich ? 1 : 0.5;
 
         // Combined confidence score
@@ -240,7 +346,12 @@ export class ExaWebsetsClient {
           pictureUrl,
           headline: title,
           enrichment: enrichmentData,
-          confidence
+          confidence,
+          // Add additional parsed data
+          summary: enrichmentData.headline_summary,
+          focusAreas: enrichmentData.focus_areas,
+          // Include the full raw item for complete data retention
+          _raw: i
         } as LeadCandidate;
 
         console.log(`[EXA-WEBSETS] Scored ${candidate.name}: title=${titleScore.toFixed(2)}, exa=${(i.score ?? 0.5).toFixed(2)}, fresh=${freshScore.toFixed(2)}, total=${confidence.toFixed(2)}`);
@@ -256,6 +367,18 @@ export class ExaWebsetsClient {
 
     const best = scored.sort((a, b) => b.confidence - a.confidence)[0];
     console.log(`[EXA-WEBSETS] Best candidate: ${best.name} (confidence: ${best.confidence.toFixed(2)})`);
+    
+    // LOG FULL ENRICHMENT DATA FOR BEST CANDIDATE
+    console.log('\n🏆 BEST CANDIDATE FULL DATA:');
+    console.log('=====================================');
+    console.log('Name:', best.name);
+    console.log('Title:', best.title);
+    console.log('LinkedIn:', best.linkedinUrl);
+    console.log('\n📋 Enrichment Data:');
+    console.log(JSON.stringify(best.enrichment, null, 2));
+    console.log('\n🔍 Raw Item:');
+    console.log(JSON.stringify(best._raw, null, 2));
+    console.log('=====================================\n');
     
     return best;
   }

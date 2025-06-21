@@ -224,7 +224,7 @@ export class ExaClient {
       console.log(`[EXA] Deep enrichment for ${name} at ${company}`);
 
       // Run multiple enrichment queries in parallel
-      const [thoughtLeadership, socialPresence, patents, pressQuotes] = await Promise.all([
+      const [thoughtLeadership, socialPresence, patents, pressQuotes, linkedinPosts] = await Promise.all([
         // Thought leadership content
         this.searchThoughtLeadership(name, company),
         // Social media presence
@@ -232,7 +232,9 @@ export class ExaClient {
         // Patents (if any)
         this.searchPatents(name),
         // Recent press quotes
-        this.searchPressQuotes(name, company)
+        this.searchPressQuotes(name, company),
+        // Recent LinkedIn posts
+        this.searchLinkedInPosts(name, company)
       ]);
 
       const insights = {
@@ -240,14 +242,16 @@ export class ExaClient {
         socialProfiles: socialPresence,
         patents: patents.slice(0, 2),
         pressQuotes: pressQuotes.slice(0, 3),
-        totalPublicMentions: thoughtLeadership.length + pressQuotes.length
+        linkedinPosts: linkedinPosts.slice(0, 3),
+        totalPublicMentions: thoughtLeadership.length + pressQuotes.length + linkedinPosts.length
       };
 
       console.log(`[EXA] Deep enrichment complete:`, {
         thoughtLeadership: insights.thoughtLeadership.length,
         socialProfiles: insights.socialProfiles.length,
         patents: insights.patents.length,
-        pressQuotes: insights.pressQuotes.length
+        pressQuotes: insights.pressQuotes.length,
+        linkedinPosts: insights.linkedinPosts.length
       });
 
       return insights;
@@ -402,6 +406,46 @@ export class ExaClient {
       }));
     } catch (error) {
       console.error('Press quotes search error:', error);
+      return [];
+    }
+  }
+
+  private async searchLinkedInPosts(name: string, company: string): Promise<any[]> {
+    try {
+      const query = `"${name}" "${company}" site:linkedin.com (post OR update OR article OR shared)`;
+      
+      const response = await fetch(`${this.baseUrl}/search`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+          'User-Agent': 'Split-Leads/1.0'
+        },
+        body: JSON.stringify({
+          query,
+          numResults: 5,
+          useAutoprompt: false,
+          type: 'auto',
+          includeDomains: ['linkedin.com'],
+          startPublishedDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString() // Last 3 months
+        })
+      });
+
+      if (!response.ok) return [];
+
+      const data: ExaSearchResponse = await response.json();
+      
+      return data.results
+        .filter(r => r.text && r.text.length > 50) // Filter out short/empty posts
+        .map(r => ({
+          type: 'linkedin_post',
+          title: r.title || 'LinkedIn Activity',
+          url: r.url,
+          date: r.publishedDate,
+          snippet: r.text?.substring(0, 300) // Longer snippet for posts
+        }));
+    } catch (error) {
+      console.error('LinkedIn posts search error:', error);
       return [];
     }
   }
