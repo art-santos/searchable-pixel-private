@@ -21,28 +21,22 @@ export function FeaturesSettings() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-xl font-medium text-black dark:text-white mb-2">Feature Flags</h2>
-        <p className="text-sm text-gray-500 dark:text-[#666]">
-          Experimental features and toggles
-        </p>
-      </div>
+
 
       {/* Reload Banner */}
       {showReloadBanner && (
         <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5" />
           <div className="flex-1">
-            <p className="text-sm text-black dark:text-white font-medium">Page reload required</p>
-            <p className="text-xs text-gray-500 dark:text-[#666] mt-1">
+            <p className="text-sm text-black font-medium">Page reload required</p>
+            <p className="text-xs text-gray-500 mt-1">
               Changes to feature flags require a page reload to take effect.
             </p>
           </div>
           <Button
             size="sm"
             onClick={() => window.location.reload()}
-            className="bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 text-yellow-600 dark:text-yellow-400"
+            className="bg-yellow-500/20 hover:bg-yellow-500/30 border border-yellow-500/30 text-yellow-600"
           >
             Reload Page
           </Button>
@@ -50,10 +44,10 @@ export function FeaturesSettings() {
       )}
 
       {/* Feature Toggles */}
-      <Card className="bg-white dark:bg-[#0a0a0a] border-gray-200 dark:border-[#1a1a1a]">
+      <Card className="bg-white border-gray-200">
         <CardHeader>
-          <CardTitle className="text-lg font-medium text-black dark:text-white">Available Features</CardTitle>
-          <CardDescription className="text-sm text-gray-500 dark:text-[#666]">
+          <CardTitle className="text-lg font-medium text-gray-900">Available Features</CardTitle>
+          <CardDescription className="text-sm text-gray-600">
             Toggle experimental features on or off
           </CardDescription>
         </CardHeader>
@@ -61,8 +55,8 @@ export function FeaturesSettings() {
           {/* Light Mode Toggle */}
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <div className="font-medium text-black dark:text-white text-sm">Light Mode</div>
-              <div className="text-xs text-gray-500 dark:text-[#666]">
+              <div className="font-medium text-gray-900 text-sm">Light Mode</div>
+              <div className="text-xs text-gray-600">
                 Enable light mode theme option (currently disabled for stability)
               </div>
             </div>
@@ -75,8 +69,8 @@ export function FeaturesSettings() {
           </div>
 
           {/* Coming Soon Message */}
-          <div className="pt-4 border-t border-gray-200 dark:border-[#1a1a1a]">
-            <p className="text-xs text-gray-500 dark:text-[#666] italic">
+          <div className="pt-4 border-t border-gray-200">
+            <p className="text-xs text-gray-600 italic">
               More feature flags coming soon. Light mode is currently disabled while we optimize the UI for dark mode.
             </p>
           </div>

@@ -46,7 +46,7 @@ export function ChartSkeleton({
     <SkeletonCard className={cn("h-full flex flex-col", className)}>
       {/* Header */}
       {showHeader && (
-        <div className="pb-4 border-b border-gray-200 dark:border-[#1a1a1a] flex-shrink-0">
+        <div className="pb-4 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">

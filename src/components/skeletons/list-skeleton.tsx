@@ -62,7 +62,7 @@ export function ListSkeleton({
     <SkeletonCard className={cn("h-full flex flex-col", className)}>
       {/* Header */}
       {showHeader && (
-        <div className="pb-4 border-b border-gray-200 dark:border-[#1a1a1a] flex-shrink-0">
+        <div className="pb-3 pt-5 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
               <Skeleton className="h-6 w-40 mb-2" />
@@ -77,12 +77,12 @@ export function ListSkeleton({
       )}
 
       {/* List Items */}
-      <div className="flex-1 pt-6 overflow-hidden">
+      <div className="flex-1 pt-3 pb-4 overflow-hidden">
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="space-y-4"
+          className="space-y-2"
         >
           {Array.from({ length: items }).map((_, index) => (
             <motion.div
@@ -129,10 +129,10 @@ function CrawlerListItem({
   progressVariants: any 
 }) {
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
+    <div className="space-y-1">
+      <div className="flex items-center justify-between py-2 px-3">
         <div className="flex items-center gap-3">
-          <SkeletonCircle size="sm" />
+          <Skeleton className="w-7 h-7 rounded-lg" />
           <div>
             <Skeleton className="h-4 w-24 mb-1" />
             <Skeleton className="h-3 w-16" />
@@ -142,9 +142,9 @@ function CrawlerListItem({
       </div>
       
       {showProgress && (
-        <div className="w-full h-1 bg-gray-200 dark:bg-[#1a1a1a] rounded-full overflow-hidden">
+        <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mx-3">
           <motion.div
-            className="h-full bg-gray-400 dark:bg-[#333] rounded-full"
+            className="h-full bg-gray-300 rounded-full"
             variants={progressVariants}
             style={{
               width: `${Math.random() * 60 + 20}%`,
@@ -166,29 +166,27 @@ function PageListItem({
   showProgress: boolean 
 }) {
   return (
-    <div className="flex items-center justify-between py-3 px-3 rounded-lg">
+    <div className="flex items-center justify-between py-2 px-3 rounded-lg">
       <div className="flex items-center gap-3 flex-1">
-        <SkeletonCircle size="md" />
+        <Skeleton className="w-7 h-7 rounded-lg" />
         <div className="flex-1">
-          <Skeleton className="h-4 w-32 mb-2" />
+          <Skeleton className="h-4 w-32 mb-1" />
           <div className="flex items-center gap-2">
             <Skeleton className="h-3 w-16" />
             <Skeleton className="h-3 w-2" />
             <Skeleton className="h-3 w-12" />
-            <Skeleton className="h-3 w-2" />
-            <Skeleton className="h-3 w-10" />
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <div className="text-right">
-          <Skeleton className="h-5 w-8 mb-1" />
+          <Skeleton className="h-4 w-8 mb-1" />
           <Skeleton className="h-3 w-12" />
         </div>
         {showProgress && (
-          <div className="w-1 h-8 bg-gray-200 dark:bg-[#1a1a1a] rounded-full overflow-hidden">
+          <div className="w-1 h-6 bg-gray-100 rounded-full overflow-hidden">
             <motion.div
-              className="w-full bg-gray-400 dark:bg-[#333] rounded-full"
+              className="w-full bg-gray-300 rounded-full"
               initial={{ height: 0 }}
               animate={{ height: `${Math.random() * 80 + 20}%` }}
               transition={{ 

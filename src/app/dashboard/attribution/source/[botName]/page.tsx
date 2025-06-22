@@ -59,8 +59,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     const isHourlyData = date.getMinutes() === 0 && date.getSeconds() === 0
     
     return (
-      <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-3 shadow-lg">
-        <p className="text-zinc-300 text-sm mb-1">
+      <div className="bg-white border border-gray-200 shadow-lg rounded-lg p-3">
+        <p className="text-gray-600 text-sm mb-1">
           {isHourlyData 
             ? date.toLocaleString('en-US', { 
                 month: 'short', 
@@ -75,7 +75,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
               })
           }
         </p>
-        <p className="text-white font-semibold">
+        <p className="text-gray-900 font-semibold">
           {payload[0].value} crawls
         </p>
       </div>
@@ -247,7 +247,7 @@ export default function CrawlerDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c] text-white">
+    <div className="min-h-screen bg-[#f9f9f9] text-gray-900">
       <div id="crawler-detail-export" className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
         <motion.div
@@ -258,10 +258,10 @@ export default function CrawlerDetailPage() {
           <div className="flex items-center gap-2 mb-4">
             <Link 
               href="/dashboard/attribution/source" 
-              className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors"
+              className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span className="text-sm">Back to Sources</span>
+              <span className="text-sm font-medium">Back to Sources</span>
             </Link>
           </div>
           
@@ -270,7 +270,7 @@ export default function CrawlerDetailPage() {
               {isLoading ? (
                 <Skeleton className="w-12 h-12 rounded-lg" />
               ) : stats && (
-                <div className="w-12 h-12 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center overflow-hidden">
+                <div className="w-12 h-12 rounded-lg bg-gray-50 border border-gray-200 flex items-center justify-center overflow-hidden">
                   <img 
                     src={getFaviconForCompany(stats.company)} 
                     alt={stats.company}
@@ -283,15 +283,15 @@ export default function CrawlerDetailPage() {
                       }
                     }}
                   />
-                  <Bot className="w-6 h-6 text-zinc-500 hidden" />
+                  <Bot className="w-6 h-6 text-gray-500 hidden" />
                 </div>
               )}
               <div>
-                <h1 className="text-3xl font-semibold text-white mb-2 font-mono">{botName}</h1>
+                <h1 className="text-3xl font-semibold text-gray-900 mb-2 font-mono">{botName}</h1>
                 {isLoading ? (
                   <Skeleton className="h-5 w-64" />
                 ) : (
-                  <p className="text-zinc-400">
+                  <p className="text-gray-600">
                     {stats ? `${stats.company} • Last seen ${formatRelativeTime(stats.lastSeen)}` : 'Crawler activity'}
                     {' '}({timeframe.toLowerCase()})
                   </p>
@@ -305,8 +305,8 @@ export default function CrawlerDetailPage() {
                   title=""
                   timeframe={timeframe}
                   onTimeframeChange={setTimeframe}
-                  titleColor="text-white"
-                  selectorColor="text-zinc-400"
+                  titleColor="text-gray-900"
+                  selectorColor="text-gray-600"
                   userPlan={userPlan}
                 />
               )}
@@ -325,7 +325,7 @@ export default function CrawlerDetailPage() {
           transition={{ delay: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
         >
-          <Card className="bg-zinc-900/50 border-zinc-800">
+          <Card className="bg-white border-gray-200 shadow-sm">
             <CardContent className="p-6">
               {isLoading ? (
                 <div className="space-y-2">
@@ -334,16 +334,16 @@ export default function CrawlerDetailPage() {
                 </div>
               ) : (
                 <>
-                  <div className="text-2xl font-bold text-white mb-1">
+                  <div className="text-2xl font-bold text-gray-900 mb-1">
                     {stats?.totalCrawls.toLocaleString() || '0'}
                   </div>
-                  <div className="text-sm text-zinc-400">Total Crawls</div>
+                  <div className="text-sm text-gray-600">Total Crawls</div>
                 </>
               )}
             </CardContent>
           </Card>
           
-          <Card className="bg-zinc-900/50 border-zinc-800">
+          <Card className="bg-white border-gray-200 shadow-sm">
             <CardContent className="p-6">
               {isLoading ? (
                 <div className="space-y-2">
@@ -352,16 +352,16 @@ export default function CrawlerDetailPage() {
                 </div>
               ) : (
                 <>
-                  <div className="text-2xl font-bold text-white mb-1">
+                  <div className="text-2xl font-bold text-gray-900 mb-1">
                     {stats?.uniquePaths || '0'}
                   </div>
-                  <div className="text-sm text-zinc-400">Unique Pages</div>
+                  <div className="text-sm text-gray-600">Unique Pages</div>
                 </>
               )}
             </CardContent>
           </Card>
           
-          <Card className="bg-zinc-900/50 border-zinc-800">
+          <Card className="bg-white border-gray-200 shadow-sm">
             <CardContent className="p-6">
               {isLoading ? (
                 <div className="space-y-2">
@@ -370,16 +370,16 @@ export default function CrawlerDetailPage() {
                 </div>
               ) : (
                 <>
-                  <div className="text-2xl font-bold text-white mb-1">
+                  <div className="text-2xl font-bold text-gray-900 mb-1">
                     {stats?.avgInterval || 'N/A'}
                   </div>
-                  <div className="text-sm text-zinc-400">Avg Interval</div>
+                  <div className="text-sm text-gray-600">Avg Interval</div>
                 </>
               )}
             </CardContent>
           </Card>
           
-          <Card className="bg-zinc-900/50 border-zinc-800">
+          <Card className="bg-white border-gray-200 shadow-sm">
             <CardContent className="p-6">
               {isLoading ? (
                 <div className="space-y-2">
@@ -388,10 +388,10 @@ export default function CrawlerDetailPage() {
                 </div>
               ) : (
                 <>
-                  <div className="text-2xl font-bold text-white mb-1">
+                  <div className="text-2xl font-bold text-gray-900 mb-1">
                     {stats ? formatRelativeTime(stats.lastSeen) : 'Never'}
                   </div>
-                  <div className="text-sm text-zinc-400">Last Activity</div>
+                  <div className="text-sm text-gray-600">Last Activity</div>
                 </>
               )}
             </CardContent>
@@ -405,12 +405,12 @@ export default function CrawlerDetailPage() {
           transition={{ delay: 0.2 }}
           className="mb-8"
         >
-          <Card className="bg-zinc-900/50 border-zinc-800">
-            <CardHeader className="pb-4 pt-4 pl-6 flex-shrink-0 border-b border-zinc-800">
+          <Card className="bg-white border-gray-200 shadow-sm">
+            <CardHeader className="pb-4 pt-6 pl-6 flex-shrink-0 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-1">Crawl Activity Over Time</h3>
-                  <p className="text-sm text-zinc-400">Crawling patterns for {botName}</p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">Crawl Activity Over Time</h3>
+                  <p className="text-sm text-gray-600">Crawling patterns for {botName}</p>
                 </div>
               </div>
             </CardHeader>
@@ -430,25 +430,25 @@ export default function CrawlerDetailPage() {
                     >
                       <defs>
                         <linearGradient id="crawlerGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#ffffff" stopOpacity={0.08} />
-                          <stop offset="100%" stopColor="#ffffff" stopOpacity={0} />
+                          <stop offset="0%" stopColor="#6B7280" stopOpacity={0.1} />
+                          <stop offset="100%" stopColor="#6B7280" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid
                         vertical={false}
                         horizontal={true}
-                        strokeDasharray="2 2"
-                        stroke="#333333"
-                        opacity={0.15}
+                        strokeDasharray="0"
+                        stroke="#E5E7EB"
+                        opacity={1}
                       />
                       <RechartsXAxis
                         dataKey="date"
-                        axisLine={false}
+                        axisLine={{ stroke: '#E5E7EB', strokeWidth: 1 }}
                         tick={{ 
-                          fill: '#555555', 
+                          fill: '#6B7280', 
                           fontSize: 11,
-                          fontFamily: 'var(--font-geist-mono)',
-                          letterSpacing: '-0.025em'
+                          fontFamily: 'Inter, system-ui, sans-serif',
+                          fontWeight: 400
                         }}
                         tickLine={false}
                         interval={tickInterval}
@@ -468,17 +468,17 @@ export default function CrawlerDetailPage() {
                         }}
                       />
                       <RechartsYAxis
-                        axisLine={false}
+                        axisLine={{ stroke: '#E5E7EB', strokeWidth: 1 }}
                         tick={{ 
-                          fill: '#555555', 
+                          fill: '#6B7280', 
                           fontSize: 11,
-                          fontFamily: 'var(--font-geist-mono)',
-                          letterSpacing: '-0.025em'
+                          fontFamily: 'Inter, system-ui, sans-serif',
+                          fontWeight: 400
                         }}
                         tickLine={false}
                         tickFormatter={(value: any) => `${value}`}
                         tickCount={8}
-                        domain={[0, (dataMax: number) => dataMax * 2]}
+                        domain={[0, (dataMax: number) => dataMax * 1.2]}
                         width={40}
                       />
                       <RechartsTooltip
@@ -488,11 +488,11 @@ export default function CrawlerDetailPage() {
                       <RechartsArea
                         type="monotone"
                         dataKey="crawls"
-                        stroke="#ffffff"
-                        strokeWidth={1.5}
+                        stroke="#6B7280"
+                        strokeWidth={2}
                         fill="url(#crawlerGradient)"
                         dot={false}
-                        activeDot={{ r: 4, stroke: '#ffffff', strokeWidth: 2, fill: '#0c0c0c' }}
+                        activeDot={{ r: 4, stroke: '#6B7280', strokeWidth: 2, fill: '#FFFFFF' }}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -508,11 +508,11 @@ export default function CrawlerDetailPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <Card className="bg-zinc-900/50 border-zinc-800">
-            <CardHeader className="pb-4 pt-4 pl-6 flex-shrink-0 border-b border-zinc-800">
+          <Card className="bg-white border-gray-200 shadow-sm">
+            <CardHeader className="pb-4 pt-6 pl-6 flex-shrink-0 border-b border-gray-200">
               <div>
-                <h3 className="text-lg font-semibold text-white mb-1">Recent Page Activity</h3>
-                <p className="text-sm text-zinc-400">Pages crawled by {botName}</p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Recent Page Activity</h3>
+                <p className="text-sm text-gray-600">Pages crawled by {botName}</p>
               </div>
             </CardHeader>
             <CardContent className="p-6">
@@ -532,13 +532,15 @@ export default function CrawlerDetailPage() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      className="flex items-center justify-between py-3 px-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-800/70 transition-colors"
+                      className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <span className="text-lg">{getPathIcon(activity.path)}</span>
+                        <div className="flex items-center justify-center w-8 h-8 bg-gray-100 border border-gray-200 rounded-lg">
+                          <span className="text-sm">{getPathIcon(activity.path)}</span>
+                        </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-white font-mono truncate text-sm">{activity.path}</p>
-                          <div className="flex items-center gap-4 text-xs text-zinc-500 mt-1">
+                          <p className="text-gray-900 font-mono truncate text-sm font-medium">{activity.path}</p>
+                          <div className="flex items-center gap-4 text-xs text-gray-600 mt-1">
                             <span>{activity.visits} visits</span>
                             {activity.responseTime && (
                               <span>{activity.responseTime}ms avg</span>
@@ -546,14 +548,14 @@ export default function CrawlerDetailPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="text-xs text-zinc-500">
+                      <div className="text-xs text-gray-600">
                         {formatRelativeTime(activity.lastVisit)}
                       </div>
                     </motion.div>
                   ))
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-zinc-500">No recent activity found for this timeframe.</p>
+                    <p className="text-gray-500">No recent activity found for this timeframe.</p>
                   </div>
                 )}
               </div>

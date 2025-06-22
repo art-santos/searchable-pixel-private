@@ -44,9 +44,9 @@ export function TableSkeleton({
   }
 
   return (
-    <SkeletonCard className={`bg-zinc-900/20 border border-zinc-800/50 rounded-lg overflow-hidden ${className}`}>
+    <SkeletonCard className={`bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm ${className}`}>
       {/* Table Header */}
-      <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-zinc-900/30 border-b border-zinc-800/50">
+      <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200">
         {columns.map((col, index) => (
           <div key={index} className={`col-span-${col.span} ${col.align === 'center' ? 'text-center' : col.align === 'right' ? 'text-right' : ''}`}>
             <Skeleton className="h-3 w-20" />
@@ -56,7 +56,7 @@ export function TableSkeleton({
 
       {/* Table Body */}
       <motion.div 
-        className="divide-y divide-zinc-800/30"
+        className="divide-y divide-gray-200"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -68,7 +68,7 @@ export function TableSkeleton({
             className="group"
           >
             {/* Main Row */}
-            <div className="grid grid-cols-12 gap-4 px-4 py-3 hover:bg-zinc-900/20 transition-colors">
+            <div className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 transition-colors">
               {columns.map((col, colIndex) => (
                 <div key={colIndex} className={`col-span-${col.span} flex items-center ${col.align === 'center' ? 'justify-center' : col.align === 'right' ? 'justify-end' : ''}`}>
                   {colIndex === 0 ? (
@@ -77,7 +77,9 @@ export function TableSkeleton({
                       {showExpandableRows && (
                         <Skeleton className="w-4 h-4" />
                       )}
-                      <SkeletonCircle size="sm" className="w-4 h-4" />
+                      <div className="flex items-center justify-center w-8 h-8 bg-gray-50 border border-gray-200 rounded-lg">
+                        <Skeleton className="w-4 h-4 rounded" />
+                      </div>
                       <div className="flex-1 min-w-0">
                         <Skeleton className="h-3.5 w-32 mb-1" />
                         <Skeleton className="h-3 w-20" />
@@ -99,15 +101,17 @@ export function TableSkeleton({
                 transition={{ delay: index * 0.1 + 0.5, duration: 0.3 }}
                 className="overflow-hidden"
               >
-                <div className="px-4 py-4 bg-zinc-900/10 border-t border-zinc-800/30">
+                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
                   <div className="mb-3">
                     <Skeleton className="h-3.5 w-24 mb-2" />
                   </div>
                   <div className="space-y-2 max-h-64">
                     {[...Array(3)].map((_, subIndex) => (
-                      <div key={subIndex} className="flex items-center justify-between py-2 px-3 bg-zinc-900/30 rounded">
+                      <div key={subIndex} className="flex items-center justify-between py-2 px-3 bg-white border border-gray-200 rounded">
                         <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <SkeletonCircle size="sm" className="w-3 h-3" />
+                          <div className="flex items-center justify-center w-6 h-6 bg-gray-100 border border-gray-200 rounded">
+                            <Skeleton className="w-3 h-3 rounded" />
+                          </div>
                           <div className="flex-1 min-w-0">
                             <Skeleton className="h-3 w-40 mb-1" />
                             <Skeleton className="h-2.5 w-24" />

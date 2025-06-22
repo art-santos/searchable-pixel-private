@@ -75,7 +75,7 @@ const getSafeFaviconUrl = (url: string, size: number = 128): string => {
     const hostname = getSafeHostname(url);
     return `https://www.google.com/s2/favicons?domain=${hostname}&sz=${size}`;
   } catch {
-    return '/images/split-icon-white.svg';
+    return '/images/split-icon-black.svg';
   }
 };
 
@@ -87,7 +87,7 @@ const getCompetitorFavicon = (name: string): string => {
       .replace(/[^a-zA-Z0-9]/g, '');
     return `https://www.google.com/s2/favicons?domain=${cleanName}.com&sz=128`;
   } catch {
-    return '/images/split-icon-white.svg';
+    return '/images/split-icon-black.svg';
   }
 };
 
@@ -301,26 +301,26 @@ export default function EnhancedSnapshotReportPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Clock className="w-3 h-3 text-zinc-500" />;
+        return <Clock className="w-3 h-3 text-gray-500" />;
       case 'processing':
-        return <div className="w-3 h-3 animate-spin rounded-full border border-zinc-500 border-t-transparent" />;
+        return <div className="w-3 h-3 animate-spin rounded-full border border-gray-500 border-t-transparent" />;
       case 'completed':
         return <CheckCircle className="w-3 h-3 text-emerald-500" />;
       case 'failed':
         return <XCircle className="w-3 h-3 text-red-500" />;
       default:
-        return <AlertCircle className="w-3 h-3 text-zinc-500" />;
+        return <AlertCircle className="w-3 h-3 text-gray-500" />;
     }
   };
 
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return <AlertTriangle className="w-3 h-3 text-red-400" />;
+        return <AlertTriangle className="w-3 h-3 text-red-500" />;
       case 'warning':
-        return <AlertCircle className="w-3 h-3 text-amber-400" />;
+        return <AlertCircle className="w-3 h-3 text-amber-500" />;
       case 'info':
-        return <Info className="w-3 h-3 text-zinc-400" />;
+        return <Info className="w-3 h-3 text-gray-500" />;
       default:
         return null;
     }
@@ -329,13 +329,13 @@ export default function EnhancedSnapshotReportPage() {
   const getEffortBadge = (effort: string) => {
     switch (effort) {
       case 'low':
-        return <span className="px-1.5 py-0.5 text-xs rounded-full bg-emerald-400/10 text-emerald-400 border border-emerald-400/20">Low</span>;
+        return <span className="px-1.5 py-0.5 text-xs rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">Low</span>;
       case 'medium':
-        return <span className="px-1.5 py-0.5 text-xs rounded-full bg-amber-400/10 text-amber-400 border border-amber-400/20">Med</span>;
+        return <span className="px-1.5 py-0.5 text-xs rounded-full bg-amber-50 text-amber-700 border border-amber-200">Med</span>;
       case 'high':
-        return <span className="px-1.5 py-0.5 text-xs rounded-full bg-red-400/10 text-red-400 border border-red-400/20">High</span>;
+        return <span className="px-1.5 py-0.5 text-xs rounded-full bg-red-50 text-red-700 border border-red-200">High</span>;
       default:
-        return <span className="px-1.5 py-0.5 text-xs rounded-full bg-zinc-400/10 text-zinc-400 border border-zinc-400/20">-</span>;
+        return <span className="px-1.5 py-0.5 text-xs rounded-full bg-gray-50 text-gray-600 border border-gray-200">-</span>;
     }
   };
 
@@ -347,14 +347,14 @@ export default function EnhancedSnapshotReportPage() {
       'D': 'bg-orange-500 text-white',
       'F': 'bg-red-500 text-white'
     };
-    return colors[grade as keyof typeof colors] || 'bg-zinc-500 text-white';
+    return colors[grade as keyof typeof colors] || 'bg-gray-500 text-white';
   };
 
   // Progress Bar Component
   const ProgressBar = ({ value, max = 100, className = '' }: { value: number, max?: number, className?: string }) => (
-    <div className={`w-full bg-zinc-800 rounded-full h-1.5 ${className}`}>
+    <div className={`w-full bg-gray-200 rounded-full h-1.5 ${className}`}>
       <div 
-        className="bg-white rounded-full h-1.5 transition-all duration-300"
+        className="bg-gray-900 rounded-full h-1.5 transition-all duration-300"
         style={{ width: `${Math.min((value / max) * 100, 100)}%` }}
       />
     </div>
@@ -366,14 +366,14 @@ export default function EnhancedSnapshotReportPage() {
 
   if (error || !snapshot) {
     return (
-      <div className="min-h-screen bg-[#0c0c0c] flex items-center justify-center">
+      <div className="min-h-screen bg-[#f9f9f9] flex items-center justify-center">
         <div className="text-center">
-          <XCircle className="w-8 h-8 text-zinc-500 mx-auto mb-3" />
-          <h1 className="text-lg font-medium text-white mb-2">Snapshot not found</h1>
-          <p className="text-zinc-500 text-sm mb-4">{error}</p>
+          <XCircle className="w-8 h-8 text-gray-500 mx-auto mb-3" />
+          <h1 className="text-lg font-medium text-gray-900 mb-2">Snapshot not found</h1>
+          <p className="text-gray-500 text-sm mb-4">{error}</p>
           <Link
             href="/dashboard/snapshot"
-            className="inline-flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 border border-gray-200 text-gray-900 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
           >
             <ArrowLeft className="w-3 h-3" />
             Back to Snapshots
@@ -387,13 +387,13 @@ export default function EnhancedSnapshotReportPage() {
   let combinedScore = snapshot.status === 'completed' ? getCombinedScore(snapshot, checklistResults) : null;
 
   return (
-    <main className="min-h-screen bg-[#0c0c0c]">
+    <main className="min-h-screen bg-[#f9f9f9]">
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Link
             href="/dashboard/snapshot"
-            className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             <span className="text-sm">Return to snapshots</span>
@@ -402,18 +402,18 @@ export default function EnhancedSnapshotReportPage() {
 
         {/* Completion Banner */}
         {showCompletionBanner && (
-          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4 mb-6 animate-in slide-in-from-top duration-300">
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-6 animate-in slide-in-from-top duration-300">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <CheckCircle className="w-5 h-5 text-emerald-400" />
+                <CheckCircle className="w-5 h-5 text-emerald-600" />
                 <div>
-                  <div className="text-emerald-400 font-medium text-sm">Snapshot Complete!</div>
-                  <div className="text-emerald-200/80 text-xs">Your analysis is ready to view</div>
+                  <div className="text-emerald-700 font-medium text-sm">Snapshot Complete!</div>
+                  <div className="text-emerald-600 text-xs">Your analysis is ready to view</div>
                 </div>
               </div>
               <button
                 onClick={() => setShowCompletionBanner(false)}
-                className="text-emerald-400/60 hover:text-emerald-400 transition-colors"
+                className="text-emerald-500 hover:text-emerald-700 transition-colors"
               >
                 <span className="sr-only">Dismiss</span>
                 ×
@@ -426,18 +426,18 @@ export default function EnhancedSnapshotReportPage() {
         {snapshot.status !== 'completed' && (
           <div className="space-y-6">
             {/* URL and Status Header */}
-            <div className="bg-zinc-900/20 border border-zinc-800 rounded-lg p-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
               <div className="flex items-center gap-4 mb-4">
               <div className="flex items-center gap-2">
                 {getStatusIcon(snapshot.status)}
-                  <span className="text-xs text-zinc-400 uppercase tracking-wider font-medium">
+                  <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">
                     {snapshot.status === 'pending' ? 'Queued' : 
                      snapshot.status === 'processing' ? 'Processing' : 
                      snapshot.status === 'failed' ? 'Failed' : 'Unknown'}
                 </span>
               </div>
                 {(snapshot.status === 'pending' || snapshot.status === 'processing') && (
-                  <div className="text-xs text-zinc-500">
+                  <div className="text-xs text-gray-400">
                     Auto-refreshing every 3 seconds...
             </div>
                 )}
@@ -451,10 +451,10 @@ export default function EnhancedSnapshotReportPage() {
                     alt=""
                     className="w-4 h-4 rounded"
                   />
-                  <div className="text-zinc-400 text-sm font-mono">{snapshot.url}</div>
+                  <div className="text-gray-500 text-sm font-mono">{snapshot.url}</div>
                 </div>
-                <div className="text-zinc-500 text-xs uppercase tracking-wider mb-1">Topic</div>
-                <div className="inline-flex items-center px-3 py-1 bg-zinc-900 border border-zinc-800 rounded text-sm text-zinc-300">
+                <div className="text-gray-400 text-xs uppercase tracking-wider mb-1">Topic</div>
+                <div className="inline-flex items-center px-3 py-1 bg-gray-50 border border-gray-200 rounded text-sm text-gray-700">
                   {snapshot.topic}
           </div>
         </div>
@@ -466,22 +466,22 @@ export default function EnhancedSnapshotReportPage() {
 
               {snapshot.status === 'pending' && (
                 <div className="text-center py-4">
-                  <Clock className="w-6 h-6 text-zinc-500 mx-auto mb-2" />
-                  <div className="text-white font-medium mb-1">Queued for Processing</div>
-                  <div className="text-zinc-400 text-sm">Your snapshot will begin processing shortly</div>
+                  <Clock className="w-6 h-6 text-gray-500 mx-auto mb-2" />
+                  <div className="text-gray-900 font-medium mb-1">Queued for Processing</div>
+                  <div className="text-gray-500 text-sm">Your snapshot will begin processing shortly</div>
           </div>
         )}
 
               {snapshot.status === 'failed' && (
                 <div className="text-center py-4">
                   <XCircle className="w-6 h-6 text-red-500 mx-auto mb-2" />
-                  <div className="text-white font-medium mb-1">Processing Failed</div>
-                  <div className="text-zinc-400 text-sm">An error occurred during processing. Please try again.</div>
+                  <div className="text-gray-900 font-medium mb-1">Processing Failed</div>
+                  <div className="text-gray-500 text-sm">An error occurred during processing. Please try again.</div>
                 </div>
               )}
               </div>
               
-            {/* Use the consistent dark skeleton component */}
+            {/* Use the consistent light skeleton component */}
             {(snapshot.status === 'pending' || snapshot.status === 'processing') && (
               <div className="pt-6">
                 <SnapshotReportSkeleton />
@@ -513,7 +513,7 @@ export default function EnhancedSnapshotReportPage() {
                             stroke="currentColor"
                             strokeWidth="6"
                             fill="none"
-                            className="text-zinc-800"
+                            className="text-gray-200"
                           />
                           <circle
                             cx="50"
@@ -524,13 +524,13 @@ export default function EnhancedSnapshotReportPage() {
                             fill="none"
                             strokeDasharray={`${2 * Math.PI * 40}`}
                             strokeDashoffset={`${2 * Math.PI * 40 * (1 - displayScore / 100)}`}
-                            className="text-white transition-all duration-700 ease-out"
+                            className="text-gray-900 transition-all duration-700 ease-out"
                           />
                         </svg>
                         {/* Score Text */}
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="text-center">
-                            <div className="text-5xl font-bold text-white">{displayScore}%</div>
+                            <div className="text-5xl font-bold text-gray-900">{displayScore}%</div>
                       </div>
                       </div>
                       </div>
@@ -545,7 +545,7 @@ export default function EnhancedSnapshotReportPage() {
                       href={snapshot.url} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors mb-4 group"
+                      className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors mb-4 group"
                     >
                       <img
                         src={getSafeFaviconUrl(snapshot.url)}
@@ -556,17 +556,17 @@ export default function EnhancedSnapshotReportPage() {
                       <ExternalLink className="w-3 h-3 opacity-50 group-hover:opacity-100" />
                     </a>
                     
-                    <div className="text-zinc-500 text-xs uppercase tracking-wider mb-1">SITE TITLE</div>
-                    <h2 className="text-3xl font-semibold text-white mb-4">
+                    <div className="text-gray-500 text-xs uppercase tracking-wider mb-1">SITE TITLE</div>
+                    <h2 className="text-3xl font-semibold text-gray-900 mb-4">
                       {snapshot.site_title || 'No title available'}
                     </h2>
                     
-                    <div className="text-zinc-500 text-xs uppercase tracking-wider mb-2">META DESCRIPTION</div>
-                    <div className="text-zinc-400 text-sm mb-4 leading-relaxed">
+                    <div className="text-gray-500 text-xs uppercase tracking-wider mb-2">META DESCRIPTION</div>
+                    <div className="text-gray-400 text-sm mb-4 leading-relaxed">
                       {snapshot.meta_description || 'No meta description available'}
                   </div>
 
-                    <div className="inline-flex items-center px-3 py-1 bg-zinc-900 border border-zinc-800 rounded text-xs text-zinc-300">
+                    <div className="inline-flex items-center px-3 py-1 bg-gray-50 border border-gray-200 rounded text-xs text-gray-700">
                       {snapshot.topic}
                             </div>
                           </div>
@@ -580,23 +580,23 @@ export default function EnhancedSnapshotReportPage() {
                       return (
                         <>
                 <div>
-                            <div className="text-zinc-500 text-xs uppercase tracking-wider mb-2">AI Visibility</div>
-                            <div className="text-2xl font-semibold text-white">{snapshot.visibility_score}</div>
+                            <div className="text-gray-500 text-xs uppercase tracking-wider mb-2">AI Visibility</div>
+                            <div className="text-2xl font-semibold text-gray-900">{snapshot.visibility_score}</div>
                         </div>
                           
                           <div>
-                            <div className="text-zinc-500 text-xs uppercase tracking-wider mb-2">Technical Health</div>
-                            <div className="text-2xl font-semibold text-white">{technicalScore}</div>
+                            <div className="text-gray-500 text-xs uppercase tracking-wider mb-2">Technical Health</div>
+                            <div className="text-2xl font-semibold text-gray-900">{technicalScore}</div>
                     </div>
               
                           <div>
-                            <div className="text-zinc-500 text-xs uppercase tracking-wider mb-2">Issues Found</div>
-                            <div className="text-2xl font-semibold text-white">{issues.length}</div>
+                            <div className="text-gray-500 text-xs uppercase tracking-wider mb-2">Issues Found</div>
+                            <div className="text-2xl font-semibold text-gray-900">{issues.length}</div>
                   </div>
 
                           <div>
-                            <div className="text-zinc-500 text-xs uppercase tracking-wider mb-2">Competitors</div>
-                            <div className="text-2xl font-semibold text-white">{snapshot.top_competitors.length}</div>
+                            <div className="text-gray-500 text-xs uppercase tracking-wider mb-2">Competitors</div>
+                            <div className="text-2xl font-semibold text-gray-900">{snapshot.top_competitors.length}</div>
                               </div>
                         </>
                       );
@@ -626,14 +626,14 @@ export default function EnhancedSnapshotReportPage() {
             )}
 
             {/* Tab Navigation */}
-            <div className="border border-zinc-800 rounded-lg p-1 bg-zinc-900/30">
+            <div className="border border-gray-200 rounded-lg p-1 bg-white shadow-sm">
               <div className="grid grid-cols-2 gap-1">
                 <button
                   onClick={() => setActiveTab('visibility')}
                   className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-medium transition-all ${
                     activeTab === 'visibility'
-                      ? 'bg-zinc-800 text-white border border-zinc-700'
-                      : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+                      ? 'bg-gray-900 text-white border border-gray-700'
+                      : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
                   <Eye className="w-4 h-4" />
@@ -643,13 +643,13 @@ export default function EnhancedSnapshotReportPage() {
                   onClick={() => setActiveTab('technical')}
                   className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-medium transition-all ${
                     activeTab === 'technical'
-                      ? 'bg-zinc-800 text-white border border-zinc-700'
-                      : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+                      ? 'bg-gray-900 text-white border border-gray-700'
+                      : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
                   <Settings className="w-4 h-4" />
                   <span>Technical Health</span>
-                  <span className="px-1.5 py-0.5 text-xs rounded-sm bg-orange-500/10 text-orange-400 border border-orange-500/20 ml-1">
+                  <span className="px-1.5 py-0.5 text-xs rounded-sm bg-orange-50 text-orange-700 border border-orange-200 ml-1">
                     Beta
                   </span>
                 </button>
@@ -660,13 +660,13 @@ export default function EnhancedSnapshotReportPage() {
               {activeTab === 'visibility' && (
               <div className="space-y-12">
                 {/* Visibility Overview */}
-                <div className="bg-zinc-900/20 rounded-lg p-8">
+                <div className="bg-white rounded-lg p-8 border border-gray-200 shadow-sm">
                   <div className="grid grid-cols-12 gap-8 items-center">
                     <div className="col-span-12 lg:col-span-5">
                       <div>
-                        <div className="text-zinc-500 text-xs uppercase tracking-wider mb-2">AI Visibility Performance</div>
-                        <div className="text-6xl font-bold text-white mb-3">{snapshot.visibility_score}<span className="text-2xl text-zinc-400">%</span></div>
-                        <p className="text-zinc-400 text-sm leading-relaxed">
+                        <div className="text-gray-500 text-xs uppercase tracking-wider mb-2">AI Visibility Performance</div>
+                        <div className="text-6xl font-bold text-gray-900 mb-3">{snapshot.visibility_score}<span className="text-2xl text-gray-400">%</span></div>
+                        <p className="text-gray-600 text-sm leading-relaxed">
                           Your content's visibility across AI search engines and how well it competes for attention in your topic area.
                         </p>
                       </div>
@@ -675,21 +675,21 @@ export default function EnhancedSnapshotReportPage() {
                     <div className="col-span-12 lg:col-span-7">
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div>
-                          <div className="text-zinc-500 text-xs uppercase tracking-wider mb-3">Coverage Analysis</div>
-                          <div className="text-3xl font-bold text-white mb-2">{snapshot.mentions_count}</div>
-                          <div className="text-zinc-400 text-sm mb-3">of {snapshot.total_questions} questions</div>
-                          <div className="w-full bg-zinc-800/30 rounded-full h-1">
+                          <div className="text-gray-500 text-xs uppercase tracking-wider mb-3">Coverage Analysis</div>
+                          <div className="text-3xl font-bold text-gray-900 mb-2">{snapshot.mentions_count}</div>
+                          <div className="text-gray-500 text-sm mb-3">of {snapshot.total_questions} questions</div>
+                          <div className="w-full bg-gray-200 rounded-full h-1">
                             <div 
-                              className="bg-white h-1 rounded-full transition-all duration-300" 
+                              className="bg-gray-900 h-1 rounded-full transition-all duration-300" 
                               style={{ width: `${(snapshot.mentions_count / snapshot.total_questions) * 100}%` }}
                             />
                     </div>
                   </div>
 
                         <div>
-                          <div className="text-zinc-500 text-xs uppercase tracking-wider mb-3">Competitive Landscape</div>
-                          <div className="text-3xl font-bold text-white mb-2">{snapshot.top_competitors.length}</div>
-                          <div className="text-zinc-400 text-sm mb-3">competing sources found</div>
+                          <div className="text-gray-500 text-xs uppercase tracking-wider mb-3">Competitive Landscape</div>
+                          <div className="text-3xl font-bold text-gray-900 mb-2">{snapshot.top_competitors.length}</div>
+                          <div className="text-gray-400 text-sm mb-3">competing sources found</div>
                           <div className="flex items-center gap-2">
                             {snapshot.top_competitors.slice(0, 4).map((competitor, index) => {
                               return (
@@ -702,7 +702,7 @@ export default function EnhancedSnapshotReportPage() {
                               );
                             })}
                             {snapshot.top_competitors.length > 4 && (
-                              <span className="text-zinc-500 text-xs">+{snapshot.top_competitors.length - 4} more</span>
+                              <span className="text-gray-500 text-xs">+{snapshot.top_competitors.length - 4} more</span>
                                 )}
                               </div>
                             </div>
@@ -716,45 +716,45 @@ export default function EnhancedSnapshotReportPage() {
                   {/* All Visibility Results */}
                   <div>
                     <div className="flex items-center gap-3 mb-8">
-                      <h2 className="text-xl font-semibold text-white">Question Analysis</h2>
+                      <h2 className="text-xl font-semibold text-gray-900">Question Analysis</h2>
                                     </div>
                     
                     <div className="space-y-6 max-h-[64rem] overflow-y-auto pr-2">
                       {visibilityResults.map((result) => (
-                        <div key={result.id} className="border-l-2 border-zinc-800/50 pl-6 pb-6">
+                        <div key={result.id} className="border-l-2 border-gray-200 pl-6 pb-6">
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center gap-3">
-                              <span className="text-zinc-500 text-xs font-mono bg-zinc-800/50 px-2 py-1 rounded">Q{result.question_number}</span>
+                              <span className="text-gray-600 text-xs font-mono bg-gray-100 px-2 py-1 rounded">Q{result.question_number}</span>
                                 {result.target_found ? (
                                 <CheckCircle className="w-4 h-4 text-emerald-500" />
                                 ) : (
                                 <XCircle className="w-4 h-4 text-red-500" />
                                 )}
                             {result.position && (
-                                <span className="px-2 py-1 text-xs rounded-full bg-emerald-500/10 text-emerald-400">
+                                <span className="px-2 py-1 text-xs rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                                   Position #{result.position}
                                 </span>
                               )}
                             </div>
-                            <span className={`px-3 py-1 text-xs rounded-full ${
-                              result.target_found ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
+                            <span className={`px-3 py-1 text-xs rounded-full border ${
+                              result.target_found ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'
                             }`}>
                               {result.target_found ? 'Found' : 'Missing'}
                             </span>
                                 </div>
                                 
-                          <h4 className="text-white text-sm font-medium mb-4 leading-relaxed">{result.question_text}</h4>
+                          <h4 className="text-gray-900 text-sm font-medium mb-4 leading-relaxed">{result.question_text}</h4>
                           
                           {result.citation_snippet && (
                             <div className="mb-4">
-                              <div className="text-zinc-400 text-xs leading-relaxed pl-4 border-l border-zinc-700/50 mb-4">
+                              <div className="text-gray-600 text-xs leading-relaxed pl-4 border-l border-gray-300 mb-4">
                                     {result.citation_snippet}
                                 </div>
                                   
                                   {/* Citation Links */}
                                   {result.top_citations && result.top_citations.length > 0 && (
                                 <div className="pl-4 space-y-2">
-                                  <div className="text-zinc-500 text-xs font-medium">Sources:</div>
+                                  <div className="text-gray-500 text-xs font-medium">Sources:</div>
                                   {result.top_citations.map((citation, index) => {
                                           return (
                                             <a
@@ -762,7 +762,7 @@ export default function EnhancedSnapshotReportPage() {
                                               href={citation.url}
                                               target="_blank"
                                               rel="noopener noreferrer"
-                                        className="flex items-center gap-2 text-zinc-500 hover:text-zinc-300 transition-colors group py-1"
+                                        className="flex items-center gap-2 text-gray-500 hover:text-gray-300 transition-colors group py-1"
                                             >
                                               <div className="flex-shrink-0">
                                                 <img
@@ -785,9 +785,9 @@ export default function EnhancedSnapshotReportPage() {
                           
                           {result.competitor_names.length > 0 && (
                             <div className="flex flex-wrap gap-2 text-xs mb-4">
-                              <span className="text-zinc-500">Also mentioned:</span>
+                              <span className="text-gray-500">Also mentioned:</span>
                               {result.competitor_names.map((comp, i) => (
-                                <span key={i} className="px-2 py-1 rounded-full bg-zinc-800/30 text-zinc-400">
+                                <span key={i} className="px-2 py-1 rounded-full bg-gray-100 text-gray-700 border border-gray-200">
                                   {comp}
                                 </span>
                               ))}
@@ -795,9 +795,9 @@ export default function EnhancedSnapshotReportPage() {
                           )}
                           
                           {result.reasoning_summary && (
-                            <div className="mt-4 pt-4 border-t border-zinc-800/30">
-                              <div className="text-zinc-500 text-xs font-medium mb-2">Analysis:</div>
-                              <p className="text-zinc-400 text-xs leading-relaxed">{result.reasoning_summary}</p>
+                            <div className="mt-4 pt-4 border-t border-gray-200">
+                              <div className="text-gray-500 text-xs font-medium mb-2">Analysis:</div>
+                              <p className="text-gray-400 text-xs leading-relaxed">{result.reasoning_summary}</p>
                             </div>
                           )}
                         </div>
@@ -811,7 +811,7 @@ export default function EnhancedSnapshotReportPage() {
                     {snapshot.top_competitors.length > 0 && (
                       <div>
                         <div className="flex items-center gap-3 mb-8">
-                          <h2 className="text-xl font-semibold text-white">Top Competitors</h2>
+                          <h2 className="text-xl font-semibold text-gray-900">Top Competitors</h2>
                 </div>
                         <div className="space-y-4">
                           {(() => {
@@ -846,8 +846,8 @@ export default function EnhancedSnapshotReportPage() {
                               .slice(0, 5);
 
                             return topCompetitors.map((competitor, index) => (
-                              <div key={competitor.name} className="flex items-center gap-4 py-3 border-b border-zinc-800/30 last:border-b-0">
-                                <div className="w-6 h-6 bg-zinc-800/50 rounded text-zinc-400 text-xs flex items-center justify-center font-mono">
+                              <div key={competitor.name} className="flex items-center gap-4 py-3 border-b border-gray-200 last:border-b-0">
+                                <div className="w-6 h-6 bg-gray-100 rounded text-gray-700 text-xs flex items-center justify-center font-mono border border-gray-200">
                                   {index + 1}
                                 </div>
                                 <img
@@ -856,11 +856,11 @@ export default function EnhancedSnapshotReportPage() {
                                   className="w-4 h-4 rounded"
                                 />
                                 <div className="flex-1">
-                                  <div className="text-white text-sm font-medium">{competitor.name}</div>
+                                  <div className="text-gray-900 text-sm font-medium">{competitor.name}</div>
                                 </div>
                       <div className="text-right">
-                                  <div className="text-white text-sm font-semibold">{competitor.mentionRate}%</div>
-                                  <div className="text-zinc-500 text-xs">mention rate</div>
+                                  <div className="text-gray-900 text-sm font-semibold">{competitor.mentionRate}%</div>
+                                  <div className="text-gray-500 text-xs">mention rate</div>
                       </div>
                     </div>
                             ));
@@ -872,7 +872,7 @@ export default function EnhancedSnapshotReportPage() {
                     {/* Top Citation Sources */}
                     <div>
                       <div className="flex items-center gap-3 mb-8">
-                        <h2 className="text-xl font-semibold text-white">Top Citation Sources</h2>
+                        <h2 className="text-xl font-semibold text-gray-900">Top Citation Sources</h2>
                       </div>
                     <div className="space-y-4">
                         {(() => {
@@ -911,8 +911,8 @@ export default function EnhancedSnapshotReportPage() {
 
                           if (topSources.length === 0) {
                             return (
-                              <div className="text-center py-8 text-zinc-500">
-                                <Sparkles className="w-8 h-8 text-zinc-600 mx-auto mb-3" />
+                              <div className="text-center py-8 text-gray-500">
+                                <Sparkles className="w-8 h-8 text-gray-600 mx-auto mb-3" />
                                 <p className="text-sm">No citation sources available</p>
                                 </div>
                             );
@@ -920,8 +920,8 @@ export default function EnhancedSnapshotReportPage() {
 
                           return topSources.map((source, index) => {
                             return (
-                              <div key={source.domain} className="flex items-center gap-4 py-3 border-b border-zinc-800/30 last:border-b-0">
-                                <div className="w-6 h-6 bg-zinc-800/50 rounded text-zinc-400 text-xs flex items-center justify-center font-mono">
+                              <div key={source.domain} className="flex items-center gap-4 py-3 border-b border-gray-200 last:border-b-0">
+                                <div className="w-6 h-6 bg-gray-100 rounded text-gray-700 text-xs flex items-center justify-center font-mono border border-gray-200">
                                   {index + 1}
                                   </div>
                                 <img
@@ -933,12 +933,12 @@ export default function EnhancedSnapshotReportPage() {
                                   }}
                                 />
                               <div className="flex-1">
-                                  <div className="text-white text-sm font-medium">{source.domain}</div>
-                                  <div className="text-zinc-500 text-xs truncate">{source.sampleTitle}</div>
+                                  <div className="text-gray-900 text-sm font-medium">{source.domain}</div>
+                                  <div className="text-gray-500 text-xs truncate">{source.sampleTitle}</div>
                               </div>
                                 <div className="text-right">
-                                  <div className="text-white text-sm font-semibold">{source.count}</div>
-                                  <div className="text-zinc-500 text-xs">citations</div>
+                                  <div className="text-gray-900 text-sm font-semibold">{source.count}</div>
+                                  <div className="text-gray-500 text-xs">citations</div>
                             </div>
                           </div>
                             );
@@ -950,11 +950,11 @@ export default function EnhancedSnapshotReportPage() {
                     {/* Position Analysis */}
                     <div>
                       <div className="flex items-center gap-3 mb-6">
-                        <h2 className="text-xl font-semibold text-white">Position Performance</h2>
+                        <h2 className="text-xl font-semibold text-gray-900">Position Performance</h2>
                   </div>
                       
-                      <div className="mb-6 p-4 bg-zinc-900/10 rounded-lg border border-zinc-800/50">
-                        <p className="text-zinc-400 text-sm leading-relaxed">
+                      <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <p className="text-gray-600 text-sm leading-relaxed">
                           This analysis tracks where your content appears in AI search results for questions related to your topic, 
                           showing your competitive position against other sources.
                         </p>
@@ -967,53 +967,53 @@ export default function EnhancedSnapshotReportPage() {
 
                           return (
                             <>
-                              <div className="border-l-2 border-zinc-800/50 pl-6">
+                              <div className="border-l-2 border-gray-200 pl-6">
                                 <div className="flex items-center justify-between mb-3">
-                                  <span className="text-zinc-400 text-sm">Top 3 Positions</span>
-                                  <span className="text-white text-2xl font-bold">
+                                  <span className="text-gray-500 text-sm">Top 3 Positions</span>
+                                  <span className="text-gray-900 text-2xl font-bold">
                                     {allResults.filter(r => r.position && r.position <= 3).length}
                               </span>
                             </div>
-                                <div className="w-full bg-zinc-800/30 rounded-full h-1 mb-2">
+                                <div className="w-full bg-gray-200 rounded-full h-1 mb-2">
                                   <div 
-                                    className="bg-white h-1 rounded-full transition-all duration-300" 
+                                    className="bg-gray-900 h-1 rounded-full transition-all duration-300" 
                                     style={{ width: `${allResults.length > 0 ? (allResults.filter(r => r.position && r.position <= 3).length / allResults.length) * 100 : 0}%` }}
                                   />
                             </div>
-                                <div className="text-zinc-500 text-xs">
+                                <div className="text-gray-500 text-xs">
                                   of {allResults.length} queries
                                 </div>
                               </div>
                               
-                              <div className="border-l-2 border-zinc-800/50 pl-6">
+                              <div className="border-l-2 border-gray-200 pl-6">
                                 <div className="flex items-center justify-between mb-3">
-                                  <span className="text-zinc-400 text-sm">Top 5 Positions</span>
-                                  <span className="text-white text-2xl font-bold">
+                                  <span className="text-gray-500 text-sm">Top 5 Positions</span>
+                                  <span className="text-gray-900 text-2xl font-bold">
                                     {allResults.filter(r => r.position && r.position <= 5).length}
                                   </span>
                                 </div>
-                                <div className="w-full bg-zinc-800/30 rounded-full h-1 mb-2">
+                                <div className="w-full bg-gray-200 rounded-full h-1 mb-2">
                                   <div 
-                                    className="bg-white h-1 rounded-full transition-all duration-300" 
+                                    className="bg-gray-900 h-1 rounded-full transition-all duration-300" 
                                     style={{ width: `${allResults.length > 0 ? (allResults.filter(r => r.position && r.position <= 5).length / allResults.length) * 100 : 0}%` }}
                                   />
                                 </div>
-                                <div className="text-zinc-500 text-xs">
+                                <div className="text-gray-500 text-xs">
                                   of {allResults.length} queries
                                 </div>
                               </div>
                               
-                              <div className="border-l-2 border-zinc-800/50 pl-6">
+                              <div className="border-l-2 border-gray-200 pl-6">
                             <div className="flex items-center justify-between">
-                                  <span className="text-zinc-400 text-sm">Average Position</span>
-                                  <span className="text-white text-2xl font-bold">
+                                  <span className="text-gray-500 text-sm">Average Position</span>
+                                  <span className="text-gray-900 text-2xl font-bold">
                                     {allResults.filter(r => r.position).length > 0 
                                       ? Math.round(allResults.filter(r => r.position).reduce((sum, r) => sum + (r.position || 0), 0) / allResults.filter(r => r.position).length)
                                       : 'N/A'
                                     }
                                   </span>
                             </div>
-                                <div className="text-zinc-500 text-xs mt-2">
+                                <div className="text-gray-500 text-xs mt-2">
                                   across all queries
                           </div>
                       </div>
@@ -1031,7 +1031,7 @@ export default function EnhancedSnapshotReportPage() {
             {activeTab === 'technical' && (
               <div className="space-y-8">
                 {/* Technical Health Overview */}
-                <div className="bg-zinc-900/20 rounded-lg p-8">
+                <div className="bg-white rounded-lg p-8 border border-gray-200 shadow-sm">
                   <div className="grid grid-cols-12 gap-8 items-center">
                     <div className="col-span-12 lg:col-span-5">
                       {(() => {
@@ -1042,14 +1042,14 @@ export default function EnhancedSnapshotReportPage() {
                           const legacyScore = snapshot.weighted_aeo_score || snapshot.aeo_score || 0;
                           return (
                             <div>
-                              <div className="text-zinc-500 text-xs uppercase tracking-wider mb-2">Technical Audit</div>
+                              <div className="text-gray-500 text-xs uppercase tracking-wider mb-2">Technical Audit</div>
                               <div className="flex items-baseline gap-3 mb-3">
-                                <div className="text-6xl font-bold text-white">{legacyScore}<span className="text-2xl text-zinc-400">%</span></div>
-                                <div className="text-zinc-500 text-sm">
+                                <div className="text-6xl font-bold text-gray-900">{legacyScore}<span className="text-2xl text-gray-400">%</span></div>
+                                <div className="text-gray-500 text-sm">
                                   (legacy scoring)
                   </div>
                 </div>
-                              <p className="text-zinc-400 text-sm leading-relaxed">
+                              <p className="text-gray-400 text-sm leading-relaxed">
                                 No detailed checklist data available. Showing legacy technical score.
                               </p>
                             </div>
@@ -1074,9 +1074,9 @@ export default function EnhancedSnapshotReportPage() {
                         
                                                   return (
                             <div>
-                              <div className="text-zinc-500 text-xs uppercase tracking-wider mb-2">Technical Health Performance</div>
-                              <div className="text-6xl font-bold text-white mb-3">{calculatedScore}<span className="text-2xl text-zinc-400">%</span></div>
-                              <p className="text-zinc-400 text-sm leading-relaxed">
+                              <div className="text-gray-500 text-xs uppercase tracking-wider mb-2">Technical Health Performance</div>
+                              <div className="text-6xl font-bold text-gray-900 mb-3">{calculatedScore}<span className="text-2xl text-gray-400">%</span></div>
+                              <p className="text-gray-400 text-sm leading-relaxed">
                                 How well your page is optimized for AI crawlers with proper structure, accessibility, and technical implementation.
                               </p>
                             </div>
@@ -1087,19 +1087,19 @@ export default function EnhancedSnapshotReportPage() {
                     <div className="col-span-12 lg:col-span-7">
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div>
-                          <div className="text-zinc-500 text-xs uppercase tracking-wider mb-3">Audit Progress</div>
-                          <div className="text-3xl font-bold text-white mb-2">{checklistResults.length || 0}</div>
-                          <div className="text-zinc-400 text-sm mb-3">comprehensive checks</div>
+                          <div className="text-gray-500 text-xs uppercase tracking-wider mb-3">Audit Progress</div>
+                          <div className="text-3xl font-bold text-gray-900 mb-2">{checklistResults.length || 0}</div>
+                          <div className="text-gray-400 text-sm mb-3">comprehensive checks</div>
                           <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2">
                               <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
-                              <span className="text-zinc-400 text-xs">
+                              <span className="text-gray-400 text-xs">
                                 {checklistResults.filter(check => check.passed).length} passed
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
                               <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                              <span className="text-zinc-400 text-xs">
+                              <span className="text-gray-400 text-xs">
                                 {checklistResults.filter(check => !check.passed).length} failed
                               </span>
                             </div>
@@ -1107,19 +1107,19 @@ export default function EnhancedSnapshotReportPage() {
                         </div>
                         
                         <div>
-                          <div className="text-zinc-500 text-xs uppercase tracking-wider mb-3">Category Breakdown</div>
-                          <div className="text-3xl font-bold text-white mb-2">
+                          <div className="text-gray-500 text-xs uppercase tracking-wider mb-3">Category Breakdown</div>
+                          <div className="text-3xl font-bold text-gray-900 mb-2">
                             {[...new Set(checklistResults.map(check => check.category))].length || 0}
                           </div>
-                          <div className="text-zinc-400 text-sm mb-3">audit categories</div>
+                          <div className="text-gray-400 text-sm mb-3">audit categories</div>
                           <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2">
                               <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                              <span className="text-zinc-400 text-xs">Weighted scoring</span>
+                              <span className="text-gray-400 text-xs">Weighted scoring</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
-                              <span className="text-zinc-400 text-xs">Transparent calc</span>
+                              <span className="text-gray-400 text-xs">Transparent calc</span>
                             </div>
                           </div>
                         </div>
@@ -1129,8 +1129,8 @@ export default function EnhancedSnapshotReportPage() {
                 </div>
 
                                 {/* Comprehensive 55-Item Checklist */}
-                <div className="bg-zinc-900/20 rounded-lg p-6">
-                  <h2 className="text-xl font-semibold text-white mb-6">Comprehensive Technical Audit Checklist</h2>
+                <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-6">Comprehensive Technical Audit Checklist</h2>
                   
                   {(() => {
                     // Use real checklist data from database
@@ -1138,10 +1138,10 @@ export default function EnhancedSnapshotReportPage() {
                     
                     if (technicalChecklist.length === 0) {
                       return (
-                        <div className="text-center py-8 border border-zinc-800/30 rounded-lg">
-                          <AlertCircle className="w-8 h-8 text-zinc-500 mx-auto mb-3" />
-                          <p className="text-white text-sm font-medium mb-1">No Checklist Data Available</p>
-                          <p className="text-zinc-500 text-xs">Detailed checklist analysis not available for this snapshot</p>
+                        <div className="text-center py-8 border border-gray-800/30 rounded-lg">
+                          <AlertCircle className="w-8 h-8 text-gray-500 mx-auto mb-3" />
+                          <p className="text-gray-900 text-sm font-medium mb-1">No Checklist Data Available</p>
+                          <p className="text-gray-500 text-xs">Detailed checklist analysis not available for this snapshot</p>
                         </div>
                       );
                     }
@@ -1159,16 +1159,16 @@ export default function EnhancedSnapshotReportPage() {
                       
                       return (
                         <div key={category} className="mb-6">
-                          <h3 className="text-white text-lg font-medium mb-4">{category}</h3>
+                          <h3 className="text-gray-900 text-lg font-medium mb-4">{category}</h3>
                           
                           <div className="space-y-2">
                             {sortedChecks.map(check => {
                               const isExpanded = expandedItems.has(check.id);
                               
                               return (
-                                <div key={check.id} className="bg-zinc-800/50 rounded-lg overflow-hidden">
+                                <div key={check.id} className="bg-gray-800/50 rounded-lg overflow-hidden">
                                   <div 
-                                    className="flex items-center justify-between p-3 cursor-pointer hover:bg-zinc-800/70 transition-colors"
+                                    className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-800/70 transition-colors"
                                     onClick={() => toggleExpanded(check.id)}
                                   >
                                     <div className="flex items-center gap-3 flex-1">
@@ -1176,8 +1176,8 @@ export default function EnhancedSnapshotReportPage() {
                                         check.passed ? 'bg-emerald-400' : 'bg-red-400'
                                       }`}></div>
                                       <div className="flex-1 min-w-0">
-                                        <div className="text-white text-sm font-medium">{check.check_name}</div>
-                                        <div className="text-zinc-400 text-xs truncate">{check.details}</div>
+                                        <div className="text-gray-900 text-sm font-medium">{check.check_name}</div>
+                                        <div className="text-gray-400 text-xs truncate">{check.details}</div>
                                       </div>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -1186,18 +1186,18 @@ export default function EnhancedSnapshotReportPage() {
                                       ) : (
                                         <XCircle className="w-4 h-4 text-red-400" />
                                       )}
-                                      <ChevronDown className={`w-4 h-4 text-zinc-400 transition-transform ${
+                                      <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${
                                         isExpanded ? 'rotate-180' : ''
                                       }`} />
                                     </div>
                                   </div>
                                   
                                                                      {isExpanded && (
-                                     <div className="border-t border-zinc-700/50 p-4 bg-zinc-900/60">
-                                       <div className="text-zinc-300 text-sm font-medium mb-2">
+                                     <div className="border-t border-gray-700/50 p-4 bg-gray-900/60">
+                                       <div className="text-gray-300 text-sm font-medium mb-2">
                                          {check.passed ? 'Status:' : 'How to fix:'}
                                        </div>
-                                       <p className="text-zinc-400 text-sm leading-relaxed">
+                                       <p className="text-gray-400 text-sm leading-relaxed">
                                          {getFixSuggestion(check.check_name, check.details, check.passed)}
                                        </p>
                       </div>

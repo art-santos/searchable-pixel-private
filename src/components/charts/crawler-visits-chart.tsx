@@ -50,17 +50,12 @@ const mockChartData: ChartDataPoint[] = [
 // Custom tooltip for the chart
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
-    const isCurrentPeriod = payload[0].payload?.isCurrentPeriod
-    
     return (
-      <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333333] px-3 py-2 rounded-lg shadow-md">
-        <p className="font-mono text-sm text-black dark:text-white">
-          {payload[0].value} crawls
-          {isCurrentPeriod && (
-            <span className="ml-2 text-xs text-green-500">● LIVE</span>
-          )}
+      <div className="bg-white border border-gray-200 shadow-lg px-3 py-2 rounded-lg">
+        <p className="text-sm text-gray-900 font-medium">
+          {payload[0].value} visits
         </p>
-        <p className="font-mono text-xs text-gray-500 dark:text-[#666666]">{label}</p>
+        <p className="text-xs text-gray-600 mt-1">{label}</p>
       </div>
     )
   }
@@ -149,7 +144,7 @@ export function CrawlerVisitsChart({ timeframe, onDataChange, className = "", on
 
   const ChartComponent = () => (
     <motion.div 
-      className={`h-full w-full relative text-gray-800 dark:text-gray-300 ${className}`}
+      className={`h-full w-full relative text-gray-900 ${className}`}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: shouldReduceMotion ? 0 : 0.3, ease: "easeOut" }}
@@ -157,63 +152,98 @@ export function CrawlerVisitsChart({ timeframe, onDataChange, className = "", on
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
           data={displayData}
-          margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+          margin={{ top: 20, right: 24, left: 24, bottom: 20 }}
         >
           <defs>
             <linearGradient id="crawlerGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#ffffff" stopOpacity={0.08} />
-              <stop offset="100%" stopColor="#ffffff" stopOpacity={0} />
+              <stop offset="0%" stopColor="#6B7280" stopOpacity={0.1} />
+              <stop offset="100%" stopColor="#6B7280" stopOpacity={0.02} />
             </linearGradient>
           </defs>
           <CartesianGrid
             vertical={false}
             horizontal={true}
-            strokeDasharray="2 2"
-            stroke="currentColor"
-            opacity={0.15}
+            strokeDasharray="0"
+            stroke="#E5E7EB"
+            strokeOpacity={1}
           />
           <XAxis
             dataKey="date"
-            axisLine={false}
+            axisLine={{ stroke: '#E5E7EB', strokeWidth: 1 }}
             tickLine={false}
             tick={{ 
-              fill: 'currentColor', 
-              fontSize: 11,
-              fontFamily: 'var(--font-geist-mono)',
-              letterSpacing: '-0.025em',
-              opacity: 0.6
+              fill: '#6B7280', 
+              fontSize: 12,
+              fontFamily: 'Inter, system-ui, sans-serif',
+              fontWeight: 400
             }}
             tickFormatter={(value, index) => {
               const dataPoint = displayData[index]
               return dataPoint?.showLabel ? value : ''
             }}
             interval={0}
-            height={30}
+            height={40}
+            tickMargin={12}
           />
           <YAxis
-            axisLine={false}
+            axisLine={{ stroke: '#E5E7EB', strokeWidth: 1 }}
             tickLine={false}
             tick={{ 
-              fill: 'currentColor', 
-              fontSize: 11,
-              fontFamily: 'var(--font-geist-mono)',
-              letterSpacing: '-0.025em',
-              opacity: 0.6
+              fill: '#6B7280', 
+              fontSize: 12,
+              fontFamily: 'Inter, system-ui, sans-serif',
+              fontWeight: 400
             }}
             width={40}
-            domain={[0, (dataMax: number) => dataMax * 2]}
-            tickCount={8}
+            domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.2)]}
+            tickCount={5}
+            tickFormatter={(value) => {
+              if (value === 0) return '0'
+              if (value >= 1000) return `${(value/1000).toFixed(1)}k`
+              return value.toString()
+            }}
+            orientation="left"
+            tickMargin={12}
           />
           <Tooltip content={<CustomTooltip />} />
           <Area
             type="linear"
             dataKey="crawls"
-            stroke="#ffffff"
-            strokeWidth={1.5}
+            stroke="#6B7280"
+            strokeWidth={2}
             fill="url(#crawlerGradient)"
-            dot={false}
-            activeDot={{ r: 4, stroke: '#ffffff', strokeWidth: 2, fill: 'var(--background)' }}
-            animationDuration={0}
+            dot={(props: any) => {
+              const { cx, cy, payload } = props
+              // Show dot for the last data point (current/active)
+              const isLastPoint = payload === displayData[displayData.length - 1]
+              
+              if (!isLastPoint) return <g />
+              
+              return (
+                <g>
+                  <circle cx={cx} cy={cy} r={4} fill="#6B7280" stroke="#FFFFFF" strokeWidth={2} />
+                  <circle cx={cx} cy={cy} r={4} fill="#6B7280" opacity={0.3}>
+                    <animate
+                      attributeName="r"
+                      from="4"
+                      to="8"
+                      dur="2s"
+                      repeatCount="indefinite"
+                    />
+                    <animate
+                      attributeName="opacity"
+                      from="0.3"
+                      to="0"
+                      dur="2s"
+                      repeatCount="indefinite"
+                    />
+                  </circle>
+                </g>
+              )
+            }}
+            activeDot={{ r: 4, stroke: '#6B7280', strokeWidth: 2, fill: '#FFFFFF' }}
+            animationDuration={800}
+            animationEasing="ease-out"
           />
         </AreaChart>
       </ResponsiveContainer>

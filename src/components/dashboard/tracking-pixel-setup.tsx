@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useWorkspace } from '@/contexts/WorkspaceContext'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Copy, Check, ExternalLink, AlertCircle, Loader2, Info, Code2, PlayCircle } from 'lucide-react'
+import { Copy, Check, ExternalLink, AlertCircle, Loader2, Info, Code2, PlayCircle, Globe } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 
 interface TrackingPixelSetupProps {
@@ -86,7 +86,7 @@ export function TrackingPixelSetup({ className }: TrackingPixelSetupProps) {
       <div className="flex items-center justify-center py-12">
         <div className="text-center space-y-4">
           <Loader2 className="w-8 h-8 animate-spin mx-auto" />
-          <p className="text-sm text-gray-500 dark:text-[#666] font-mono">Loading workspace data...</p>
+          <p className="text-sm text-gray-600">Loading workspace data...</p>
         </div>
       </div>
     )
@@ -95,9 +95,9 @@ export function TrackingPixelSetup({ className }: TrackingPixelSetupProps) {
   if (!currentWorkspace) {
     return (
       <div className={className}>
-        <Alert className="bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-900/30">
-          <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-          <AlertDescription className="text-orange-700 dark:text-orange-300">
+        <Alert className="bg-orange-50 border-orange-200">
+          <AlertCircle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-700">
             <strong>No workspace selected.</strong> Please create or select a workspace from your dashboard to generate tracking pixels.
           </AlertDescription>
         </Alert>
@@ -108,33 +108,24 @@ export function TrackingPixelSetup({ className }: TrackingPixelSetupProps) {
   return (
     <div className={`space-y-8 ${className}`}>
       <div>
-        <div className="flex items-center gap-3 mb-2">
-          <h3 className="text-lg font-medium text-black dark:text-white font-mono tracking-tight">Tracking Pixel</h3>
-          <span className="px-1.5 py-0.5 text-xs font-medium bg-orange-900/30 text-orange-400 rounded font-mono tracking-tight">
-            Beta
-          </span>
-        </div>
-        <p className="text-sm text-gray-500 dark:text-[#666] mb-6 font-mono tracking-tight">
-          Lightweight AI crawler tracking for any website
-        </p>
         
         {/* Workspace Info */}
-        <div className="bg-[#0a0a0a] border border-[#333] rounded-sm p-4 mb-6">
+        <div className="bg-gray-100 border border-gray-200 p-4 mb-6">
           <div className="flex items-start gap-3">
-            <Info className="w-4 h-4 text-[#666] mt-0.5 flex-shrink-0" />
+            <Globe className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
             <div className="space-y-2">
-              <p className="text-sm text-[#ccc] font-mono">
+              <p className="text-sm text-gray-700">
                 Your tracking pixel is configured for workspace:
               </p>
               <div className="flex items-center gap-2">
-                <code className="text-sm bg-[#222] text-green-400 px-2 py-1 rounded-sm font-mono">
-                  {currentWorkspace.workspace_name}
+                <code className="text-sm bg-gray-200 text-gray-800 px-2 py-1 border border-gray-300">
+                  {currentWorkspace.id}
                 </code>
-                <span className="text-xs text-[#666] font-mono">
-                  ID: {currentWorkspace.id}
+                <span className="text-xs text-gray-600">
+                  {currentWorkspace.workspace_name}
                 </span>
               </div>
-              <p className="text-xs text-[#666] font-mono">
+              <p className="text-xs text-gray-500">
                 This ID is automatically included in your tracking code below.
               </p>
             </div>
@@ -144,7 +135,7 @@ export function TrackingPixelSetup({ className }: TrackingPixelSetupProps) {
         {/* Implementation Options */}
         <div className="mb-6">
           <div className="flex items-center gap-4 mb-4">
-            <h4 className="text-sm font-medium text-black dark:text-white font-mono tracking-tight">
+            <h4 className="text-sm font-medium text-gray-900">
               Choose Implementation Method
             </h4>
           </div>
@@ -152,18 +143,18 @@ export function TrackingPixelSetup({ className }: TrackingPixelSetupProps) {
           <div className="grid grid-cols-2 gap-4">
             <button
               onClick={() => setSelectedOption('html')}
-              className={`p-4 border rounded-sm transition-all ${
+              className={`p-4 border transition-all ${
                 selectedOption === 'html'
-                  ? 'bg-[#111] border-[#333] text-white'
-                  : 'bg-[#0a0a0a] border-[#222] text-[#666] hover:border-[#333]'
+                  ? 'bg-gray-50 border-gray-300 text-gray-900'
+                  : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
               }`}
             >
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Code2 className="w-4 h-4" />
-                  <span className="font-medium font-mono text-sm">HTML</span>
+                  <span className="font-medium text-sm">HTML</span>
                 </div>
-                <p className="text-xs text-left font-mono">
+                <p className="text-xs text-left">
                   Simple image tag. Works in body sections.
                 </p>
               </div>
@@ -171,21 +162,21 @@ export function TrackingPixelSetup({ className }: TrackingPixelSetupProps) {
             
             <button
               onClick={() => setSelectedOption('javascript')}
-              className={`p-4 border rounded-sm transition-all ${
+              className={`p-4 border transition-all ${
                 selectedOption === 'javascript'
-                  ? 'bg-[#111] border-[#333] text-white'
-                  : 'bg-[#0a0a0a] border-[#222] text-[#666] hover:border-[#333]'
+                  ? 'bg-gray-50 border-gray-300 text-gray-900'
+                  : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
               }`}
             >
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Code2 className="w-4 h-4" />
-                  <span className="font-medium font-mono text-sm">JavaScript</span>
-                  <span className="px-1.5 py-0.5 text-xs bg-green-900/30 text-green-400 rounded font-mono">
+                  <span className="font-medium text-sm">JavaScript</span>
+                  <span className="px-1.5 py-0.5 text-xs bg-green-100 text-green-600">
                     Framer
                   </span>
                 </div>
-                <p className="text-xs text-left font-mono">
+                <p className="text-xs text-left">
                   Works in head sections. Required for Framer.
                 </p>
               </div>
@@ -197,10 +188,10 @@ export function TrackingPixelSetup({ className }: TrackingPixelSetupProps) {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">
+              <div className="font-medium text-gray-900 text-sm">
                 {selectedOption === 'html' ? 'HTML Tracking Code' : 'JavaScript Tracking Code'}
               </div>
-              <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight mt-1">
+              <div className="text-xs text-gray-600 mt-1">
                 {selectedOption === 'html' 
                   ? 'Add this code to your website\'s <body> section'
                   : 'Add this code to your website\'s <head> section'
@@ -211,11 +202,11 @@ export function TrackingPixelSetup({ className }: TrackingPixelSetupProps) {
               onClick={() => handleCopy(selectedOption)}
               variant="outline"
               size="sm"
-              className="text-gray-400 hover:text-white border-[#333] font-mono tracking-tight text-sm h-8 px-4 flex items-center gap-2"
+              className="bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900 text-sm h-8 px-4 flex items-center gap-2"
             >
               {copiedCode === selectedOption ? (
                 <>
-                  <Check className="w-4 h-4 text-green-400" />
+                  <Check className="w-4 h-4 text-green-600" />
                   Copied!
                 </>
               ) : (
@@ -229,19 +220,23 @@ export function TrackingPixelSetup({ className }: TrackingPixelSetupProps) {
           
           <div className="relative group">
             <div 
-              className="bg-[#0a0a0a] border border-[#333] rounded-sm p-4 cursor-pointer hover:border-[#555] transition-all"
+              className="bg-gray-100 border border-gray-200 p-4 cursor-pointer hover:border-gray-300 transition-all overflow-x-auto"
               onClick={() => handleCopy(selectedOption)}
               title="Click to copy"
+              style={{
+                scrollbarWidth: 'thin',
+                scrollbarColor: '#d1d5db #f3f4f6'
+              }}
             >
-              <code className="text-sm text-[#ccc] font-mono block overflow-x-auto leading-relaxed select-none whitespace-pre">
+              <code className="text-sm text-gray-800 block leading-relaxed select-none whitespace-pre">
                 {generateTrackingCode(selectedOption) || 'Loading...'}
               </code>
             </div>
           </div>
           
           {selectedOption === 'javascript' && (
-            <div className="bg-orange-900/20 border border-orange-900/30 rounded-sm p-3">
-              <p className="text-xs text-orange-400 font-mono">
+            <div className="bg-orange-50 border border-orange-200 p-3">
+              <p className="text-xs text-orange-700">
                 <strong>Note for Framer users:</strong> Use this JavaScript version in Site Settings → Custom Code → "Start of &lt;head&gt; tag"
               </p>
             </div>
@@ -249,10 +244,10 @@ export function TrackingPixelSetup({ className }: TrackingPixelSetupProps) {
         </div>
 
         {/* Test Pixel */}
-        <div className="flex items-center justify-between py-4 border-t border-gray-200 dark:border-[#1a1a1a]">
+        <div className="flex items-center justify-between py-4 border-t border-gray-200">
           <div>
-            <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Test Your Pixel</div>
-            <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight mt-1">
+            <div className="font-medium text-gray-900 text-sm">Test Your Pixel</div>
+            <div className="text-xs text-gray-600 mt-1">
               Verify your tracking pixel is working correctly
             </div>
           </div>
@@ -290,7 +285,7 @@ export function TrackingPixelSetup({ className }: TrackingPixelSetupProps) {
             variant="outline"
             size="sm"
             disabled={testing}
-            className="text-gray-400 hover:text-white border-[#333] font-mono tracking-tight text-sm h-8 px-4 flex items-center gap-2"
+            className="bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900 text-sm h-8 px-4 flex items-center gap-2"
           >
             {testing ? (
               <>
@@ -307,10 +302,10 @@ export function TrackingPixelSetup({ className }: TrackingPixelSetupProps) {
         </div>
 
         {/* Documentation */}
-        <div className="flex items-center justify-between py-4 border-t border-gray-200 dark:border-[#1a1a1a]">
+        <div className="flex items-center justify-between py-4 border-t border-gray-200">
           <div>
-            <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Documentation</div>
-            <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight mt-1">
+            <div className="font-medium text-gray-900 text-sm">Documentation</div>
+            <div className="text-xs text-gray-600 mt-1">
               Platform-specific integration guides
             </div>
           </div>
@@ -319,7 +314,7 @@ export function TrackingPixelSetup({ className }: TrackingPixelSetupProps) {
               variant="outline"
               size="sm"
               onClick={() => window.open('/docs#tracking-pixel', '_blank')}
-              className="text-gray-400 hover:text-white border-[#333] font-mono tracking-tight text-sm h-8 px-4 flex items-center gap-2"
+              className="bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900 text-sm h-8 px-4 flex items-center gap-2"
             >
               <ExternalLink className="w-4 h-4" />
               View Docs

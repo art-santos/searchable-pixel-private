@@ -42,14 +42,14 @@ export function EmptyStateBlur({
           transition={{ duration: 0.2, ease: "easeOut" }}
         >
           <div className="text-center max-w-sm">
-            <h4 className="text-black dark:text-white font-medium mb-2">{title}</h4>
-            <p className="text-gray-600 dark:text-[#666] text-sm mb-6 leading-relaxed">
+            <h4 className="text-gray-900 font-semibold mb-2">{title}</h4>
+            <p className="text-gray-600 text-sm mb-6 leading-relaxed">
               {description}
             </p>
             {showAction && onAction && (
               <button 
                 onClick={onAction}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-md text-sm font-medium hover:bg-gray-800 transition-colors shadow-sm"
               >
                 <LinkIcon className="w-4 h-4" />
                 {actionLabel}

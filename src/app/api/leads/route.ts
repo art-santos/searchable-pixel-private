@@ -293,7 +293,7 @@ export async function GET(request: NextRequest) {
         lastName: contact?.name?.split(' ').slice(1).join(' ') || '',
         company: lead.company_name || contact?.current_company || 'Unknown Company',
         jobTitle: contact?.title || contact?.current_position || 'Unknown',
-        location: `${lead.company_city || ''}, ${lead.company_country || ''}`.replace(', ', '').trim() || 'Unknown',
+        location: [lead.company_city, lead.company_country].filter(Boolean).join(', ') || 'Unknown',
         linkedinUrl: contact?.linkedin_url || '',
         confidence: getConfidenceLevel(contact?.confidence_score || lead.confidence_score || 0),
         

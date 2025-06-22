@@ -96,8 +96,6 @@ export default function SnapshotPage() {
     }
   }
 
-
-
   const handleSubmit = async () => {
     if (!user?.id) {
       setError('Please sign in to create snapshots')
@@ -185,7 +183,7 @@ export default function SnapshotPage() {
       const hostname = getSafeHostname(url);
       return `https://www.google.com/s2/favicons?domain=${hostname}&sz=${size}`;
     } catch {
-      return '/images/split-icon-white.svg';
+      return '/images/split-icon-black.svg';
     }
   };
 
@@ -238,11 +236,11 @@ export default function SnapshotPage() {
         }
       `}</style>
       
-      <div className="min-h-screen bg-white dark:bg-[#0c0c0c] flex flex-col items-center justify-center relative px-4">
+      <div className="min-h-screen bg-[#f9f9f9] flex flex-col items-center justify-center relative px-4">
       {/* History Button */}
       <button
         onClick={() => setShowHistory(!showHistory)}
-        className="absolute top-8 right-8 flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-[#888] hover:text-black dark:hover:text-white bg-gray-100 dark:bg-[#181818] border border-gray-300 dark:border-[#333] hover:border-gray-400 dark:hover:border-[#444] transition-all duration-200 ease-out hover:scale-105 transform"
+        className="absolute top-8 right-8 flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 bg-white border border-gray-200 hover:border-gray-300 transition-all duration-200 ease-out hover:scale-105 transform shadow-sm rounded-lg"
       >
         <Clock className="w-4 h-4" />
         <span className="text-sm font-medium">History</span>
@@ -252,8 +250,8 @@ export default function SnapshotPage() {
       <div className="w-full max-w-4xl">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-6xl font-semibold text-black dark:text-white mb-4 tracking-tight" style={{ letterSpacing: '-0.04em' }}>Snapshots</h1>
-          <p className="text-2xl text-gray-600 dark:text-[#888] font-medium leading-tighter tracking-tight">
+          <h1 className="text-6xl font-semibold text-gray-900 mb-4 tracking-tight" style={{ letterSpacing: '-0.04em' }}>Snapshots</h1>
+          <p className="text-2xl text-gray-600 font-medium leading-tighter tracking-tight">
             The fastest way to see if your content is<br />
             visible, crawlable, and cited by AI models.
           </p>
@@ -262,14 +260,14 @@ export default function SnapshotPage() {
         {/* Rate Limit Warning */}
         {rateLimit && !rateLimit.allowed && (
           <div className="mb-6 text-center">
-            <div className="inline-flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2 text-red-400 text-sm">
+            <div className="inline-flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-red-700 text-sm">
               Daily limit reached ({rateLimit.requestsToday}/{rateLimit.limit})
             </div>
           </div>
         )}
 
         {/* Unified Command Bar */}
-        <div className="bg-gray-100 dark:bg-[#181818] border border-gray-300 dark:border-[#333] p-6 transform transition-all duration-200 ease-out hover:border-gray-400 dark:hover:border-[#444]">
+        <div className="bg-white border border-gray-200 p-6 rounded-lg transform transition-all duration-200 ease-out hover:border-gray-300 shadow-sm">
           <div className="grid grid-cols-2 gap-6">
             {/* Left Column */}
             <div className="space-y-6">
@@ -280,7 +278,7 @@ export default function SnapshotPage() {
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder="example.com or https://example.com"
-                  className="w-full bg-transparent text-black dark:text-white placeholder-gray-500 dark:placeholder-[#666] text-base focus:outline-none py-2 border-b border-transparent focus:border-gray-400 dark:focus:border-[#444] transition-colors"
+                  className="w-full bg-transparent text-gray-900 placeholder-gray-500 text-base focus:outline-none py-2 border-b border-transparent focus:border-gray-400 transition-colors"
                 />
               </div>
 
@@ -291,11 +289,11 @@ export default function SnapshotPage() {
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
                   placeholder="Add the query you'd like to test"
-                  className="w-full bg-white dark:bg-[#1C1C1C] text-black dark:text-white placeholder-gray-500 dark:placeholder-[#666] text-base focus:outline-none h-12 py-3 px-4 rounded-xl transition-all duration-200 ease-out"
+                  className="w-full bg-gray-50 text-gray-900 placeholder-gray-500 text-base focus:outline-none h-12 py-3 px-4 rounded-xl transition-all duration-200 ease-out border border-gray-200 focus:border-gray-300 focus:bg-white"
                 />
                 {topic && (
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <div className="w-2 h-2 bg-gray-500 dark:bg-[#888] rounded-full"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
                   </div>
                 )}
               </div>
@@ -310,7 +308,7 @@ export default function SnapshotPage() {
                     e.stopPropagation()
                     setShowDropdown(!showDropdown)
                   }}
-                  className="flex items-center gap-3 bg-white dark:bg-[#1C1C1C] hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-xl px-4 h-12 text-black dark:text-white transition-all duration-200 ease-out min-w-[140px] hover:scale-[1.02] transform"
+                  className="flex items-center gap-3 bg-gray-50 hover:bg-gray-100 rounded-xl px-4 h-12 text-gray-900 transition-all duration-200 ease-out min-w-[140px] hover:scale-[1.02] transform border border-gray-200"
                 >
                   <img 
                     src={models.find(m => m.name === selectedModel)?.logo} 
@@ -323,7 +321,7 @@ export default function SnapshotPage() {
                 
                 {/* Dropdown Menu */}
                 <div 
-                  className={`absolute top-full left-0 mt-2 w-full bg-white dark:bg-[#1C1C1C] rounded-xl overflow-hidden z-10 transform transition-all duration-200 ease-out origin-top ${
+                  className={`absolute top-full left-0 mt-2 w-full bg-white rounded-xl overflow-hidden z-10 transform transition-all duration-200 ease-out origin-top border border-gray-200 shadow-lg ${
                     showDropdown ? 'scale-100 opacity-100 translate-y-0' : 'scale-95 opacity-0 -translate-y-1 pointer-events-none'
                   }`}
                   onClick={(e) => e.stopPropagation()}
@@ -340,9 +338,9 @@ export default function SnapshotPage() {
                       disabled={!model.available}
                       className={`w-full flex items-center gap-3 px-4 h-12 text-left transition-all duration-150 ease-out ${
                         model.available 
-                          ? 'hover:bg-gray-100 dark:hover:bg-[#2A2A2A] text-black dark:text-white' 
-                          : 'text-gray-400 dark:text-[#666] cursor-not-allowed'
-                      } ${model.name === selectedModel ? 'bg-gray-100 dark:bg-[#2A2A2A]' : ''}`}
+                          ? 'hover:bg-gray-50 text-gray-900' 
+                          : 'text-gray-400 cursor-not-allowed'
+                      } ${model.name === selectedModel ? 'bg-gray-50' : ''}`}
                       style={{
                         transitionDelay: showDropdown ? `${index * 25}ms` : '0ms'
                       }}
@@ -365,13 +363,13 @@ export default function SnapshotPage() {
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting || !rateLimit?.allowed || !topic.trim() || !url.trim()}
-                className="flex items-center justify-center w-12 h-12 bg-gray-200 dark:bg-[#2A2A2A] hover:bg-gray-300 dark:hover:bg-[#333] border border-gray-300 dark:border-[#444] hover:border-gray-400 dark:hover:border-[#555] text-black dark:text-white rounded-xl transition-all duration-200 ease-out disabled:opacity-50 hover:scale-105 active:scale-95 transform"
+                className="flex items-center justify-center w-12 h-12 bg-gray-200 hover:bg-gray-300 border border-gray-300 hover:border-gray-400 text-gray-900 rounded-xl transition-all duration-200 ease-out disabled:opacity-50 hover:scale-105 active:scale-95 transform"
               >
                 {isSubmitting ? (
                   <div className="w-5 h-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
                 ) : (
                   <img 
-                    src="/images/pixel-arrow.svg" 
+                    src="/images/pixel-arrow-black.svg" 
                     alt="Submit"
                     className="w-5 h-5 transition-transform duration-200 ease-out"
                   />
@@ -384,7 +382,7 @@ export default function SnapshotPage() {
         {/* Error Message */}
         {error && (
           <div className="mt-6 text-center">
-            <div className="inline-flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2 text-red-400 text-sm">
+            <div className="inline-flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-4 py-2 text-red-700 text-sm">
               {error}
             </div>
           </div>
@@ -392,26 +390,26 @@ export default function SnapshotPage() {
 
         {/* Usage Info */}
         {rateLimit && (
-          <div className="mt-8 text-center text-gray-500 dark:text-[#666] text-sm">
+          <div className="mt-8 text-center text-gray-500 text-sm">
             {rateLimit.requestsToday}/{rateLimit.limit} snapshots used today
           </div>
         )}
       </div>
 
       {/* Enhanced History Sidebar */}
-      <div className={`fixed right-0 top-0 h-full w-96 bg-[#181818] border-l border-[#333] p-6 overflow-y-auto transform transition-transform duration-300 ease-out z-50 ${
+      <div className={`fixed right-0 top-0 h-full w-96 bg-white border-l border-gray-200 p-6 overflow-y-auto transform transition-transform duration-300 ease-out z-50 shadow-xl ${
         showHistory ? 'translate-x-0' : 'translate-x-full'
       }`}>
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h3 className="text-white font-semibold text-lg tracking-tight">Snapshot History</h3>
-            <p className="text-[#666] text-xs mt-1">{recentSnapshots.length} snapshots found</p>
+            <h3 className="text-gray-900 font-semibold text-lg tracking-tight">Snapshot History</h3>
+            <p className="text-gray-500 text-xs mt-1">{recentSnapshots.length} snapshots found</p>
           </div>
           <button
             onClick={() => setShowHistory(false)}
-            className="flex items-center justify-center w-8 h-8 bg-[#1C1C1C] border border-[#333] rounded-lg hover:bg-[#2A2A2A] transition-colors"
+            className="flex items-center justify-center w-8 h-8 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <span className="text-white text-lg leading-none">×</span>
+            <span className="text-gray-600 text-lg leading-none">×</span>
           </button>
         </div>
 
@@ -430,7 +428,7 @@ export default function SnapshotPage() {
               return (
                 <div
                   key={snapshot.id}
-                  className={`bg-[#1C1C1C] border border-[#333] p-3 hover:bg-[#2A2A2A] hover:border-[#444] transition-all duration-200 ease-out hover:scale-[1.01] transform group ${
+                  className={`bg-white border border-gray-200 p-3 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 ease-out hover:scale-[1.01] transform group rounded-lg shadow-sm ${
                     showHistory ? 'translate-x-0 opacity-100' : 'translate-x-4 opacity-0'
                   }`}
                   style={{
@@ -446,24 +444,24 @@ export default function SnapshotPage() {
                           alt=""
                           className="w-4 h-4 rounded"
                           onError={(e) => {
-                            e.currentTarget.src = '/images/split-icon-white.svg';
+                            e.currentTarget.src = '/images/split-icon-black.svg';
                           }}
                         />
                         {snapshot.status === 'completed' && (
-                          <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-400 rounded-full"></div>
+                          <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full"></div>
                         )}
                         {snapshot.status === 'processing' && (
-                          <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                          <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                         )}
                         {snapshot.status === 'pending' && (
-                          <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-400 rounded-full"></div>
+                          <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full"></div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-white font-medium text-sm truncate">
+                        <div className="text-gray-900 font-medium text-sm truncate">
                           {snapshot.topic || 'Snapshot Analysis'}
                         </div>
-                        <div className="text-[#666] text-xs">
+                        <div className="text-gray-500 text-xs">
                           {formatDate(snapshot.created_at)}
                         </div>
                       </div>
@@ -472,21 +470,21 @@ export default function SnapshotPage() {
                     {/* Score Badge */}
                     {snapshot.status === 'completed' ? (
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border ${
-                        displayScore !== null && displayScore >= 70 ? 'bg-emerald-400/10 border-emerald-400/30 text-emerald-400' :
-                        displayScore !== null && displayScore >= 55 ? 'bg-blue-400/10 border-blue-400/30 text-blue-400' :
-                        displayScore !== null && displayScore >= 40 ? 'bg-amber-400/10 border-amber-400/30 text-amber-400' :
-                        displayScore !== null && displayScore >= 25 ? 'bg-orange-400/10 border-orange-400/30 text-orange-400' :
-                        'bg-red-400/10 border-red-400/30 text-red-400'
+                        displayScore !== null && displayScore >= 70 ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
+                        displayScore !== null && displayScore >= 55 ? 'bg-blue-50 border-blue-200 text-blue-700' :
+                        displayScore !== null && displayScore >= 40 ? 'bg-amber-50 border-amber-200 text-amber-700' :
+                        displayScore !== null && displayScore >= 25 ? 'bg-orange-50 border-orange-200 text-orange-700' :
+                        'bg-red-50 border-red-200 text-red-700'
                       }`}>
                         {displayScore || 0}
                       </div>
                     ) : (
-                      <div className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        snapshot.status === 'completed' ? 'bg-emerald-400/10 text-emerald-400 border border-emerald-400/20' :
-                        snapshot.status === 'processing' ? 'bg-blue-400/10 text-blue-400 border border-blue-400/20' :
-                        snapshot.status === 'pending' ? 'bg-amber-400/10 text-amber-400 border border-amber-400/20' :
-                        snapshot.status === 'failed' ? 'bg-red-400/10 text-red-400 border border-red-400/20' :
-                        'bg-[#2A2A2A] text-[#888]'
+                      <div className={`text-xs px-2 py-1 rounded-full font-medium border ${
+                        snapshot.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                        snapshot.status === 'processing' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                        snapshot.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                        snapshot.status === 'failed' ? 'bg-red-50 text-red-700 border-red-200' :
+                        'bg-gray-50 text-gray-600 border-gray-200'
                       }`}>
                         {snapshot.status === 'processing' ? 'Processing...' : 
                          snapshot.status === 'pending' ? 'Queued' :
@@ -502,14 +500,14 @@ export default function SnapshotPage() {
                       href={snapshot.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[#888] hover:text-white text-xs font-mono truncate flex-1 mr-2 transition-colors"
+                      className="text-gray-500 hover:text-gray-900 text-xs font-mono truncate flex-1 mr-2 transition-colors"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {snapshot.url}
                     </a>
                     <Link
                       href={`/dashboard/snapshot/${snapshot.id}`}
-                      className="text-[#666] hover:text-white transition-colors flex-shrink-0"
+                      className="text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0"
                     >
                       <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-all duration-200" />
                     </Link>
@@ -519,11 +517,11 @@ export default function SnapshotPage() {
             })
           ) : (
             <div className="text-center py-16">
-              <div className="w-16 h-16 bg-[#2A2A2A] rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <div className="text-2xl">📊</div>
               </div>
-              <div className="text-white font-medium mb-2 tracking-tight">No snapshots yet</div>
-              <div className="text-[#666] text-sm leading-relaxed">
+              <div className="text-gray-900 font-medium mb-2 tracking-tight">No snapshots yet</div>
+              <div className="text-gray-500 text-sm leading-relaxed">
                 Create your first snapshot to start<br />analyzing AI visibility
               </div>
             </div>
@@ -532,24 +530,24 @@ export default function SnapshotPage() {
 
         {/* Footer Stats */}
         {recentSnapshots.length > 0 && (
-          <div className="mt-8 pt-6 border-t border-[#333]">
-            <div className="text-[#666] text-xs mb-3">Quick Stats</div>
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <div className="text-gray-500 text-xs mb-3">Quick Stats</div>
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
-                <div className="text-white text-lg font-bold">
+                <div className="text-gray-900 text-lg font-bold">
                   {recentSnapshots.filter(s => s.status === 'completed').length}
                 </div>
-                <div className="text-[#666] text-xs">Completed</div>
+                <div className="text-gray-500 text-xs">Completed</div>
               </div>
               <div className="text-center">
-                <div className="text-white text-lg font-bold">
+                <div className="text-gray-900 text-lg font-bold">
                   {recentSnapshots.filter(s => {
                     if (s.status !== 'completed') return false;
                     const score = getCombinedScore(s).score;
                     return score >= 70;
                   }).length}
                 </div>
-                <div className="text-[#666] text-xs">High Score</div>
+                <div className="text-gray-500 text-xs">High Score</div>
               </div>
             </div>
           </div>
@@ -558,7 +556,7 @@ export default function SnapshotPage() {
 
       {/* Overlay for history */}
       <div 
-        className={`fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ease-out ${
+        className={`fixed inset-0 bg-black/20 backdrop-blur-sm transition-opacity duration-300 ease-out ${
           showHistory ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         onClick={() => setShowHistory(false)}

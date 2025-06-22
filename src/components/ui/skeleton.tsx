@@ -28,7 +28,7 @@ export function Skeleton({
     return (
       <div
         className={cn(
-          "bg-gray-200 dark:bg-[#1a1a1a] rounded-md opacity-50",
+          "bg-gray-200 rounded-md opacity-50",
           className
         )}
         {...props}
@@ -39,7 +39,7 @@ export function Skeleton({
   return (
     <motion.div
       className={cn(
-        "bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-[#1a1a1a] dark:via-[#252525] dark:to-[#1a1a1a] rounded-md",
+        "bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded-md",
         "bg-[length:200%_100%]",
         className
       )}
@@ -121,7 +121,7 @@ export function SkeletonCard({
 } & SkeletonProps) {
   return (
     <div className={cn(
-      "bg-white dark:bg-[#0c0c0c] border border-gray-200 dark:border-[#1a1a1a] rounded-lg p-6",
+      "bg-white border border-gray-200 rounded-lg p-6 shadow-sm",
       className
     )}>
       {children}

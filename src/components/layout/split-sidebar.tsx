@@ -10,13 +10,13 @@ import { getUserInitials } from '@/lib/profile/avatar'
 import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboardIcon,
-  SearchIcon,
   SettingsIcon,
   Activity,
-  KeyIcon,
   HelpCircleIcon,
   Users,
   Camera,
+  Crown,
+  X,
 } from "lucide-react"
 import Image from 'next/image'
 
@@ -25,52 +25,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-  SidebarRail,
 } from "@/components/ui/sidebar"
-import { TooltipProvider } from "@/components/ui/tooltip"
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
+
 import { Button } from "@/components/ui/button"
-import {
-  ChevronRight,
-  BarChart3,
-  Search,
-  FileText,
-  Settings,
-  ChevronsUpDown,
-  LogOut,
-  User,
-  Crown,
-  Sparkles,
-  Eye,
-  Zap,
-  Target,
-  TrendingUp,
-  Globe,
-  Bot,
-  Layers,
-  Gauge,
-  FileSearch,
-  PenTool,
-  Code,
-  Cog,
-  ExternalLink,
-} from "lucide-react"
 
 interface UserProfile {
   id: string
@@ -90,6 +49,7 @@ export function SplitSidebar() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [showUpgrade, setShowUpgrade] = useState(true)
 
   const pathname = usePathname()
 
@@ -98,8 +58,8 @@ export function SplitSidebar() {
     const fetchProfile = async () => {
       if (!user) {
         setIsLoading(false)
-      return
-    }
+        return
+      }
 
       try {
         const supabase = createClient()
@@ -138,156 +98,158 @@ export function SplitSidebar() {
     user?.email
   )
 
-  return (
-    <TooltipProvider delayDuration={100}>
-      <style jsx global>{`
-        .icon-rotate {
-          transition: transform 0.5s ease-out;
-          transform-style: preserve-3d;
-          perspective: 1000px;
-        }
-        .menu-button:hover .icon-rotate {
-          transform: rotateY(180deg);
-        }
-        .dark .selected-button:hover {
-          background-color: #222222 !important;
-        }
-        .selected-button:hover {
-          background-color: #f3f4f6 !important;
-        }
-        .dark .selected-button svg {
-          color: white;
-        }
-        .selected-button svg {
-          color: black;
-        }
-      `}</style>
-      <Sidebar className="w-16 border-r border-gray-200 dark:border-[#222222] bg-white dark:bg-[#0c0c0c] !bg-white dark:!bg-[#0c0c0c]">
-        {/* Logo Square */}
-        <SidebarHeader className="box-border h-16 w-16 min-h-[64px] min-w-[64px] border-r border-b border-gray-200 dark:border-[#222222] bg-white dark:bg-[#0c0c0c] flex items-center justify-center">
-          <Image
-            src="/images/split-icon-white.svg"
-            alt="Split Logo"
-            width={32}
-            height={32}
-            className="h-8 w-8 dark:block hidden"
-          />
-          <Image
-            src="/images/split-icon-black.svg"
-            alt="Split Logo"
-            width={32}
-            height={32}
-            className="h-8 w-8 dark:hidden block"
-          />
-        </SidebarHeader>
-        
-        {/* Main Menu Items */}
-        <SidebarContent className="flex flex-col items-center py-2 space-y-1 bg-white dark:bg-[#0c0c0c]">
-          <Link href="/dashboard" className="w-full flex justify-center">
-            <SidebarMenuButton 
-              tooltip="Dashboard"
-              className={cn(
-                "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
-                pathname === "/dashboard" 
-                  ? "bg-gray-100 dark:bg-[#222222] text-black dark:text-white border border-gray-300 dark:border-[#333333] selected-button" 
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#161616] hover:text-gray-800 dark:hover:text-gray-200"
-              )}
-            >
-              <LayoutDashboardIcon className="h-6 w-6 icon-rotate" />
-            </SidebarMenuButton>
-          </Link>
+  const navItems = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboardIcon, exact: true },
+    { href: "/dashboard/attribution", label: "Attribution", icon: Activity },
+    ...(isAdmin ? [{ href: "/dashboard/leads", label: "Leads", icon: Users }] : []),
+    { href: "/dashboard/snapshot", label: "Snapshot", icon: Camera },
+  ]
 
-          <Link href="/dashboard/attribution" className="w-full flex justify-center">
-            <SidebarMenuButton 
-              tooltip="AI Attribution"
-              className={cn(
-                "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
-                pathname.startsWith("/dashboard/attribution") 
-                  ? "bg-gray-100 dark:bg-[#222222] text-black dark:text-white border border-gray-300 dark:border-[#333333] selected-button"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#161616] hover:text-gray-800 dark:hover:text-gray-200"
-              )}
-            >
-              <Activity className="h-6 w-6 icon-rotate" />
-            </SidebarMenuButton>
-          </Link>
+  const secondaryItems = [
+    { href: "/settings", label: "Settings", icon: SettingsIcon },
+    { href: "/docs", label: "Help", icon: HelpCircleIcon },
+  ]
 
-          {isAdmin && (
-            <Link href="/dashboard/leads" className="w-full flex justify-center">
-              <SidebarMenuButton 
-                tooltip="Leads"
-                className={cn(
-                  "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
-                pathname.startsWith("/dashboard/leads") 
-                    ? "bg-gray-100 dark:bg-[#222222] text-black dark:text-white border border-gray-300 dark:border-[#333333] selected-button"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#161616] hover:text-gray-800 dark:hover:text-gray-200"
-                )}
-              >
-                <Users className="h-6 w-6 icon-rotate" />
-              </SidebarMenuButton>
+  const isActive = (href: string, exact = false) => {
+    if (exact) return pathname === href
+    return pathname.startsWith(href)
+  }
+
+
+
+    return (
+    <Sidebar className="w-60 border-r border-gray-200 bg-white pt-4">
+      {/* Header - Same height as topbar */}
+      <SidebarHeader className="p-0">
+        <div className="h-[60px] bg-white flex items-center px-4 w-full">
+          {/* Logo - Left Aligned */}
+          <div className="flex items-center justify-start flex-1">
+            <Image
+              src="/images/split-icon-black.svg"
+              alt="Split"
+              width={28}
+              height={28}
+              className="h-7 w-7 ml-3 transition-transform duration-500 ease-out transform-gpu cursor-pointer"
+              style={{
+                transformStyle: 'preserve-3d'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'rotateY(180deg)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'rotateY(0deg)'
+              }}
+            />
+          </div>
+          
+          {/* Profile - Right Aligned */}
+          <div className="flex items-center justify-end">
+            <Link href="/settings">
+              <Avatar className="h-8 w-8 mr-3 cursor-pointer hover:ring-2 hover:ring-gray-200 transition-all">
+                <AvatarImage 
+                  src={profile?.profile_picture_url || undefined} 
+                  alt="Profile"
+                />
+                <AvatarFallback className="bg-gray-100 text-gray-600 text-xs font-medium">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
             </Link>
-          )}
-
-          <Link href="/dashboard/snapshot" className="w-full flex justify-center">
-            <SidebarMenuButton 
-              tooltip="Snapshot"
-              className={cn(
-                "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
-                pathname === "/dashboard/snapshot" 
-                  ? "bg-gray-100 dark:bg-[#222222] text-black dark:text-white border border-gray-300 dark:border-[#333333] selected-button"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#161616] hover:text-gray-800 dark:hover:text-gray-200"
-              )}
-            >
-              <Camera className="h-6 w-6 icon-rotate" />
-            </SidebarMenuButton>
-          </Link>
-        </SidebarContent>
-
-        {/* Bottom Menu Items */}
-        <div className="mt-auto flex flex-col items-center space-y-1 pb-2 bg-white dark:bg-[#0c0c0c]">
-          <Link href="/settings" className="w-full flex justify-center">
-            <SidebarMenuButton 
-              tooltip="Settings"
-              className={cn(
-                "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
-                pathname === "/settings" 
-                  ? "bg-gray-100 dark:bg-[#222222] text-black dark:text-white border border-gray-300 dark:border-[#333333] selected-button" 
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#161616] hover:text-gray-800 dark:hover:text-gray-200"
-              )}
-            >
-              <SettingsIcon className="h-6 w-6 icon-rotate" />
-            </SidebarMenuButton>
-          </Link>
-
-          <Link href="/docs" className="w-full flex justify-center">
-            <SidebarMenuButton 
-              tooltip="Documentation"
-              className={cn(
-                "w-10 h-10 flex items-center justify-center transition-colors rounded-none menu-button",
-                pathname === "/docs" 
-                  ? "bg-gray-100 dark:bg-[#222222] text-black dark:text-white border border-gray-300 dark:border-[#333333] selected-button" 
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#161616] hover:text-gray-800 dark:hover:text-gray-200"
-              )}
-            >
-              <HelpCircleIcon className="h-6 w-6 icon-rotate" />
-            </SidebarMenuButton>
-          </Link>
+          </div>
         </div>
+      </SidebarHeader>
         
-        {/* Profile Square - Now links to settings */}
-        <SidebarFooter className="h-16 w-16 border-t border-r border-gray-200 dark:border-[#222222] bg-white dark:bg-[#0c0c0c] flex items-center justify-center">
-          <Link href="/settings" className="w-full h-full flex items-center justify-center">
-            <Avatar className="h-10 w-10 border border-gray-300 dark:border-[#333333] cursor-pointer hover:border-gray-400 dark:hover:border-[#444444] transition-colors">
-              <AvatarImage 
-                src={profile?.profile_picture_url || undefined} 
-                alt={`${profile?.username || 'User'}'s profile picture`}
-              />
-              <AvatarFallback className="bg-gray-100 dark:bg-[#222222] text-gray-600 dark:text-gray-400">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-          </Link>
-        </SidebarFooter>
-      </Sidebar>
-    </TooltipProvider>
+        {/* Navigation */}
+        <SidebarContent className="flex flex-col h-full bg-white px-2 sm:px-4">
+                    <div className="flex-1 pt-4 pb-4">
+            <nav className="space-y-0.5">
+              {navItems.map((item) => {
+              const Icon = item.icon
+              const active = isActive(item.href, item.exact)
+              
+              return (
+                <Link key={item.href} href={item.href}>
+                  <div
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2 text-sm font-medium transition-colors cursor-pointer",
+                      "hover:bg-gray-50 hover:text-gray-900",
+                      active 
+                        ? "bg-gray-100 text-gray-900" 
+                        : "text-gray-600"
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                </Link>
+              )
+            })}
+          </nav>
+
+          <div className="h-px bg-gray-200 mx-4 my-4" />
+
+          <nav className="space-y-0.5">
+            {secondaryItems.map((item) => {
+              const Icon = item.icon
+              const active = isActive(item.href)
+              
+              return (
+                <Link key={item.href} href={item.href}>
+                  <div
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2 text-sm font-medium transition-colors cursor-pointer",
+                      "hover:bg-gray-50 hover:text-gray-900",
+                      active 
+                        ? "bg-gray-100 text-gray-900" 
+                        : "text-gray-600"
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                </Link>
+              )
+            })}
+          </nav>
+        </div>
+
+        {/* Upgrade Card */}
+        {showUpgrade && (
+          <div className="p-3">
+            <div className="relative bg-gray-50 border border-gray-200 p-4">
+              <button 
+                onClick={() => setShowUpgrade(false)}
+                className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-7 w-7 items-center justify-center bg-gray-200">
+                    <Crown className="h-4 w-4 text-gray-600" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">Upgrade to Pro</span>
+                </div>
+                
+                <p className="text-xs text-gray-600 leading-relaxed pr-4">
+                  Get unlimited lead credits and advanced attribution insights
+                </p>
+                
+                <Button 
+                  size="sm" 
+                  className="w-full bg-gray-900 text-white hover:bg-gray-800 text-xs font-medium h-8"
+                  asChild
+                >
+                  <Link href="/settings/billing">
+                    Upgrade now
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </SidebarContent>
+    </Sidebar>
   )
 } 

@@ -11,7 +11,7 @@ export function SnapshotHistorySkeleton() {
       {[...Array(8)].map((_, i) => (
         <SkeletonCard 
           key={i}
-          className="bg-[#1C1C1C] border border-[#333] p-3 animate-pulse"
+          className="bg-white border border-gray-200 p-3 animate-pulse rounded-lg shadow-sm"
           style={{ 
             animationDelay: `${i * 50}ms`,
             animationDuration: '1.5s' 
@@ -22,7 +22,7 @@ export function SnapshotHistorySkeleton() {
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <div className="relative flex-shrink-0">
                 <SkeletonCircle size="sm" className="w-4 h-4" />
-                <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-zinc-700 rounded-full animate-pulse" />
+                <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-gray-300 rounded-full animate-pulse" />
               </div>
               <div className="flex-1 min-w-0">
                 <Skeleton className="h-3.5 w-32 mb-1" />
@@ -51,7 +51,7 @@ export function SnapshotHistorySkeleton() {
 export function SnapshotHistoryEmptySkeleton() {
   return (
     <div className="text-center py-16">
-      <SkeletonCircle size="xl" className="w-16 h-16 mx-auto mb-4 bg-[#2A2A2A]" />
+      <SkeletonCircle size="xl" className="w-16 h-16 mx-auto mb-4 bg-gray-100" />
       <Skeleton className="h-4 w-40 mx-auto mb-2" />
       <div className="space-y-1">
         <Skeleton className="h-3 w-48 mx-auto" />
@@ -64,13 +64,13 @@ export function SnapshotHistoryEmptySkeleton() {
 // Skeleton for the main snapshot report page loading
 export function SnapshotReportSkeleton() {
   return (
-    <main className="min-h-screen bg-[#0c0c0c]">
+    <main className="min-h-screen bg-[#f9f9f9]">
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <Link
             href="/dashboard/snapshot"
-            className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             <span className="text-sm">Return to snapshots</span>
@@ -79,11 +79,11 @@ export function SnapshotReportSkeleton() {
 
         {/* Loading State */}
         <div className="space-y-6">
-          <SkeletonCard className="bg-zinc-900/20 border border-zinc-800 rounded-lg p-6">
+          <SkeletonCard className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
             <div className="flex items-center gap-4 mb-4">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 animate-spin rounded-full border border-zinc-500 border-t-transparent" />
-                <span className="text-xs text-zinc-400 uppercase tracking-wider font-medium">Loading</span>
+                <div className="w-3 h-3 animate-spin rounded-full border border-gray-400 border-t-transparent" />
+                <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">Loading</span>
               </div>
             </div>
             
@@ -106,11 +106,11 @@ export function SnapshotReportSkeleton() {
                       stroke="currentColor"
                       strokeWidth="6"
                       fill="none"
-                      className="text-zinc-800"
+                      className="text-gray-200"
                     />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-6 h-6 animate-spin rounded-full border border-zinc-600 border-t-transparent" />
+                    <div className="w-6 h-6 animate-spin rounded-full border border-gray-400 border-t-transparent" />
                   </div>
                 </div>
               </div>
@@ -151,7 +151,7 @@ export function SnapshotProcessingSkeleton() {
 
   return (
     <div className="space-y-3">
-      <div className="text-zinc-400 text-sm font-medium mb-3">Processing Steps:</div>
+      <div className="text-gray-500 text-sm font-medium mb-3">Processing Steps:</div>
       <div className="space-y-2">
         {steps.map((step, i) => (
           <div 
@@ -162,20 +162,20 @@ export function SnapshotProcessingSkeleton() {
             }}
           >
             {step.status === 'completed' && (
-              <div className="w-4 h-4 bg-emerald-400 rounded-full flex items-center justify-center">
-                <div className="w-2 h-2 bg-emerald-900 rounded-full" />
+              <div className="w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center">
+                <div className="w-2 h-2 bg-white rounded-full" />
               </div>
             )}
             {step.status === 'processing' && (
-              <div className="w-4 h-4 animate-spin rounded-full border border-zinc-500 border-t-transparent" />
+              <div className="w-4 h-4 animate-spin rounded-full border border-gray-400 border-t-transparent" />
             )}
             {step.status === 'pending' && (
-              <SkeletonCircle size="sm" className="w-4 h-4 bg-zinc-700" />
+              <SkeletonCircle size="sm" className="w-4 h-4 bg-gray-200" />
             )}
             <span className={`text-sm ${
-              step.status === 'completed' ? 'text-zinc-300' : 
-              step.status === 'processing' ? 'text-zinc-300' : 
-              'text-zinc-500'
+              step.status === 'completed' ? 'text-gray-700' : 
+              step.status === 'processing' ? 'text-gray-700' : 
+              'text-gray-500'
             }`}>
               {step.label}
             </span>
@@ -189,7 +189,7 @@ export function SnapshotProcessingSkeleton() {
 // Skeleton for main page loading spinner replacement
 export function SnapshotPageSkeleton() {
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0c0c0c] flex items-center justify-center">
+    <div className="min-h-screen bg-[#f9f9f9] flex items-center justify-center">
       <div className="text-center space-y-4">
         <SkeletonCircle size="lg" className="w-12 h-12 mx-auto" />
         <div className="space-y-2">

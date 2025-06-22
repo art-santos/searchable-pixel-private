@@ -49,17 +49,17 @@ export function ExportDropdown({ data, elementId, className }: ExportDropdownPro
           variant="outline"
           size="sm"
           disabled={isExporting}
-          className={`text-sm text-zinc-400 hover:text-white transition-colors px-3 py-1.5 rounded border border-zinc-800 hover:border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800/50 ${className}`}
+          className={`text-sm text-gray-600 hover:text-gray-900 transition-colors px-3 py-1.5 rounded border border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 ${className}`}
         >
           <Download className="w-4 h-4 mr-2" />
           {isExporting ? 'Exporting...' : 'Export'}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800">
+      <DropdownMenuContent align="end" className="bg-white border-gray-200 shadow-lg">
         <DropdownMenuItem
           onClick={handleCSVExport}
           disabled={isExporting}
-          className="text-zinc-300 hover:text-white hover:bg-zinc-800 cursor-pointer"
+          className="text-gray-700 hover:text-gray-900 hover:bg-gray-50 cursor-pointer"
         >
           <FileSpreadsheet className="w-4 h-4 mr-2" />
           Export as CSV
@@ -67,7 +67,7 @@ export function ExportDropdown({ data, elementId, className }: ExportDropdownPro
         <DropdownMenuItem
           onClick={handlePDFExport}
           disabled={isExporting}
-          className="text-zinc-300 hover:text-white hover:bg-zinc-800 cursor-pointer"
+          className="text-gray-700 hover:text-gray-900 hover:bg-gray-50 cursor-pointer"
         >
           <FileText className="w-4 h-4 mr-2" />
           Export as PDF

@@ -2,15 +2,17 @@
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useWorkspace } from '@/contexts/WorkspaceContext'
-import { PageViewCard } from './components/page-view-card'
 import { WelcomeCard } from './components/welcome-card'
-import { AttributionBySourceCard } from './components/attribution-by-source-card'
-import { CrawlerActivityCard } from './components/crawler-activity-card'
+import { CrawlerVisitsCard } from './components/crawler-visits-card'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useState } from 'react'
-import { CheckCircle2, XCircle, X } from 'lucide-react'
+import { CheckCircle2, XCircle, X, Bell } from 'lucide-react'
 import { ConnectAnalyticsDialog } from "@/app/dashboard/components/connect-analytics-dialog"
-
+import { SearchBar } from "@/components/layout/search-bar"
+import { DomainSelector } from "@/components/custom/domain-selector"
+import { AttributionBySourceWhiteCard } from "./components/attribution-by-source-white-card"
+import { HelpCenterWhiteCard } from "./components/help-center-white-card"
+import { LeadsWhiteCard } from "./components/leads-white-card"
 
 export default function Dashboard() {
   const { user, supabase, loading } = useAuth()
@@ -92,11 +94,6 @@ export default function Dashboard() {
     }
   }, [])
 
-  // Debug switching state changes
-  useEffect(() => {
-    console.log('🎭 Dashboard switching state changed:', switching)
-  }, [switching])
-
   const containerVariants = shouldReduceMotion ? {
     hidden: { opacity: 1 },
     visible: { opacity: 1 }
@@ -128,90 +125,147 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center bg-white dark:bg-[#0c0c0c]">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent text-black dark:text-white" />
+      <div className="flex h-full items-center justify-center bg-[#f9f9f9]">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent text-black" />
       </div>
     )
   }
 
   return (
-    <motion.main 
-      className="min-h-screen bg-white dark:bg-[#0c0c0c] pl-6 pr-4 md:pr-6 lg:pr-8 pb-8 md:pb-12"
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
-    >
-      {/* Payment Verification Banner */}
-      {isVerifyingPayment && (
-        <motion.div
-          initial={{ opacity: 0, y: -50 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -50 }}
-          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-4 py-3 rounded-lg border flex items-center gap-3 bg-blue-900/20 border-blue-500/30 text-blue-300"
-        >
-          <div className="w-5 h-5 animate-spin rounded-full border-2 border-blue-500/30 border-t-blue-500" />
-          <span className="text-sm font-medium">
-            Verifying payment...
-          </span>
-        </motion.div>
-      )}
+    <div className="min-h-screen bg-[#f9f9f9] flex flex-col">
+      {/* Top Bar */}
+      <div className="w-full pt-4">
+        <div className="w-full px-2 sm:px-4">
+          <div className="h-[60px] sm:h-[60px] bg-white border border-gray-200 rounded-sm shadow-sm">
+            <div className="h-full w-full flex items-center px-3 sm:px-6">
+              {/* Logo and Search */}
+              <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+                {/* Logo */}
+                <img 
+                  src="/images/split-icon-black.svg" 
+                  alt="Split" 
+                  className="h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0"
+                />
 
-      {/* Setup Status Banner */}
-      {setupStatus && !isVerifyingPayment && (
-        <motion.div
-          initial={{ opacity: 0, y: -50 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -50 }}
-          className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-4 py-3 rounded-lg border flex items-center gap-3 ${
-            setupStatus === 'success' 
-              ? 'bg-green-900/20 border-green-500/30 text-green-300' 
-              : 'bg-red-900/20 border-red-500/30 text-red-300'
-          }`}
-        >
-          {setupStatus === 'success' ? (
-            <CheckCircle2 className="w-5 h-5" />
-          ) : (
-            <XCircle className="w-5 h-5" />
-          )}
-          <span className="text-sm font-medium">
-            {setupStatus === 'success' 
-              ? 'Payment completed successfully!' 
-              : 'Setup was canceled'}
-          </span>
-          <button
-            onClick={() => setSetupStatus(null)}
-            className="ml-2 hover:opacity-70 transition-opacity"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </motion.div>
-      )}
+                {/* Search Bar */}
+                <div className="max-w-xl flex-1 search-bar-light min-w-0">
+                  <SearchBar />
+                </div>
+              </div>
 
-      <div className="mx-auto max-w-[1600px] flex flex-col gap-4 md:gap-6 lg:gap-8">
-        {/* Welcome Card - Responsive height */}
-        <motion.div 
-          variants={cardVariants}
-          className="min-h-[300px] md:min-h-[350px] lg:min-h-[400px]"
-        >
-          <WelcomeCard />
-        </motion.div>
+              {/* Right Section */}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {/* Notifications Bell */}
+                <button className="p-1.5 text-gray-500 hover:text-gray-700 transition-colors">
+                  <Bell className="w-4 h-4" />
+                </button>
 
-        {/* Analytics Cards - Responsive grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6 lg:gap-8">
-          <motion.div 
-            variants={cardVariants}
-            className="h-[440px] md:h-[495px] lg:h-[550px]"
-          >
-            <PageViewCard />
-          </motion.div>
-          <motion.div 
-            variants={cardVariants}
-            className="h-[440px] md:h-[495px] lg:h-[550px]"
-          >
-            <AttributionBySourceCard />
-          </motion.div>
+                {/* Domain Selector */}
+                <div className="domain-selector-light hidden sm:block">
+                  <DomainSelector showAddButton position="topbar" />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Main Content */}
+      <motion.main 
+        className="w-full px-2 sm:px-4 pt-4 pb-6 flex-1"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
+        {/* Payment Verification Banner */}
+        {isVerifyingPayment && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-4 py-3 rounded-lg border flex items-center gap-3 bg-blue-900/20 border-blue-500/30 text-blue-300"
+          >
+            <div className="w-5 h-5 animate-spin rounded-full border-2 border-blue-500/30 border-t-blue-500" />
+            <span className="text-sm font-medium">
+              Verifying payment...
+            </span>
+          </motion.div>
+        )}
+
+        {/* Setup Status Banner */}
+        {setupStatus && !isVerifyingPayment && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-4 py-3 rounded-lg border flex items-center gap-3 ${
+              setupStatus === 'success' 
+                ? 'bg-green-900/20 border-green-500/30 text-green-300' 
+                : 'bg-red-900/20 border-red-500/30 text-red-300'
+            }`}
+          >
+            {setupStatus === 'success' ? (
+              <CheckCircle2 className="w-5 h-5" />
+            ) : (
+              <XCircle className="w-5 h-5" />
+            )}
+            <span className="text-sm font-medium">
+              {setupStatus === 'success' 
+                ? 'Payment completed successfully!' 
+                : 'Setup was canceled'}
+            </span>
+            <button
+              onClick={() => setSetupStatus(null)}
+              className="ml-2 hover:opacity-70 transition-opacity"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+
+        {/* Responsive Card Grid */}
+        <div className="grid gap-4 lg:grid-cols-12 lg:grid-rows-2 grid-cols-1 auto-rows-fr">
+          {/* Welcome Card */}
+          <motion.div 
+            variants={cardVariants}
+            className="lg:col-span-3 lg:row-span-1 h-[43vh] lg:h-[43vh] min-h-[350px]"
+          >
+            <WelcomeCard />
+          </motion.div>
+
+          {/* Site Crawls Card */}
+          <motion.div 
+            variants={cardVariants}
+            className="lg:col-span-9 lg:row-span-1 h-[43vh] lg:h-[43vh] min-h-[350px]"
+          >
+            <CrawlerVisitsCard />
+          </motion.div>
+
+          {/* Leads Card */}
+          <motion.div 
+            variants={cardVariants}
+            className="lg:col-span-4 lg:row-span-1 h-[43vh] lg:h-[43vh] min-h-[350px] bg-white rounded-sm border border-gray-200 overflow-hidden"
+          >
+            <LeadsWhiteCard />
+          </motion.div>
+
+          {/* Attribution by Source Card */}
+          <motion.div 
+            variants={cardVariants}
+            className="lg:col-span-4 lg:row-span-1 h-[43vh] lg:h-[43vh] min-h-[350px] bg-white rounded-sm border border-gray-200 overflow-hidden"
+          >
+            <AttributionBySourceWhiteCard />
+          </motion.div>
+
+          {/* Help Center Card */}
+          <motion.div 
+            variants={cardVariants}
+            className="lg:col-span-4 lg:row-span-1 h-[43vh] lg:h-[43vh] min-h-[350px] bg-white rounded-sm border border-gray-200 overflow-hidden"
+          >
+            <HelpCenterWhiteCard />
+          </motion.div>
+        </div>
+      </motion.main>
 
       {/* Workspace Switching Overlay */}
       {switching && (
@@ -222,7 +276,7 @@ export default function Dashboard() {
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center"
           style={{ pointerEvents: 'all' }}
         >
-          <div className="text-center">
+          <div className="bg-white rounded-lg p-6 shadow-lg text-center">
             <div className="w-16 h-16 mx-auto mb-4" style={{ perspective: '300px' }}>
               <div 
                 className="w-full h-full workspace-flip-animation"
@@ -231,21 +285,21 @@ export default function Dashboard() {
                 }}
               >
                 <img 
-                  src="/images/split-icon-white.svg" 
+                  src="/images/split-icon-black.svg" 
                   alt="Split" 
                   className="w-full h-full"
                 />
               </div>
             </div>
-            <h2 className="text-xl font-semibold text-white mb-2">Switching workspace...</h2>
-            <p className="text-[#888] text-sm">Loading your workspace data</p>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Switching workspace...</h2>
+            <p className="text-gray-600 text-sm">Loading your workspace data</p>
           </div>
         </motion.div>
       )}
 
-
-
-      <style jsx global>{`
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
+        
         @keyframes workspaceFlip {
           0% { transform: rotateY(0deg); }
           25% { transform: rotateY(90deg); }
@@ -257,8 +311,88 @@ export default function Dashboard() {
         .workspace-flip-animation {
           animation: workspaceFlip 2s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
         }
+        
+        /* Light theme for domain selector */
+        .domain-selector-light > div {
+          min-width: 200px;
+        }
+        
+        .domain-selector-light button[data-state="closed"],
+        .domain-selector-light button[data-state="open"] {
+          background-color: transparent;
+          border: none;
+          padding: 0.5rem 0.75rem;
+          height: auto;
+          border-radius: 0;
+          font-size: 0.9375rem;
+          display: flex;
+          align-items: center;
+          width: 100%;
+          justify-content: space-between;
+          transition: background-color 0.15s ease;
+        }
+        
+        .domain-selector-light button[data-state="closed"]:hover,
+        .domain-selector-light button[data-state="open"]:hover {
+          background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        .domain-selector-light button > div {
+          gap: 0.5rem !important;
+          flex: 1;
+          display: flex;
+          align-items: center;
+        }
+        
+        .domain-selector-light button svg {
+          margin-left: 0.25rem !important;
+          flex-shrink: 0;
+          transition: transform 0.2s ease;
+        }
+        
+        .domain-selector-light button[data-state="open"] svg {
+          transform: rotate(180deg);
+        }
+        
+        .domain-selector-light span {
+          color: #000 !important;
+        }
+        
+        .domain-selector-light span.truncate {
+          overflow: visible !important;
+          text-overflow: clip !important;
+          white-space: nowrap !important;
+          max-width: none !important;
+        }
+        
+        .domain-selector-light svg {
+          color: #666 !important;
+        }
+        
+        /* Light theme for search bar */
+        .search-bar-light input {
+          color: #1f2937 !important;
+          background-color: transparent !important;
+        }
+        
+        .search-bar-light input::placeholder {
+          color: #6b7280 !important;
+        }
+        
+        .search-bar-light svg {
+          color: #6b7280 !important;
+        }
+        
+        .search-bar-light [class*="border-gray"] {
+          border-color: #d1d5db !important;
+          background-color: transparent !important;
+        }
+        
+        .search-bar-light [class*="text-gray"] {
+          color: #374151 !important;
+        }
       `}</style>
-    </motion.main>
+    </div>
   )
 }
  

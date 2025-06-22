@@ -351,41 +351,41 @@ export default function LeadsPage() {
   // Show loading while checking admin access
   if (adminLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#0c0c0c] flex items-center justify-center">
+      <div className="min-h-screen bg-[#f9f9f9] flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-zinc-500 mx-auto mb-4" />
-          <p className="text-zinc-600 dark:text-zinc-400">Checking admin access...</p>
+          <Loader2 className="w-8 h-8 animate-spin text-gray-500 mx-auto mb-4" />
+          <p className="text-gray-600">Checking admin access...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0c0c0c]">
+    <div className="min-h-screen bg-[#f9f9f9]">
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-semibold text-black dark:text-white mb-1">Leads</h1>
-            <p className="text-zinc-600 dark:text-zinc-400 text-sm">AI-attributed leads from your website visitors</p>
-        </div>
+            <h1 className="text-2xl font-semibold text-gray-900 mb-1">Leads</h1>
+            <p className="text-gray-600 text-sm">AI-attributed leads from your website visitors</p>
+          </div>
 
           <div className="flex items-center gap-6">
             {stats && (
               <div className="flex items-center gap-6 text-sm">
                 <div className="text-center">
-                  <div className="text-black dark:text-white font-medium">{stats.leadsToday}</div>
-                  <div className="text-zinc-500">Today</div>
+                  <div className="text-gray-900 font-medium">{stats.leadsToday}</div>
+                  <div className="text-gray-500">Today</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-black dark:text-white font-medium">{stats.topModel}</div>
-                  <div className="text-zinc-500">Top Model</div>
+                  <div className="text-gray-900 font-medium">{stats.topModel}</div>
+                  <div className="text-gray-500">Top Model</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-black dark:text-white font-medium">
+                  <div className="text-gray-900 font-medium">
                     {stats.websetsEnriched || 0}/{stats.total || 0}
                   </div>
-                  <div className="text-zinc-500">Enhanced</div>
+                  <div className="text-gray-500">Enhanced</div>
                 </div>
               </div>
             )}
@@ -393,7 +393,7 @@ export default function LeadsPage() {
               onClick={() => setShowConfig(true)}
               variant="outline"
               size="sm"
-              className="border-zinc-300 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50 hover:text-black dark:hover:text-white"
+              className="border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 shadow-sm"
             >
               <Settings className="w-4 h-4 mr-2" />
               Configure
@@ -405,19 +405,19 @@ export default function LeadsPage() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-500" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
               <Input
                 placeholder="Search leads..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 w-80 bg-zinc-100/50 dark:bg-zinc-900/50 border-zinc-300 dark:border-zinc-800 text-black dark:text-white placeholder:text-zinc-500 focus:border-zinc-400 dark:focus:border-zinc-700"
+                className="pl-10 w-80 bg-white border-gray-200 text-gray-900 placeholder:text-gray-500 focus:border-gray-300 focus:ring-0 shadow-sm"
               />
                 </div>
 
             <select
               value={filterConfidence}
               onChange={(e) => setFilterConfidence(e.target.value as any)}
-              className="px-3 py-2 bg-zinc-100/50 dark:bg-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-md text-zinc-700 dark:text-zinc-300 text-sm focus:border-zinc-400 dark:focus:border-zinc-700 focus:outline-none"
+              className="px-3 py-2 bg-white border border-gray-200 rounded-md text-gray-700 text-sm focus:border-gray-300 focus:outline-none focus:ring-0 shadow-sm"
             >
               <option value="all">All Confidence</option>
               <option value="high">High</option>
@@ -428,7 +428,7 @@ export default function LeadsPage() {
             <select
               value={filterAttribution}
               onChange={(e) => setFilterAttribution(e.target.value as any)}
-              className="px-3 py-2 bg-zinc-100/50 dark:bg-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-md text-zinc-700 dark:text-zinc-300 text-sm focus:border-zinc-400 dark:focus:border-zinc-700 focus:outline-none"
+              className="px-3 py-2 bg-white border border-gray-200 rounded-md text-gray-700 text-sm focus:border-gray-300 focus:outline-none focus:ring-0 shadow-sm"
             >
               <option value="all">All Models</option>
               <option value="chatgpt">ChatGPT</option>
@@ -439,7 +439,7 @@ export default function LeadsPage() {
                     </div>
                     
           <div className="flex items-center gap-2">
-            <span className="text-zinc-500 text-sm">
+            <span className="text-gray-500 text-sm">
               {filteredLeads.length} leads
             </span>
                 <Button 
@@ -447,7 +447,7 @@ export default function LeadsPage() {
               disabled={filteredLeads.length === 0}
                   variant="outline"
                   size="sm"
-              className="border-zinc-300 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/50"
+              className="border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 shadow-sm"
                 >
               <Download className="w-4 h-4 mr-2" />
               Export
@@ -456,7 +456,7 @@ export default function LeadsPage() {
             </div>
 
         {/* Table */}
-        <div className="bg-zinc-50/50 dark:bg-zinc-950/50 border border-zinc-200/50 dark:border-zinc-800/50 rounded-lg overflow-hidden">
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
                 {loading ? (
             <div className="p-6">
               <TableSkeleton 
@@ -476,13 +476,13 @@ export default function LeadsPage() {
                     <div className="text-center max-w-sm">
                       <div className="w-16 h-16 mx-auto mb-4 grid grid-cols-4 gap-1 opacity-40">
                         {[...Array(16)].map((_, i) => (
-                    <div key={i} className="w-3 h-3 bg-zinc-300 dark:bg-zinc-700 rounded-sm" />
+                    <div key={i} className="w-3 h-3 bg-gray-200 rounded-sm" />
                         ))}
                       </div>
-                <h4 className="text-black dark:text-white font-medium mb-2">
+                <h4 className="text-gray-900 font-medium mb-2">
                   {searchQuery ? 'No leads found' : 'No leads yet'}
                 </h4>
-                <p className="text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed">
+                <p className="text-gray-600 text-sm leading-relaxed">
                   {searchQuery 
                     ? 'Try adjusting your search or filters'
                     : 'Leads will appear here once visitors are enriched'
@@ -493,17 +493,17 @@ export default function LeadsPage() {
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
-                <thead>
-                  <tr className="border-b border-zinc-200/50 dark:border-zinc-800/50">
-                    <th className="text-left py-3 px-6 text-xs font-medium text-zinc-600 dark:text-zinc-500 uppercase tracking-wider">Contact</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-zinc-600 dark:text-zinc-500 uppercase tracking-wider">Company</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-zinc-600 dark:text-zinc-500 uppercase tracking-wider">Confidence</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-zinc-600 dark:text-zinc-500 uppercase tracking-wider">Model</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-zinc-600 dark:text-zinc-500 uppercase tracking-wider">Page</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-zinc-600 dark:text-zinc-500 uppercase tracking-wider">Time</th>
+                <thead className="bg-gray-50">
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Confidence</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Page</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="bg-white divide-y divide-gray-200">
                   {filteredLeads.map((lead, index) => {
                     const modelInfo = getModelInfo(lead.model)
                     const confidenceBadge = getConfidenceBadge(lead.confidence)
@@ -514,7 +514,7 @@ export default function LeadsPage() {
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.02 }}
-                        className="border-b border-zinc-200/30 dark:border-zinc-800/30 hover:bg-zinc-100/30 dark:hover:bg-zinc-900/30 transition-colors cursor-pointer group"
+                        className="hover:bg-gray-50 transition-colors cursor-pointer group"
                         onClick={() => setSelectedLead(lead)}
                             >
                         {/* Contact */}
@@ -531,21 +531,21 @@ export default function LeadsPage() {
                                 }}
                               />
                             ) : null}
-                            <div className={`w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center ${lead.picture_url ? 'hidden' : ''}`}>
-                              <User className="w-4 h-4 text-zinc-500" />
+                            <div className={`w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center ${lead.picture_url ? 'hidden' : ''}`}>
+                              <User className="w-4 h-4 text-gray-500" />
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="text-black dark:text-white font-medium text-sm">{lead.fullName || 'Unknown'}</span>
+                                <span className="text-gray-900 font-medium text-sm">{lead.fullName || 'Unknown'}</span>
                                 {lead.exa_webset_id && (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-600/20 text-purple-400">
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-50 border border-purple-200 text-purple-700">
                                     Enhanced
                                   </span>
                                 )}
                               </div>
-                              <div className="text-zinc-500 text-xs">{lead.jobTitle || 'Unknown'}</div>
+                              <div className="text-gray-500 text-xs">{lead.jobTitle || 'Unknown'}</div>
                               {lead.headline && (
-                                <div className="text-zinc-600 dark:text-zinc-400 text-xs mt-0.5 truncate max-w-[300px]">{lead.headline}</div>
+                                <div className="text-gray-600 text-xs mt-0.5 truncate max-w-[300px]">{lead.headline}</div>
                               )}
                             </div>
                                 </div>
@@ -554,14 +554,18 @@ export default function LeadsPage() {
                         {/* Company */}
                               <td className="py-3 px-4">
                                 <div>
-                            <div className="text-black dark:text-white font-medium text-sm">{lead.company || 'Unknown'}</div>
-                            <div className="text-zinc-500 text-xs">{lead.location || 'Unknown'}</div>
+                            <div className="text-gray-900 font-medium text-sm">{lead.company || 'Unknown'}</div>
+                            <div className="text-gray-500 text-xs">{lead.location || 'Unknown'}</div>
                                 </div>
                               </td>
                               
                         {/* Confidence */}
                         <td className="py-3 px-4">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${confidenceBadge.bg} ${confidenceBadge.text}`}>
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium ${
+                            lead.confidence === 'high' ? 'bg-green-50 border-green-200 text-green-700' :
+                            lead.confidence === 'medium' ? 'bg-yellow-50 border-yellow-200 text-yellow-700' :
+                            'bg-gray-50 border-gray-200 text-gray-700'
+                          }`}>
                             {lead.confidence}
                           </span>
                               </td>
@@ -572,20 +576,20 @@ export default function LeadsPage() {
                             {modelInfo.logo && (
                               <img src={modelInfo.logo} alt={modelInfo.name} className="w-4 h-4" />
                             )}
-                            <span className="text-black dark:text-white text-sm">{modelInfo.name}</span>
+                            <span className="text-gray-900 text-sm">{modelInfo.name}</span>
                                 </div>
                               </td>
                               
                         {/* Page */}
                               <td className="py-3 px-4">
-                          <code className="text-zinc-600 dark:text-zinc-400 text-xs bg-zinc-100 dark:bg-zinc-900 px-2 py-1 rounded">
+                          <code className="text-gray-600 text-xs bg-gray-100 px-2 py-1 rounded">
                             {lead.pageVisited}
                                 </code>
                               </td>
                         
                         {/* Time */}
                         <td className="py-3 px-4">
-                          <div className="text-zinc-600 dark:text-zinc-400 text-sm">
+                          <div className="text-gray-600 text-sm">
                             {formatRelativeTime(lead.timestamp)}
                           </div>
                               </td>
@@ -608,7 +612,7 @@ export default function LeadsPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-40"
+              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
               onClick={() => setShowConfig(false)}
             />
 
@@ -619,29 +623,29 @@ export default function LeadsPage() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="fixed inset-0 z-50 flex items-center justify-center p-4"
             >
-              <div className="bg-zinc-950 border border-zinc-800/50 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl">
+              <div className="bg-white border border-gray-200 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-xl">
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-zinc-800/50">
-                  <h2 className="text-xl font-semibold text-white">Configure Leads</h2>
+                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                  <h2 className="text-xl font-semibold text-gray-900">Configure Leads</h2>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowConfig(false)}
-                    className="text-zinc-400 hover:text-white hover:bg-zinc-800/50"
+                    className="text-gray-500 hover:text-gray-700 hover:bg-gray-50"
                   >
                     <X className="w-5 h-5" />
                   </Button>
                 </div>
 
                 {/* Tabs */}
-                <div className="border-b border-zinc-800/50">
+                <div className="border-b border-gray-200">
                   <div className="flex">
                     <button
                       onClick={() => setConfigTab('icp')}
                       className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                         configTab === 'icp'
-                          ? 'border-white text-white'
-                          : 'border-transparent text-zinc-400 hover:text-white'
+                          ? 'border-gray-900 text-gray-900'
+                          : 'border-transparent text-gray-500 hover:text-gray-700'
                       }`}
                     >
                       <Target className="w-4 h-4 mr-2 inline" />
@@ -651,8 +655,8 @@ export default function LeadsPage() {
                       onClick={() => setConfigTab('tracking')}
                       className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                         configTab === 'tracking'
-                          ? 'border-white text-white'
-                          : 'border-transparent text-zinc-400 hover:text-white'
+                          ? 'border-gray-900 text-gray-900'
+                          : 'border-transparent text-gray-500 hover:text-gray-700'
                       }`}
         >
                       <Code className="w-4 h-4 mr-2 inline" />
@@ -666,10 +670,10 @@ export default function LeadsPage() {
                   {configTab === 'icp' ? (
                     <div className="space-y-8">
                       {/* Enable/Disable */}
-                      <div className="flex items-center justify-between p-4 bg-zinc-900/50 border border-zinc-800/50 rounded-lg">
+                      <div className="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-lg">
                         <div>
-                          <h3 className="text-lg font-medium text-white mb-1">Enable Lead Enrichment</h3>
-                          <p className="text-zinc-400 text-sm">
+                          <h3 className="text-lg font-medium text-gray-900 mb-1">Enable Lead Enrichment</h3>
+                          <p className="text-gray-600 text-sm">
                             Automatically enrich qualified visitors with contact and company data
                           </p>
                         </div>
@@ -680,15 +684,15 @@ export default function LeadsPage() {
                             onChange={(e) => setIcpSettings(prev => ({ ...prev, is_enabled: e.target.checked }))}
                             className="sr-only peer"
                           />
-                          <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-zinc-900"></div>
+                          <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-900"></div>
                         </label>
                       </div>
 
                       {/* Target Job Titles */}
                       <div className="space-y-4">
                         <div>
-                          <h3 className="text-lg font-medium text-white mb-1">Target Job Titles</h3>
-                          <p className="text-zinc-400 text-sm">
+                          <h3 className="text-lg font-medium text-gray-900 mb-1">Target Job Titles</h3>
+                          <p className="text-gray-600 text-sm">
                             Define which job titles should trigger lead enrichment
                           </p>
                         </div>
@@ -697,12 +701,12 @@ export default function LeadsPage() {
                           {icpSettings.target_titles.map((title, index) => (
                             <div
                               key={index} 
-                              className="bg-zinc-800/50 border border-zinc-700/50 text-zinc-300 px-3 py-1.5 rounded-md text-sm flex items-center gap-2 group hover:bg-zinc-700/50 transition-colors"
+                              className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-md text-sm flex items-center gap-2 group hover:bg-gray-50 transition-colors shadow-sm"
                             >
                               {title}
                               <button
                                 onClick={() => removeTitle(title)}
-                                className="text-zinc-500 hover:text-white transition-colors"
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
                               >
                                 ×
                               </button>
@@ -716,12 +720,12 @@ export default function LeadsPage() {
                             value={newTitle}
                             onChange={(e) => setNewTitle(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && addTitle()}
-                            className="flex-1 bg-zinc-900/50 border-zinc-700/50 text-white placeholder:text-zinc-500 focus:border-zinc-600"
+                            className="flex-1 bg-white border-gray-200 text-gray-900 placeholder:text-gray-500 focus:border-gray-300 focus:ring-0 shadow-sm"
                           />
                           <Button 
                             onClick={addTitle} 
                             disabled={!newTitle.trim()}
-                            className="bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700/50"
+                            className="bg-gray-900 hover:bg-gray-800 text-white border border-gray-200 shadow-sm"
                           >
                             <Plus className="w-4 h-4" />
                           </Button>
@@ -731,8 +735,8 @@ export default function LeadsPage() {
                       {/* Custom Prompt */}
                       <div className="space-y-4">
                         <div>
-                          <h3 className="text-lg font-medium text-white mb-1">Custom Search Prompt</h3>
-                          <p className="text-zinc-400 text-sm">
+                          <h3 className="text-lg font-medium text-gray-900 mb-1">Custom Search Prompt</h3>
+                          <p className="text-gray-600 text-sm">
                             Describe your ideal customer profile. This works with job titles above to find the right contacts.
                           </p>
                         </div>
@@ -740,10 +744,10 @@ export default function LeadsPage() {
                           placeholder="e.g., Senior executive or decision maker who evaluates new technology solutions..."
                           value={icpSettings.custom_prompt}
                           onChange={(e) => setIcpSettings(prev => ({ ...prev, custom_prompt: e.target.value }))}
-                          className="bg-zinc-900/50 border-zinc-700/50 text-white placeholder:text-zinc-500 focus:border-zinc-600 resize-none"
+                          className="bg-white border-gray-200 text-gray-900 placeholder:text-gray-500 focus:border-gray-300 focus:ring-0 resize-none shadow-sm"
                           rows={3}
                         />
-                        <div className="text-xs text-zinc-500">
+                        <div className="text-xs text-gray-500">
                           💡 The system combines your job titles and custom prompt to find the most relevant contacts at each company
                         </div>
               </div>
@@ -753,14 +757,14 @@ export default function LeadsPage() {
                       {/* Tracking Code */}
                       <div className="space-y-4">
                         <div>
-                          <h3 className="text-lg font-medium text-white mb-1">Tracking Code</h3>
-                          <p className="text-zinc-400 text-sm">
+                          <h3 className="text-lg font-medium text-gray-900 mb-1">Tracking Code</h3>
+                          <p className="text-gray-600 text-sm">
                             Add this code to your website to start tracking visitors
                           </p>
                         </div>
                         
-                        <div className="bg-zinc-900 border border-zinc-700/50 rounded-lg p-4">
-                          <code className="text-green-400 text-sm font-mono whitespace-pre-wrap break-all">
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                          <code className="text-green-700 text-sm font-mono whitespace-pre-wrap break-all">
                             {currentWorkspace ? 
                               `<script src="${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/api/tracking/script?workspace=${currentWorkspace.id}"></script>`
                               : 'Loading...'
@@ -772,7 +776,7 @@ export default function LeadsPage() {
                           <Button
                             onClick={copyTrackingCode}
                             size="sm"
-                            className="bg-white text-zinc-900 hover:bg-zinc-100"
+                            className="bg-gray-900 text-white hover:bg-gray-800 shadow-sm"
                           >
                             {copied ? (
                               <>
@@ -791,26 +795,26 @@ export default function LeadsPage() {
 
                       {/* Installation Instructions */}
                       <div className="space-y-4">
-                        <h3 className="text-lg font-medium text-white">Installation</h3>
+                        <h3 className="text-lg font-medium text-gray-900">Installation</h3>
                         <div className="space-y-3">
-                          <div className="bg-zinc-900/50 border border-zinc-700/50 rounded-lg p-4">
+                          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                             <div className="flex items-start gap-3">
-                              <span className="bg-zinc-800 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium mt-0.5">1</span>
+                              <span className="bg-gray-900 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium mt-0.5">1</span>
                               <div>
-                                <h4 className="font-medium text-white mb-1">Add to your website</h4>
-                                <p className="text-zinc-400 text-sm">
-                                  Paste the tracking code in the <code className="bg-zinc-800 text-zinc-300 px-1.5 py-0.5 rounded text-xs">&lt;head&gt;</code> section of your website
+                                <h4 className="font-medium text-gray-900 mb-1">Add to your website</h4>
+                                <p className="text-gray-600 text-sm">
+                                  Paste the tracking code in the <code className="bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded text-xs">&lt;head&gt;</code> section of your website
                                 </p>
                               </div>
                             </div>
                           </div>
                           
-                          <div className="bg-zinc-900/50 border border-zinc-700/50 rounded-lg p-4">
+                          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                             <div className="flex items-start gap-3">
-                              <span className="bg-zinc-800 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium mt-0.5">2</span>
+                              <span className="bg-gray-900 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium mt-0.5">2</span>
                               <div>
-                                <h4 className="font-medium text-white mb-1">Verify installation</h4>
-                                <p className="text-zinc-400 text-sm">
+                                <h4 className="font-medium text-gray-900 mb-1">Verify installation</h4>
+                                <p className="text-gray-600 text-sm">
                                   Visit your website to test the tracking. Leads will appear within minutes.
                                 </p>
                               </div>
@@ -821,58 +825,58 @@ export default function LeadsPage() {
 
                       {/* What We Track */}
                       <div className="space-y-4">
-                        <h3 className="text-lg font-medium text-white">Data Collection</h3>
-                        <p className="text-zinc-400 text-sm">
+                        <h3 className="text-lg font-medium text-gray-900">Data Collection</h3>
+                        <p className="text-gray-600 text-sm">
                           We collect the following data to identify and enrich your visitors:
                         </p>
                         
                         <div className="grid grid-cols-2 gap-6">
                           <div className="space-y-3">
                             <div className="flex items-center gap-3 text-sm">
-                              <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full"></div>
-                              <span className="text-zinc-300">Page visits</span>
+                              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                              <span className="text-gray-700">Page visits</span>
                             </div>
                             <div className="flex items-center gap-3 text-sm">
-                              <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full"></div>
-                              <span className="text-zinc-300">Session duration</span>
+                              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                              <span className="text-gray-700">Session duration</span>
                             </div>
                             <div className="flex items-center gap-3 text-sm">
-                              <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full"></div>
-                              <span className="text-zinc-300">Referrer source</span>
+                              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                              <span className="text-gray-700">Referrer source</span>
                             </div>
                             <div className="flex items-center gap-3 text-sm">
-                              <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full"></div>
-                              <span className="text-zinc-300">Device type</span>
+                              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                              <span className="text-gray-700">Device type</span>
                             </div>
                           </div>
                           <div className="space-y-3">
                             <div className="flex items-center gap-3 text-sm">
-                              <div className="w-1.5 h-1.5 bg-zinc-400 rounded-full"></div>
-                              <span className="text-zinc-300">IP geolocation</span>
+                              <div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>
+                              <span className="text-gray-700">IP geolocation</span>
                             </div>
                             <div className="flex items-center gap-3 text-sm">
-                              <div className="w-1.5 h-1.5 bg-zinc-400 rounded-full"></div>
-                              <span className="text-zinc-300">Company identification</span>
+                              <div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>
+                              <span className="text-gray-700">Company identification</span>
                             </div>
                             <div className="flex items-center gap-3 text-sm">
-                              <div className="w-1.5 h-1.5 bg-zinc-400 rounded-full"></div>
-                              <span className="text-zinc-300">Contact enrichment</span>
+                              <div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>
+                              <span className="text-gray-700">Contact enrichment</span>
                             </div>
                             <div className="flex items-center gap-3 text-sm">
-                              <div className="w-1.5 h-1.5 bg-zinc-400 rounded-full"></div>
-                              <span className="text-zinc-300">Intent scoring</span>
+                              <div className="w-1.5 h-1.5 bg-gray-500 rounded-full"></div>
+                              <span className="text-gray-700">Intent scoring</span>
                             </div>
                           </div>
                         </div>
                       </div>
 
                       {/* Privacy Notice */}
-                      <div className="bg-zinc-900/30 border border-zinc-700/30 rounded-lg p-4">
-                        <h4 className="font-medium text-zinc-300 mb-2 flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 bg-zinc-500 rounded-full"></div>
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h4 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
                           Privacy Compliance
                         </h4>
-                        <p className="text-zinc-400 text-sm">
+                        <p className="text-blue-700 text-sm">
                           Our tracking is GDPR and CCPA compliant. We only collect business contact information and do not track personal browsing behavior.
                         </p>
                       </div>
@@ -881,11 +885,11 @@ export default function LeadsPage() {
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between p-6 border-t border-zinc-800/50">
+                <div className="flex items-center justify-between p-6 border-t border-gray-200">
                   <Button
                     variant="outline"
                     onClick={() => setShowConfig(false)}
-                    className="text-zinc-400 hover:text-white border-zinc-700/50 hover:bg-zinc-800/50"
+                    className="text-gray-600 hover:text-gray-800 border-gray-200 hover:bg-gray-50"
                   >
                     Cancel
                   </Button>
@@ -894,7 +898,7 @@ export default function LeadsPage() {
                     <Button
                       onClick={saveSettings}
                       disabled={saving}
-                      className="bg-white hover:bg-zinc-200 text-black"
+                      className="bg-gray-900 hover:bg-gray-800 text-white shadow-sm"
                     >
                       {saving ? (
                         <>
@@ -935,241 +939,272 @@ export default function LeadsPage() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed right-0 top-0 h-full w-full max-w-lg bg-white dark:bg-zinc-950 shadow-xl z-50 flex flex-col"
+              className="fixed right-0 top-0 h-full w-full max-w-lg bg-white shadow-xl z-50 flex flex-col"
             >
               {/* Header */}
-              <div className="flex items-center gap-4 p-6 border-b border-zinc-200 dark:border-zinc-800/50">
+              <div className="flex items-center gap-3 p-4 border-b border-gray-100">
                 <button
                   onClick={() => setSelectedLead(null)}
-                  className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                  className="p-1.5 hover:bg-gray-50 rounded-md transition-colors"
                 >
-                  <X className="w-5 h-5 text-zinc-500" />
+                  <X className="w-4 h-4 text-gray-400" />
                 </button>
                 {selectedLead?.picture_url ? (
                   <img 
                     src={selectedLead.picture_url} 
                     alt={selectedLead.fullName || 'Contact'} 
-                    className="w-14 h-14 rounded-full object-cover"
+                    className="w-10 h-10 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-14 h-14 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center">
-                    <User className="w-7 h-7 text-zinc-500" />
+                  <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center">
+                    <User className="w-5 h-5 text-gray-400" />
                   </div>
                 )}
-                <div className="flex-1">
-                  <h2 className="text-xl font-semibold text-black dark:text-white">
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg font-medium text-gray-900 truncate">
                     {selectedLead?.fullName || 'Unknown Contact'}
                   </h2>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                    {selectedLead?.jobTitle || 'Unknown Title'} at {selectedLead?.company || 'Unknown Company'}
+                  <p className="text-sm text-gray-500 truncate">
+                    {selectedLead?.jobTitle || 'Unknown Title'}
+                  </p>
+                  <p className="text-xs text-gray-400 truncate">
+                    {selectedLead?.company || 'Unknown Company'}
                   </p>
                 </div>
                 {selectedLead?.exa_webset_id && (
-                  <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-600/20 text-purple-400">
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200">
                     Enhanced
                   </span>
                 )}
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="space-y-6">
+              <div className="flex-1 overflow-y-auto p-4 pb-8">
+                <div className="space-y-8">
                   {/* Quick Actions */}
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1"
+                      className="bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 h-9"
                       onClick={() => window.open(`mailto:${selectedLead?.email}`, '_blank')}
                     >
-                      <Mail className="w-4 h-4 mr-2" />
-                      Send Email
+                      <Mail className="w-3.5 h-3.5 mr-1.5" />
+                      Email
                     </Button>
-                    {selectedLead?.linkedinUrl && (
+                    {selectedLead?.linkedinUrl ? (
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1"
+                        className="bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 h-9"
                         onClick={() => window.open(selectedLead.linkedinUrl, '_blank')}
                       >
-                        <Linkedin className="w-4 h-4 mr-2" />
-                        View LinkedIn
+                        <Linkedin className="w-3.5 h-3.5 mr-1.5" />
+                        LinkedIn
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 h-9"
+                        onClick={() => {
+                          navigator.clipboard.writeText(selectedLead?.email || '');
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 2000);
+                        }}
+                      >
+                        {copied ? <CheckCircle className="w-3.5 h-3.5 mr-1.5" /> : <Copy className="w-3.5 h-3.5 mr-1.5" />}
+                        {copied ? 'Copied!' : 'Copy'}
                       </Button>
                     )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(selectedLead?.email || '');
-                        setCopied(true);
-                        setTimeout(() => setCopied(false), 2000);
-                      }}
-                    >
-                      {copied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    </Button>
                   </div>
 
-                  {/* Contact Info Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <span className="text-xs text-zinc-500 uppercase tracking-wide">Email</span>
-                      <p className="text-sm text-zinc-900 dark:text-zinc-100 font-medium">
-                        {selectedLead?.email || 'No email'}
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-xs text-zinc-500 uppercase tracking-wide">Location</span>
-                      <p className="text-sm text-zinc-900 dark:text-zinc-100">
-                        {selectedLead?.location || 'Unknown'}
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-xs text-zinc-500 uppercase tracking-wide">Attribution</span>
-                      <p className="text-sm text-zinc-900 dark:text-zinc-100">
-                        {selectedLead?.model} → {selectedLead?.pageVisited}
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-xs text-zinc-500 uppercase tracking-wide">Confidence</span>
-                      <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          selectedLead?.confidence === 'high' ? 'bg-green-600/20 text-green-400' :
-                          selectedLead?.confidence === 'medium' ? 'bg-green-600/10 text-green-500' :
-                          'bg-gray-600/20 text-gray-400'
-                        }`}>
-                          {selectedLead?.confidence}
-                        </span>
-                        {selectedLead?.confidence_score && (
-                          <span className="text-xs text-zinc-500">
-                            ({(selectedLead.confidence_score * 100).toFixed(0)}%)
-                          </span>
-                        )}
+                  {/* Contact Info */}
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-900 mb-3">Contact Information</h3>
+                    <div className="bg-gray-50 rounded-lg p-3 space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">Email</span>
+                          <p className="text-sm text-gray-900 font-medium mt-0.5">
+                            {selectedLead?.email || 'No email'}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">Location</span>
+                          <p className="text-sm text-gray-900 mt-0.5">
+                            {selectedLead?.location || 'Unknown'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="pt-2 border-t border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-xs text-gray-500 uppercase tracking-wide">Attribution</span>
+                            <p className="text-sm text-gray-900 mt-0.5">
+                              {selectedLead?.model} via {selectedLead?.pageVisited}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xs text-gray-500 uppercase tracking-wide">Confidence</span>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                selectedLead?.confidence === 'high' ? 'bg-green-100 text-green-700' :
+                                selectedLead?.confidence === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-gray-100 text-gray-700'
+                              }`}>
+                                {selectedLead?.confidence}
+                              </span>
+                              {selectedLead?.confidence_score && (
+                                <span className="text-xs text-gray-500">
+                                  {(selectedLead.confidence_score * 100).toFixed(0)}%
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Enhanced Profile Data */}
-                  {selectedLead?.exa_webset_id && (
-                    <div className="space-y-4">
-                      {selectedLead.headline && (
-                        <div className="space-y-1">
-                          <span className="text-xs text-zinc-500 uppercase tracking-wide">LinkedIn Headline</span>
-                          <p className="text-sm text-zinc-900 dark:text-zinc-100">{selectedLead.headline}</p>
-                        </div>
-                      )}
-                      
-                      {selectedLead.summary && (
-                        <div className="space-y-1">
-                          <span className="text-xs text-zinc-500 uppercase tracking-wide">Professional Summary</span>
-                          <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
-                            {selectedLead.summary}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Display enrichment data from Websets */}
-                      {selectedLead.enrichment_data && (
-                        <>
-                          {/* Current Focus Areas */}
-                          {selectedLead.enrichment_data.focus_areas && (
-                            <div className="space-y-1">
-                              <span className="text-xs text-zinc-500 uppercase tracking-wide">Current Focus Areas</span>
-                              <div className="bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg">
-                                <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
-                                  {selectedLead.enrichment_data.focus_areas}
-                                </p>
-                              </div>
+                  {/* Professional Profile */}
+                  {selectedLead?.exa_webset_id && (selectedLead.headline || selectedLead.summary) && (
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-900 mb-3">Professional Profile</h3>
+                      <div className="bg-gray-50 rounded-lg p-3 space-y-3">
+                        {selectedLead.headline && (
+                          <div>
+                            <span className="text-xs text-gray-500 uppercase tracking-wide">LinkedIn Headline</span>
+                            <p className="text-sm text-gray-700 mt-1 leading-relaxed">{selectedLead.headline}</p>
+                          </div>
+                        )}
+                        
+                        {selectedLead.summary && (
+                          <>
+                            {selectedLead.headline && <div className="border-t border-gray-200 pt-3" />}
+                            <div>
+                              <span className="text-xs text-gray-500 uppercase tracking-wide">Summary</span>
+                              <p className="text-sm text-gray-700 mt-1 leading-relaxed">
+                                {selectedLead.summary}
+                              </p>
                             </div>
-                          )}
-
-                          {/* Recent LinkedIn Posts */}
-                          {selectedLead.enrichment_data.linkedin_posts && (
-                            <div className="space-y-1">
-                              <span className="text-xs text-zinc-500 uppercase tracking-wide">Recent LinkedIn Activity</span>
-                              <div className="space-y-2">
-                                {selectedLead.enrichment_data.linkedin_posts.split('\n\n').slice(0, 3).map((post: string, idx: number) => (
-                                  <div key={idx} className="bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg">
-                                    <p className="text-sm text-zinc-700 dark:text-zinc-300">
-                                      {post.replace(/URL:\s*https:\/\/[^\s]+/, '').trim()}
-                                    </p>
-                                    {post.includes('URL:') && (
-                                      <a href={post.match(/URL:\s*(https:\/\/[^\s]+)/)?.[1]} 
-                                         target="_blank" 
-                                         rel="noopener noreferrer"
-                                         className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1 inline-block">
-                                        View Post →
-                                      </a>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Press Quotes */}
-                          {selectedLead.enrichment_data.press_quotes && (
-                            <div className="space-y-1">
-                              <span className="text-xs text-zinc-500 uppercase tracking-wide">Press Quotes</span>
-                              <div className="space-y-2">
-                                {selectedLead.enrichment_data.press_quotes.split('\n\n').slice(0, 2).map((quote: string, idx: number) => {
-                                  const quoteMatch = quote.match(/"([^"]+)"/);
-                                  const sourceMatch = quote.match(/quoted in\s+([^(]+)/i);
-                                  const dateMatch = quote.match(/\(([^)]+)\)/);
-                                  
-                                  return (
-                                    <div key={idx} className="bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg">
-                                      {quoteMatch && (
-                                        <>
-                                          <p className="text-sm italic text-zinc-700 dark:text-zinc-300">
-                                            "{quoteMatch[1]}"
-                                          </p>
-                                          <p className="text-xs text-zinc-500 mt-1">
-                                            {sourceMatch ? `— ${sourceMatch[1].trim()}` : '— Press'} 
-                                            {dateMatch && ` (${dateMatch[1]})`}
-                                          </p>
-                                        </>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Key Works */}
-                          {selectedLead.enrichment_data.key_works && (
-                            <div className="space-y-1">
-                              <span className="text-xs text-zinc-500 uppercase tracking-wide">Key Works & Projects</span>
-                              <div className="space-y-2">
-                                {selectedLead.enrichment_data.key_works.split('\n\n').slice(0, 3).map((work: string, idx: number) => {
-                                  const titleMatch = work.match(/"([^"]+)"/);
-                                  const typeMatch = work.match(/\(([^,]+),/);
-                                  
-                                  return (
-                                    <div key={idx} className="bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg">
-                                      <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                                        {titleMatch ? titleMatch[1] : work.split('(')[0].trim()}
-                                      </p>
-                                      {typeMatch && (
-                                        <p className="text-xs text-zinc-500 mt-0.5">
-                                          {typeMatch[1]}
-                                        </p>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
-                        </>
-                      )}
+                          </>
+                        )}
+                      </div>
                     </div>
                   )}
 
+                  {/* Display enrichment data from Websets */}
+                  {selectedLead?.enrichment_data && (
+                    <>
+                      {/* Enhanced Insights */}
+                      {(selectedLead.enrichment_data.focus_areas || selectedLead.enrichment_data.linkedin_posts) && (
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-900 mb-3">Enhanced Insights</h3>
+                          <div className="bg-gray-50 rounded-lg p-3 space-y-4">
+                            {/* Current Focus Areas */}
+                            {selectedLead.enrichment_data.focus_areas && (
+                              <div>
+                                <span className="text-xs text-gray-500 uppercase tracking-wide">Current Focus Areas</span>
+                                <p className="text-sm text-gray-700 mt-1 leading-relaxed">
+                                  {selectedLead.enrichment_data.focus_areas}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Recent LinkedIn Posts */}
+                            {selectedLead.enrichment_data.linkedin_posts && (
+                              <>
+                                {selectedLead.enrichment_data.focus_areas && <div className="border-t border-gray-200 pt-4" />}
+                                <div>
+                                  <span className="text-xs text-gray-500 uppercase tracking-wide">Recent Activity</span>
+                                  <div className="space-y-2 mt-2">
+                                    {selectedLead.enrichment_data.linkedin_posts.split('\n\n').slice(0, 2).map((post: string, idx: number) => (
+                                      <div key={idx} className="bg-white p-2 rounded border border-gray-200">
+                                        <p className="text-xs text-gray-700 leading-relaxed">
+                                          {post.replace(/URL:\s*https:\/\/[^\s]+/, '').trim()}
+                                        </p>
+                                        {post.includes('URL:') && (
+                                          <a href={post.match(/URL:\s*(https:\/\/[^\s]+)/)?.[1]} 
+                                             target="_blank" 
+                                             rel="noopener noreferrer"
+                                             className="text-xs text-blue-600 hover:underline mt-1 inline-block">
+                                            View Post →
+                                          </a>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Press Quotes */}
+                      {selectedLead.enrichment_data.press_quotes && (
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-900 mb-3">Press Quotes</h3>
+                          <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                            {selectedLead.enrichment_data.press_quotes.split('\n\n').slice(0, 2).map((quote: string, idx: number) => {
+                              const quoteMatch = quote.match(/"([^"]+)"/);
+                              const sourceMatch = quote.match(/quoted in\s+([^(]+)/i);
+                              const dateMatch = quote.match(/\(([^)]+)\)/);
+                              
+                              return (
+                                <div key={idx} className="bg-white p-3 rounded border border-gray-200">
+                                  {quoteMatch && (
+                                    <>
+                                      <p className="text-sm italic text-gray-700">
+                                        "{quoteMatch[1]}"
+                                      </p>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        {sourceMatch ? `— ${sourceMatch[1].trim()}` : '— Press'} 
+                                        {dateMatch && ` (${dateMatch[1]})`}
+                                      </p>
+                                    </>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Key Works */}
+                      {selectedLead.enrichment_data.key_works && (
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-900 mb-3">Key Works & Projects</h3>
+                          <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                            {selectedLead.enrichment_data.key_works.split('\n\n').slice(0, 3).map((work: string, idx: number) => {
+                              const titleMatch = work.match(/"([^"]+)"/);
+                              const typeMatch = work.match(/\(([^,]+),/);
+                              
+                              return (
+                                <div key={idx} className="bg-white p-3 rounded border border-gray-200">
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {titleMatch ? titleMatch[1] : work.split('(')[0].trim()}
+                                  </p>
+                                  {typeMatch && (
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                      {typeMatch[1]}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
                   {/* Public Activity */}
-                  {selectedLead.media_content && selectedLead.media_content.length > 0 && (
-                    <div className="space-y-3">
-                      <span className="text-xs text-zinc-500 uppercase tracking-wide">Public Activity & Media</span>
+                  {selectedLead?.media_content && selectedLead.media_content.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-900 mb-3">Public Activity</h3>
+                      <div className="bg-gray-50 rounded-lg p-3">
                       <div className="space-y-3">
                         {/* LinkedIn Posts */}
                         {selectedLead.media_content
@@ -1186,21 +1221,21 @@ export default function LeadsPage() {
                                 <div className="flex-1 min-w-0">
                                   {post.url ? (
                                     <a href={post.url} target="_blank" rel="noopener noreferrer" 
-                                       className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline line-clamp-2">
+                                       className="text-sm font-medium text-blue-600 hover:underline line-clamp-2">
                                       {post.title || post.snippet || 'LinkedIn Post'}
                                     </a>
                                   ) : (
-                                    <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 line-clamp-2">
+                                    <p className="text-sm font-medium text-gray-900 line-clamp-2">
                                       {post.title || post.snippet || 'LinkedIn Post'}
                                     </p>
                                   )}
                                   {(post.description || post.snippet) && (
-                                    <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400 line-clamp-3">
+                                    <p className="mt-1 text-xs text-gray-600 line-clamp-3">
                                       {post.description || post.snippet}
                                     </p>
                                   )}
                                   {post.published_date && (
-                                    <p className="mt-1 text-xs text-zinc-500">
+                                    <p className="mt-1 text-xs text-gray-500">
                                       {new Date(post.published_date).toLocaleDateString()}
                                     </p>
                                   )}
@@ -1227,11 +1262,11 @@ export default function LeadsPage() {
                                     {article.title}
                                   </a>
                                   {article.description && (
-                                    <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400 line-clamp-3">
+                                    <p className="mt-1 text-xs text-gray-600 line-clamp-3">
                                       {article.description}
                                     </p>
                                   )}
-                                  <p className="mt-1 text-xs text-zinc-500">
+                                  <p className="mt-1 text-xs text-gray-500">
                                     {article.type.charAt(0).toUpperCase() + article.type.slice(1)} • {new Date(article.published_date).toLocaleDateString()}
                                   </p>
                                 </div>
@@ -1252,10 +1287,10 @@ export default function LeadsPage() {
                                 <div className="flex-1 min-w-0">
                                   {item.type === 'quote' && item.quote ? (
                                     <>
-                                      <p className="text-sm italic text-zinc-700 dark:text-zinc-300">
+                                      <p className="text-sm italic text-gray-700">
                                         "{item.quote}"
                                       </p>
-                                      <p className="mt-1 text-xs text-zinc-500">
+                                      <p className="mt-1 text-xs text-gray-500">
                                         — {item.publication || item.platform || 'Press'} 
                                         {item.published_date && ` • ${new Date(item.published_date).toLocaleDateString()}`}
                                       </p>
@@ -1268,16 +1303,16 @@ export default function LeadsPage() {
                                           {item.title || 'Media Mention'}
                                         </a>
                                       ) : (
-                                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 line-clamp-2">
+                                        <p className="text-sm font-medium text-gray-900 line-clamp-2">
                                           {item.title || 'Media Mention'}
                                         </p>
                                       )}
                                       {item.description && !item.quote && (
-                                        <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400 line-clamp-3">
+                                        <p className="mt-1 text-xs text-gray-600 line-clamp-3">
                                           {item.description}
                                         </p>
                                       )}
-                                      <p className="mt-1 text-xs text-zinc-500">
+                                      <p className="mt-1 text-xs text-gray-500">
                                         {item.platform || item.publication || 'Media'} • {new Date(item.published_date).toLocaleDateString()}
                                       </p>
                                     </>
@@ -1302,96 +1337,105 @@ export default function LeadsPage() {
                                      className="text-sm font-medium text-orange-600 dark:text-orange-400 hover:underline line-clamp-2">
                                     {patent.title}
                                   </a>
-                                  <p className="mt-1 text-xs text-zinc-500">
+                                  <p className="mt-1 text-xs text-gray-500">
                                     Patent • {new Date(patent.published_date).toLocaleDateString()}
                                   </p>
                                 </div>
                               </div>
                             </div>
                           ))}
+                        </div>
                       </div>
                     </div>
                   )}
 
                   {/* Work Experience */}
-                  {selectedLead.work_experience && selectedLead.work_experience.length > 0 && (
-                    <div className="space-y-3">
-                      <span className="text-xs text-zinc-500 uppercase tracking-wide">Work Experience</span>
-                      <div className="space-y-3">
-                        {selectedLead.work_experience.map((exp, idx) => (
-                          <div key={`exp-${idx}`} className="bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <h4 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{exp.role}</h4>
-                                <p className="text-sm text-zinc-600 dark:text-zinc-400">{exp.company}</p>
+                  {selectedLead?.work_experience && selectedLead.work_experience.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-900 mb-3">Experience</h3>
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <div className="space-y-3">
+                          {selectedLead.work_experience.slice(0, 3).map((exp, idx) => (
+                            <div key={`exp-${idx}`} className={idx > 0 ? 'pt-3 border-t border-gray-200' : ''}>
+                              <div className="flex items-start justify-between mb-1">
+                                <div className="flex-1">
+                                  <h4 className="text-sm font-medium text-gray-900">{exp.role}</h4>
+                                  <p className="text-sm text-gray-600">{exp.company}</p>
+                                </div>
+                                {exp.is_current && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                                    Current
+                                  </span>
+                                )}
                               </div>
-                              {exp.is_current && (
-                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-600/20 text-green-400">
-                                  Current
-                                </span>
+                              <p className="text-xs text-gray-500">
+                                {exp.start_date} - {exp.end_date || 'Present'}
+                              </p>
+                              {exp.description && (
+                                <p className="mt-1 text-xs text-gray-600 leading-relaxed">{exp.description}</p>
                               )}
                             </div>
-                            <p className="mt-1 text-xs text-zinc-500">
-                              {exp.start_date} - {exp.end_date || 'Present'}
-                            </p>
-                            {exp.description && (
-                              <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">{exp.description}</p>
-                            )}
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
 
                   {/* Education */}
-                  {selectedLead.education && selectedLead.education.length > 0 && (
-                    <div className="space-y-3">
-                      <span className="text-xs text-zinc-500 uppercase tracking-wide">Education</span>
-                      <div className="space-y-3">
-                        {selectedLead.education.map((edu, idx) => (
-                          <div key={`edu-${idx}`} className="bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg">
-                            <h4 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{edu.institution}</h4>
-                            <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                              {edu.degree} {edu.field_of_study && `in ${edu.field_of_study}`}
-                            </p>
-                            {(edu.start_year || edu.end_year) && (
-                              <p className="mt-1 text-xs text-zinc-500">
-                                {edu.start_year} - {edu.end_year}
+                  {selectedLead?.education && selectedLead.education.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-medium text-gray-900 mb-3">Education</h3>
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <div className="space-y-3">
+                          {selectedLead.education.map((edu, idx) => (
+                            <div key={`edu-${idx}`} className={idx > 0 ? 'pt-3 border-t border-gray-200' : ''}>
+                              <h4 className="text-sm font-medium text-gray-900">{edu.institution}</h4>
+                              <p className="text-sm text-gray-600">
+                                {edu.degree} {edu.field_of_study && `in ${edu.field_of_study}`}
                               </p>
-                            )}
-                          </div>
-                        ))}
+                              {(edu.start_year || edu.end_year) && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {edu.start_year} - {edu.end_year}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Engagement Details */}
-                  <div className="space-y-3">
-                    <span className="text-xs text-zinc-500 uppercase tracking-wide">Engagement Details</span>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg">
-                        <p className="text-xs text-zinc-500 mb-1">Session Duration</p>
-                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                          {selectedLead?.sessionDuration ? `${selectedLead.sessionDuration}s` : 'Unknown'}
-                        </p>
+                  {/* Engagement Metrics */}
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-900 mb-3">Engagement Metrics</h3>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Session Duration</p>
+                          <p className="text-sm font-medium text-gray-900 mt-0.5">
+                            {selectedLead?.sessionDuration ? `${selectedLead.sessionDuration}s` : 'Unknown'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Pages Viewed</p>
+                          <p className="text-sm font-medium text-gray-900 mt-0.5">
+                            {selectedLead?.pagesViewed || 'Unknown'}
+                          </p>
+                        </div>
                       </div>
-                      <div className="bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg">
-                        <p className="text-xs text-zinc-500 mb-1">Pages Viewed</p>
-                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                          {selectedLead?.pagesViewed || 'Unknown'}
-                        </p>
-                      </div>
-                      <div className="bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg">
-                        <p className="text-xs text-zinc-500 mb-1">First Seen</p>
-                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                          {selectedLead ? new Date(selectedLead.timestamp).toLocaleDateString() : ''}
-                        </p>
-                      </div>
-                      <div className="bg-zinc-50 dark:bg-zinc-900/50 p-3 rounded-lg">
-                        <p className="text-xs text-zinc-500 mb-1">Time</p>
-                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                          {selectedLead ? new Date(selectedLead.timestamp).toLocaleTimeString() : ''}
-                        </p>
+                      <div className="grid grid-cols-2 gap-4 pt-3 mt-3 border-t border-gray-200">
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">First Seen</p>
+                          <p className="text-sm font-medium text-gray-900 mt-0.5">
+                            {selectedLead ? new Date(selectedLead.timestamp).toLocaleDateString() : ''}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">Time</p>
+                          <p className="text-sm font-medium text-gray-900 mt-0.5">
+                            {selectedLead ? new Date(selectedLead.timestamp).toLocaleTimeString() : ''}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1400,16 +1444,7 @@ export default function LeadsPage() {
                 </div>
               </div>
 
-              {/* Footer */}
-              <div className="p-6 border-t border-zinc-200 dark:border-zinc-800/50">
-                <Button
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => setSelectedLead(null)}
-                >
-                  Close
-                </Button>
-              </div>
+
             </motion.div>
           </>
         )}

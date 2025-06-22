@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useWorkspace } from "@/contexts/WorkspaceContext"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { BarChart3, FileText, Bot, HelpCircle, Rocket, ArrowRight, Activity, Settings } from "lucide-react"
+import { BarChart3, FileText, Bot, HelpCircle, Rocket, ArrowRight, Activity, Settings, Users, UserCircle } from "lucide-react"
 import Link from "next/link"
 import { ConnectAnalyticsDialog } from "./connect-analytics-dialog"
 
@@ -156,34 +156,18 @@ export function WelcomeCard() {
   // Generate welcome message based on crawler activity
   const getWelcomeMessage = (stats: CrawlerStats | null) => {
     if (!stats || stats.total_visits === 0) {
-      return "Ready to track AI crawler activity? Your attribution insights will appear here once crawlers visit your site."
+      return "You've got excellent crawler traction, keep posting great content."
     }
     
-    if (stats.total_visits < 10) {
-      return "Great start! You're seeing initial AI crawler activity. More data will improve your attribution insights."
-    } else if (stats.total_visits < 50) {
-      return "Building momentum! Your site is attracting regular AI crawler attention across multiple platforms."
-    } else if (stats.total_visits < 200) {
-      return "Strong AI crawler engagement! You're getting consistent attention from various AI platforms."
-    } else {
-      return "Excellent AI crawler attribution! Your content is being heavily referenced by AI systems."
-    }
+    return "You've got excellent crawler traction, keep posting great content."
   }
 
   // Get user's display name
   const getDisplayName = () => {
     if (loading) return "..."
-    return profile?.first_name || "there"
-  }
-
-  // Format the last crawl date
-  const getLastCrawlDate = () => {
-    if (!crawlerStats?.last_crawl_date) return null
-    return new Date(crawlerStats.last_crawl_date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    })
+    const fullName = profile?.first_name || "there"
+    // Get only the first name (before any space)
+    return fullName.split(' ')[0]
   }
 
   // Get favicon for a company
@@ -226,112 +210,46 @@ export function WelcomeCard() {
   const quickActions = [
     { 
       icon: Activity, 
-      label: "Crawler Attribution", 
-      desc: crawlerStats?.total_visits ? "View detailed attribution insights" : "Monitor AI crawler activity", 
+      label: "View Crawler Attribution", 
       href: "/dashboard/attribution",
-      primary: true
     },
     { 
-      icon: BarChart3, 
-      label: "Analytics Dashboard", 
-      desc: "View crawler trends and stats", 
-      href: "/dashboard",
-      primary: false
+      icon: Users, 
+      label: "View your leads", 
+      href: "/dashboard/leads",
     },
     { 
-      icon: Settings, 
-      label: "Account Settings", 
-      desc: "Manage billing, workspaces & preferences", 
-      href: "/settings",
-      primary: false
+      icon: UserCircle, 
+      label: "Get Help/Support", 
+      href: "mailto:sam@split.dev",
     },
   ]
 
   return (
-    <Card className="bg-transparent border-gray-200 dark:border-[#1a1a1a] h-full">
-      <CardContent className="p-8 h-full">
+    <Card className="bg-white border border-gray-200 shadow-sm h-full">
+      <CardContent className="p-6 h-full flex flex-col">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={controls}
-          className="h-full flex flex-col"
+          className="h-full flex flex-col justify-between"
         >
           {/* Welcome Section */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-medium text-black dark:text-white mb-3 font-mono tracking-tight">
-              Welcome back, {getDisplayName()}
+          <div className="mb-4 sm:mb-6">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-light text-gray-900 mb-2 sm:mb-3">
+              Welcome back, <span className="font-['Instrument_Serif'] italic tracking-tight">{getDisplayName()}</span>
             </h1>
-            <p className="text-gray-600 dark:text-[#888] text-lg leading-relaxed mb-4 max-w-2xl">
+            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
               {getWelcomeMessage(crawlerStats)}
             </p>
-            
-            {/* Crawler Stats Badge or Empty State */}
-            <div className="flex items-center gap-3 mb-6">
-              {loadingStats ? (
-                <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#111] border border-gray-200 dark:border-[#1a1a1a] rounded-sm px-3 py-2">
-                  <div className="w-2 h-2 bg-gray-300 dark:bg-[#333] rounded-full animate-pulse"></div>
-                  <span className="text-sm text-gray-500 dark:text-[#666] font-mono tracking-tight">
-                    Loading activity...
-                  </span>
-                </div>
-              ) : crawlerStats && crawlerStats.total_visits > 0 ? (
-                <>
-                  {/* Latest crawl in card */}
-                  {latestCrawl && (
-                    <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#111] border border-gray-200 dark:border-[#1a1a1a] rounded-sm px-3 py-2">
-                      <img 
-                        src={getFaviconForCompany(latestCrawl.company)}
-                        alt={latestCrawl.company}
-                        width={16}
-                        height={16}
-                        className="w-4 h-4 object-contain"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement
-                          target.style.display = 'none'
-                          const fallback = target.nextElementSibling as HTMLElement
-                          if (fallback) fallback.style.display = 'block'
-                        }}
-                      />
-                      <Bot className="w-4 h-4 text-gray-500 dark:text-[#666] hidden" />
-                      <span className="text-sm text-black dark:text-white font-mono tracking-tight">
-                        {latestCrawl.crawler_name}
-                      </span>
-                      <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">
-                        • {getTimeSinceLastCrawl(latestCrawl.timestamp)}
-                      </span>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#111] border border-gray-300 dark:border-[#1a1a1a] border-dashed rounded-sm px-3 py-2">
-                    <Bot className="w-4 h-4 text-gray-500 dark:text-[#666]" />
-                    <span className="text-sm text-gray-500 dark:text-[#666] font-mono tracking-tight">
-                      No crawler activity yet
-                    </span>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="bg-transparent border-gray-300 dark:border-[#333] text-gray-600 dark:text-[#888] hover:text-black dark:hover:text-white hover:border-gray-400 dark:hover:border-[#444] h-8 px-3 text-xs font-mono tracking-tight"
-                    onClick={() => setShowConnectDialog(true)}
-                  >
-                    <div className="flex items-center gap-1">
-                      Set Up Tracking
-                      <ArrowRight className="w-3 h-3" />
-                    </div>
-                  </Button>
-                </>
-              )}
-            </div>
           </div>
 
           {/* Quick Actions */}
-          <div className="flex-1">
-            <div className="mb-4">
-              <h2 className="text-sm text-gray-500 dark:text-[#666] font-mono tracking-tight uppercase">Quick Actions</h2>
+          <div className="flex-shrink-0">
+            <div className="mb-1 sm:mb-2">
+              <h2 className="text-xs text-gray-500 uppercase tracking-wider font-mono">QUICK ACTIONS</h2>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1 sm:space-y-2">
               {quickActions.map((action, index) => (
                 <motion.div
                   key={action.label}
@@ -341,59 +259,22 @@ export function WelcomeCard() {
                 >
                   <Link
                     href={action.href}
-                    className={`group block p-4 bg-white dark:bg-[#111] border border-gray-200 dark:border-[#1a1a1a] hover:border-gray-300 dark:hover:border-[#333] hover:bg-gray-50 dark:hover:bg-[#151515] transition-all duration-200 rounded-sm ${
-                      action.primary ? 'md:col-span-2' : ''
-                    }`}
+                    className="group block py-1.5 sm:py-2 pl-2 sm:pl-3 pr-3 sm:pr-4 bg-transparent border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
                   >
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-gray-100 dark:bg-[#1a1a1a] rounded-sm flex items-center justify-center group-hover:bg-gray-200 dark:group-hover:bg-[#222] transition-colors">
-                        <action.icon className="w-4 h-4 text-gray-500 dark:text-[#666] group-hover:text-black dark:group-hover:text-white transition-colors" />
+                    <div className="flex items-center gap-2 sm:gap-4">
+                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        <action.icon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 group-hover:text-gray-700 transition-colors" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-medium text-black dark:text-white group-hover:text-black dark:group-hover:text-white transition-colors font-mono tracking-tight mb-1">
+                        <h3 className="text-xs sm:text-sm text-gray-600 group-hover:text-gray-700 transition-colors font-mono tracking-tight truncate">
                           {action.label}
                         </h3>
-                        <p className="text-xs text-gray-500 dark:text-[#666] group-hover:text-gray-600 dark:group-hover:text-[#888] transition-colors">
-                          {action.desc}
-                        </p>
                       </div>
-                      <ArrowRight className="w-3 h-3 text-gray-400 dark:text-[#444] group-hover:text-gray-500 dark:group-hover:text-[#666] transition-colors mt-0.5" />
+                      <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 group-hover:text-gray-500 transition-colors flex-shrink-0" />
                     </div>
                   </Link>
                 </motion.div>
               ))}
-            </div>
-          </div>
-
-          {/* Footer Actions */}
-          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-[#1a1a1a]">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="relative group">
-                  <Link 
-                    href="/changelog" 
-                    className="text-xs text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white transition-colors font-mono tracking-tight flex items-center gap-1 cursor-not-allowed"
-                  >
-                    <Rocket className="w-3 h-3" />
-                    What's New
-                  </Link>
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                    <div className="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs px-2 py-1 rounded-sm font-mono tracking-tight whitespace-nowrap shadow-lg border border-gray-700 dark:border-gray-300">
-                      Changelog coming soon!
-                    </div>
-                  </div>
-                </div>
-                <a 
-                  href="mailto:sam@split.dev"
-                  className="text-xs text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white transition-colors font-mono tracking-tight flex items-center gap-1"
-                >
-                  <HelpCircle className="w-3 h-3" />
-                  Get Support
-                </a>
-              </div>
-              <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">
-                {crawlerStats?.total_visits ? `${crawlerStats.total_visits} AI crawler visits (24h)` : 'Ready to track AI crawlers'}
-              </div>
             </div>
           </div>
         </motion.div>

@@ -169,7 +169,7 @@ export default function AttributionByPagePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c] text-white">
+    <div className="min-h-screen bg-gray-50 text-gray-900">
       <div id="page-list-export" className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
         <motion.div
@@ -180,17 +180,17 @@ export default function AttributionByPagePage() {
           <div className="flex items-center gap-2 mb-4">
             <Link 
               href="/dashboard/attribution" 
-              className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors"
+              className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span className="text-sm">Back to Overview</span>
+              <span className="text-sm font-medium">Back to Overview</span>
             </Link>
           </div>
           
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-semibold text-white mb-2">Crawls by Page</h1>
-              <p className="text-zinc-400">Most crawled pages ({timeframe.toLowerCase()})</p>
+              <h1 className="text-3xl font-semibold text-gray-900 mb-2">Crawls by Page</h1>
+              <p className="text-gray-600">Most crawled pages ({timeframe.toLowerCase()})</p>
             </div>
             <div className="flex items-center gap-4">
               {!userPlanLoading && (
@@ -199,8 +199,8 @@ export default function AttributionByPagePage() {
                   title=""
                   timeframe={timeframe}
                   onTimeframeChange={setTimeframe}
-                  titleColor="text-white"
-                  selectorColor="text-zinc-400"
+                  titleColor="text-gray-900"
+                  selectorColor="text-gray-600"
                   userPlan={userPlan}
                 />
               )}
@@ -214,7 +214,7 @@ export default function AttributionByPagePage() {
 
         {switching ? (
           <div className="flex items-center justify-center h-96">
-            <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
+            <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
           </div>
         ) : isLoading ? (
           <TableSkeleton 
@@ -224,19 +224,19 @@ export default function AttributionByPagePage() {
               { span: 3, align: 'center' },
               { span: 3, align: 'right' }
             ]}
-            showExpandableRows={true}
+            showExpandableRows={false}
           />
         ) : (
-          <div className="bg-zinc-900/20 border border-zinc-800/50 rounded-lg overflow-hidden">
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
             {/* Table Header */}
-            <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-zinc-900/30 border-b border-zinc-800/50 text-xs font-medium text-zinc-400 uppercase tracking-wider">
+            <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-600 uppercase tracking-wider">
               <div className="col-span-6">Page URL</div>
               <div className="col-span-3 text-center">Total Visits</div>
               <div className="col-span-3 text-right">Last Visit</div>
             </div>
 
             {/* Table Body */}
-            <div className="divide-y divide-zinc-800/30">
+            <div className="divide-y divide-gray-200">
               {pages.map((page: CrawledPage, index: number) => (
                 <motion.div
                   key={page.path}
@@ -246,22 +246,24 @@ export default function AttributionByPagePage() {
                 >
                   <Link 
                     href={`/dashboard/attribution/page/${encodeURIComponent(page.path)}`}
-                    className="grid grid-cols-12 gap-4 px-4 py-4 hover:bg-zinc-900/20 cursor-pointer transition-colors block"
+                    className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors block"
                   >
                     <div className="col-span-6 flex items-center gap-3">
-                      <span className="text-lg">{getPathIcon(page.path)}</span>
+                      <div className="flex items-center justify-center w-8 h-8 bg-gray-50 border border-gray-200 rounded-lg">
+                        <span className="text-sm">{getPathIcon(page.path)}</span>
+                      </div>
                       <div className="min-w-0 flex-1">
-                        <div className="text-white text-sm font-mono truncate hover:text-blue-400 transition-colors">
+                        <div className="text-gray-900 text-sm font-mono truncate hover:text-blue-600 transition-colors font-medium">
                           {page.path}
                         </div>
-                        <div className="text-zinc-500 text-xs">{page.bots.length} crawler{page.bots.length !== 1 ? 's' : ''}</div>
+                        <div className="text-gray-500 text-xs">{page.bots.length} crawler{page.bots.length !== 1 ? 's' : ''}</div>
                       </div>
                     </div>
                     <div className="col-span-3 text-center">
-                      <div className="text-white text-sm font-mono">{page.totalVisits.toLocaleString()}</div>
+                      <div className="text-gray-900 text-sm font-mono font-medium">{page.totalVisits.toLocaleString()}</div>
                     </div>
                     <div className="col-span-3 text-right">
-                      <div className="text-zinc-400 text-sm">{formatRelativeTime(page.lastVisit)}</div>
+                      <div className="text-gray-600 text-sm">{formatRelativeTime(page.lastVisit)}</div>
                     </div>
                   </Link>
                 </motion.div>
@@ -270,7 +272,7 @@ export default function AttributionByPagePage() {
 
             {pages.length === 0 && !isLoading && (
               <div className="text-center py-12">
-                <p className="text-zinc-500 text-sm">No pages found for this timeframe.</p>
+                <p className="text-gray-500 text-sm">No pages found for this timeframe.</p>
               </div>
             )}
           </div>

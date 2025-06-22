@@ -81,7 +81,7 @@ export function TimeframeSelector({
         </DropdownMenuTrigger>
         <DropdownMenuContent 
           className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333333] text-black dark:text-white rounded-none mt-1"
-          align="start"
+          align="end"
           alignOffset={0}
         >
           {ALL_TIMEFRAMES.map((option) => {

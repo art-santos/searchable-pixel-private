@@ -337,33 +337,27 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
         }
       `}</style>
       <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-xl font-medium text-black dark:text-white mb-2">General Settings</h2>
-        <p className="text-sm text-gray-500 dark:text-[#666]">
-          Manage your profile and workspace settings
-        </p>
-      </div>
+
 
       {/* Sub-tabs */}
-      <div className="border-b border-gray-200 dark:border-[#1a1a1a]">
+      <div className="border-b border-gray-200">
         <nav className="flex space-x-8">
           <button
             onClick={() => setGeneralTab('profile')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors font-mono tracking-tight ${
+            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
               generalTab === 'profile'
-                ? 'border-black dark:border-white text-black dark:text-white'
-                : 'border-transparent text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white'
+                ? 'border-[#191919] text-[#191919]'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
             }`}
           >
             Profile
           </button>
           <button
             onClick={() => setGeneralTab('workspace')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors font-mono tracking-tight ${
+            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
               generalTab === 'workspace'
-                ? 'border-black dark:border-white text-black dark:text-white'
-                : 'border-transparent text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white'
+                ? 'border-[#191919] text-[#191919]'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
             }`}
           >
             Workspace
@@ -375,13 +369,13 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
       {generalTab === 'profile' && (
         <div className="space-y-8">
           <div>
-            <h3 className="text-lg font-medium text-black dark:text-white mb-6 font-mono tracking-tight">Personal Information</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-6">Personal Information</h3>
         
         {/* Profile Picture */}
-            <div className="flex items-center justify-between py-4 border-b border-gray-200 dark:border-[#1a1a1a]">
+            <div className="flex items-center justify-between py-4 border-b border-gray-200">
               <div>
-                <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Profile Picture</div>
-                <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight mt-1">
+                <div className="font-medium text-gray-900 text-sm">Profile Picture</div>
+                <div className="text-xs text-gray-600 mt-1">
                   JPG, PNG or GIF. Max size 5MB.
                 </div>
               </div>
@@ -401,10 +395,10 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
         </div>
 
             {/* Name */}
-            <div className="flex items-center justify-between py-4 border-b border-gray-200 dark:border-[#1a1a1a]">
+            <div className="flex items-center justify-between py-4 border-b border-gray-200">
           <div>
-                <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Full Name</div>
-                <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight mt-1">
+                <div className="font-medium text-gray-900 text-sm">Full Name</div>
+                <div className="text-xs text-gray-600 mt-1">
                   Your display name across the platform
                 </div>
               </div>
@@ -417,17 +411,17 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
                 first_name: e.target.value 
               }))}
               placeholder="Enter your name"
-                    className="bg-white dark:bg-[#0a0a0a] border-gray-300 dark:border-[#2a2a2a] text-black dark:text-white h-8 font-mono tracking-tight text-sm"
+                    className="bg-white border-gray-300 text-gray-900 h-8 text-sm"
             />
                 </div>
               </div>
           </div>
           
             {/* Email */}
-            <div className="flex items-center justify-between py-4 border-b border-gray-200 dark:border-[#1a1a1a]">
+            <div className="flex items-center justify-between py-4 border-b border-gray-200">
           <div>
-                <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Email Address</div>
-                <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight mt-1">
+                <div className="font-medium text-gray-900 text-sm">Email Address</div>
+                <div className="text-xs text-gray-600 mt-1">
                   Contact support to change your email address
                 </div>
               </div>
@@ -437,17 +431,17 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
               value={user?.email || ''}
               type="email"
               disabled
-                    className="bg-gray-50 dark:bg-[#0a0a0a] border-gray-300 dark:border-[#2a2a2a] text-gray-400 dark:text-[#666] h-8 cursor-not-allowed font-mono tracking-tight text-sm"
+                    className="bg-gray-50 border-gray-300 text-gray-500 h-8 cursor-not-allowed text-sm"
             />
           </div>
         </div>
       </div>
 
             {/* Password */}
-            <div className="flex items-center justify-between py-4 border-b border-gray-200 dark:border-[#1a1a1a]">
+            <div className="flex items-center justify-between py-4 border-b border-gray-200">
               <div>
-                <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Password</div>
-                <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight mt-1">
+                <div className="font-medium text-gray-900 text-sm">Password</div>
+                <div className="text-xs text-gray-600 mt-1">
                   Reset your password via email
                 </div>
               </div>
@@ -456,7 +450,7 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
                   <Button
                     onClick={() => router.push(`/forgot-password?email=${encodeURIComponent(user?.email || '')}`)}
                     variant="outline"
-                    className="bg-white dark:bg-[#0a0a0a] border-gray-300 dark:border-[#2a2a2a] text-black dark:text-white hover:bg-gray-50 dark:hover:bg-[#111] h-8 font-mono tracking-tight text-sm px-4"
+                    className="bg-white border-gray-300 text-gray-900 hover:bg-gray-50 h-8 text-sm px-4"
                   >
                     Reset Password
                   </Button>
@@ -468,29 +462,29 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
           {/* Account Overview Section */}
           <div>
             {/* Account Info */}
-            <div className="bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#1a1a1a] rounded-lg p-4 mb-6">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Account Details</div>
-                  <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight mt-1">
+                  <div className="font-medium text-gray-900 text-sm">Account Details</div>
+                  <div className="text-xs text-gray-600 mt-1">
                     {profile?.first_name || user?.email?.split('@')[0] || 'User'} • {user?.email}
                   </div>
                 </div>
 
                 <div>
-                  <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Current Plan</div>
+                  <div className="font-medium text-gray-900 text-sm">Current Plan</div>
                   <div className="flex items-center gap-2 mt-1">
                     {subscriptionLoading ? (
-                      <div className="h-6 w-16 bg-gray-200 dark:bg-[#1a1a1a] rounded relative overflow-hidden">
+                      <div className="h-6 w-16 bg-gray-200 rounded relative overflow-hidden">
                         <div 
-                          className="absolute inset-0 bg-gradient-to-r from-transparent via-black/10 dark:via-white/10 to-transparent"
+                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
                           style={{
                             animation: 'shimmer 1.5s ease-in-out infinite'
                           }}
                         ></div>
                       </div>
                     ) : (
-                      <span className={`text-xs px-2 py-1 rounded-sm border font-mono tracking-tight ${planInfo.bgColor} ${planInfo.color} ${planInfo.borderColor}`}>
+                      <span className={`text-xs px-2 py-1 rounded-sm border ${planInfo.bgColor} ${planInfo.color} ${planInfo.borderColor}`}>
                         {planInfo.name}
                       </span>
                     )}
@@ -498,8 +492,8 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
                 </div>
 
                 <div>
-                  <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Member Since</div>
-                  <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight mt-1">
+                  <div className="font-medium text-gray-900 text-sm">Member Since</div>
+                  <div className="text-xs text-gray-600 mt-1">
                     {membershipDate || 'Unknown'}
                   </div>
                 </div>
@@ -507,10 +501,10 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
             </div>
 
             {/* Logout */}
-            <div className="flex items-center justify-between py-4 border-b border-gray-200 dark:border-[#1a1a1a]">
+            <div className="flex items-center justify-between py-4 border-b border-gray-200">
               <div>
-                <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">End Session</div>
-                <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight mt-1">
+                <div className="font-medium text-gray-900 text-sm">End Session</div>
+                <div className="text-xs text-gray-600 mt-1">
                   Sign out of your account on this device
                 </div>
               </div>
@@ -518,7 +512,7 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
                 <Button 
                   onClick={handleLogout}
                   disabled={isLoading}
-                  className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 hover:text-red-300 font-mono tracking-tight text-sm h-8 px-4 flex items-center gap-2"
+                  className="bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 hover:text-red-700 text-sm h-8 px-4 flex items-center gap-2"
                 >
                   {isLoading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -539,40 +533,40 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
       {generalTab === 'workspace' && (
         <div className="space-y-8">
           <div>
-            <h3 className="text-lg font-medium text-black dark:text-white mb-6 font-mono tracking-tight">Current Workspace</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-6">Current Workspace</h3>
         
         {currentWorkspace ? (
           <>
                 {/* Workspace Overview */}
-                <div className="bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#1a1a1a] rounded-lg p-4 mb-6">
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
-                      <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Workspace Type</div>
+                      <div className="font-medium text-gray-900 text-sm">Workspace Type</div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-xs px-2 py-1 rounded-sm border font-mono tracking-tight ${
+                        <span className={`text-xs px-2 py-1 rounded-sm border ${
                           currentWorkspace.is_primary 
-                            ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
-                            : 'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                            ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+                            : 'bg-gray-500/10 text-gray-600 border-gray-500/20'
                         }`}>
                           {currentWorkspace.is_primary ? 'Primary' : 'Additional'}
                         </span>
                         {currentWorkspace.is_primary && (
-                          <Shield className="w-3 h-3 text-blue-400" />
+                          <Shield className="w-3 h-3 text-blue-600" />
                         )}
                       </div>
                     </div>
                     
                     <div>
-                      <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Plan Allocation</div>
-                      <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight mt-1">
+                      <div className="font-medium text-gray-900 text-sm">Plan Allocation</div>
+                      <div className="text-xs text-gray-600 mt-1">
                         {workspaceLimits.included > 0 ? `${Math.min(1, workspaceLimits.included)}/` : '0/'}{workspaceLimits.included} included
                         {workspaceLimits.total - workspaceLimits.included > 0 && ` • +${workspaceLimits.total - workspaceLimits.included} extra`}
                       </div>
                     </div>
                     
                     <div>
-                      <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Protection Status</div>
-                      <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight mt-1">
+                      <div className="font-medium text-gray-900 text-sm">Protection Status</div>
+                      <div className="text-xs text-gray-600 mt-1">
                         {currentWorkspace.is_primary ? 'Cannot be deleted' : 'Can be managed'}
                       </div>
                     </div>
@@ -580,10 +574,10 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
                 </div>
 
                 {/* Workspace Name */}
-                <div className="flex items-center justify-between py-4 border-b border-gray-200 dark:border-[#1a1a1a]">
+                <div className="flex items-center justify-between py-4 border-b border-gray-200">
             <div>
-                    <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Workspace Name</div>
-                    <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight mt-1">
+                    <div className="font-medium text-gray-900 text-sm">Workspace Name</div>
+                    <div className="text-xs text-gray-600 mt-1">
                       Display name for your workspace
                     </div>
                   </div>
@@ -593,20 +587,20 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
                 value={workspaceSettings.name}
                 onChange={(e) => setWorkspaceSettings(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="My Company"
-                        className="bg-white dark:bg-[#0a0a0a] border-gray-300 dark:border-[#2a2a2a] text-black dark:text-white h-8 font-mono tracking-tight text-sm"
+                        className="bg-white border-gray-300 text-gray-900 h-8 text-sm"
               />
                     </div>
                   </div>
             </div>
             
                 {/* Primary Domain */}
-                <div className="flex items-center justify-between py-4 border-b border-gray-200 dark:border-[#1a1a1a]">
+                <div className="flex items-center justify-between py-4 border-b border-gray-200">
             <div>
-                    <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Primary Domain</div>
-                    <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight mt-1">
+                    <div className="font-medium text-gray-900 text-sm">Primary Domain</div>
+                    <div className="text-xs text-gray-600 mt-1">
                       Domain we'll monitor for AI visibility
                       {domainChangeInfo && !domainChangeInfo.canChange && (
-                        <span className="block text-orange-400 mt-1">
+                        <span className="block text-orange-600 mt-1">
                           ⚠️ Domain can be changed in {domainChangeInfo.daysRemaining} day{domainChangeInfo.daysRemaining !== 1 ? 's' : ''}
                         </span>
                       )}
@@ -618,10 +612,10 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
                 value={workspaceSettings.domain}
                 onChange={(e) => setWorkspaceSettings(prev => ({ ...prev, domain: e.target.value }))}
                 placeholder="example.com"
-                        className="bg-white dark:bg-[#0a0a0a] border-gray-300 dark:border-[#2a2a2a] text-black dark:text-white h-8 font-mono tracking-tight text-sm"
+                        className="bg-white border-gray-300 text-gray-900 h-8 text-sm"
               />
               {domainChangeInfo && !domainChangeInfo.canChange && workspaceSettings.domain !== currentWorkspace.domain && (
-                <div className="text-xs text-orange-400 mt-1 font-mono">
+                <div className="text-xs text-orange-600 mt-1">
                   Domain changes limited to once every 7 days
                 </div>
               )}
@@ -630,23 +624,21 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
             </div>
           </>
         ) : (
-              <div className="bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#1a1a1a] rounded-lg p-4">
-                <p className="text-gray-500 dark:text-[#666] text-sm font-mono tracking-tight">Loading workspace settings...</p>
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <p className="text-gray-600 text-sm">Loading workspace settings...</p>
           </div>
         )}
           </div>
         </div>
       )}
 
-
-
       {/* Save Changes Button - Appears when there are unsaved changes */}
       {hasUnsavedChanges() && (
-        <div className="sticky bottom-0 bg-white dark:bg-[#0c0c0c] border-t border-gray-200 dark:border-[#1a1a1a] p-4 -mx-4">
+        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 -mx-4">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm text-black dark:text-white font-mono tracking-tight">Unsaved Changes</div>
-              <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">You have unsaved changes that will be lost if you navigate away.</div>
+              <div className="text-sm text-gray-900">Unsaved Changes</div>
+              <div className="text-xs text-gray-600">You have unsaved changes that will be lost if you navigate away.</div>
             </div>
             <div className="flex items-center gap-3">
               <Button 
@@ -655,14 +647,14 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
                   setWorkspaceSettings(originalWorkspaceSettings)
                 }}
                 variant="outline"
-                className="border-gray-300 dark:border-[#333] hover:border-gray-400 dark:hover:border-[#444] text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white h-8 px-4 text-sm font-mono tracking-tight"
+                className="border-gray-300 hover:border-gray-400 text-gray-600 hover:text-gray-900 h-8 px-4 text-sm"
               >
                 Cancel
               </Button>
               <Button 
                 onClick={handleSaveSettings}
                 disabled={isLoading}
-                className="bg-gray-100 dark:bg-[#1a1a1a] hover:bg-gray-200 dark:hover:bg-[#333] border border-gray-300 dark:border-[#333] hover:border-gray-400 dark:hover:border-[#444] text-black dark:text-white font-mono tracking-tight text-sm h-8 px-4"
+                className="bg-[#191919] hover:bg-black border border-[#191919] hover:border-black text-white text-sm h-8 px-4"
               >
                 {isLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -678,8 +670,8 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
       {/* Success Toast */}
       {showSuccessToast && (
         <div className="fixed bottom-6 right-6 z-50">
-          <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#1a1a1a] rounded-lg p-4 flex items-center gap-3 shadow-lg">
-            <span className="text-black dark:text-white text-sm font-medium font-mono tracking-tight">{toastMessage}</span>
+          <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-3 shadow-lg">
+            <span className="text-gray-900 text-sm font-medium">{toastMessage}</span>
           </div>
         </div>
       )}

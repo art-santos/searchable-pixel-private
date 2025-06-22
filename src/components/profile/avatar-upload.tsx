@@ -148,12 +148,12 @@ export function AvatarUpload({
     <div className="flex items-center gap-4">
       {/* Avatar with upload overlay */}
       <div className="relative group">
-        <Avatar className={`${sizeClasses[size]} border-2 border-[#333] transition-all`}>
+        <Avatar className={`${sizeClasses[size]} border-2 border-gray-200 transition-all`}>
           <AvatarImage 
             src={profilePictureUrl || undefined} 
             alt={`${firstName || 'User'}'s profile picture`}
           />
-          <AvatarFallback className="bg-[#1a1a1a] text-white text-lg font-medium">
+          <AvatarFallback className="bg-gray-100 text-gray-700 text-lg font-medium">
             {initials}
           </AvatarFallback>
         </Avatar>
@@ -194,7 +194,7 @@ export function AvatarUpload({
           size="sm"
           onClick={() => document.getElementById('avatar-upload')?.click()}
           disabled={isUploading}
-          className="bg-[#0a0a0a] border-[#333] text-white hover:bg-[#1a1a1a] hover:text-white h-8"
+          className="bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900 h-8"
         >
           {isUploading ? (
             <Loader2 className="h-3 w-3 animate-spin mr-2" />
@@ -210,7 +210,7 @@ export function AvatarUpload({
             size="sm"
             onClick={handleDelete}
             disabled={isDeleting}
-            className="bg-[#0a0a0a] border-[#333] text-red-400 hover:bg-red-500/10 hover:border-red-500/50 h-8"
+            className="bg-gray-50 border-gray-300 text-red-600 hover:bg-red-50 hover:border-red-300 h-8"
           >
             {isDeleting ? (
               <Loader2 className="h-3 w-3 animate-spin mr-2" />

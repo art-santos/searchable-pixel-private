@@ -137,83 +137,115 @@ export default function SettingsPage() {
   ]
 
   return (
-    <main className="min-h-full bg-white dark:bg-[#0c0c0c]">
-      <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8">
-        {/* Header */}
-        <div className="mb-6 md:mb-8">
-          <h1 className="text-xl md:text-2xl font-medium text-black dark:text-white mb-2">Settings</h1>
-          <p className="text-gray-500 dark:text-[#666] text-sm">Manage your workspace and integrations</p>
-        </div>
-        
-        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-          {/* Sidebar Navigation */}
-          <nav className="w-full lg:w-48 flex-shrink-0">
-            <ul className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
-              {sections.map((section) => {
-                const Icon = section.icon
-                return (
-                  <li key={section.id} className="flex-shrink-0">
-                    <button
-                      onClick={() => setActiveSection(section.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors whitespace-nowrap ${
-                        activeSection === section.id
-                          ? 'bg-gray-100 dark:bg-[#1a1a1a] text-black dark:text-white'
-                          : 'text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white hover:bg-gray-50 dark:hover:bg-[#0a0a0a]'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      <span className="lg:inline">{section.label}</span>
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          </nav>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto">
+        <div className="max-w-5xl mx-auto px-6 py-8">
+          {/* Header */}
+          <div className="bg-[#191919] rounded-lg px-6 py-6 mb-8">
+            <h1 className="text-2xl font-semibold text-white tracking-tight">Settings</h1>
+            <p className="text-gray-300 mt-1">Manage your workspace and integrations</p>
+          </div>
+          <div className="flex gap-8">
+            {/* Sidebar Navigation */}
+            <nav className="w-64 flex-shrink-0">
+              <div className="bg-white rounded-lg border border-gray-200 p-2">
+                <ul className="space-y-1">
+                  {sections.map((section) => {
+                    const Icon = section.icon
+                    return (
+                      <li key={section.id}>
+                        <button
+                          onClick={() => setActiveSection(section.id)}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all rounded-md ${
+                            activeSection === section.id
+                              ? 'bg-gray-100 text-gray-900'
+                              : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                          <span>{section.label}</span>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            </nav>
 
-          {/* Content Area */}
-          <div className="flex-1 min-w-0">
-            {/* Notification Banners */}
-            {usageData?.notifications && usageData.notifications.length > 0 && (
-              <NotificationBannerList
-                notifications={usageData.notifications}
-                onDismiss={handleDismissNotification}
-                className="mb-6"
-              />
-            )}
-            
-            <motion.div
-              key={activeSection}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              {/* General Settings */}
-              {activeSection === 'general' && (
-                <GeneralSettings 
-                  usageData={usageData}
-                  onRefreshUsage={fetchUsageData}
-                />
+            {/* Content Area */}
+            <div className="flex-1 min-w-0">
+              {/* Notification Banners */}
+              {usageData?.notifications && usageData.notifications.length > 0 && (
+                <div className="mb-6">
+                  <NotificationBannerList
+                    notifications={usageData.notifications}
+                    onDismiss={handleDismissNotification}
+                  />
+                </div>
               )}
+              
+              {/* Main Content Card */}
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+                <motion.div
+                  key={activeSection}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                  className="p-6"
+                >
+                  {/* General Settings */}
+                  {activeSection === 'general' && (
+                    <div>
+                      <div className="border-b border-gray-200 pb-4 mb-6">
+                        <h2 className="text-lg font-semibold text-gray-900">General Settings</h2>
+                        <p className="text-gray-600 text-sm mt-1">Manage your workspace configuration and preferences</p>
+                      </div>
+                      <GeneralSettings 
+                        usageData={usageData}
+                        onRefreshUsage={fetchUsageData}
+                      />
+                    </div>
+                  )}
 
-              {/* Tracking Pixel Settings */}
-              {activeSection === 'tracking-pixel' && (
-                <TrackingPixelSetup />
-              )}
+                  {/* Tracking Pixel Settings */}
+                  {activeSection === 'tracking-pixel' && (
+                    <div>
+                      <div className="border-b border-gray-200 pb-4 mb-6">
+                        <h2 className="text-lg font-semibold text-gray-900">Tracking Pixel</h2>
+                        <p className="text-gray-600 text-sm mt-1">Set up tracking pixels to monitor visitor attribution</p>
+                      </div>
+                      <TrackingPixelSetup />
+                    </div>
+                  )}
 
-              {/* API Keys Settings */}
-              {activeSection === 'api-keys' && (
-                <APIKeysSettings />
-              )}
+                  {/* API Keys Settings */}
+                  {activeSection === 'api-keys' && (
+                    <div>
+                      <div className="border-b border-gray-200 pb-4 mb-6">
+                        <h2 className="text-lg font-semibold text-gray-900">API Keys</h2>
+                        <p className="text-gray-600 text-sm mt-1">Manage your API keys and integrations</p>
+                      </div>
+                      <APIKeysSettings />
+                    </div>
+                  )}
 
-              {/* Billing Settings */}
-              {activeSection === 'billing' && (
-                <BillingSettings 
-                  usageData={usageData}
-                  loadingUsage={loadingUsage}
-                  onRefreshUsage={fetchUsageData}
-                />
-              )}
-            </motion.div>
+                  {/* Billing Settings */}
+                  {activeSection === 'billing' && (
+                    <div>
+                      <div className="border-b border-gray-200 pb-4 mb-6">
+                        <h2 className="text-lg font-semibold text-gray-900">Billing & Usage</h2>
+                        <p className="text-gray-600 text-sm mt-1">Manage your subscription, billing, and usage limits</p>
+                      </div>
+                      <BillingSettings 
+                        usageData={usageData}
+                        loadingUsage={loadingUsage}
+                        onRefreshUsage={fetchUsageData}
+                      />
+                    </div>
+                  )}
+                </motion.div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -245,8 +277,8 @@ export default function SettingsPage() {
                 />
               </div>
             </div>
-            <h2 className="text-xl font-semibold text-black dark:text-white mb-2">Switching workspace...</h2>
-            <p className="text-gray-600 dark:text-[#888] text-sm">Loading your workspace data</p>
+            <h2 className="text-xl font-semibold text-white mb-2">Switching workspace...</h2>
+            <p className="text-gray-300 text-sm">Loading your workspace data</p>
           </div>
         </motion.div>
       )}
@@ -264,6 +296,6 @@ export default function SettingsPage() {
           animation: workspaceFlip 2s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
         }
       `}</style>
-    </main>
+    </div>
   )
 } 

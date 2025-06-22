@@ -123,22 +123,16 @@ export function APIKeysSettings() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-        <div>
-        <h2 className="text-xl font-medium text-black dark:text-white mb-2 font-mono tracking-tight">API Keys</h2>
-        <p className="text-sm text-gray-500 dark:text-[#666] font-mono tracking-tight">
-          Manage programmatic access to your Split Analytics data
-        </p>
-      </div>
+
 
       {/* New Key Display */}
       {newlyCreatedKey && (
-        <div className="bg-green-50 dark:bg-[#111] border border-green-200 dark:border-green-500/20 rounded-lg p-4">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <div className="flex items-start gap-3 mb-3">
             <CheckCircle2 className="w-5 h-5 text-green-400 mt-0.5" />
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <h4 className="text-black dark:text-white font-medium font-mono tracking-tight text-sm">API Key Created Successfully</h4>
+                <h4 className="text-black font-medium font-mono tracking-tight text-sm">API Key Created Successfully</h4>
                 <span className={`text-xs px-2 py-0.5 rounded-sm font-mono tracking-tight border ${
                   newlyCreatedKey.startsWith('split_test_') 
                     ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' 
@@ -147,18 +141,18 @@ export function APIKeysSettings() {
                   {newlyCreatedKey.startsWith('split_test_') ? 'Test Key' : 'Live Key'}
                 </span>
               </div>
-              <p className="text-xs text-gray-500 dark:text-[#666] mb-3 font-mono tracking-tight">
+              <p className="text-xs text-gray-500 mb-3 font-mono tracking-tight">
                 Save this key securely. You won't be able to see it again.
               </p>
               
-              <div className="flex items-center gap-2 p-3 bg-gray-100 dark:bg-[#0a0a0a] rounded border border-gray-300 dark:border-[#333]">
-                <code className="text-xs text-black dark:text-white font-mono flex-1">
+              <div className="flex items-center gap-2 p-3 bg-gray-100 rounded border border-gray-300">
+                <code className="text-xs text-black font-mono flex-1">
                   {newlyCreatedKey}
                 </code>
                 <Button
                   onClick={handleCopyNewKey}
                   size="sm"
-                  className="bg-white dark:bg-[#1a1a1a] hover:bg-gray-50 dark:hover:bg-[#333] border border-gray-300 dark:border-[#333] hover:border-gray-400 dark:hover:border-[#444] text-black dark:text-white font-mono tracking-tight text-xs h-7 px-3"
+                  className="bg-white hover:bg-gray-50 border border-gray-300 hover:border-gray-400 text-gray-900 text-sm h-8 px-3"
                 >
                   {copiedNewKey ? 'Copied!' : 'Copy'}
                 </Button>
@@ -169,7 +163,7 @@ export function APIKeysSettings() {
                 setNewlyCreatedKey(null)
                 setCopiedNewKey(false)
               }}
-              className="text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white transition-colors"
+              className="text-gray-500 hover:text-black transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -181,12 +175,12 @@ export function APIKeysSettings() {
       <div className="space-y-8">
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-medium text-black dark:text-white font-mono tracking-tight">API Key Management</h3>
+            <h3 className="text-lg font-medium text-black font-mono tracking-tight">API Key Management</h3>
             <div className="flex gap-2">
               <Button
                 onClick={() => handleCreateApiKey('test')}
                 disabled={isCreatingKey}
-                className="bg-gray-100 dark:bg-[#1a1a1a] hover:bg-gray-200 dark:hover:bg-[#333] border border-gray-300 dark:border-[#333] hover:border-gray-400 dark:hover:border-[#444] text-black dark:text-white font-mono tracking-tight text-sm h-8 px-4"
+                className="bg-gray-100 hover:bg-gray-200 border border-gray-300 hover:border-gray-400 text-gray-900 text-sm h-8 px-4"
               >
                 {isCreatingKey ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -197,7 +191,7 @@ export function APIKeysSettings() {
               <Button
                 onClick={() => handleCreateApiKey('live')}
                 disabled={isCreatingKey}
-                className="bg-gray-200 dark:bg-[#333] hover:bg-gray-300 dark:hover:bg-[#444] border border-gray-400 dark:border-[#555] text-black dark:text-white font-mono tracking-tight text-sm h-8 px-4"
+                className="bg-gray-200 hover:bg-gray-300 border border-gray-400 text-gray-900 text-sm h-8 px-4"
               >
                 {isCreatingKey ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -210,21 +204,21 @@ export function APIKeysSettings() {
 
       {loadingKeys ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-gray-500 dark:text-[#666]" />
+          <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
         </div>
       ) : apiKeys.length === 0 && !newlyCreatedKey ? (
-            <div className="bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#1a1a1a] rounded-lg p-8 text-center">
-          <Key className="w-10 h-10 text-gray-300 dark:text-[#333] mx-auto mb-3" />
-              <p className="text-gray-500 dark:text-[#666] text-sm font-mono tracking-tight mb-1">No API keys yet</p>
-              <p className="text-xs text-gray-400 dark:text-[#666] font-mono tracking-tight">Generate your first key to get started</p>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+          <Key className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500 text-sm font-mono tracking-tight mb-1">No API keys yet</p>
+              <p className="text-xs text-gray-400 font-mono tracking-tight">Generate your first key to get started</p>
         </div>
       ) : (
             <div className="space-y-6">
           {/* Existing keys */}
           {apiKeys.map((apiKey) => (
-                <div key={apiKey.id} className="flex items-center justify-between py-4 border-b border-gray-200 dark:border-[#1a1a1a]">
+                <div key={apiKey.id} className="flex items-center justify-between py-4 border-b border-gray-200">
                   <div>
-                    <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm mb-1">{apiKey.name}</div>
+                    <div className="font-medium text-black font-mono tracking-tight text-sm mb-1">{apiKey.name}</div>
                     <div className="flex items-center gap-3">
                     {/* Key Type Badge */}
                       <span className={`text-xs px-2 py-0.5 rounded-sm font-mono tracking-tight border ${
@@ -234,23 +228,23 @@ export function APIKeysSettings() {
                     }`}>
                       {apiKey.key.startsWith('split_test_') ? 'Test' : 'Live'}
                     </span>
-                      <span className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight">
+                      <span className="text-xs text-gray-500 font-mono tracking-tight">
                       Created {new Date(apiKey.created_at).toLocaleDateString()}
                     </span>
                   </div>
                   
                     <div className="flex items-center gap-2 mt-2">
-                    <code className="text-xs text-gray-500 dark:text-[#666] font-mono">
+                    <code className="text-xs text-gray-500 font-mono">
                       {apiKey.key}
                     </code>
                     <button
                       onClick={() => handleCopyApiKey(apiKey.key)}
-                      className="text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white transition-colors group relative"
+                      className="text-gray-500 hover:text-black transition-colors group relative"
                       title={apiKey.key.includes('*') ? "Masked keys cannot be copied" : "Copy API key"}
                     >
                       <Copy className="w-3 h-3" />
                       {apiKey.key.includes('*') && (
-                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-100 dark:bg-[#1a1a1a] text-xs text-gray-500 dark:text-[#666] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                        <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-100 text-xs text-gray-600 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                           Keys are only shown once
                         </span>
                       )}
@@ -263,7 +257,7 @@ export function APIKeysSettings() {
                     setDeletingKeyId(apiKey.id)
                     setShowDeleteConfirm(true)
                   }}
-                  className="text-gray-500 dark:text-[#666] hover:text-red-400 transition-colors p-1"
+                  className="text-gray-500 hover:text-red-400 transition-colors p-1"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -277,19 +271,19 @@ export function APIKeysSettings() {
       {/* Documentation Section */}
       <div className="space-y-8">
         <div>
-          <h3 className="text-lg font-medium text-black dark:text-white mb-6 font-mono tracking-tight">Developer Resources</h3>
+          <h3 className="text-lg font-medium text-black mb-6 font-mono tracking-tight">Developer Resources</h3>
           
-          <div className="flex items-center justify-between py-4 border-b border-gray-200 dark:border-[#1a1a1a]">
+          <div className="flex items-center justify-between py-4 border-b border-gray-200">
             <div>
-              <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">API Documentation</div>
-              <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight mt-1">
+              <div className="font-medium text-black font-mono tracking-tight text-sm">API Documentation</div>
+              <div className="text-xs text-gray-500 font-mono tracking-tight mt-1">
                 Complete guide to using the Split Analytics API
               </div>
             </div>
             <div className="flex items-center gap-6">
         <a
           href="https://split.dev/docs"
-                className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white transition-colors font-mono tracking-tight"
+                className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-black transition-colors font-mono tracking-tight"
         >
           <FileText className="w-3.5 h-3.5" />
                 View Documentation
@@ -298,16 +292,16 @@ export function APIKeysSettings() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between py-4 border-b border-gray-200 dark:border-[#1a1a1a]">
+          <div className="flex items-center justify-between py-4 border-b border-gray-200">
             <div>
-              <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Rate Limits</div>
-              <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight mt-1">
+              <div className="font-medium text-black font-mono tracking-tight text-sm">Rate Limits</div>
+              <div className="text-xs text-gray-500 font-mono tracking-tight mt-1">
                 1000 requests per hour per API key
               </div>
             </div>
             <div className="flex items-center gap-6">
               <div className="text-right">
-                <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">
+                <div className="font-medium text-black font-mono tracking-tight text-sm">
                   Standard
                 </div>
               </div>
@@ -316,8 +310,8 @@ export function APIKeysSettings() {
 
           <div className="flex items-center justify-between py-4">
             <div>
-              <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Key Security</div>
-              <div className="text-xs text-gray-500 dark:text-[#666] font-mono tracking-tight mt-1">
+              <div className="font-medium text-black font-mono tracking-tight text-sm">Key Security</div>
+              <div className="text-xs text-gray-500 font-mono tracking-tight mt-1">
                 Keys are only shown once. Store securely and regenerate if compromised.
               </div>
             </div>
@@ -346,7 +340,7 @@ export function APIKeysSettings() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#1a1a1a] rounded-lg w-full max-w-md"
+              className="bg-white border border-gray-200 rounded-lg w-full max-w-md"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="p-6">
@@ -355,8 +349,8 @@ export function APIKeysSettings() {
                     <X className="w-5 h-5 text-red-400" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-medium text-black dark:text-white mb-1 font-mono tracking-tight">Delete API Key</h3>
-                    <p className="text-sm text-gray-500 dark:text-[#666] mb-6 font-mono tracking-tight">
+                    <h3 className="text-lg font-medium text-black mb-1 font-mono tracking-tight">Delete API Key</h3>
+                    <p className="text-sm text-gray-500 mb-6 font-mono tracking-tight">
                       This action cannot be undone. This API key will be permanently deleted and any applications using it will lose access.
                     </p>
                     
@@ -364,7 +358,7 @@ export function APIKeysSettings() {
                       <Button
                         onClick={() => setShowDeleteConfirm(false)}
                         variant="outline"
-                        className="border-gray-300 dark:border-[#333] hover:border-gray-400 dark:hover:border-[#444] text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white h-8 px-4 text-sm font-mono tracking-tight"
+                        className="border-gray-300 hover:border-gray-400 text-gray-500 hover:text-black h-8 px-4 text-sm font-mono tracking-tight"
                       >
                         Cancel
                       </Button>
@@ -391,9 +385,9 @@ export function APIKeysSettings() {
       {/* Success Toast */}
       {showSuccessToast && (
         <div className="fixed bottom-6 right-6 z-50">
-          <div className="bg-gray-50 dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#1a1a1a] rounded-lg p-4 flex items-center gap-3 shadow-lg">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center gap-3 shadow-lg">
             <CheckCircle2 className="w-5 h-5 text-green-400" />
-            <span className="text-black dark:text-white text-sm font-medium font-mono tracking-tight">{toastMessage}</span>
+            <span className="text-black text-sm font-medium font-mono tracking-tight">{toastMessage}</span>
           </div>
         </div>
       )}

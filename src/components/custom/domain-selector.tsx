@@ -226,7 +226,7 @@ export function DomainSelector({ showAddButton = false, position = 'welcome' }: 
         </DropdownMenuTrigger>
         <DropdownMenuContent 
           className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333333] text-black dark:text-white rounded-none min-w-[200px] max-w-[300px]"
-          align="start"
+          align="end"
           alignOffset={0}
           sideOffset={4}
         >

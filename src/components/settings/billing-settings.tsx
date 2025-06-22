@@ -478,43 +478,37 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-xl font-medium text-black dark:text-white mb-2">Billing & Usage</h2>
-        <p className="text-sm text-gray-500 dark:text-[#666]">
-          Manage your subscription and usage preferences
-        </p>
-      </div>
+
 
       {/* Sub-tabs for Billing */}
-      <div className="border-b border-gray-200 dark:border-[#1a1a1a]">
+      <div className="border-b border-gray-200">
         <nav className="flex space-x-8">
           <button
             onClick={() => setBillingTab('plans')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors font-mono tracking-tight ${
+            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
               billingTab === 'plans'
-                ? 'border-black dark:border-white text-black dark:text-white'
-                : 'border-transparent text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white'
+                ? 'border-[#191919] text-[#191919]'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
             }`}
           >
             Plans & Billing
           </button>
           <button
             onClick={() => setBillingTab('usage')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors font-mono tracking-tight ${
+            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
               billingTab === 'usage'
-                ? 'border-black dark:border-white text-black dark:text-white'
-                : 'border-transparent text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white'
+                ? 'border-[#191919] text-[#191919]'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
             }`}
           >
             Usage
           </button>
           <button
             onClick={() => setBillingTab('settings')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors font-mono tracking-tight ${
+            className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
               billingTab === 'settings'
-                ? 'border-black dark:border-white text-black dark:text-white'
-                : 'border-transparent text-gray-500 dark:text-[#666] hover:text-black dark:hover:text-white'
+                ? 'border-[#191919] text-[#191919]'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
             }`}
           >
             Settings
@@ -524,7 +518,7 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
 
       {loadingUsage ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-6 h-6 animate-spin text-gray-500 dark:text-[#666]" />
+          <Loader2 className="w-6 h-6 animate-spin text-gray-600" />
         </div>
       ) : (
         <>
@@ -532,13 +526,13 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
           {billingTab === 'plans' && (
             <div className="space-y-8">
               {/* Current Plan */}
-              <div className="py-6 border-b border-[#1a1a1a]">
+              <div className="py-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-2xl font-medium text-black dark:text-white font-mono tracking-tight">{billingPlan.name}</h3>
+                      <h3 className="text-2xl font-medium text-gray-900 font-mono tracking-tight">{billingPlan.name}</h3>
                       {usageData?.billingPeriod.planType !== 'free' && (
-                        <span className="text-xs bg-[#222] text-[#999] px-2 py-1 rounded-sm border border-[#333] font-mono tracking-tight">
+                        <span className="text-xs bg-gray-200 text-gray-500 px-2 py-1 rounded-sm border border-gray-300 font-mono tracking-tight">
                           Active
                         </span>
                       )}
@@ -547,16 +541,16 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                       {!currentPlan || !['starter', 'pro', 'team', 'admin'].includes(currentPlan) ? (
                         <div>
                           <p className="text-red-400 font-mono tracking-tight text-sm">No Active Subscription</p>
-                          <p className="text-xs text-[#666] font-mono tracking-tight">Choose a plan below to continue</p>
+                          <p className="text-xs text-gray-500 font-mono tracking-tight">Choose a plan below to continue</p>
                         </div>
                       ) : (
                         <>
-                          <p className="text-3xl font-bold text-black dark:text-white font-mono tracking-tight">
+                          <p className="text-3xl font-bold text-gray-900 font-mono tracking-tight">
                             ${billingPlan.price}
-                            <span className="text-lg font-normal text-[#666]">/month</span>
+                            <span className="text-lg font-normal text-gray-500">/month</span>
                           </p>
                           {billingPlan.nextBilling && (
-                            <p className="text-xs text-[#666] font-mono tracking-tight">
+                            <p className="text-xs text-gray-500 font-mono tracking-tight">
                               Next billing: {billingPlan.nextBilling}
                             </p>
                           )}
@@ -570,7 +564,7 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                       className={`h-8 px-4 font-mono tracking-tight text-sm ${
                         !currentPlan || !['starter', 'pro', 'team', 'admin'].includes(currentPlan)
                           ? 'bg-red-600 hover:bg-red-700 text-white border-red-500'
-                          : 'bg-[#1a1a1a] hover:bg-[#333] border border-[#333] hover:border-[#444] text-white'
+                          : 'bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-gray-600 text-white'
                       }`}
                       disabled={isLoading || currentPlan === 'admin'}
                     >
@@ -588,27 +582,27 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
               {/* Workspace Overview for Team Plan */}
               {currentPlan === 'team' && (
                 <div>
-                  <h3 className="text-lg font-medium text-black dark:text-white mb-6 font-mono tracking-tight">Workspace Overview</h3>
-                  <div className="bg-[#111] border border-[#1a1a1a] rounded-lg p-4 mb-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-6 font-mono tracking-tight">Workspace Overview</h3>
+                  <div className="bg-gray-100 border border-gray-200 rounded-lg p-4 mb-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Team Plan Workspaces</div>
-                        <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
+                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Team Plan Workspaces</div>
+                        <div className="text-xs text-gray-500 font-mono tracking-tight mt-1">
                           {workspaceCounts.included}/5 included • {workspaceCounts.extra > 0 ? `${workspaceCounts.extra} extra (${extraDomains} billed)` : '0 extra'}
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">
+                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">
                           {workspaceCounts.availableIncluded} included slots left
                         </div>
-                        <div className="text-xs text-[#666] font-mono tracking-tight">
+                        <div className="text-xs text-gray-500 font-mono tracking-tight">
                           {workspaceCounts.extra > 0 ? `+${workspaceCounts.extra} extra workspaces` : 'Ready to use'}
                         </div>
                       </div>
                     </div>
                     
                     {workspaceCounts.extra > extraDomains && (
-                      <div className="mt-3 pt-3 border-t border-[#1a1a1a] bg-yellow-500/5 rounded p-2">
+                      <div className="mt-3 pt-3 border-t border-gray-200 bg-yellow-500/5 rounded p-2">
                         <p className="text-xs text-yellow-400 font-mono tracking-tight">
                           ⚠️ You have {workspaceCounts.extra - extraDomains} unbilled extra workspace{workspaceCounts.extra - extraDomains > 1 ? 's' : ''}. Add extra domain billing below.
                         </p>
@@ -616,8 +610,8 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                     )}
                     
                     {workspaceCounts.total >= 5 && workspaceCounts.availableIncluded === 0 && (
-                      <div className="mt-3 pt-3 border-t border-[#1a1a1a]">
-                        <p className="text-xs text-[#666] font-mono tracking-tight">
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-xs text-gray-500 font-mono tracking-tight">
                           💡 Need more workspaces? Purchase Extra Domain add-ons below.
                         </p>
                       </div>
@@ -629,13 +623,13 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
               {/* Add-ons */}
               {(currentPlan === 'pro' || currentPlan === 'team') && (
                 <div>
-                  <h3 className="text-lg font-medium text-black dark:text-white mb-6 font-mono tracking-tight">Add-ons</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-6 font-mono tracking-tight">Add-ons</h3>
                   <div className="space-y-4">
                     {/* Extra Domains */}
-                    <div className="flex items-center justify-between py-4 border-b border-[#1a1a1a]">
+                    <div className="flex items-center justify-between py-4 border-b border-gray-200">
                       <div>
-                        <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Extra Domain</div>
-                        <div className="text-xs text-[#666] font-mono tracking-tight">
+                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Extra Domain</div>
+                        <div className="text-xs text-gray-500 font-mono tracking-tight">
                           $100 per additional workspace/domain per month{currentPlan === 'team' ? ' • Beyond your 5 included' : ''}
                         </div>
                       </div>
@@ -646,11 +640,11 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                             disabled={extraDomains === 0 || isUpdatingAddOns}
                             size="sm"
                             variant="outline"
-                            className="w-8 h-8 p-0 border-[#333] font-mono"
+                            className="w-8 h-8 p-0 border-gray-300 font-mono"
                           >
                             <Minus className="w-4 h-4" />
                           </Button>
-                          <span className="text-black dark:text-white font-medium min-w-[2rem] text-center font-mono tracking-tight text-sm">
+                          <span className="text-gray-900 font-medium min-w-[2rem] text-center text-sm">
                             {extraDomains}
                           </span>
                           <Button
@@ -658,25 +652,25 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                             disabled={isUpdatingAddOns}
                             size="sm"
                             variant="outline"
-                            className="w-8 h-8 p-0 border-[#333] font-mono"
+                            className="w-8 h-8 p-0 border-gray-300 font-mono"
                           >
                             <Plus className="w-4 h-4" />
                           </Button>
                         </div>
                         <div className="text-right min-w-[5rem]">
-                          <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">
+                          <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">
                             {extraDomains > 0 ? `+$${extraDomains * 100}` : '$0'}
                           </div>
-                          <div className="text-xs text-[#666] font-mono tracking-tight">per month</div>
+                          <div className="text-xs text-gray-500 font-mono tracking-tight">per month</div>
                         </div>
                       </div>
                     </div>
 
                     {/* Edge Alerts Add-on */}
-                    <div className="flex items-center justify-between py-4 border-b border-[#1a1a1a]">
+                    <div className="flex items-center justify-between py-4 border-b border-gray-200">
                         <div>
-                        <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Edge Alerts</div>
-                          <div className="text-xs text-[#666] font-mono tracking-tight">
+                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Edge Alerts</div>
+                          <div className="text-xs text-gray-500 font-mono tracking-tight">
                           $10 per month • Real-time webhooks for visitor spikes, new bots & thresholds
                           </div>
                         </div>
@@ -689,10 +683,10 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                           />
                         </div>
                         <div className="text-right min-w-[5rem]">
-                          <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">
+                          <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">
                             {usageData?.addOns?.some((addon: any) => addon.add_on_type === 'edge_alerts' && addon.is_active) ? '+$10' : '$0'}
                           </div>
-                          <div className="text-xs text-[#666] font-mono tracking-tight">per month</div>
+                          <div className="text-xs text-gray-500 font-mono tracking-tight">per month</div>
                         </div>
                         </div>
                       </div>
@@ -710,30 +704,30 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
           {billingTab === 'usage' && (
             <div className="space-y-8">
               <div>
-                <h3 className="text-lg font-medium text-black dark:text-white mb-6 font-mono tracking-tight">Current Usage</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-6 font-mono tracking-tight">Current Usage</h3>
                 <div className="space-y-6">
                   {/* Workspaces */}
-                  <div className={`flex items-center justify-between py-3 border-b border-[#1a1a1a] rounded-lg px-3 transition-all duration-500 ${
+                  <div className={`flex items-center justify-between py-3 border-b border-gray-200 rounded-lg px-3 transition-all duration-500 ${
                     highlightedSection === 'workspaces' ? 'bg-white/5 border-white/20' : ''
                   }`}>
                     <div>
-                      <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Workspaces</div>
-                      <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
+                      <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Workspaces</div>
+                      <div className="text-xs text-gray-500 font-mono tracking-tight mt-1">
                         {workspaceCounts.total} total workspaces • {workspaceCounts.included} included in plan
                       </div>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">
+                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">
                           {workspaceCounts.availableIncluded} included slots left
                         </div>
-                        <div className="text-xs text-[#666] font-mono tracking-tight">
+                        <div className="text-xs text-gray-500 font-mono tracking-tight">
                           {workspaceCounts.extra > 0 ? `+${workspaceCounts.extra} extra ($${workspaceCounts.extra * 100}/mo)` : 'No extras'}
                         </div>
                       </div>
-                      <div className="w-24 h-1 bg-[#1a1a1a] rounded-sm">
+                      <div className="w-24 h-1 bg-gray-200 rounded-sm">
                         <div 
-                          className="h-full bg-[#444] rounded-sm transition-all"
+                          className="h-full bg-gray-500 rounded-sm transition-all"
                               style={{
                             width: `${Math.min(100, (workspaceCounts.included / (currentPlan === 'team' ? 5 : 1)) * 100)}%` 
                               }}
@@ -743,25 +737,25 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                         </div>
 
                   {/* Domains */}
-                  <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                  <div className="flex items-center justify-between py-3 border-b border-gray-200">
                     <div>
-                      <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Domains</div>
-                      <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
+                      <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Domains</div>
+                      <div className="text-xs text-gray-500 font-mono tracking-tight mt-1">
                         {usageData?.domains?.used || 0} / {usageData?.domains?.included || 1} domains used
                       </div>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">
+                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">
                           {usageData?.domains?.remaining !== undefined ? `${usageData.domains.remaining} left` : 'Loading...'}
                         </div>
-                        <div className="text-xs text-[#666] font-mono tracking-tight">
+                        <div className="text-xs text-gray-500 font-mono tracking-tight">
                           {usageData?.domains?.purchased > 0 ? `+${usageData.domains.purchased} extra purchased` : 'Plan included'}
                         </div>
                       </div>
-                      <div className="w-24 h-1 bg-[#1a1a1a] rounded-sm">
+                      <div className="w-24 h-1 bg-gray-200 rounded-sm">
                         <div 
-                          className="h-full bg-[#444] rounded-sm transition-all"
+                          className="h-full bg-gray-500 rounded-sm transition-all"
                           style={{ 
                             width: usageData?.domains?.percentage ? `${Math.min(100, usageData.domains.percentage)}%` : '0%'
                           }}
@@ -771,22 +765,22 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                   </div>
 
                   {/* Snapshots */}
-                  <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                  <div className="flex items-center justify-between py-3 border-b border-gray-200">
                     <div>
-                      <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Monthly Snapshots</div>
-                      <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
+                      <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Monthly Snapshots</div>
+                      <div className="text-xs text-gray-500 font-mono tracking-tight mt-1">
                         {usageData?.snapshots?.used || 0} / {getSnapshotLimit()} snapshots this month
                         </div>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <div className="font-medium text-white font-mono tracking-tight text-sm">
+                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">
                           {getSnapshotLimit() === -1 ? 'Unlimited' : `${Math.max(0, getSnapshotLimit() - (usageData?.snapshots?.used || 0))} left`}
                   </div>
                 </div>
-                      <div className="w-24 h-1 bg-[#1a1a1a] rounded-sm">
+                      <div className="w-24 h-1 bg-gray-200 rounded-sm">
                         <div 
-                          className="h-full bg-[#444] rounded-sm transition-all"
+                          className="h-full bg-gray-500 rounded-sm transition-all"
                           style={{ 
                             width: getSnapshotLimit() === -1 ? '100%' : `${Math.min(100, ((usageData?.snapshots?.used || 0) / getSnapshotLimit()) * 100)}%`
                           }}
@@ -796,20 +790,20 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
             </div>
 
                   {/* AI Crawler Logs */}
-                  <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                  <div className="flex items-center justify-between py-3 border-b border-gray-200">
                     <div>
-                      <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">AI Crawler Logs</div>
-                      <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
+                      <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">AI Crawler Logs</div>
+                      <div className="text-xs text-gray-500 font-mono tracking-tight mt-1">
                         {usageData?.aiLogs?.used || 0} crawler visits this billing period
                       </div>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Unlimited</div>
+                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Unlimited</div>
                       </div>
-                      <div className="w-24 h-1 bg-[#1a1a1a] rounded-sm">
+                      <div className="w-24 h-1 bg-gray-200 rounded-sm">
                         <div 
-                          className="h-full bg-[#444] rounded-sm transition-all"
+                          className="h-full bg-gray-500 rounded-sm transition-all"
                           style={{ width: '100%' }}
                         />
                       </div>
@@ -817,19 +811,19 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                   </div>
 
                   {/* Edge Alerts */}
-                  <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                  <div className="flex items-center justify-between py-3 border-b border-gray-200">
                     <div>
-                      <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Edge Alerts</div>
-                      <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
+                      <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Edge Alerts</div>
+                      <div className="text-xs text-gray-500 font-mono tracking-tight mt-1">
                         Real-time webhooks for visitor spikes and bot detection
                       </div>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">
+                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">
                           {usageData?.addOns?.some((addon: any) => addon.add_on_type === 'edge_alerts' && addon.is_active) ? 'Active' : 'Inactive'}
                         </div>
-                        <div className="text-xs text-[#666] font-mono tracking-tight">
+                        <div className="text-xs text-gray-500 font-mono tracking-tight">
                           {usageData?.addOns?.some((addon: any) => addon.add_on_type === 'edge_alerts' && addon.is_active) ? '$10/month' : 'Add-on required'}
                       </div>
                       </div>
@@ -854,7 +848,7 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
             <div className="space-y-8">
               <div>
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-medium text-black dark:text-white font-mono tracking-tight">Billing Controls</h3>
+                  <h3 className="text-lg font-medium text-gray-900 font-mono tracking-tight">Billing Controls</h3>
                   {preferencesSaveMessage && (
                     <div className={`text-xs font-mono tracking-tight px-2 py-1 rounded-sm ${
                       preferencesSaveMessage.includes('success') ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10'
@@ -865,16 +859,16 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                 </div>
                 <div className="space-y-6">
                   {/* AI Logs Tracking Toggle */}
-                  <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                  <div className="flex items-center justify-between py-3 border-b border-gray-200">
                     <div>
-                      <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">AI Crawler Tracking</div>
-                      <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
+                      <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">AI Crawler Tracking</div>
+                      <div className="text-xs text-gray-500 font-mono tracking-tight mt-1">
                         Track AI crawler visits to your website for analytics
                       </div>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">
+                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">
                           {usageData?.aiLogs?.trackingEnabled !== false ? 'Enabled' : 'Disabled'}
                         </div>
                       </div>
@@ -891,16 +885,16 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                   </div>
 
                   {/* Platform Notifications */}
-                  <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                  <div className="flex items-center justify-between py-3 border-b border-gray-200">
                     <div>
-                      <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Platform Notifications</div>
-                      <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
+                      <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Platform Notifications</div>
+                      <div className="text-xs text-gray-500 font-mono tracking-tight mt-1">
                         Billing updates, feature announcements, and alerts
                       </div>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">
+                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">
                           {usageData?.billingPreferences?.overage_notifications !== false ? 'Enabled' : 'Disabled'}
                         </div>
                       </div>
@@ -917,17 +911,17 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                   </div>
 
                   {/* Workspace Auto-deletion Protection */}
-                  <div className="flex items-center justify-between py-3 border-b border-[#1a1a1a]">
+                  <div className="flex items-center justify-between py-3 border-b border-gray-200">
                     <div>
-                      <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Workspace Protection</div>
-                      <div className="text-xs text-[#666] font-mono tracking-tight mt-1">
+                      <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Workspace Protection</div>
+                      <div className="text-xs text-gray-500 font-mono tracking-tight mt-1">
                         Warn before plan changes that would delete workspaces
                       </div>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <div className="font-medium text-black dark:text-white font-mono tracking-tight text-sm">Enabled</div>
-                        <div className="text-xs text-[#666] font-mono tracking-tight">Always protected</div>
+                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Enabled</div>
+                        <div className="text-xs text-gray-500 font-mono tracking-tight">Always protected</div>
                       </div>
                       <div className="w-12">
                         <Switch
@@ -947,7 +941,7 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
       {/* Success Toast */}
       {showSuccessToast && (
         <div className="fixed bottom-6 right-6 z-50">
-          <div className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-lg p-4 flex items-center gap-3 shadow-lg">
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 flex items-center gap-3 shadow-lg">
             <span className="text-white text-sm font-medium">{toastMessage}</span>
           </div>
         </div>
@@ -976,20 +970,20 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
               className="fixed inset-0 z-50 flex items-center justify-center p-4"
             >
               <div 
-                className="bg-[#0a0a0a] border border-[#1a1a1a] rounded-sm max-w-5xl w-full max-h-[90vh] overflow-y-auto"
+                className="bg-gray-800 border border-gray-700 rounded-sm max-w-5xl w-full max-h-[90vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
               >
                 {/* Modal Header */}
-                <div className="sticky top-0 bg-[#0a0a0a] border-b border-[#1a1a1a] p-6 flex items-center justify-between">
+                <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-6 flex items-center justify-between">
                   <div>
                     <h2 className="text-xl font-medium text-white font-mono" style={{ letterSpacing: '-0.05em' }}>Choose Your Plan</h2>
-                    <p className="text-[#666] text-xs mt-1 font-mono" style={{ letterSpacing: '-0.05em' }}>
+                    <p className="text-gray-500 text-xs mt-1 font-mono" style={{ letterSpacing: '-0.05em' }}>
                       Update your subscription
                     </p>
                   </div>
                   <button
                     onClick={() => setShowPricingModal(false)}
-                    className="text-[#666] hover:text-white transition-colors duration-200 p-1"
+                    className="text-gray-500 hover:text-white transition-colors duration-200 p-1"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -999,26 +993,26 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                 <div className="p-6">
                   {/* Billing Toggle */}
                   <div className="flex items-center justify-center gap-4 mb-8">
-                    <span className={`text-xs font-mono ${!isAnnualBilling ? 'text-white' : 'text-[#666]'}`} style={{ letterSpacing: '-0.05em' }}>
+                    <span className={`text-xs font-mono ${!isAnnualBilling ? 'text-white' : 'text-gray-500'}`} style={{ letterSpacing: '-0.05em' }}>
                       Monthly
                     </span>
                     <button
                       onClick={() => setIsAnnualBilling(!isAnnualBilling)}
                       className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${
-                        isAnnualBilling ? 'bg-[#333]' : 'bg-[#222]'
+                        isAnnualBilling ? 'bg-gray-700' : 'bg-gray-700'
                       }`}
                     >
                       <div
                         className={`absolute top-0.5 w-4 h-4 rounded-full transition-transform duration-200 ${
                           isAnnualBilling 
                             ? 'translate-x-5 bg-white' 
-                            : 'translate-x-0.5 bg-[#666]'
+                            : 'translate-x-0.5 bg-gray-500'
                         }`}
                       />
                     </button>
-                    <span className={`text-xs font-mono ${isAnnualBilling ? 'text-white' : 'text-[#666]'}`} style={{ letterSpacing: '-0.05em' }}>
+                    <span className={`text-xs font-mono ${isAnnualBilling ? 'text-white' : 'text-gray-500'}`} style={{ letterSpacing: '-0.05em' }}>
                       Annual
-                      <span className="text-[#666] ml-1">(save 20%)</span>
+                      <span className="text-gray-500 ml-1">(save 20%)</span>
                     </span>
                   </div>
 
@@ -1030,10 +1024,10 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: PRICING_PLANS.indexOf(plan) * 0.03, duration: 0.15, ease: "easeOut" }}
-                        className={`bg-[#111] p-6 relative rounded-sm transition-all duration-200 ${
+                        className={`bg-gray-700 p-6 relative rounded-sm transition-all duration-200 ${
                           plan.isRecommended 
                             ? 'border border-white' 
-                            : 'border border-[#222] hover:border-[#333]'
+                            : 'border border-gray-600 hover:border-gray-500'
                         }`}
                       >
                         {plan.isRecommended && (
@@ -1046,22 +1040,22 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                         
                         <div className="mb-6">
                           <h3 className="text-lg font-medium text-white mb-1 font-mono" style={{ letterSpacing: '-0.05em' }}>{plan.name}</h3>
-                          <p className="text-xs text-[#666] mb-4 font-mono" style={{ letterSpacing: '-0.05em' }}>{plan.description}</p>
+                          <p className="text-xs text-gray-500 mb-4 font-mono" style={{ letterSpacing: '-0.05em' }}>{plan.description}</p>
                           <div className="text-3xl font-bold text-white mb-0.5 font-mono" style={{ letterSpacing: '-0.05em' }}>
                             ${isAnnualBilling ? plan.annualPrice : plan.monthlyPrice}
                           </div>
-                          <div className="text-xs text-[#666] font-mono" style={{ letterSpacing: '-0.05em' }}>per month</div>
+                          <div className="text-xs text-gray-500 font-mono" style={{ letterSpacing: '-0.05em' }}>per month</div>
                         </div>
                         
                         <div className="space-y-2 mb-6">
                           {plan.features.slice(0, 6).map((feature, index) => (
                             <div key={index} className="flex items-start gap-2">
-                              <Check className="w-3 h-3 text-[#666] mt-0.5 flex-shrink-0" />
-                              <span className="text-xs text-[#999] font-mono leading-relaxed" style={{ letterSpacing: '-0.05em' }}>{feature}</span>
+                              <Check className="w-3 h-3 text-gray-500 mt-0.5 flex-shrink-0" />
+                              <span className="text-xs text-gray-300 font-mono leading-relaxed" style={{ letterSpacing: '-0.05em' }}>{feature}</span>
                             </div>
                           ))}
                           {plan.features.length > 6 && (
-                            <p className="text-xs text-[#666] font-mono pl-5" style={{ letterSpacing: '-0.05em' }}>
+                            <p className="text-xs text-gray-500 font-mono pl-5" style={{ letterSpacing: '-0.05em' }}>
                               +{plan.features.length - 6} more features
                             </p>
                           )}
@@ -1072,10 +1066,10 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                           disabled={(currentPlan === plan.id) || isLoading}
                           className={`w-full h-9 text-xs font-medium rounded-sm transition-all duration-200 font-mono ${
                             currentPlan === plan.id
-                              ? 'bg-[#222] text-[#666] border border-[#333] cursor-not-allowed'
+                              ? 'bg-gray-700 text-gray-300 border border-gray-600 cursor-not-allowed'
                               : plan.isRecommended
                                 ? 'bg-white hover:bg-gray-100 text-black border-0'
-                                : 'bg-[#1a1a1a] hover:bg-[#222] text-white border border-[#333]'
+                                : 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-700'
                           }`}
                           style={{ letterSpacing: '-0.05em' }}
                         >
@@ -1095,8 +1089,8 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                   </div>
 
                   {/* Trust indicators */}
-                  <div className="text-center pt-4 border-t border-[#1a1a1a]">
-                    <div className="flex items-center justify-center gap-4 text-xs text-[#666] mb-3 font-mono" style={{ letterSpacing: '-0.05em' }}>
+                  <div className="text-center pt-4 border-t border-gray-700">
+                    <div className="flex items-center justify-center gap-4 text-xs text-gray-500 mb-3 font-mono" style={{ letterSpacing: '-0.05em' }}>
                       <span>Secure payment</span>
                       <span>•</span>
                       <span>SSL encrypted</span>
@@ -1114,7 +1108,7 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                           showToast('Please contact support to manage your subscription')
                         }
                       }}
-                      className="text-[#666] hover:text-[#999] text-[10px] font-mono transition-colors duration-200"
+                      className="text-gray-500 hover:text-gray-300 text-[10px] font-mono transition-colors duration-200"
                       style={{ letterSpacing: '-0.05em' }}
                     >
                       Need to cancel or manage payment methods?

@@ -33,7 +33,7 @@ export function AttributionPageSkeleton() {
       }
 
   return (
-    <div className="min-h-screen min-w-screen bg-white dark:bg-[#0c0c0c] text-black dark:text-white">
+    <div className="min-h-screen min-w-screen bg-[#f9f9f9] text-gray-900">
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -48,7 +48,7 @@ export function AttributionPageSkeleton() {
           <ChartSkeleton 
             showHeader={true}
             showStats={true}
-            className="h-full"
+            className="h-[calc(100vh-72px)]"
           />
         </motion.div>
 
@@ -57,11 +57,11 @@ export function AttributionPageSkeleton() {
           {/* Attribution by Source Card */}
           <motion.div
             variants={itemVariants}
-            className="flex-1"
+            className="h-[calc(55vh-36px)]"
           >
             <ListSkeleton 
               itemType="crawler"
-              items={5}
+              items={6}
               showProgress={true}
               className="h-full"
             />
@@ -70,7 +70,7 @@ export function AttributionPageSkeleton() {
           {/* Crawls by Page Card */}
           <motion.div
             variants={itemVariants}
-            className="flex-1"
+            className="h-[calc(55vh-36px)]"
           >
             <ListSkeleton 
               itemType="page"

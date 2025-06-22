@@ -163,7 +163,7 @@ export default function AttributionBySourcePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c] text-white">
+    <div className="min-h-screen bg-gray-50 text-gray-900">
       <div id="source-list-export" className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
         <motion.div
@@ -174,17 +174,17 @@ export default function AttributionBySourcePage() {
           <div className="flex items-center gap-2 mb-4">
             <Link 
               href="/dashboard/attribution" 
-              className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors"
+              className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span className="text-sm">Back to Overview</span>
+              <span className="text-sm font-medium">Back to Overview</span>
             </Link>
           </div>
           
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-semibold text-white mb-2">Attribution by Source</h1>
-              <p className="text-zinc-400">Crawler bots ({timeframe.toLowerCase()})</p>
+              <h1 className="text-3xl font-semibold text-gray-900 mb-2">Attribution by Source</h1>
+              <p className="text-gray-600">Crawler bots ({timeframe.toLowerCase()})</p>
             </div>
             <div className="flex items-center gap-4">
               {!userPlanLoading && (
@@ -193,8 +193,8 @@ export default function AttributionBySourcePage() {
                   title=""
                   timeframe={timeframe}
                   onTimeframeChange={setTimeframe}
-                  titleColor="text-white"
-                  selectorColor="text-zinc-400"
+                  titleColor="text-gray-900"
+                  selectorColor="text-gray-600"
                   userPlan={userPlan}
                 />
               )}
@@ -208,7 +208,7 @@ export default function AttributionBySourcePage() {
 
         {switching ? (
           <div className="flex items-center justify-center h-96">
-            <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
+            <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
           </div>
         ) : isLoading ? (
           <TableSkeleton 
@@ -220,12 +220,12 @@ export default function AttributionBySourcePage() {
               { span: 2, align: 'center' },
               { span: 2, align: 'right' }
             ]}
-            showExpandableRows={true}
+            showExpandableRows={false}
           />
         ) : (
-          <div className="bg-zinc-900/20 border border-zinc-800/50 rounded-lg overflow-hidden">
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
             {/* Table Header */}
-            <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-zinc-900/30 border-b border-zinc-800/50 text-xs font-medium text-zinc-400 uppercase tracking-wider">
+            <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-600 uppercase tracking-wider">
               <div className="col-span-4">Bot Name</div>
               <div className="col-span-2 text-center">Total Crawls</div>
               <div className="col-span-2 text-center">Paths Visited</div>
@@ -234,7 +234,7 @@ export default function AttributionBySourcePage() {
             </div>
 
             {/* Table Body */}
-            <div className="divide-y divide-zinc-800/30">
+            <div className="divide-y divide-gray-200">
               {bots.map((bot, index) => (
                 <motion.div
                   key={bot.botName}
@@ -244,38 +244,40 @@ export default function AttributionBySourcePage() {
                 >
                   <Link 
                     href={`/dashboard/attribution/source/${encodeURIComponent(bot.botName)}`}
-                    className="grid grid-cols-12 gap-4 px-4 py-4 hover:bg-zinc-900/20 cursor-pointer transition-colors block"
+                    className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors block"
                   >
                     <div className="col-span-4 flex items-center gap-3">
-                      <img 
-                        src={getFaviconForCompany(bot.company)}
-                        alt={bot.company}
-                        width={16}
-                        height={16}
-                        className="w-4 h-4 object-contain"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement
-                          target.style.display = 'none'
-                        }}
-                      />
+                      <div className="flex items-center justify-center w-8 h-8 bg-gray-50 border border-gray-200 rounded-lg">
+                        <img 
+                          src={getFaviconForCompany(bot.company)}
+                          alt={bot.company}
+                          width={16}
+                          height={16}
+                          className="w-4 h-4 object-contain"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.style.display = 'none'
+                          }}
+                        />
+                      </div>
                       <div>
-                        <div className="text-white text-sm font-medium hover:text-blue-400 transition-colors">
+                        <div className="text-gray-900 text-sm font-medium hover:text-blue-600 transition-colors">
                           {bot.botName}
                         </div>
-                        <div className="text-zinc-500 text-xs">{bot.company}</div>
+                        <div className="text-gray-500 text-xs">{bot.company}</div>
                       </div>
                     </div>
                     <div className="col-span-2 text-center">
-                      <div className="text-white text-sm font-mono">{bot.totalCrawls.toLocaleString()}</div>
+                      <div className="text-gray-900 text-sm font-mono font-medium">{bot.totalCrawls.toLocaleString()}</div>
                     </div>
                     <div className="col-span-2 text-center">
-                      <div className="text-white text-sm font-mono">{bot.pathsVisited}</div>
+                      <div className="text-gray-900 text-sm font-mono font-medium">{bot.pathsVisited}</div>
                     </div>
                     <div className="col-span-2 text-center">
-                      <div className="text-zinc-300 text-sm">{bot.avgInterval}</div>
+                      <div className="text-gray-700 text-sm">{bot.avgInterval}</div>
                     </div>
                     <div className="col-span-2 text-right">
-                      <div className="text-zinc-400 text-sm">{formatRelativeTime(bot.lastSeen)}</div>
+                      <div className="text-gray-600 text-sm">{formatRelativeTime(bot.lastSeen)}</div>
                     </div>
                   </Link>
                 </motion.div>
@@ -284,7 +286,7 @@ export default function AttributionBySourcePage() {
 
             {bots.length === 0 && !isLoading && (
               <div className="text-center py-12">
-                <p className="text-zinc-500 text-sm">No crawler bots found for this timeframe.</p>
+                <p className="text-gray-500 text-sm">No crawler bots found for this timeframe.</p>
               </div>
             )}
           </div>
