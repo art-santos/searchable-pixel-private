@@ -1,92 +1,129 @@
 'use client'
 
 import { SplitSidebar } from '@/components/layout/split-sidebar'
+import { SplitTopbar } from '@/components/layout/split-topbar'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout'
 import { useState } from 'react'
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
-import { SidebarProvider } from "@/components/ui/sidebar"
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const [showSidebar, setShowSidebar] = useState(false)
-  const shouldReduceMotion = useReducedMotion()
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  const handleSidebarToggle = () => {
+    setSidebarCollapsed(!sidebarCollapsed)
+  }
 
   return (
     <AuthenticatedLayout>
-      <div className="relative min-h-screen">
-        {/* Hover Zone - Much wider strip on left edge */}
-        <div 
-          className="fixed left-0 top-0 w-32 h-full z-40"
-          onMouseEnter={() => setShowSidebar(true)}
-        />
+      <div className="min-h-screen bg-[#f9f9f9] flex">
+        {/* Permanent Sidebar */}
+        <div className={`${sidebarCollapsed ? 'w-[72px]' : 'w-60'} flex-shrink-0 bg-white transition-all duration-300 ease-out`}>
+          <SplitSidebar 
+            isCollapsed={sidebarCollapsed}
+            onToggle={handleSidebarToggle}
+          />
+        </div>
 
-        {/* Sidebar Overlay */}
-        <AnimatePresence>
-          {showSidebar && (
-            <>
-              {/* Backdrop */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={shouldReduceMotion ?
-                  { duration: 0.15 } :
-                  { 
-                    duration: 0.25, 
-                    ease: [0.25, 0.1, 0.25, 1] 
-                  }
-                }
-                className="fixed inset-0 bg-black/20 z-40"
-                onClick={() => setShowSidebar(false)}
-              />
-              
-              {/* Sidebar Container - includes hover area */}
-              <motion.div
-                initial={{ 
-                  x: -280,
-                  opacity: 0.95
-                }}
-                animate={{ 
-                  x: 0,
-                  opacity: 1
-                }}
-                exit={{ 
-                  x: -280,
-                  opacity: 0.95
-                }}
-                transition={shouldReduceMotion ? 
-                  { duration: 0.15, ease: "easeOut" } :
-                  { 
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 30,
-                    mass: 0.8,
-                    duration: 0.25
-                  }
-                }
-                className="fixed left-0 top-0 h-full z-50 flex"
-                onMouseLeave={() => setShowSidebar(false)}
-              >
-                <SidebarProvider>
-                  <SplitSidebar />
-                </SidebarProvider>
-                {/* Extended hover area when sidebar is open - much wider */}
-                <div className="w-40 h-full" />
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-
-        {/* Main Content */}
-        <div className="flex flex-col min-h-screen">
+        {/* Main Content Area */}
+        <div className="flex-1 min-w-0 flex flex-col">
+          {/* Top Bar */}
+          <SplitTopbar 
+            sidebarCollapsed={sidebarCollapsed}
+            onSidebarToggle={handleSidebarToggle}
+          />
+          
+          {/* Page Content */}
           <div className="flex-1 overflow-auto">
             {children}
           </div>
         </div>
       </div>
+
+      {/* Styles for light theme components */}
+      <style>{`
+        /* Light theme for domain selector */
+        .domain-selector-light > div {
+          min-width: 200px;
+        }
+        
+        .domain-selector-light button[data-state="closed"],
+        .domain-selector-light button[data-state="open"] {
+          background-color: transparent;
+          border: none;
+          padding: 0.5rem 0.75rem;
+          height: auto;
+          border-radius: 0;
+          font-size: 0.9375rem;
+          display: flex;
+          align-items: center;
+          width: 100%;
+          justify-content: space-between;
+          transition: background-color 0.15s ease;
+        }
+        
+        .domain-selector-light button[data-state="closed"]:hover,
+        .domain-selector-light button[data-state="open"]:hover {
+          background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        .domain-selector-light button > div {
+          gap: 0.5rem !important;
+          flex: 1;
+          display: flex;
+          align-items: center;
+        }
+        
+        .domain-selector-light button svg {
+          margin-left: 0.25rem !important;
+          flex-shrink: 0;
+          transition: transform 0.2s ease;
+        }
+        
+        .domain-selector-light button[data-state="open"] svg {
+          transform: rotate(180deg);
+        }
+        
+        .domain-selector-light span {
+          color: #000 !important;
+        }
+        
+        .domain-selector-light span.truncate {
+          overflow: visible !important;
+          text-overflow: clip !important;
+          white-space: nowrap !important;
+          max-width: none !important;
+        }
+        
+        .domain-selector-light svg {
+          color: #666 !important;
+        }
+        
+        /* Light theme for search bar */
+        .search-bar-light input {
+          color: #1f2937 !important;
+          background-color: transparent !important;
+        }
+        
+        .search-bar-light input::placeholder {
+          color: #6b7280 !important;
+        }
+        
+        .search-bar-light svg {
+          color: #6b7280 !important;
+        }
+        
+        .search-bar-light [class*="border-gray"] {
+          border-color: #d1d5db !important;
+          background-color: transparent !important;
+        }
+        
+        .search-bar-light [class*="text-gray"] {
+          color: #374151 !important;
+        }
+      `}</style>
     </AuthenticatedLayout>
   )
 } 

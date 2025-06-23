@@ -6,10 +6,7 @@ import { WelcomeCard } from './components/welcome-card'
 import { CrawlerVisitsCard } from './components/crawler-visits-card'
 import { motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useState } from 'react'
-import { CheckCircle2, XCircle, X, Bell } from 'lucide-react'
-import { ConnectAnalyticsDialog } from "@/app/dashboard/components/connect-analytics-dialog"
-import { SearchBar } from "@/components/layout/search-bar"
-import { DomainSelector } from "@/components/custom/domain-selector"
+import { CheckCircle2, XCircle, X } from 'lucide-react'
 import { AttributionBySourceWhiteCard } from "./components/attribution-by-source-white-card"
 import { HelpCenterWhiteCard } from "./components/help-center-white-card"
 import { LeadsWhiteCard } from "./components/leads-white-card"
@@ -133,43 +130,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#f9f9f9] flex flex-col">
-      {/* Top Bar */}
-      <div className="w-full pt-4">
-        <div className="w-full px-2 sm:px-4">
-          <div className="h-[60px] sm:h-[60px] bg-white border border-gray-200 rounded-sm shadow-sm">
-            <div className="h-full w-full flex items-center px-3 sm:px-6">
-              {/* Logo and Search */}
-              <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
-                {/* Logo */}
-                <img 
-                  src="/images/split-icon-black.svg" 
-                  alt="Split" 
-                  className="h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0"
-                />
-
-                {/* Search Bar */}
-                <div className="max-w-xl flex-1 search-bar-light min-w-0">
-                  <SearchBar />
-                </div>
-              </div>
-
-              {/* Right Section */}
-              <div className="flex items-center gap-1 flex-shrink-0">
-                {/* Notifications Bell */}
-                <button className="p-1.5 text-gray-500 hover:text-gray-700 transition-colors">
-                  <Bell className="w-4 h-4" />
-                </button>
-
-                {/* Domain Selector */}
-                <div className="domain-selector-light hidden sm:block">
-                  <DomainSelector showAddButton position="topbar" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Main Content */}
       <motion.main 
         className="w-full px-2 sm:px-4 pt-4 pb-6 flex-1"
@@ -310,86 +270,6 @@ export default function Dashboard() {
         
         .workspace-flip-animation {
           animation: workspaceFlip 2s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
-        }
-        
-        /* Light theme for domain selector */
-        .domain-selector-light > div {
-          min-width: 200px;
-        }
-        
-        .domain-selector-light button[data-state="closed"],
-        .domain-selector-light button[data-state="open"] {
-          background-color: transparent;
-          border: none;
-          padding: 0.5rem 0.75rem;
-          height: auto;
-          border-radius: 0;
-          font-size: 0.9375rem;
-          display: flex;
-          align-items: center;
-          width: 100%;
-          justify-content: space-between;
-          transition: background-color 0.15s ease;
-        }
-        
-        .domain-selector-light button[data-state="closed"]:hover,
-        .domain-selector-light button[data-state="open"]:hover {
-          background-color: rgba(0, 0, 0, 0.05);
-        }
-        
-        .domain-selector-light button > div {
-          gap: 0.5rem !important;
-          flex: 1;
-          display: flex;
-          align-items: center;
-        }
-        
-        .domain-selector-light button svg {
-          margin-left: 0.25rem !important;
-          flex-shrink: 0;
-          transition: transform 0.2s ease;
-        }
-        
-        .domain-selector-light button[data-state="open"] svg {
-          transform: rotate(180deg);
-        }
-        
-        .domain-selector-light span {
-          color: #000 !important;
-        }
-        
-        .domain-selector-light span.truncate {
-          overflow: visible !important;
-          text-overflow: clip !important;
-          white-space: nowrap !important;
-          max-width: none !important;
-        }
-        
-        .domain-selector-light svg {
-          color: #666 !important;
-        }
-        
-        /* Light theme for search bar */
-        .search-bar-light input {
-          color: #1f2937 !important;
-          background-color: transparent !important;
-        }
-        
-        .search-bar-light input::placeholder {
-          color: #6b7280 !important;
-        }
-        
-        .search-bar-light svg {
-          color: #6b7280 !important;
-        }
-        
-        .search-bar-light [class*="border-gray"] {
-          border-color: #d1d5db !important;
-          background-color: transparent !important;
-        }
-        
-        .search-bar-light [class*="text-gray"] {
-          color: #374151 !important;
         }
       `}</style>
     </div>
