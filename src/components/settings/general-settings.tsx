@@ -224,8 +224,8 @@ export function GeneralSettings({ usageData, onRefreshUsage }: GeneralSettingsPr
       return { included: 0, total: 0 }
     }
     
-    const included = plan === 'team' ? 5 : 1
-    const extraDomains = usageData?.addOns?.find((addon: any) => addon.add_on_type === 'extra_domains')?.quantity || 0
+          const included = plan === 'pro' ? 3 : 1
+    const extraDomains = 0 // Removed: Add-ons no longer supported
     return { included, total: included + extraDomains }
   }
 

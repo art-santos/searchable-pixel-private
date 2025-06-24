@@ -373,8 +373,7 @@ export async function saveOnboardingData(
           team_members_used: 1, // Count the user themselves
           ai_logs_included: 1000,
           ai_logs_used: 0,
-          extra_domains: 0,
-          edge_alerts_enabled: false,
+                // Removed: Add-ons no longer supported
           cancel_at_period_end: false,
         }
         

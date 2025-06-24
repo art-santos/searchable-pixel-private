@@ -101,8 +101,7 @@ export async function GET() {
         }
       },
       add_ons: {
-        extra_domains: subscriptionData.extra_domains,
-        edge_alerts_enabled: subscriptionData.edge_alerts_enabled,
+        // Removed: Add-ons no longer supported
         active_add_ons: addOns || []
       },
       billing_preferences: subscriptionData.billing_preferences
@@ -162,8 +161,7 @@ export async function PUT(request: Request) {
       const { error: addOnsError } = await supabase
         .from('subscription_info')
         .update({
-          extra_domains: add_ons.extra_domains || 0,
-          edge_alerts_enabled: add_ons.edge_alerts_enabled || false
+                  // Removed: Add-ons no longer supported
         })
         .eq('user_id', user.id)
 

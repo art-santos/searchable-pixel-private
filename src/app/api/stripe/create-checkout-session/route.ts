@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
       isAnnual = false, 
       customerId, 
       customerEmail,
-      addOns = {},
+      credits,
       successUrl,
       cancelUrl
     } = await req.json()
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       isAnnual,
       customerId: stripeCustomerId,
       customerEmail: email,
-      addOns,
+      credits: planId === 'pro' ? credits : undefined,
       trialDays,
       successUrl: successUrl || `${process.env.NEXT_PUBLIC_APP_URL}/settings?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: cancelUrl || `${process.env.NEXT_PUBLIC_APP_URL}/settings?canceled=true`,

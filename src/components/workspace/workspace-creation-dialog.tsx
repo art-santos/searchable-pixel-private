@@ -77,7 +77,7 @@ export function WorkspaceCreationDialog({
         throw new Error(data.error || 'Failed to create workspace')
       }
 
-      // Workspace created successfully - no additional billing sync needed for Team plan
+      // Workspace created successfully
 
       toast({
         title: "Workspace Created!",
@@ -134,7 +134,7 @@ export function WorkspaceCreationDialog({
               Create a new workspace to track a different domain. Each workspace is completely isolated.
             </p>
             <p className="text-xs text-[#666]">
-              💡 Team plan includes 5 workspaces (1 primary + 4 additional). Pro/Starter plans can purchase extra domains.
+              💡 Pro plan includes 3 workspaces. Starter plan includes 1 workspace.
             </p>
           </div>
 

@@ -46,7 +46,7 @@ export function PlanEnforcement({
         setCurrentPlan(plan)
         
         // Show enforcement if no active plan
-        if (!plan || status !== 'active' || !['starter', 'pro', 'team'].includes(plan)) {
+        if (!plan || status !== 'active' || !['starter', 'pro'].includes(plan)) {
           setIsOpen(true)
         }
       } else {
@@ -97,7 +97,7 @@ export function PlanEnforcement({
   }
 
   // Don't show if user has valid subscription
-  if (currentPlan && ['starter', 'pro', 'team'].includes(currentPlan) && !forceShow) {
+  if (currentPlan && ['starter', 'pro'].includes(currentPlan) && !forceShow) {
     return null
   }
 
@@ -232,7 +232,7 @@ export function usePlanEnforcement() {
         
         const hasValidSubscription = plan && 
           status === 'active' && 
-          ['starter', 'pro', 'team'].includes(plan)
+          ['starter', 'pro'].includes(plan)
         
         setNeedsSubscription(!hasValidSubscription)
         setIsLoading(false)

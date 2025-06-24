@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
        console.log('📋 [SYNC] Final metadata plan_id:', planFromMetadata)
        
        // Use metadata plan_id as authoritative source
-       if (planFromMetadata && ['starter', 'pro', 'team'].includes(planFromMetadata)) {
+       if (planFromMetadata && ['starter', 'pro'].includes(planFromMetadata)) {
          actualPlan = planFromMetadata
        } else {
          // Fallback to price ID parsing if no metadata

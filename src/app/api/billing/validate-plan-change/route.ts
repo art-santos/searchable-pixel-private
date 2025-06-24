@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'New plan required' }, { status: 400 })
     }
 
-    if (!['starter', 'pro', 'team'].includes(newPlan)) {
+    if (!['starter', 'pro'].includes(newPlan)) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
     }
 
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       .from('subscription_add_ons')
       .select('quantity')
       .eq('user_id', user.id)
-      .eq('add_on_type', 'extra_domains')
+              // Removed: Add-ons no longer supported
       .eq('is_active', true)
       .single()
 

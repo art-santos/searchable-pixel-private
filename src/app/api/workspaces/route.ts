@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Domain and workspace name are required' }, { status: 400 })
     }
 
-    // Check user's subscription plan - only Team plan can have multiple workspaces
+    // Check user's subscription plan - Pro plan allows multiple workspaces
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('subscription_plan')
@@ -70,43 +70,24 @@ export async function POST(request: NextRequest) {
     // Enforce workspace limits based on plan
     const plan = profile.subscription_plan || 'starter'
     let maxWorkspaces = 1 // Default for starter
-    let includedWorkspaces = 1 // Base included workspaces
 
-    // Set base limits for each plan
+    // Set workspace limits for each plan
     if (plan === 'pro') {
-      maxWorkspaces = 1 // Pro gets 1 included
-      includedWorkspaces = 1
-    } else if (plan === 'team') {
-      maxWorkspaces = 5 // Team gets 5 included (1 primary + 4 additional)
-      includedWorkspaces = 5
+      maxWorkspaces = 3 // Pro gets 3 workspaces
     }
-
-    // Check for extra domain add-ons for ALL plans that support them (Pro and Team)
-    if (plan === 'pro' || plan === 'team') {
-      const { data: addOns } = await supabase
-        .from('subscription_add_ons')
-        .select('quantity')
-        .eq('user_id', user.id)
-        .eq('add_on_type', 'extra_domains')
-        .eq('is_active', true)
-        .single()
-      
-      if (addOns?.quantity) {
-        maxWorkspaces += addOns.quantity // Add extra domains beyond base plan
-      }
-    }
+    // Starter stays at 1 workspace
 
     if ((workspaceCount || 0) >= maxWorkspaces) {
-      if (plan === 'team') {
+      if (plan === 'pro') {
         return NextResponse.json({ 
-          error: `Team plan includes up to ${maxWorkspaces} workspaces. You've reached the limit.`,
+          error: `Your Pro plan includes up to ${maxWorkspaces} workspaces. You've reached the limit.`,
           requiresUpgrade: false
         }, { status: 403 })
       } else {
         return NextResponse.json({ 
-          error: 'Multiple workspaces require Team plan. Upgrade to create additional workspaces.',
+          error: 'Multiple workspaces require Pro plan. Upgrade to create up to 3 workspaces.',
           requiresUpgrade: true,
-          requiredPlan: 'team'
+          requiredPlan: 'pro'
         }, { status: 403 })
       }
     }

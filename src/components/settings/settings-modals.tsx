@@ -6,7 +6,6 @@ import { CheckCircle2, X, Check, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSearchParams } from 'next/navigation'
 import { UpgradeDialog } from '@/components/subscription/upgrade-dialog'
-import { DomainAddonDialog } from '@/components/subscription/domain-addon-dialog'
 import { WorkspaceDeletionDialog } from '@/components/workspace/workspace-deletion-dialog'
 import type { PlanType } from '@/lib/subscription/config'
 import { useAuth } from '@/contexts/AuthContext'
@@ -20,7 +19,6 @@ export function SettingsModals() {
     requiredPlan?: PlanType
     fromPath?: string
   }>({})
-  const [showDomainDialog, setShowDomainDialog] = useState(false)
   const [showWorkspaceDeletionDialog, setShowWorkspaceDeletionDialog] = useState(false)
   const [workspaces, setWorkspaces] = useState<any[]>([])
 
@@ -56,12 +54,6 @@ export function SettingsModals() {
         feature={upgradeDialogProps.feature}
         requiredPlan={upgradeDialogProps.requiredPlan}
         fromPath={upgradeDialogProps.fromPath}
-      />
-
-      {/* Domain Add-on Dialog */}
-      <DomainAddonDialog
-        open={showDomainDialog}
-        onOpenChange={setShowDomainDialog}
       />
 
       {/* Workspace Deletion Dialog */}

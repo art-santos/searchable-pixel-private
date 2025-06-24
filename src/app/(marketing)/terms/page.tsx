@@ -150,7 +150,7 @@ export default function TermsOfService() {
                 <ul className="list-disc list-inside space-y-2 ml-4">
                   <li><strong>Starter Plan:</strong> $30/month with 7-day free trial</li>
                   <li><strong>Pro Plan:</strong> $100/month</li>
-                  <li><strong>Team Plan:</strong> $400/month</li>
+                  <li><strong>Pro Plan:</strong> Starting at $100/month (credit-based pricing)</li>
                 </ul>
                 <p>
                   All fees are non-refundable unless otherwise specified. We reserve the right to change pricing with 30 days' notice.

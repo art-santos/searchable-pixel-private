@@ -12,16 +12,10 @@ function requireEnvVar(name: string): string {
 const STRIPE_SECRET_KEY = requireEnvVar('STRIPE_SECRET_KEY')
 const STRIPE_STARTER_MONTHLY_PRICE_ID = requireEnvVar('STRIPE_STARTER_MONTHLY_PRICE_ID')
 const STRIPE_STARTER_ANNUAL_PRICE_ID = requireEnvVar('STRIPE_STARTER_ANNUAL_PRICE_ID')
-const STRIPE_PRO_MONTHLY_PRICE_ID = requireEnvVar('STRIPE_PRO_MONTHLY_PRICE_ID')
-const STRIPE_PRO_ANNUAL_PRICE_ID = requireEnvVar('STRIPE_PRO_ANNUAL_PRICE_ID')
-const STRIPE_TEAM_MONTHLY_PRICE_ID = requireEnvVar('STRIPE_TEAM_MONTHLY_PRICE_ID')
-const STRIPE_TEAM_ANNUAL_PRICE_ID = requireEnvVar('STRIPE_TEAM_ANNUAL_PRICE_ID')
-const STRIPE_EXTRA_DOMAINS_PRICE_ID = requireEnvVar('STRIPE_EXTRA_DOMAINS_PRICE_ID')
-const STRIPE_EDGE_ALERTS_PRICE_ID = requireEnvVar('STRIPE_EDGE_ALERTS_PRICE_ID')
 
 // Initialize Stripe
 export const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: '2024-06-20',
+  apiVersion: '2025-05-28.basil',
   typescript: true,
 })
 
@@ -34,44 +28,88 @@ export function formatPrice(amount: number, currency: string = 'usd'): string {
   }).format(amount / 100)
 }
 
-// Get price ID based on plan and billing period
-export function getPriceId(planId: string, isAnnual: boolean): string | null {
-  const priceIds: Record<string, string> = {
-    starter_monthly: STRIPE_STARTER_MONTHLY_PRICE_ID,
-    starter_annual: STRIPE_STARTER_ANNUAL_PRICE_ID,
-    pro_monthly: STRIPE_PRO_MONTHLY_PRICE_ID,
-    pro_annual: STRIPE_PRO_ANNUAL_PRICE_ID,
-    team_monthly: STRIPE_TEAM_MONTHLY_PRICE_ID,
-    team_annual: STRIPE_TEAM_ANNUAL_PRICE_ID,
+// Get price ID based on plan, billing period, and credits (for Pro plan)
+export function getPriceId(planId: string, isAnnual: boolean, credits?: number): string | null {
+  // For Pro plan, use credit-based pricing
+  if (planId === 'pro') {
+    return getProPriceIdByCredits(credits || 250, isAnnual) // Default to 250 credits
   }
 
+  // For Starter plan, use standard pricing
+  if (planId === 'starter') {
+    return isAnnual ? STRIPE_STARTER_ANNUAL_PRICE_ID : STRIPE_STARTER_MONTHLY_PRICE_ID
+  }
+
+  return null
+}
+
+// Get Pro plan price ID based on credit amount
+export function getProPriceIdByCredits(credits: number, isAnnual: boolean): string | null {
   const billing = isAnnual ? 'annual' : 'monthly'
-  const key = `${planId}_${billing}`
   
-  return priceIds[key] || null
-}
-
-// Get add-on pricing IDs for fixed monthly billing
-export function getAddOnPriceId(type: 'extra_domains' | 'edge_alerts'): string | null {
-  const addOnPriceIds: Record<string, string> = {
-    extra_domains: STRIPE_EXTRA_DOMAINS_PRICE_ID,
-    edge_alerts: STRIPE_EDGE_ALERTS_PRICE_ID,
+  // Use the new credit-based price IDs
+  const creditPriceIds: Record<string, string> = {
+    // Monthly credit tiers
+    '250_monthly': process.env.STRIPE_PRO_250_MONTHLY_PRICE_ID || '',
+    '500_monthly': process.env.STRIPE_PRO_500_MONTHLY_PRICE_ID || '',
+    '1000_monthly': process.env.STRIPE_PRO_1000_MONTHLY_PRICE_ID || '',
+    '2500_monthly': process.env.STRIPE_PRO_2500_MONTHLY_PRICE_ID || '',
+    '5000_monthly': process.env.STRIPE_PRO_5000_MONTHLY_PRICE_ID || '',
+    '10000_monthly': process.env.STRIPE_PRO_10000_MONTHLY_PRICE_ID || '',
+    
+    // Annual credit tiers
+    '250_annual': process.env.STRIPE_PRO_250_ANNUAL_PRICE_ID || '',
+    '500_annual': process.env.STRIPE_PRO_500_ANNUAL_PRICE_ID || '',
+    '1000_annual': process.env.STRIPE_PRO_1000_ANNUAL_PRICE_ID || '',
+    '2500_annual': process.env.STRIPE_PRO_2500_ANNUAL_PRICE_ID || '',
+    '5000_annual': process.env.STRIPE_PRO_5000_ANNUAL_PRICE_ID || '',
+    '10000_annual': process.env.STRIPE_PRO_10000_ANNUAL_PRICE_ID || '',
   }
   
-  return addOnPriceIds[type] || null
+  const key = `${credits}_${billing}`
+  const priceId = creditPriceIds[key]
+  
+  // Return the price ID if it exists and is not empty
+  return priceId || null
 }
+
+// Removed: Add-on functionality no longer supported
 
 // Map Stripe subscription to our plan names
 export function mapSubscriptionToPlan(subscription: Stripe.Subscription): string {
   const priceId = subscription.items.data[0]?.price.id
 
+  // First check metadata for plan_id (most reliable for new subscriptions)
+  const planFromMetadata = subscription.metadata?.plan_id
+  if (planFromMetadata && ['starter', 'pro'].includes(planFromMetadata)) {
+    return planFromMetadata
+  }
+
+  // Fallback to price ID mapping
   const priceMap: Record<string, string> = {
     [STRIPE_STARTER_MONTHLY_PRICE_ID]: 'starter',
     [STRIPE_STARTER_ANNUAL_PRICE_ID]: 'starter',
-    [STRIPE_PRO_MONTHLY_PRICE_ID]: 'pro',
-    [STRIPE_PRO_ANNUAL_PRICE_ID]: 'pro',
-    [STRIPE_TEAM_MONTHLY_PRICE_ID]: 'team',
-    [STRIPE_TEAM_ANNUAL_PRICE_ID]: 'team',
+  }
+
+  // Add all Pro credit-based price IDs
+  const proCreditPriceIds = [
+    process.env.STRIPE_PRO_250_MONTHLY_PRICE_ID,
+    process.env.STRIPE_PRO_250_ANNUAL_PRICE_ID,
+    process.env.STRIPE_PRO_500_MONTHLY_PRICE_ID,
+    process.env.STRIPE_PRO_500_ANNUAL_PRICE_ID,
+    process.env.STRIPE_PRO_1000_MONTHLY_PRICE_ID,
+    process.env.STRIPE_PRO_1000_ANNUAL_PRICE_ID,
+    process.env.STRIPE_PRO_2500_MONTHLY_PRICE_ID,
+    process.env.STRIPE_PRO_2500_ANNUAL_PRICE_ID,
+    process.env.STRIPE_PRO_5000_MONTHLY_PRICE_ID,
+    process.env.STRIPE_PRO_5000_ANNUAL_PRICE_ID,
+    process.env.STRIPE_PRO_10000_MONTHLY_PRICE_ID,
+    process.env.STRIPE_PRO_10000_ANNUAL_PRICE_ID,
+  ].filter(Boolean)
+
+  // Check if it's a Pro credit-based price ID
+  if (proCreditPriceIds.includes(priceId)) {
+    return 'pro'
   }
   
   return priceMap[priceId] || 'starter' // default to starter, no free plan
@@ -96,7 +134,7 @@ export async function createCheckoutSession({
   isAnnual = false,
   customerId,
   customerEmail,
-  addOns = {},
+  credits,
   trialDays = 0,
   successUrl,
   cancelUrl
@@ -105,17 +143,14 @@ export async function createCheckoutSession({
   isAnnual?: boolean
   customerId?: string
   customerEmail: string
-  addOns?: {
-    extraDomains?: number
-    edgeAlerts?: boolean
-  }
+  credits?: number
   trialDays?: number
   successUrl: string
   cancelUrl: string
 }): Promise<Stripe.Checkout.Session> {
-  const priceId = getPriceId(planId, isAnnual)
+  const priceId = getPriceId(planId, isAnnual, credits)
   if (!priceId) {
-    throw new Error(`Invalid plan ID: ${planId}`)
+    throw new Error(`Invalid plan ID: ${planId}${credits ? ` with ${credits} credits` : ''}`)
   }
 
   const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [
@@ -124,28 +159,6 @@ export async function createCheckoutSession({
       quantity: 1,
     }
   ]
-
-  // Add extra domains add-on
-  if (addOns.extraDomains && addOns.extraDomains > 0) {
-    const domainPriceId = getAddOnPriceId('extra_domains')
-    if (domainPriceId) {
-      lineItems.push({
-        price: domainPriceId,
-        quantity: addOns.extraDomains,
-      })
-    }
-  }
-
-  // Add edge alerts add-on
-  if (addOns.edgeAlerts) {
-    const edgeAlertsPriceId = getAddOnPriceId('edge_alerts')
-    if (edgeAlertsPriceId) {
-      lineItems.push({
-        price: edgeAlertsPriceId,
-        quantity: 1,
-      })
-    }
-  }
 
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
     mode: 'subscription',
@@ -159,12 +172,14 @@ export async function createCheckoutSession({
       metadata: {
         plan_id: planId,
         billing_period: isAnnual ? 'annual' : 'monthly',
+        ...(credits && { credits: credits.toString() }),
       }
     },
     // Add metadata to help link the customer back to the user
     metadata: {
       plan_id: planId,
       billing_period: isAnnual ? 'annual' : 'monthly',
+      ...(credits && { credits: credits.toString() }),
     }
   }
 
@@ -185,141 +200,7 @@ export async function createCheckoutSession({
   return await stripe.checkout.sessions.create(sessionParams)
 }
 
-// Add subscription add-ons to an existing subscription
-export async function addSubscriptionAddOns(
-  subscriptionId: string,
-  addOns: Array<{
-    type: 'extra_domains' | 'edge_alerts'
-    quantity: number
-  }>
-): Promise<boolean> {
-  try {
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId)
-    
-    const itemsToAdd = addOns.map(addOn => {
-      const priceId = getAddOnPriceId(addOn.type)
-      if (!priceId) {
-        throw new Error(`No price ID found for ${addOn.type}`)
-      }
-      
-      return {
-        price: priceId,
-        quantity: addOn.quantity
-      }
-    })
-    
-    await stripe.subscriptions.update(subscriptionId, {
-      items: [
-        ...subscription.items.data.map(item => ({ id: item.id })),
-        ...itemsToAdd
-      ],
-      proration_behavior: 'always_invoice'
-    })
-    
-    return true
-  } catch (error) {
-    console.error('Error adding subscription add-ons:', error)
-    return false
-  }
-}
-
-// Remove subscription add-ons
-export async function removeSubscriptionAddOns(
-  subscriptionId: string,
-  addOnTypes: Array<'extra_domains' | 'edge_alerts'>
-): Promise<boolean> {
-  try {
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId)
-    
-    const addOnPriceIds = addOnTypes.map(type => getAddOnPriceId(type)).filter(Boolean)
-    
-    const itemsToKeep = subscription.items.data.filter(item => 
-      !addOnPriceIds.includes(item.price.id)
-    )
-    
-    await stripe.subscriptions.update(subscriptionId, {
-      items: itemsToKeep.map(item => ({ id: item.id })),
-      proration_behavior: 'always_invoice'
-    })
-    
-    return true
-  } catch (error) {
-    console.error('Error removing subscription add-ons:', error)
-    return false
-  }
-}
-
-// Update subscription add-on quantities
-export async function updateSubscriptionAddOn(
-  subscriptionId: string,
-  addOnType: 'extra_domains' | 'edge_alerts',
-  newQuantity: number
-): Promise<boolean> {
-  try {
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId)
-    const addOnPriceId = getAddOnPriceId(addOnType)
-    
-    if (!addOnPriceId) {
-      throw new Error(`No price ID found for ${addOnType}`)
-    }
-    
-    const existingItem = subscription.items.data.find(item => 
-      item.price.id === addOnPriceId
-    )
-    
-    if (existingItem) {
-      // Update existing add-on
-      await stripe.subscriptionItems.update(existingItem.id, {
-        quantity: newQuantity,
-        proration_behavior: 'always_invoice'
-      })
-    } else {
-      // Add new add-on
-      await stripe.subscriptionItems.create({
-        subscription: subscriptionId,
-        price: addOnPriceId,
-        quantity: newQuantity,
-        proration_behavior: 'always_invoice'
-      })
-    }
-    
-    return true
-  } catch (error) {
-    console.error('Error updating subscription add-on:', error)
-    return false
-  }
-}
-
-// Get subscription details with add-ons
-export async function getSubscriptionWithAddOns(subscriptionId: string) {
-  try {
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
-      expand: ['items.data.price']
-    })
-    
-    const mainPlan = mapSubscriptionToPlan(subscription)
-    const addOns: Record<string, number> = {}
-    
-    subscription.items.data.forEach(item => {
-      if (item.price.id === STRIPE_EXTRA_DOMAINS_PRICE_ID) {
-        addOns.extra_domains = item.quantity || 0
-      } else if (item.price.id === STRIPE_EDGE_ALERTS_PRICE_ID) {
-        addOns.edge_alerts = item.quantity || 0
-      }
-    })
-    
-    return {
-      subscription,
-      plan: mainPlan,
-      addOns,
-      isTrialing: hasActiveTrial(subscription),
-      trialEndDate: getTrialEndDate(subscription)
-    }
-  } catch (error) {
-    console.error('Error getting subscription details:', error)
-    return null
-  }
-}
+// Removed: All add-on functionality no longer supported
 
 // Create customer portal session
 export async function createPortalSession(

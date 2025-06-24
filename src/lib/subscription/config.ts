@@ -10,8 +10,8 @@ export type PlanType = keyof typeof PLANS
 export const LIMITS = {
   starter: {
     domains: { max: 1 },
-    dataRetention: 1, // Only 24 hours
-    timeframes: ['Last 24 hours'], // Only 24h timeframe
+    dataRetention: 365, // Full access to historical data
+    timeframes: ['Last 24 hours', 'Last 7 days', 'Last 30 days', 'Last 90 days', 'Last 365 days'], // Full timeframe access
     snapshots: { max: 10, period: 'month' as const },
     aiAttribution: true,
     basicInsights: true,
@@ -66,9 +66,9 @@ export const FEATURES = {
   'multi-domain': ['team', 'admin'], // 5 included for team, unlimited for admin
   'admin-access': ['admin'],
   
-  // Timeframe access
-  'extended-timeframes': ['pro', 'team', 'admin'], // 90 days, 365 days
-  'basic-timeframes': ['starter'], // 24 hours only
+  // Timeframe access - all plans now have full timeframe access
+  'extended-timeframes': ['starter', 'pro', 'admin'], // All timeframes for all plans
+  'basic-timeframes': [], // Deprecated - all plans have full access
 } as const
 
 export type FeatureType = keyof typeof FEATURES

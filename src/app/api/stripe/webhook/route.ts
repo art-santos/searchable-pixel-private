@@ -3,7 +3,6 @@ import Stripe from 'stripe'
 import { 
   stripe, 
   mapSubscriptionToPlan, 
-  getAddOnPriceId,
   validateWebhookSignature,
   hasActiveTrial 
 } from '@/lib/stripe'
@@ -81,8 +80,12 @@ export async function POST(req: NextRequest) {
           billing: (session.metadata?.billing || 'monthly') as 'monthly' | 'annual'
         })
 
-        // ✅ NEW: Sync all billing tables
-        await syncAllBillingTables(session.customer as string, session.subscription as string)
+        // ✅ NEW: Sync all billing tables with credit metadata
+        await syncAllBillingTables(
+          session.customer as string, 
+          session.subscription as string,
+          session.metadata
+        )
         
         break
       }
@@ -108,11 +111,10 @@ export async function POST(req: NextRequest) {
           currentPeriodEnd: new Date(subscription.current_period_end * 1000)
         })
 
-        // Handle add-on changes
-        await updateSubscriptionAddOns(subscription)
+        // Removed: Add-on functionality no longer supported
 
         // ✅ NEW: Sync all billing tables
-        await syncAllBillingTables(subscription.customer as string, subscription.id)
+        await syncAllBillingTables(subscription.customer as string, subscription.id, subscription.metadata)
         
         break
       }
@@ -130,7 +132,7 @@ export async function POST(req: NextRequest) {
         })
 
         // ✅ NEW: Sync all billing tables
-        await syncAllBillingTables(subscription.customer as string, subscription.id)
+        await syncAllBillingTables(subscription.customer as string, subscription.id, subscription.metadata)
         
         break
       }
@@ -164,7 +166,7 @@ export async function POST(req: NextRequest) {
 }
 
 // ✅ NEW: Function to sync ALL billing tables with Stripe data
-async function syncAllBillingTables(stripeCustomerId: string, subscriptionId: string) {
+async function syncAllBillingTables(stripeCustomerId: string, subscriptionId: string, metadata?: any) {
   try {
     const serviceSupabase = createServiceRoleClient()
     
@@ -229,7 +231,7 @@ async function syncAllBillingTables(stripeCustomerId: string, subscriptionId: st
       console.log('📋 [WEBHOOK] Final metadata plan_id:', planFromMetadata)
       
       // Use metadata plan_id as authoritative source
-      if (planFromMetadata && ['starter', 'pro', 'team'].includes(planFromMetadata)) {
+      if (planFromMetadata && ['starter', 'pro'].includes(planFromMetadata)) {
         actualPlan = planFromMetadata
       } else {
         // Fallback to price ID parsing if no metadata
@@ -237,8 +239,6 @@ async function syncAllBillingTables(stripeCustomerId: string, subscriptionId: st
           actualPlan = 'starter'
         } else if (priceId.includes('pro')) {
           actualPlan = 'pro'  
-        } else if (priceId.includes('team') || priceId.includes('enterprise')) {
-          actualPlan = 'team'
         }
       }
       
@@ -249,24 +249,48 @@ async function syncAllBillingTables(stripeCustomerId: string, subscriptionId: st
       console.error('❌ [WEBHOOK] Error retrieving Stripe subscription:', stripeError)
     }
 
-    // Handle admin users
+    // Handle admin users (give them Pro access)
     if (profile.is_admin) {
-      actualPlan = 'team'
+      actualPlan = 'pro'
       subscriptionStatus = 'active'
-      console.log('👑 [WEBHOOK] Admin user detected, using team plan')
+      console.log('👑 [WEBHOOK] Admin user detected, using pro plan')
+    }
+
+    // Extract credit allocation for Pro plans
+    let leadCredits = 0
+    if (metadata?.credits && actualPlan === 'pro') {
+      leadCredits = parseInt(metadata.credits, 10) || 250 // Default to 250 if invalid
+      console.log('💳 [WEBHOOK] Pro plan with credits:', leadCredits)
     }
 
     // Define plan limits
-    const getPlanLimits = (plan: string) => {
+    const getPlanLimits = (plan: string, credits: number = 0) => {
       switch (plan) {
-        case 'starter': return { domains: 1, aiLogs: 1000, snapshots: 10, workspaces: 1 }
-        case 'pro': return { domains: 3, aiLogs: 5000, snapshots: 50, workspaces: 3 }
-        case 'team': return { domains: 5, aiLogs: 10000, snapshots: 100, workspaces: 5 }
-        default: return { domains: 1, aiLogs: 1000, snapshots: 10, workspaces: 1 }
+        case 'starter': return { 
+          domains: 1, 
+          aiLogs: 0, // Unlimited AI crawler tracking for Starter  
+          snapshots: 0, // Unlimited snapshots for Starter
+          workspaces: 1,
+          leadCredits: 0 // No lead credits for Starter
+        }
+        case 'pro': return { 
+          domains: 1, 
+          aiLogs: 0, // Unlimited AI crawler tracking for Pro
+          snapshots: 0, // Unlimited snapshots for Pro
+          workspaces: 3,
+          leadCredits: credits || 250 // Credit-based lead generation
+        }
+        default: return { 
+          domains: 1, 
+          aiLogs: 0, 
+          snapshots: 0, 
+          workspaces: 1,
+          leadCredits: 0
+        }
       }
     }
 
-    const limits = getPlanLimits(actualPlan)
+    const limits = getPlanLimits(actualPlan, leadCredits)
     console.log('📊 [WEBHOOK] Plan limits:', limits)
 
     // 1. UPDATE PROFILES TABLE
@@ -309,7 +333,7 @@ async function syncAllBillingTables(stripeCustomerId: string, subscriptionId: st
           new Date(stripeSubscription.current_period_end * 1000).toISOString() : subscriptionInfo.current_period_end,
         domains_included: limits.domains,
         workspaces_included: limits.workspaces,
-        ai_logs_included: limits.aiLogs,
+        ai_logs_included: limits.leadCredits, // Store lead credits in ai_logs_included for now
         updated_at: new Date().toISOString()
       }
 
@@ -344,6 +368,8 @@ async function syncAllBillingTables(stripeCustomerId: string, subscriptionId: st
         domains_included: limits.domains,
         ai_logs_included: limits.aiLogs,
         snapshots_included: limits.snapshots,
+        // Use the new lead_credits_included column
+        lead_credits_included: limits.leadCredits,
         updated_at: new Date().toISOString()
       }
 
@@ -394,88 +420,7 @@ async function syncAllBillingTables(stripeCustomerId: string, subscriptionId: st
   }
 }
 
-// Helper function to update subscription add-ons in database
-async function updateSubscriptionAddOns(subscription: Stripe.Subscription) {
-  try {
-    const serviceSupabase = createServiceRoleClient()
-    
-    // Get user ID from subscription
-    const { data: profile, error: profileError } = await serviceSupabase
-      .from('profiles')
-      .select('id')
-      .eq('stripe_customer_id', subscription.customer)
-      .single()
-    
-    if (profileError || !profile) {
-      console.error('Could not find user for subscription:', subscription.id)
-      return
-    }
-
-    const userId = profile.id
-
-    // Get current billing period
-    const { data: billingPeriod, error: billingError } = await serviceSupabase
-      .rpc('get_current_billing_period', { p_user_id: userId })
-      .single()
-
-    if (billingError || !billingPeriod) {
-      console.error('Could not find billing period for user:', userId)
-      return
-    }
-
-    // Get add-on price IDs for comparison (simplified for new model)
-    const domainPriceId = getAddOnPriceId('extra_domains')
-    const edgeAlertsPriceId = getAddOnPriceId('edge_alerts')
-
-    // Mark all existing add-ons as cancelled first
-    await serviceSupabase
-      .from('subscription_add_ons')
-      .update({ status: 'cancelled' })
-      .eq('user_id', userId)
-      .eq('status', 'active')
-
-    // Process current subscription items (simplified for new model)
-    for (const item of subscription.items.data) {
-      let addOnType: 'extra_domains' | 'edge_alerts' | null = null
-      let unitPriceCents = 0
-
-      if (item.price.id === domainPriceId) {
-        addOnType = 'extra_domains'
-        unitPriceCents = 10000 // $100
-      } else if (item.price.id === edgeAlertsPriceId) {
-        addOnType = 'edge_alerts'
-        unitPriceCents = 1000 // $10
-      }
-
-      if (addOnType && item.quantity > 0) {
-        // Create or reactivate add-on record
-        const addonData = {
-          user_id: userId,
-          subscription_usage_id: billingPeriod.usage_id,
-          add_on_type: addOnType,
-          quantity: item.quantity,
-          unit_price_cents: unitPriceCents,
-          total_price_cents: item.quantity * unitPriceCents,
-          stripe_subscription_item_id: item.id,
-          status: 'active',
-          billing_period_start: billingPeriod.period_start,
-          billing_period_end: billingPeriod.period_end
-        }
-
-        await serviceSupabase
-          .from('subscription_add_ons')
-          .upsert(addonData, {
-            onConflict: 'user_id,add_on_type,status'
-          })
-
-        console.log(`✅ Updated ${addOnType} add-on: ${item.quantity} units`)
-      }
-    }
-
-  } catch (error) {
-    console.error('Error updating subscription add-ons:', error)
-  }
-}
+// Removed: Add-on functionality no longer supported
 
 // ✅ NEW: Function to mark payment method as verified for a specific customer
 async function markPaymentMethodVerified(

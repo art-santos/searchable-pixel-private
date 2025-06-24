@@ -100,8 +100,7 @@ export async function GET(request: NextRequest) {
         }
       },
       addOns: {
-        extraDomains: subscription.extra_domains,
-        edgeAlertsEnabled: subscription.edge_alerts_enabled
+        // Removed: Add-ons no longer supported
       },
       billingPreferences: subscription.billing_preferences
     })
