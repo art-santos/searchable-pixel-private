@@ -77,4 +77,8 @@ export interface PricingPlan {
   buttonStyle: string
   badge?: string
   badgeColor?: string
+  hasCredits?: boolean
+  baseCredits?: number
+  maxCredits?: number
+  isEnterprise?: boolean
 } 

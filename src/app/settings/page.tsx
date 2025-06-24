@@ -137,14 +137,9 @@ export default function SettingsPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <div className="max-w-7xl mx-auto">
         <div className="max-w-5xl mx-auto px-6 py-8">
-          {/* Header */}
-          <div className="bg-[#191919] rounded-lg px-6 py-6 mb-8">
-            <h1 className="text-2xl font-semibold text-white tracking-tight">Settings</h1>
-            <p className="text-gray-300 mt-1">Manage your workspace and integrations</p>
-          </div>
           <div className="flex gap-8">
             {/* Sidebar Navigation */}
             <nav className="w-64 flex-shrink-0">

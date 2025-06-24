@@ -3,10 +3,13 @@
 import { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
-import { Loader2, Plus, Minus, Globe, Zap, X, CheckCircle2, Check, Lock as LockIcon } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Loader2, Crown, CheckCircle2, Check, Mail, MessageSquare, CreditCard, AlertCircle, X, Minus, Plus, HelpCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
-import { PRICING_PLANS } from '@/components/onboarding/utils/onboarding-constants'
+import { getCalApi } from "@calcom/embed-react"
+import { PRICING_PLANS, CREDIT_PRICING_TIERS } from '@/components/onboarding/utils/onboarding-constants'
 import { WorkspaceDeletionDialog } from '@/components/workspace/workspace-deletion-dialog'
 
 interface BillingSettingsProps {
@@ -22,9 +25,8 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
   const [stripeCustomerId, setStripeCustomerId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showPricingModal, setShowPricingModal] = useState(false)
-  const [isAnnualBilling, setIsAnnualBilling] = useState(false)
-  const [extraDomains, setExtraDomains] = useState(0)
-  const [isUpdatingAddOns, setIsUpdatingAddOns] = useState(false)
+  const [isAnnualBilling, setIsAnnualBilling] = useState(true)
+  const [selectedCredits, setSelectedCredits] = useState(250)
   const [workspaces, setWorkspaces] = useState<any[]>([])
   const [showSuccessToast, setShowSuccessToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
@@ -32,7 +34,14 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
   const [preferencesSaveMessage, setPreferencesSaveMessage] = useState('')
   const [highlightedSection, setHighlightedSection] = useState<string | null>(null)
   const [showWorkspaceDeletionDialog, setShowWorkspaceDeletionDialog] = useState(false)
-  const [domainsToRemove, setDomainsToRemove] = useState(0)
+
+  // Initialize Cal.com
+  useEffect(() => {
+    (async function () {
+      const cal = await getCalApi({"namespace":"split"});
+      cal("ui", {"hideEventTypeDetails":false,"layout":"month_view"});
+    })();
+  }, [])
 
   // Fetch subscription data on mount
   useEffect(() => {
@@ -41,11 +50,10 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
         const response = await fetch('/api/user/subscription')
         if (response.ok) {
           const data = await response.json()
-          console.log('Subscription data:', data) // Debug log
-          console.log('Stripe Customer ID from API:', data.stripeCustomerId) // More specific debug
+          console.log('Subscription data:', data)
           setStripeCustomerId(data.stripeCustomerId)
           const plan = data.subscriptionPlan || null
-          setCurrentPlan(plan || 'starter') // Default for display, but will force upgrade
+          setCurrentPlan(plan || 'starter')
           
           // If no active plan, force upgrade modal
           if (!plan || data.subscriptionStatus !== 'active') {
@@ -62,7 +70,6 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
         }
       } catch (error) {
         console.error('Error fetching subscription:', error)
-        // On error, also show upgrade modal to be safe
         setShowPricingModal(true)
       }
     }
@@ -111,267 +118,9 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
     }
   }, [user, usageData])
 
-  // Initialize add-ons from usage data
-  useEffect(() => {
-    if (usageData?.addOns) {
-      const domainsAddon = usageData.addOns.find((addon: any) => addon.add_on_type === 'extra_domains')
-      const backendSlots = domainsAddon?.quantity || 0
-      console.log('Syncing extraDomains from backend:', backendSlots)
-      setExtraDomains(backendSlots)
-    }
-  }, [usageData])
-
-  // Auto-sync billing slots for admin accounts with workspace mismatch
-  useEffect(() => {
-    if (workspaces.length > 0 && usageData) {
-      const extraWorkspaceCount = workspaces.filter(ws => !ws.is_primary).length
-      
-      // If we have extra workspaces but no billing slots, auto-sync for admin accounts
-      if (extraWorkspaceCount > 0 && extraDomains === 0) {
-        console.log('Admin account detected: auto-syncing billing slots', { extraWorkspaceCount, extraDomains })
-        setExtraDomains(extraWorkspaceCount)
-      }
-    }
-  }, [workspaces, extraDomains, usageData])
-
-  // Function to save billing preferences
-  const saveBillingPreferences = async (preferences: any) => {
-    setSavingPreferences(true)
-    setPreferencesSaveMessage('')
-    
-    try {
-      const response = await fetch('/api/billing/preferences', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ preferences })
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to save preferences')
-      }
-      
-      setPreferencesSaveMessage('Saved successfully')
-      onRefreshUsage()
-      
-      // Clear success message after 2 seconds
-      setTimeout(() => setPreferencesSaveMessage(''), 2000)
-    } catch (error) {
-      setPreferencesSaveMessage('Failed to save')
-      console.error('Error saving preferences:', error)
-      
-      // Clear error message after 3 seconds
-      setTimeout(() => setPreferencesSaveMessage(''), 3000)
-    } finally {
-      setSavingPreferences(false)
-    }
-  }
-
-  // Calculate actual workspace counts with proper billing logic
-  const getWorkspaceCounts = () => {
-    const totalWorkspaces = workspaces.length
-    const primaryWorkspaces = workspaces.filter(ws => ws.is_primary).length
-    
-    // Calculate included vs extra workspaces based on plan
-    let includedLimit = 1 // Default for starter/pro
-    if (currentPlan === 'team') {
-      includedLimit = 5
-    }
-    
-    const includedWorkspaces = Math.min(totalWorkspaces, includedLimit)
-    const extraWorkspaces = Math.max(0, totalWorkspaces - includedLimit)
-    
-    return {
-      total: totalWorkspaces,
-      included: includedWorkspaces,
-      extra: extraWorkspaces,
-      primary: primaryWorkspaces,
-      availableIncluded: Math.max(0, includedLimit - totalWorkspaces)
-    }
-  }
-
-  // Get snapshot limit based on plan
-  const getSnapshotLimit = () => {
-    // Use actual data from usage API if available
-    if (usageData?.snapshots?.included !== undefined) {
-      return usageData.snapshots.included
-    }
-    
-    // Fallback to plan-based limits
-    switch (currentPlan) {
-      case 'starter': return 10
-      case 'pro': return 50
-      case 'team': return 100
-      case 'admin': return -1 // unlimited
-      default: return 10 // free tier default
-    }
-  }
-
-  const workspaceCounts = getWorkspaceCounts()
-
-  // Handle add domain
-  const handleAddDomain = async () => {
-    const needsBillingSlot = workspaceCounts.extra >= extraDomains
-    
-    if (needsBillingSlot) {
-      setIsUpdatingAddOns(true)
-      try {
-        const response = await fetch('/api/billing/manage-addons', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: extraDomains === 0 ? 'add' : 'update',
-            addonType: 'extra_domains',
-            quantity: extraDomains + 1
-          })
-        })
-        
-        if (response.ok) {
-          setExtraDomains(extraDomains + 1)
-          await onRefreshUsage()
-          showToast('Domain slot added! You can now create a new workspace.')
-        } else {
-          const error = await response.json()
-          showToast(error.error || 'Failed to add domain slot')
-        }
-      } catch (error) {
-        console.error('Error adding domain:', error)
-        showToast('Failed to add domain slot')
-      } finally {
-        setIsUpdatingAddOns(false)
-      }
-    } else {
-      showToast('You have available domain slots. Use the domain selector to create a new workspace.')
-    }
-  }
-
-  // Handle remove domain with workspace deletion check
-  const handleRemoveDomain = async () => {
-    if (extraDomains === 0) return
-    
-    // Calculate if removing this add-on would require workspace deletion
-    const newAddOnCount = extraDomains - 1
-    const includedLimit = currentPlan === 'team' ? 5 : 1
-    const newMaxWorkspaces = includedLimit + newAddOnCount
-    const currentWorkspaceCount = workspaces.length
-    
-    if (currentWorkspaceCount > newMaxWorkspaces) {
-      const workspacesToDelete = currentWorkspaceCount - newMaxWorkspaces
-      
-      // Show workspace deletion dialog
-      setDomainsToRemove(workspacesToDelete)
-      setShowWorkspaceDeletionDialog(true)
-      return
-    }
-    
-    // No workspace deletion needed, proceed with add-on removal
-    await removeAddOnDirect()
-  }
-
-  // Direct add-on removal without workspace deletion
-  const removeAddOnDirect = async () => {
-      setIsUpdatingAddOns(true)
-      try {
-        const response = await fetch('/api/billing/manage-addons', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: extraDomains === 1 ? 'remove' : 'update',
-            addonType: 'extra_domains',
-          quantity: extraDomains - 1
-          })
-        })
-        
-        if (response.ok) {
-        setExtraDomains(extraDomains - 1)
-        await onRefreshUsage()
-        showToast('Extra domain removed!')
-        } else {
-          const error = await response.json()
-        showToast(error.error || 'Failed to remove extra domain')
-        }
-      } catch (error) {
-      console.error('Error removing domain:', error)
-      showToast('Failed to remove extra domain')
-      } finally {
-        setIsUpdatingAddOns(false)
-      }
-  }
-
-  // Handle workspace deletion confirmation
-  const handleWorkspaceDeletion = async (workspaceIds: string[]) => {
-    try {
-      // Delete workspaces first
-      const deleteResponse = await fetch('/api/workspaces/delete', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          workspaceIds,
-          reason: 'addon_removal'
-        })
-      })
-
-      if (!deleteResponse.ok) {
-        const error = await deleteResponse.json()
-        throw new Error(error.error || 'Failed to delete workspaces')
-      }
-
-      const deleteResult = await deleteResponse.json()
-      
-      if (deleteResult.success) {
-        // Now remove the add-on
-        await removeAddOnDirect()
-        
-        // Refresh workspaces list
-        const response = await fetch('/api/workspaces')
-        if (response.ok) {
-          const data = await response.json()
-          setWorkspaces(data.workspaces || [])
-        }
-        
-        showToast(`${deleteResult.deletedCount} workspace${deleteResult.deletedCount !== 1 ? 's' : ''} deleted and add-on removed!`)
-    } else {
-        throw new Error(deleteResult.message || 'Some workspaces failed to delete')
-      }
-    } catch (error) {
-      console.error('Error in workspace deletion:', error)
-      showToast(error instanceof Error ? error.message : 'Failed to delete workspaces')
-    }
-  }
-
-  // Handle edge alerts toggle
-  const handleEdgeAlertsToggle = async (enabled: boolean) => {
-    setIsUpdatingAddOns(true)
-    try {
-      const response = await fetch('/api/billing/manage-addons', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: enabled ? 'add' : 'remove',
-          addonType: 'edge_alerts',
-          quantity: 1
-        })
-      })
-      
-      if (response.ok) {
-        await onRefreshUsage()
-        showToast(enabled ? 'Edge Alerts activated!' : 'Edge Alerts deactivated!')
-      } else {
-        const error = await response.json()
-        showToast(error.error || `Failed to ${enabled ? 'activate' : 'deactivate'} Edge Alerts`)
-      }
-    } catch (error) {
-      console.error('Error toggling edge alerts:', error)
-      showToast(`Failed to ${enabled ? 'activate' : 'deactivate'} Edge Alerts`)
-    } finally {
-      setIsUpdatingAddOns(false)
-    }
-  }
-
-  // Helper function to show success toast
-  const showToast = (message: string) => {
-    setToastMessage(message)
-    setShowSuccessToast(true)
-    setTimeout(() => setShowSuccessToast(false), 3000)
+  // Get current credit pricing
+  const getCurrentCreditTier = (credits: number) => {
+    return CREDIT_PRICING_TIERS.find(tier => tier.credits === credits) || CREDIT_PRICING_TIERS[0]
   }
 
   // Dynamic billing data
@@ -382,8 +131,7 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
 
     const planType = currentPlan || usageData.billingPeriod.planType || 'starter'
     
-    // No free plan - all users must have paid subscription (or be admin)
-    if (!planType || !['starter', 'pro', 'team', 'admin'].includes(planType)) {
+    if (!planType || !['starter', 'pro', 'enterprise', 'admin'].includes(planType)) {
       return {
         name: 'No Active Plan',
         price: 0,
@@ -393,10 +141,17 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
     }
     
     const plan = PRICING_PLANS.find(p => p.id === planType) || PRICING_PLANS[0]
+    let price = isAnnualBilling ? plan.annualPrice : plan.monthlyPrice
+    
+    // For Pro plan, calculate price based on selected credits
+    if (planType === 'pro' && plan.hasCredits) {
+      const creditTier = getCurrentCreditTier(selectedCredits)
+      price = isAnnualBilling ? Math.round(creditTier.totalPrice * 0.83) : creditTier.totalPrice // 17% annual discount
+    }
     
     return {
       name: plan.name,
-      price: isAnnualBilling ? plan.annualPrice : plan.monthlyPrice,
+      price: price,
       period: 'month',
       nextBilling: usageData.billingPeriod?.end ? new Date(usageData.billingPeriod.end).toLocaleDateString('en-US', { 
         year: 'numeric', 
@@ -411,6 +166,18 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
   const handlePlanChange = async (planId: string) => {
     setIsLoading(true)
     try {
+      // For enterprise plan, open Cal.com booking
+      if (planId === 'enterprise') {
+        const cal = await getCalApi({"namespace":"split"});
+        cal("openModal", {
+          calLink: "sam-hogan/split",
+          config: {"layout":"month_view"}
+        });
+        setIsLoading(false)
+        setShowPricingModal(false)
+        return
+      }
+
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -419,9 +186,7 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
           isAnnual: isAnnualBilling,
           customerId: stripeCustomerId,
           customerEmail: user?.email || '',
-          addOns: {
-            extraDomains
-          }
+          credits: planId === 'pro' ? selectedCredits : undefined
         })
       })
 
@@ -432,10 +197,7 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
         return
       }
 
-      // Close modal before redirecting
       setShowPricingModal(false)
-      
-      // Redirect to Stripe Checkout
       window.location.href = url
     } catch (error) {
       console.error('Error:', error)
@@ -474,11 +236,16 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
     }
   }
 
-
+  // Helper function to show success toast
+  const showToast = (message: string) => {
+    setToastMessage(message)
+    setShowSuccessToast(true)
+    setTimeout(() => setShowSuccessToast(false), 3000)
+  }
 
   return (
-    <div className="space-y-6">
-
+    <TooltipProvider>
+      <div className="space-y-6">
 
       {/* Sub-tabs for Billing */}
       <div className="border-b border-gray-200">
@@ -501,7 +268,7 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                 : 'border-transparent text-gray-600 hover:text-gray-900'
             }`}
           >
-            Usage
+            Usage & Credits
           </button>
           <button
             onClick={() => setBillingTab('settings')}
@@ -531,14 +298,14 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                   <div>
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-2xl font-medium text-gray-900 font-mono tracking-tight">{billingPlan.name}</h3>
-                      {usageData?.billingPeriod.planType !== 'free' && (
+                      {currentPlan !== 'starter' && (
                         <span className="text-xs bg-gray-200 text-gray-500 px-2 py-1 rounded-sm border border-gray-300 font-mono tracking-tight">
                           Active
                         </span>
                       )}
                     </div>
                     <div className="space-y-1">
-                      {!currentPlan || !['starter', 'pro', 'team', 'admin'].includes(currentPlan) ? (
+                      {!currentPlan || !['starter', 'pro', 'enterprise', 'admin'].includes(currentPlan) ? (
                         <div>
                           <p className="text-red-400 font-mono tracking-tight text-sm">No Active Subscription</p>
                           <p className="text-xs text-gray-500 font-mono tracking-tight">Choose a plan below to continue</p>
@@ -549,6 +316,11 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                             ${billingPlan.price}
                             <span className="text-lg font-normal text-gray-500">/month</span>
                           </p>
+                          {currentPlan === 'pro' && (
+                            <p className="text-xs text-gray-500 font-mono tracking-tight">
+                              {selectedCredits} credits included • ${getCurrentCreditTier(selectedCredits).pricePerCredit} per credit
+                            </p>
+                          )}
                           {billingPlan.nextBilling && (
                             <p className="text-xs text-gray-500 font-mono tracking-tight">
                               Next billing: {billingPlan.nextBilling}
@@ -562,281 +334,103 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                     <Button
                       onClick={() => setShowPricingModal(true)}
                       className={`h-8 px-4 font-mono tracking-tight text-sm ${
-                        !currentPlan || !['starter', 'pro', 'team', 'admin'].includes(currentPlan)
+                        !currentPlan || !['starter', 'pro', 'enterprise', 'admin'].includes(currentPlan)
                           ? 'bg-red-600 hover:bg-red-700 text-white border-red-500'
                           : 'bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-gray-600 text-white'
                       }`}
-                      disabled={isLoading || currentPlan === 'admin'}
+                      disabled={isLoading}
                     >
-                      {!currentPlan || !['starter', 'pro', 'team', 'admin'].includes(currentPlan) 
+                      {!currentPlan || !['starter', 'pro', 'enterprise', 'admin'].includes(currentPlan) 
                         ? 'Choose Plan' 
-                        : currentPlan === 'admin' 
-                          ? 'Admin Account' 
-                          : 'Change Plan'}
+                        : 'Change Plan'}
                     </Button>
-
                   </div>
                 </div>
               </div>
 
-              {/* Workspace Overview for Team Plan */}
-              {currentPlan === 'team' && (
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-6 font-mono tracking-tight">Workspace Overview</h3>
-                  <div className="bg-gray-100 border border-gray-200 rounded-lg p-4 mb-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Team Plan Workspaces</div>
-                        <div className="text-xs text-gray-500 font-mono tracking-tight mt-1">
-                          {workspaceCounts.included}/5 included • {workspaceCounts.extra > 0 ? `${workspaceCounts.extra} extra (${extraDomains} billed)` : '0 extra'}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">
-                          {workspaceCounts.availableIncluded} included slots left
-                        </div>
-                        <div className="text-xs text-gray-500 font-mono tracking-tight">
-                          {workspaceCounts.extra > 0 ? `+${workspaceCounts.extra} extra workspaces` : 'Ready to use'}
-                        </div>
-                      </div>
+              {/* Plan Features */}
+              <div>
+                <h4 className="text-lg font-medium text-gray-900 mb-4">Current Plan Features</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {currentPlan && PRICING_PLANS.find(p => p.id === currentPlan)?.features.map((feature, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-gray-700">{feature}</span>
                     </div>
-                    
-                    {workspaceCounts.extra > extraDomains && (
-                      <div className="mt-3 pt-3 border-t border-gray-200 bg-yellow-500/5 rounded p-2">
-                        <p className="text-xs text-yellow-400 font-mono tracking-tight">
-                          ⚠️ You have {workspaceCounts.extra - extraDomains} unbilled extra workspace{workspaceCounts.extra - extraDomains > 1 ? 's' : ''}. Add extra domain billing below.
-                        </p>
-                      </div>
-                    )}
-                    
-                    {workspaceCounts.total >= 5 && workspaceCounts.availableIncluded === 0 && (
-                      <div className="mt-3 pt-3 border-t border-gray-200">
-                        <p className="text-xs text-gray-500 font-mono tracking-tight">
-                          💡 Need more workspaces? Purchase Extra Domain add-ons below.
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                  ))}
                 </div>
-              )}
-
-              {/* Add-ons */}
-              {(currentPlan === 'pro' || currentPlan === 'team') && (
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-6 font-mono tracking-tight">Add-ons</h3>
-                  <div className="space-y-4">
-                    {/* Extra Domains */}
-                    <div className="flex items-center justify-between py-4 border-b border-gray-200">
-                      <div>
-                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Extra Domain</div>
-                        <div className="text-xs text-gray-500 font-mono tracking-tight">
-                          $100 per additional workspace/domain per month{currentPlan === 'team' ? ' • Beyond your 5 included' : ''}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-3">
-                          <Button
-                            onClick={handleRemoveDomain}
-                            disabled={extraDomains === 0 || isUpdatingAddOns}
-                            size="sm"
-                            variant="outline"
-                            className="w-8 h-8 p-0 border-gray-300 font-mono"
-                          >
-                            <Minus className="w-4 h-4" />
-                          </Button>
-                          <span className="text-gray-900 font-medium min-w-[2rem] text-center text-sm">
-                            {extraDomains}
-                          </span>
-                          <Button
-                            onClick={handleAddDomain}
-                            disabled={isUpdatingAddOns}
-                            size="sm"
-                            variant="outline"
-                            className="w-8 h-8 p-0 border-gray-300 font-mono"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </Button>
-                        </div>
-                        <div className="text-right min-w-[5rem]">
-                          <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">
-                            {extraDomains > 0 ? `+$${extraDomains * 100}` : '$0'}
-                          </div>
-                          <div className="text-xs text-gray-500 font-mono tracking-tight">per month</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Edge Alerts Add-on */}
-                    <div className="flex items-center justify-between py-4 border-b border-gray-200">
-                        <div>
-                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Edge Alerts</div>
-                          <div className="text-xs text-gray-500 font-mono tracking-tight">
-                          $10 per month • Real-time webhooks for visitor spikes, new bots & thresholds
-                          </div>
-                        </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-3">
-                          <Switch
-                            checked={usageData?.addOns?.some((addon: any) => addon.add_on_type === 'edge_alerts' && addon.is_active) || false}
-                            disabled={isUpdatingAddOns}
-                            onCheckedChange={(checked) => handleEdgeAlertsToggle(checked)}
-                          />
-                        </div>
-                        <div className="text-right min-w-[5rem]">
-                          <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">
-                            {usageData?.addOns?.some((addon: any) => addon.add_on_type === 'edge_alerts' && addon.is_active) ? '+$10' : '$0'}
-                          </div>
-                          <div className="text-xs text-gray-500 font-mono tracking-tight">per month</div>
-                        </div>
-                        </div>
-                      </div>
-                      
-
-                          </div>
-                        </div>
-              )}
-
-
-                          </div>
+              </div>
+            </div>
           )}
 
-          {/* Usage Tab */}
+          {/* Usage & Credits Tab */}
           {billingTab === 'usage' && (
-            <div className="space-y-8">
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-6 font-mono tracking-tight">Current Usage</h3>
-                <div className="space-y-6">
-                  {/* Workspaces */}
-                  <div className={`flex items-center justify-between py-3 border-b border-gray-200 rounded-lg px-3 transition-all duration-500 ${
-                    highlightedSection === 'workspaces' ? 'bg-white/5 border-white/20' : ''
-                  }`}>
+            <div className="space-y-6">
+              {/* Credit Usage (Pro plans only) */}
+              {currentPlan === 'pro' && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                  <h4 className="text-lg font-medium text-gray-900 mb-4">Lead Credits</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Workspaces</div>
-                      <div className="text-xs text-gray-500 font-mono tracking-tight mt-1">
-                        {workspaceCounts.total} total workspaces • {workspaceCounts.included} included in plan
-                      </div>
+                      <div className="font-medium text-gray-900 text-sm">Credits Included</div>
+                      <div className="text-2xl font-bold text-gray-900 mt-1">{selectedCredits}</div>
+                      <div className="text-xs text-gray-500 mt-1">per month</div>
                     </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">
-                          {workspaceCounts.availableIncluded} included slots left
-                        </div>
-                        <div className="text-xs text-gray-500 font-mono tracking-tight">
-                          {workspaceCounts.extra > 0 ? `+${workspaceCounts.extra} extra ($${workspaceCounts.extra * 100}/mo)` : 'No extras'}
-                        </div>
-                      </div>
-                      <div className="w-24 h-1 bg-gray-200 rounded-sm">
-                        <div 
-                          className="h-full bg-gray-500 rounded-sm transition-all"
-                              style={{
-                            width: `${Math.min(100, (workspaceCounts.included / (currentPlan === 'team' ? 5 : 1)) * 100)}%` 
-                              }}
-                            />
-                          </div>
-                          </div>
-                        </div>
-
-                  {/* Domains */}
-                  <div className="flex items-center justify-between py-3 border-b border-gray-200">
                     <div>
-                      <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Domains</div>
-                      <div className="text-xs text-gray-500 font-mono tracking-tight mt-1">
-                        {usageData?.domains?.used || 0} / {usageData?.domains?.included || 1} domains used
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">
-                          {usageData?.domains?.remaining !== undefined ? `${usageData.domains.remaining} left` : 'Loading...'}
-                        </div>
-                        <div className="text-xs text-gray-500 font-mono tracking-tight">
-                          {usageData?.domains?.purchased > 0 ? `+${usageData.domains.purchased} extra purchased` : 'Plan included'}
-                        </div>
-                      </div>
-                      <div className="w-24 h-1 bg-gray-200 rounded-sm">
-                        <div 
-                          className="h-full bg-gray-500 rounded-sm transition-all"
-                          style={{ 
-                            width: usageData?.domains?.percentage ? `${Math.min(100, usageData.domains.percentage)}%` : '0%'
-                          }}
-                        />
-                      </div>
+                      <div className="font-medium text-gray-900 text-sm">Credits Used</div>
+                      <div className="text-2xl font-bold text-gray-900 mt-1">{usageData?.credits?.used || 0}</div>
+                      <div className="text-xs text-gray-500 mt-1">this billing cycle</div>
                     </div>
                   </div>
-
-                  {/* Snapshots */}
-                  <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                    <div>
-                      <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Monthly Snapshots</div>
-                      <div className="text-xs text-gray-500 font-mono tracking-tight mt-1">
-                        {usageData?.snapshots?.used || 0} / {getSnapshotLimit()} snapshots this month
-                        </div>
+                  
+                  <div className="mt-4">
+                    <div className="flex justify-between text-sm mb-2">
+                      <span>Usage</span>
+                      <span>{usageData?.credits?.used || 0} / {selectedCredits}</span>
                     </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">
-                          {getSnapshotLimit() === -1 ? 'Unlimited' : `${Math.max(0, getSnapshotLimit() - (usageData?.snapshots?.used || 0))} left`}
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="h-full bg-blue-500 rounded-full transition-all"
+                        style={{ 
+                          width: `${Math.min(100, ((usageData?.credits?.used || 0) / selectedCredits) * 100)}%`
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
-                      <div className="w-24 h-1 bg-gray-200 rounded-sm">
-                        <div 
-                          className="h-full bg-gray-500 rounded-sm transition-all"
-                          style={{ 
-                            width: getSnapshotLimit() === -1 ? '100%' : `${Math.min(100, ((usageData?.snapshots?.used || 0) / getSnapshotLimit()) * 100)}%`
-                          }}
-                        />
+              )}
+
+              {/* Snapshot Usage */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                <h4 className="text-lg font-medium text-gray-900 mb-4">Snapshot Audits</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <div className="font-medium text-gray-900 text-sm">Monthly Limit</div>
+                    <div className="text-2xl font-bold text-gray-900 mt-1">
+                      {usageData?.snapshots?.included === -1 ? 'Unlimited' : usageData?.snapshots?.included || 0}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900 text-sm">Used This Month</div>
+                    <div className="text-2xl font-bold text-gray-900 mt-1">{usageData?.snapshots?.used || 0}</div>
                   </div>
                 </div>
-            </div>
+              </div>
 
-                  {/* AI Crawler Logs */}
-                  <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                    <div>
-                      <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">AI Crawler Logs</div>
-                      <div className="text-xs text-gray-500 font-mono tracking-tight mt-1">
-                        {usageData?.aiLogs?.used || 0} crawler visits this billing period
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Unlimited</div>
-                      </div>
-                      <div className="w-24 h-1 bg-gray-200 rounded-sm">
-                        <div 
-                          className="h-full bg-gray-500 rounded-sm transition-all"
-                          style={{ width: '100%' }}
-                        />
-                      </div>
+              {/* AI Tracking Usage */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                <h4 className="text-lg font-medium text-gray-900 mb-4">AI Crawler Tracking</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <div className="font-medium text-gray-900 text-sm">Status</div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-sm text-gray-700">Active & Tracking</span>
                     </div>
                   </div>
-
-                  {/* Edge Alerts */}
-                  <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                    <div>
-                      <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Edge Alerts</div>
-                      <div className="text-xs text-gray-500 font-mono tracking-tight mt-1">
-                        Real-time webhooks for visitor spikes and bot detection
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">
-                          {usageData?.addOns?.some((addon: any) => addon.add_on_type === 'edge_alerts' && addon.is_active) ? 'Active' : 'Inactive'}
-                        </div>
-                        <div className="text-xs text-gray-500 font-mono tracking-tight">
-                          {usageData?.addOns?.some((addon: any) => addon.add_on_type === 'edge_alerts' && addon.is_active) ? '$10/month' : 'Add-on required'}
-                      </div>
-                      </div>
-                      {!usageData?.addOns?.some((addon: any) => addon.add_on_type === 'edge_alerts' && addon.is_active) && (
-                        <Button
-                          size="sm"
-                          onClick={() => setBillingTab('plans')}
-                          className="bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 hover:text-blue-300 text-xs"
-                        >
-                          Add Edge Alerts
-                        </Button>
-                      )}
-                    </div>
+                  <div>
+                    <div className="font-medium text-gray-900 text-sm">Crawls This Month</div>
+                    <div className="text-2xl font-bold text-gray-900 mt-1">{usageData?.aiLogs?.used || 0}</div>
                   </div>
                 </div>
               </div>
@@ -845,92 +439,86 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
 
           {/* Settings Tab */}
           {billingTab === 'settings' && (
-            <div className="space-y-8">
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-medium text-gray-900 font-mono tracking-tight">Billing Controls</h3>
-                  {preferencesSaveMessage && (
-                    <div className={`text-xs font-mono tracking-tight px-2 py-1 rounded-sm ${
-                      preferencesSaveMessage.includes('success') ? 'text-green-400 bg-green-500/10' : 'text-red-400 bg-red-500/10'
-                    }`}>
-                      {preferencesSaveMessage}
+            <div className="space-y-6">
+              {/* Billing Information */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                <h4 className="text-lg font-medium text-gray-900 mb-4">Billing Information</h4>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium text-gray-900 text-sm">Manage Payment Method</div>
+                      <div className="text-xs text-gray-500 mt-1">Update your card or billing address</div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        // Implement Stripe customer portal
+                        window.open('/api/stripe/customer-portal', '_blank')
+                      }}
+                    >
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Manage
+                    </Button>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium text-gray-900 text-sm">Download Invoices</div>
+                      <div className="text-xs text-gray-500 mt-1">Access your billing history</div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        // Implement invoice download
+                        window.open('/api/billing/invoices', '_blank')
+                      }}
+                    >
+                      Download
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Support */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                <h4 className="text-lg font-medium text-gray-900 mb-4">Support</h4>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium text-gray-900 text-sm">Email Support</div>
+                      <div className="text-xs text-gray-500 mt-1">Get help via email</div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => window.open('mailto:support@split.dev', '_blank')}
+                    >
+                      <Mail className="w-4 h-4 mr-2" />
+                      Contact
+                    </Button>
+                  </div>
+                  
+                  {(currentPlan === 'pro' || currentPlan === 'enterprise') && (
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium text-gray-900 text-sm">Priority Chat Support</div>
+                        <div className="text-xs text-gray-500 mt-1">Available for Pro and Enterprise plans</div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          // Implement chat support
+                          console.log('Opening chat support')
+                        }}
+                      >
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        Chat
+                      </Button>
                     </div>
                   )}
-                </div>
-                <div className="space-y-6">
-                  {/* AI Logs Tracking Toggle */}
-                  <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                    <div>
-                      <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">AI Crawler Tracking</div>
-                      <div className="text-xs text-gray-500 font-mono tracking-tight mt-1">
-                        Track AI crawler visits to your website for analytics
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">
-                          {usageData?.aiLogs?.trackingEnabled !== false ? 'Enabled' : 'Disabled'}
-                        </div>
-                      </div>
-                      <div className="w-12">
-                        <Switch
-                          checked={usageData?.aiLogs?.trackingEnabled !== false}
-                          disabled={savingPreferences}
-                          onCheckedChange={(checked) => {
-                            saveBillingPreferences({ ai_logs_enabled: checked })
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Platform Notifications */}
-                  <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                    <div>
-                      <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Platform Notifications</div>
-                      <div className="text-xs text-gray-500 font-mono tracking-tight mt-1">
-                        Billing updates, feature announcements, and alerts
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">
-                          {usageData?.billingPreferences?.overage_notifications !== false ? 'Enabled' : 'Disabled'}
-                        </div>
-                      </div>
-                      <div className="w-12">
-                        <Switch
-                          checked={usageData?.billingPreferences?.overage_notifications !== false}
-                          disabled={savingPreferences}
-                          onCheckedChange={(checked) => {
-                            saveBillingPreferences({ overage_notifications: checked })
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Workspace Auto-deletion Protection */}
-                  <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                    <div>
-                      <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Workspace Protection</div>
-                      <div className="text-xs text-gray-500 font-mono tracking-tight mt-1">
-                        Warn before plan changes that would delete workspaces
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <div className="font-medium text-gray-900 font-mono tracking-tight text-sm">Enabled</div>
-                        <div className="text-xs text-gray-500 font-mono tracking-tight">Always protected</div>
-                      </div>
-                      <div className="w-12">
-                        <Switch
-                          checked={true}
-                          disabled={true}
-                        />
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
@@ -939,84 +527,82 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
       )}
 
       {/* Success Toast */}
-      {showSuccessToast && (
-        <div className="fixed bottom-6 right-6 z-50">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 flex items-center gap-3 shadow-lg">
-            <span className="text-white text-sm font-medium">{toastMessage}</span>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {showSuccessToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+            className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50"
+          >
+            {toastMessage}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Pricing Modal - matching payment-required design */}
+      {/* Pricing Modal - Updated with new plans */}
       <AnimatePresence>
         {showPricingModal && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50"
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
               onClick={() => setShowPricingModal(false)}
             />
-            
-            {/* Modal */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.98, y: 8 }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.98, y: 8 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-6"
+              onClick={(e) => e.stopPropagation()}
             >
-              <div 
-                className="bg-gray-800 border border-gray-700 rounded-sm max-w-5xl w-full max-h-[90vh] overflow-y-auto"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* Modal Header */}
-                <div className="sticky top-0 bg-gray-800 border-b border-gray-700 p-6 flex items-center justify-between">
+              <div className="bg-white w-full max-w-5xl max-h-[90vh] overflow-auto rounded-lg shadow-2xl border border-gray-200">
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b border-gray-200">
                   <div>
-                    <h2 className="text-xl font-medium text-white font-mono" style={{ letterSpacing: '-0.05em' }}>Choose Your Plan</h2>
-                    <p className="text-gray-500 text-xs mt-1 font-mono" style={{ letterSpacing: '-0.05em' }}>
-                      Update your subscription
+                    <h2 className="text-2xl font-semibold text-gray-900">Choose Your Plan</h2>
+                    <p className="text-gray-600 mt-1">
+                      Turn AI visibility into pipeline
                     </p>
                   </div>
                   <button
                     onClick={() => setShowPricingModal(false)}
-                    className="text-gray-500 hover:text-white transition-colors duration-200 p-1"
+                    className="text-gray-500 hover:text-gray-900 transition-colors p-1"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                {/* Modal Content */}
                 <div className="p-6">
                   {/* Billing Toggle */}
                   <div className="flex items-center justify-center gap-4 mb-8">
-                    <span className={`text-xs font-mono ${!isAnnualBilling ? 'text-white' : 'text-gray-500'}`} style={{ letterSpacing: '-0.05em' }}>
+                    <span className={`text-sm font-medium ${!isAnnualBilling ? 'text-gray-900' : 'text-gray-500'}`}>
                       Monthly
                     </span>
                     <button
                       onClick={() => setIsAnnualBilling(!isAnnualBilling)}
-                      className={`relative w-10 h-5 rounded-full transition-colors duration-200 ${
-                        isAnnualBilling ? 'bg-gray-700' : 'bg-gray-700'
+                      className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${
+                        isAnnualBilling ? 'bg-gray-900' : 'bg-gray-300'
                       }`}
                     >
                       <div
-                        className={`absolute top-0.5 w-4 h-4 rounded-full transition-transform duration-200 ${
+                        className={`absolute top-1 w-4 h-4 rounded-full transition-transform duration-200 ${
                           isAnnualBilling 
-                            ? 'translate-x-5 bg-white' 
-                            : 'translate-x-0.5 bg-gray-500'
+                            ? 'translate-x-7 bg-white' 
+                            : 'translate-x-1 bg-white'
                         }`}
                       />
                     </button>
-                    <span className={`text-xs font-mono ${isAnnualBilling ? 'text-white' : 'text-gray-500'}`} style={{ letterSpacing: '-0.05em' }}>
+                    <span className={`text-sm font-medium ${isAnnualBilling ? 'text-gray-900' : 'text-gray-500'}`}>
                       Annual
-                      <span className="text-gray-500 ml-1">(save 20%)</span>
+                      <span className="text-gray-500 ml-1">(save 17%)</span>
                     </span>
                   </div>
 
-                  {/* Pricing Plans - minimal design */}
+                  {/* Pricing Plans */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     {PRICING_PLANS.map((plan) => (
                       <motion.div
@@ -1024,54 +610,95 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: PRICING_PLANS.indexOf(plan) * 0.03, duration: 0.15, ease: "easeOut" }}
-                        className={`bg-gray-700 p-6 relative rounded-sm transition-all duration-200 ${
+                        className={`bg-gray-50 p-6 relative rounded-sm transition-all duration-200 ${
                           plan.isRecommended 
-                            ? 'border border-white' 
-                            : 'border border-gray-600 hover:border-gray-500'
+                            ? 'border border-gray-900' 
+                            : 'border border-gray-200 hover:border-gray-300'
                         }`}
                       >
-                        {plan.isRecommended && (
-                          <div className="absolute -top-2.5 left-6">
-                            <div className="bg-white text-black px-3 py-0.5 text-[10px] font-medium rounded-sm font-mono uppercase" style={{ letterSpacing: '-0.05em' }}>
-                              Recommended
+                                                {plan.isRecommended && (
+                          <div className="absolute -top-3 left-6">
+                            <div className="bg-gray-900 text-white px-3 py-1 text-xs font-medium rounded">
+                              Most Popular
                             </div>
                           </div>
                         )}
                         
                         <div className="mb-6">
-                          <h3 className="text-lg font-medium text-white mb-1 font-mono" style={{ letterSpacing: '-0.05em' }}>{plan.name}</h3>
-                          <p className="text-xs text-gray-500 mb-4 font-mono" style={{ letterSpacing: '-0.05em' }}>{plan.description}</p>
-                          <div className="text-3xl font-bold text-white mb-0.5 font-mono" style={{ letterSpacing: '-0.05em' }}>
-                            ${isAnnualBilling ? plan.annualPrice : plan.monthlyPrice}
-                          </div>
-                          <div className="text-xs text-gray-500 font-mono" style={{ letterSpacing: '-0.05em' }}>per month</div>
+                          <h3 className="text-xl font-semibold text-gray-900 mb-2">{plan.name}</h3>
+                          <p className="text-gray-600 mb-4">{plan.description}</p>
+                          
+                                                                                {plan.id === 'pro' ? (
+                            <div className="text-3xl font-bold text-gray-900 mb-1">
+                              ${isAnnualBilling ? Math.round(getCurrentCreditTier(selectedCredits).totalPrice * 0.83) : getCurrentCreditTier(selectedCredits).totalPrice}
+                            </div>
+                          ) : plan.isEnterprise ? (
+                            <div className="text-3xl font-bold text-gray-900 mb-1">
+                              Custom
+                            </div>
+                          ) : (
+                            <div className="text-3xl font-bold text-gray-900 mb-1">
+                              ${isAnnualBilling ? plan.annualPrice : plan.monthlyPrice}
+                            </div>
+                          )}
+                          
+                          {!plan.isEnterprise && (
+                            <div className="text-gray-500">per month</div>
+                          )}
                         </div>
-                        
-                        <div className="space-y-2 mb-6">
-                          {plan.features.slice(0, 6).map((feature, index) => (
-                            <div key={index} className="flex items-start gap-2">
-                              <Check className="w-3 h-3 text-gray-500 mt-0.5 flex-shrink-0" />
-                              <span className="text-xs text-gray-300 font-mono leading-relaxed" style={{ letterSpacing: '-0.05em' }}>{feature}</span>
+
+                        {/* Pro Plan Credit Selection */}
+                        {plan.id === 'pro' && (
+                          <div className="mb-6">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <label className="flex items-center gap-2 text-sm font-medium text-gray-900 mb-2 cursor-help">
+                                  Monthly Lead Credits
+                                  <HelpCircle className="w-4 h-4 text-gray-400" />
+                                </label>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Normal Lead = 1 credit • Max Lead = 5 credits</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            <Select
+                              value={selectedCredits.toString()}
+                              onValueChange={(value) => setSelectedCredits(parseInt(value))}
+                            >
+                              <SelectTrigger className="w-full bg-white border-gray-300 text-gray-900">
+                                <SelectValue placeholder="Select credits" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white border-gray-200">
+                                {CREDIT_PRICING_TIERS.map((tier) => (
+                                  <SelectItem key={tier.credits} value={tier.credits.toString()} className="text-gray-900 hover:bg-gray-50">
+                                    {tier.credits.toLocaleString()} credits - ${isAnnualBilling ? Math.round(tier.totalPrice * 0.83) : tier.totalPrice}/mo
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+
+                        {/* Features */}
+                        <div className="space-y-3 mb-6">
+                          {plan.features.map((feature, index) => (
+                            <div key={index} className="flex items-start gap-3">
+                              <Check className="w-4 h-4 text-gray-900 mt-0.5 flex-shrink-0" />
+                              <span className="text-sm text-gray-700">{feature}</span>
                             </div>
                           ))}
-                          {plan.features.length > 6 && (
-                            <p className="text-xs text-gray-500 font-mono pl-5" style={{ letterSpacing: '-0.05em' }}>
-                              +{plan.features.length - 6} more features
-                            </p>
-                          )}
                         </div>
 
                         <Button
                           onClick={() => handlePlanChange(plan.id)}
-                          disabled={(currentPlan === plan.id) || isLoading}
-                          className={`w-full h-9 text-xs font-medium rounded-sm transition-all duration-200 font-mono ${
+                          disabled={currentPlan === plan.id || isLoading}
+                          className={`w-full h-11 text-sm font-medium transition-all duration-200 ${
                             currentPlan === plan.id
-                              ? 'bg-gray-700 text-gray-300 border border-gray-600 cursor-not-allowed'
+                              ? 'bg-gray-100 text-gray-500 border border-gray-200 cursor-not-allowed'
                               : plan.isRecommended
-                                ? 'bg-white hover:bg-gray-100 text-black border-0'
-                                : 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-700'
+                                ? 'bg-gray-900 hover:bg-gray-800 text-white border-0'
+                                : 'bg-white hover:bg-gray-50 text-gray-900 border border-gray-300'
                           }`}
-                          style={{ letterSpacing: '-0.05em' }}
                         >
                           {isLoading ? (
                             <>
@@ -1081,38 +708,21 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                           ) : currentPlan === plan.id ? (
                             'Current Plan'
                           ) : (
-                            'Select Plan'
+                            plan.buttonText
                           )}
                         </Button>
                       </motion.div>
                     ))}
                   </div>
 
+
+
                   {/* Trust indicators */}
-                  <div className="text-center pt-4 border-t border-gray-700">
-                    <div className="flex items-center justify-center gap-4 text-xs text-gray-500 mb-3 font-mono" style={{ letterSpacing: '-0.05em' }}>
-                      <span>Secure payment</span>
-                      <span>•</span>
-                      <span>SSL encrypted</span>
-                      <span>•</span>
-                      <span>Cancel anytime</span>
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-6 text-sm text-gray-600">
+                      <span>✓ Cancel anytime</span>
+                      <span>✓ 14-day money back</span>
                     </div>
-                    
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        if (stripeCustomerId) {
-                          handleManageSubscription()
-                        } else {
-                          // If no Stripe customer ID, show a message
-                          showToast('Please contact support to manage your subscription')
-                        }
-                      }}
-                      className="text-gray-500 hover:text-gray-300 text-[10px] font-mono transition-colors duration-200"
-                      style={{ letterSpacing: '-0.05em' }}
-                    >
-                      Need to cancel or manage payment methods?
-                    </button>
                   </div>
                 </div>
               </div>
@@ -1126,9 +736,12 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
         open={showWorkspaceDeletionDialog}
         onOpenChange={setShowWorkspaceDeletionDialog}
         workspaces={workspaces}
-        domainsToRemove={domainsToRemove}
-        onConfirm={handleWorkspaceDeletion}
+        onConfirm={() => {
+          // Implementation for workspace deletion
+          console.log('Workspace deletion confirmed')
+        }}
       />
     </div>
+    </TooltipProvider>
   )
 } 

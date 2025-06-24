@@ -38,105 +38,79 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     id: 'starter',
     name: 'Starter',
-    description: 'Start tracking AI crawler traffic with 10 lines of code',
+    description: 'Visibility Tracking Made Simple',
     monthlyPrice: 30,
-    annualPrice: 25, // ~17% discount
+    annualPrice: 25,
     features: [
-      '1 domain',
-      'Simple code snippet setup',
-      'Basic crawler tracking',
-      'Total daily crawl count',
-      '24-hour crawl history only',
-      'Snapshot reports: 10/month',
-      'Email alerts (first crawl only)'
+      'Unlimited AI-Crawler Tracking',
+      'Snapshot Audits',
+      'Historical Dashboards',
+      'Single Workspace',
+      'Email support during business hours'
     ],
-    buttonText: 'Start Starter',
+    buttonText: 'Start with Starter',
     buttonStyle: 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white border border-[#333]',
-    badge: '🧪',
-    badgeColor: 'bg-blue-500',
-    limitations: [
-      'Add-ons available immediately, billed monthly'
-    ]
+    badge: '🔍',
+    badgeColor: 'bg-blue-500'
   },
   {
     id: 'pro',
     name: 'Pro',
-    description: 'Full visibility + analytics for serious projects',
+    description: 'Turn Visibility Into Pipeline',
     monthlyPrice: 100,
-    annualPrice: 83, // ~17% discount
+    annualPrice: 83,
     features: [
-      '1 domain',
-      'Full crawler breakdown',
-      'Bot name, company, timestamp, page path',
-      'Up to 365-day crawl history',
-      'Extended timeframes (24h, 7d, 30d, 90d, 365d)',
-      'Snapshot reports: 50/month',
-      'Smart alerts (spike detection, bot-specific alerts)',
-      'Page-level crawler logs',
-      'API access',
-      'CSV export',
-      'PDF audit report export'
+      'Everything in Starter',
+      '250 Lead Credits Included',
+      'CSV Export of enriched contacts',
+      'Zapier & Make.com Webhook integrations',
+      'Three Seats & Multiple Workspaces',
+      'Priority email & chat support'
     ],
     isRecommended: true,
-    buttonText: 'Start Pro',
+    buttonText: 'Customize Pro',
     buttonStyle: 'bg-white hover:bg-[#f5f5f5] text-black',
     badge: '⚡️',
-    badgeColor: 'bg-yellow-500'
+    badgeColor: 'bg-yellow-500',
+    hasCredits: true,
+    baseCredits: 250,
+    maxCredits: 10000
   },
   {
-    id: 'team',
-    name: 'Team',
-    description: 'For agencies & multi-site operations',
-    monthlyPrice: 400,
-    annualPrice: 333, // ~17% discount
+    id: 'enterprise',
+    name: 'Enterprise',
+    description: 'Data at Scale, Integrated Your Way',
+    monthlyPrice: 1500,
+    annualPrice: 1250,
     features: [
-      '5 domains included',
-      'Up to 365-day crawl history',
-      'Extended timeframes (24h, 7d, 30d, 90d, 365d)',
-      'Snapshot reports: 100/month',
-      'All Pro features',
-      'Team access (up to 5 users)',
-      'Slack/Discord alerts',
-      'Workspace analytics (cross-domain rollup)',
-      'Anomaly detection & scheduled reports',
-      'Priority support'
+      'Custom Credit Packages (1,500+/mo)',
+      'Direct Connectors (Salesforce, HubSpot, etc.)',
+      'Unlimited Seats & Workspaces',
+      'Organization-wide SSO (SAML/SCIM)',
+      'Dedicated Success Engineer',
+      'Private API & Custom Fields',
+      'Quarterly business reviews'
     ],
-    buttonText: 'Start Team',
+    buttonText: 'Contact Sales',
     buttonStyle: 'bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white border border-[#333]',
-    badge: '🧑‍🤝‍🧑',
-    badgeColor: 'bg-purple-500'
+    badge: '🏢',
+    badgeColor: 'bg-purple-500',
+    isEnterprise: true
   }
 ]
 
-export const ADD_ON_PRICING = [
-  {
-    id: 'extra_domain',
-    name: 'Extra Domain',
-    description: 'Add an additional domain',
-    price: 100,
-    unit: 'per month',
-    availableFor: ['pro', 'team'],
-    features: [
-      'Monitor additional domain',
-      'Separate analytics dashboard',
-      'Individual crawler tracking'
-    ]
-  },
-  {
-    id: 'edge_alerts',
-    name: 'Edge Alerts',
-    description: 'Real-time webhook alerts for crawler spikes or new bot activity',
-    price: 10,
-    unit: 'per month',
-    availableFor: ['starter', 'pro', 'team'],
-    features: [
-      'Real-time webhook notifications',
-      'Crawler spike detection',
-      'New bot activity alerts',
-      'Custom threshold settings'
-    ]
-  }
+// Credit pricing tiers for Pro plan
+export const CREDIT_PRICING_TIERS = [
+  { credits: 250, pricePerCredit: 0.40, totalPrice: 100 },
+  { credits: 500, pricePerCredit: 0.36, totalPrice: 180 },
+  { credits: 1000, pricePerCredit: 0.30, totalPrice: 300 },
+  { credits: 2500, pricePerCredit: 0.26, totalPrice: 650 },
+  { credits: 5000, pricePerCredit: 0.22, totalPrice: 1100 },
+  { credits: 10000, pricePerCredit: 0.18, totalPrice: 1800 }
 ]
+
+// Remove old add-on pricing - no longer needed
+export const ADD_ON_PRICING = []
 
 export const ONBOARDING_STEPS = {
   WORKSPACE: 'workspace' as const,

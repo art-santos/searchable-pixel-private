@@ -18,7 +18,7 @@ export default function DashboardLayout({
 
   return (
     <AuthenticatedLayout>
-      <div className="min-h-screen bg-[#f9f9f9] flex">
+      <div className="h-screen bg-[#f9f9f9] flex">
         {/* Permanent Sidebar */}
         <div className={`${sidebarCollapsed ? 'w-[72px]' : 'w-60'} flex-shrink-0 bg-white transition-all duration-300 ease-out`}>
           <SplitSidebar 

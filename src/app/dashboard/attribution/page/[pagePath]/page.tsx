@@ -53,14 +53,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     const isCurrentPeriod = payload[0].payload?.isCurrentPeriod
     
     return (
-      <div className="bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333333] px-3 py-2 rounded-lg shadow-md">
-        <p className="font-mono text-sm text-black dark:text-white">
+      <div className="bg-white border border-gray-200 px-3 py-2 rounded-lg shadow-md">
+        <p className="font-mono text-sm text-gray-900">
           {payload[0].value} visits
           {isCurrentPeriod && (
             <span className="ml-2 text-xs text-green-500">● LIVE</span>
           )}
         </p>
-        <p className="font-mono text-xs text-gray-500 dark:text-[#666666]">{label}</p>
+        <p className="font-mono text-xs text-gray-500">{label}</p>
       </div>
     )
   }
@@ -223,7 +223,7 @@ export default function PageDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c] text-white">
+    <div className="min-h-screen bg-gray-50 text-gray-900">
       <div id="page-detail-export" className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
         <motion.div
@@ -234,7 +234,7 @@ export default function PageDetailPage() {
           <div className="flex items-center gap-2 mb-4">
             <Link 
               href="/dashboard/attribution/page" 
-              className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors"
+              className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               <span className="text-sm">Back to Pages</span>
@@ -248,14 +248,14 @@ export default function PageDetailPage() {
                   href={`https://www.${currentWorkspace.domain}${pagePath}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-3xl font-semibold text-white mb-2 hover:underline transition-all duration-200 inline-block font-mono"
+                  className="text-3xl font-semibold text-gray-900 mb-2 hover:underline transition-all duration-200 inline-block font-mono"
                 >
                   {pagePath}
                 </a>
               ) : (
-                <h1 className="text-3xl font-semibold text-white mb-2 font-mono">{pagePath}</h1>
+                <h1 className="text-3xl font-semibold text-gray-900 mb-2 font-mono">{pagePath}</h1>
               )}
-              <p className="text-zinc-400">
+              <p className="text-gray-600">
                 Page crawler activity ({timeframe.toLowerCase()})
               </p>
             </div>
@@ -266,8 +266,8 @@ export default function PageDetailPage() {
                   title=""
                   timeframe={timeframe}
                   onTimeframeChange={setTimeframe}
-                  titleColor="text-white"
-                  selectorColor="text-zinc-400"
+                  titleColor="text-gray-900"
+                  selectorColor="text-gray-600"
                   userPlan={userPlan}
                 />
               )}
@@ -286,39 +286,39 @@ export default function PageDetailPage() {
           transition={{ delay: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
         >
-          <Card className="bg-zinc-900/50 border-zinc-800">
+          <Card className="bg-white border-gray-200 shadow-sm">
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-white mb-1">
+              <div className="text-2xl font-bold text-gray-900 mb-1">
                 {isLoading ? '...' : stats?.totalVisits.toLocaleString() || '0'}
               </div>
-              <div className="text-sm text-zinc-400">Total Visits</div>
+              <div className="text-sm text-gray-600">Total Visits</div>
             </CardContent>
           </Card>
           
-          <Card className="bg-zinc-900/50 border-zinc-800">
+          <Card className="bg-white border-gray-200 shadow-sm">
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-white mb-1">
+              <div className="text-2xl font-bold text-gray-900 mb-1">
                 {isLoading ? '...' : stats?.uniqueCrawlers || '0'}
               </div>
-              <div className="text-sm text-zinc-400">Unique Crawlers</div>
+              <div className="text-sm text-gray-600">Unique Crawlers</div>
             </CardContent>
           </Card>
           
-          <Card className="bg-zinc-900/50 border-zinc-800">
+          <Card className="bg-white border-gray-200 shadow-sm">
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-white mb-1">
+              <div className="text-2xl font-bold text-gray-900 mb-1">
                 {isLoading ? '...' : stats?.uniqueCompanies || '0'}
               </div>
-              <div className="text-sm text-zinc-400">Unique Companies</div>
+              <div className="text-sm text-gray-600">Unique Companies</div>
             </CardContent>
           </Card>
           
-          <Card className="bg-zinc-900/50 border-zinc-800">
+          <Card className="bg-white border-gray-200 shadow-sm">
             <CardContent className="p-6">
-              <div className="text-2xl font-bold text-white mb-1">
+              <div className="text-2xl font-bold text-gray-900 mb-1">
                 {isLoading ? '...' : stats ? formatRelativeTime(stats.lastCrawled) : 'Never'}
               </div>
-              <div className="text-sm text-zinc-400">Last Crawled</div>
+              <div className="text-sm text-gray-600">Last Crawled</div>
             </CardContent>
           </Card>
         </motion.div>
@@ -330,12 +330,12 @@ export default function PageDetailPage() {
           transition={{ delay: 0.2 }}
           className="mb-8"
         >
-          <Card className="bg-zinc-900/50 border-zinc-800">
-            <CardHeader className="pb-4 pt-4 pl-6 flex-shrink-0 border-b border-zinc-800">
+          <Card className="bg-white border-gray-200 shadow-sm">
+            <CardHeader className="pb-4 pt-4 pl-6 flex-shrink-0 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-white mb-1">Crawler Visits Over Time</h3>
-                  <p className="text-sm text-zinc-400">Visit patterns for this page</p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">Crawler Visits Over Time</h3>
+                  <p className="text-sm text-gray-600">Visit patterns for this page</p>
                 </div>
               </div>
             </CardHeader>
@@ -355,22 +355,22 @@ export default function PageDetailPage() {
                     >
                       <defs>
                         <linearGradient id="crawlerGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#ffffff" stopOpacity={0.08} />
-                          <stop offset="100%" stopColor="#ffffff" stopOpacity={0} />
+                          <stop offset="0%" stopColor="#374151" stopOpacity={0.1} />
+                          <stop offset="100%" stopColor="#374151" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid
                         vertical={false}
                         horizontal={true}
                         strokeDasharray="2 2"
-                        stroke="#333333"
-                        opacity={0.15}
+                        stroke="#e5e7eb"
+                        opacity={0.5}
                       />
                       <XAxis
                         dataKey="date"
                         axisLine={false}
                         tick={{ 
-                          fill: '#555555', 
+                          fill: '#6b7280', 
                           fontSize: 11,
                           fontFamily: 'var(--font-geist-mono)',
                           letterSpacing: '-0.025em'
@@ -395,7 +395,7 @@ export default function PageDetailPage() {
                       <YAxis
                         axisLine={false}
                         tick={{ 
-                          fill: '#555555', 
+                          fill: '#6b7280', 
                           fontSize: 11,
                           fontFamily: 'var(--font-geist-mono)',
                           letterSpacing: '-0.025em'
@@ -413,11 +413,11 @@ export default function PageDetailPage() {
                       <Area
                         type="monotone"
                         dataKey="visits"
-                        stroke="#ffffff"
+                        stroke="#374151"
                         strokeWidth={1.5}
                         fill="url(#crawlerGradient)"
                         dot={false}
-                        activeDot={{ r: 4, stroke: '#ffffff', strokeWidth: 2, fill: '#0c0c0c' }}
+                        activeDot={{ r: 4, stroke: '#374151', strokeWidth: 2, fill: '#ffffff' }}
                       />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -433,13 +433,13 @@ export default function PageDetailPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <Card className="bg-zinc-900/50 border-zinc-800">
-            <CardHeader className="pb-4 pt-4 pl-6 pr-6 border-b border-zinc-800">
+          <Card className="bg-white border-gray-200 shadow-sm">
+            <CardHeader className="pb-4 pt-4 pl-6 pr-6 border-b border-gray-200">
               <div>
-                <h3 className="text-lg font-semibold text-white mb-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">
                   Recent Crawler Activity
                 </h3>
-                <p className="text-sm text-zinc-400">
+                <p className="text-sm text-gray-600">
                   Latest crawler visits to this page
                 </p>
               </div>
@@ -461,10 +461,10 @@ export default function PageDetailPage() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      className="flex items-center justify-between py-3 px-4 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors"
+                      className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-8 h-8 rounded-lg bg-zinc-700 border border-zinc-600 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <div className="w-8 h-8 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden flex-shrink-0">
                           <img 
                             src={getFaviconForCompany(visit.company)} 
                             alt={visit.company}
@@ -474,11 +474,11 @@ export default function PageDetailPage() {
                               e.currentTarget.nextElementSibling!.style.display = 'flex'
                             }}
                           />
-                          <div className="w-4 h-4 text-zinc-400 hidden">🤖</div>
+                          <div className="w-4 h-4 text-gray-400 hidden">🤖</div>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-white truncate">{visit.botName}</p>
-                          <div className="flex items-center gap-3 text-xs text-zinc-400">
+                          <p className="text-sm font-medium text-gray-900 truncate">{visit.botName}</p>
+                          <div className="flex items-center gap-3 text-xs text-gray-600">
                             <span>{visit.company}</span>
                             <span>{visit.visits} visits</span>
                             {visit.avgResponseTime && (
@@ -487,7 +487,7 @@ export default function PageDetailPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-zinc-400 flex-shrink-0">
+                      <div className="flex items-center gap-1 text-xs text-gray-600 flex-shrink-0">
                         <Clock className="w-3 h-3" />
                         <span>{formatRelativeTime(visit.lastVisit)}</span>
                       </div>
@@ -495,7 +495,7 @@ export default function PageDetailPage() {
                   ))
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-sm text-zinc-400">No recent crawler activity found for this timeframe.</p>
+                    <p className="text-sm text-gray-600">No recent crawler activity found for this timeframe.</p>
                   </div>
                 )}
               </div>
