@@ -31,12 +31,15 @@ export function PricingStep({ isAnnual, setIsAnnual, onSelectPlan }: PricingStep
 
   const handlePlanSelect = async (planId: string) => {
     if (planId === 'enterprise') {
-      // Open Cal.com booking
-      const cal = await getCalApi({"namespace":"split"});
-      cal("openModal", {
-        calLink: "sam-hogan/split",
-        config: {"layout":"month_view"}
-      });
+      // Create a temporary button with Cal.com data attributes and click it
+      const tempButton = document.createElement('button');
+      tempButton.setAttribute('data-cal-namespace', 'split');
+      tempButton.setAttribute('data-cal-link', 'sam-hogan/split');
+      tempButton.setAttribute('data-cal-config', '{"layout":"month_view"}');
+      tempButton.style.display = 'none';
+      document.body.appendChild(tempButton);
+      tempButton.click();
+      document.body.removeChild(tempButton);
       return
     }
     
