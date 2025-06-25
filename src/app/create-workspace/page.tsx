@@ -289,14 +289,11 @@ export default function CreateWorkspacePage() {
       <div className="hidden lg:block bg-grid-small-white/[0.05] relative">
         <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0c] to-transparent"></div>
         <div className="flex flex-col items-center justify-center h-full p-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Unlock Your Full Potential
-            </h2>
-            <p className="text-gray-400 max-w-md">
-              Join thousands of developers who are streamlining their workflow and gaining visibility with Split.
-            </p>
-          </div>
+          <img 
+            src="/images/signup.png" 
+            alt="Split signup illustration" 
+            className="max-w-full max-h-full object-contain"
+          />
         </div>
       </div>
     </div>
