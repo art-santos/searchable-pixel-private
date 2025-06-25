@@ -371,6 +371,10 @@ export default function LandingPage() {
                 alt="Split Dashboard"
                 width={1200}
                 height={900}
+                priority
+                loading="eager"
+                quality={90}
+                sizes="(max-width: 480px) 95vw, (max-width: 768px) 90vw, 50vw"
                 className="w-[180%] h-auto dashboard-fall-in transform translate-x-[15%] scale-125"
               />
             </div>
@@ -381,6 +385,10 @@ export default function LandingPage() {
                 alt="Split Dashboard"
                 width={1200}
                 height={800}
+                priority
+                loading="eager"
+                quality={90}
+                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 85vw, 80vw"
                 className="w-full h-auto"
               />
             </div>
@@ -456,6 +464,8 @@ export default function LandingPage() {
                     alt="AI traffic detection dashboard"
                     width={516}
                     height={421}
+                    loading="lazy"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
                     className="w-full h-auto"
                   />
                 </div>
@@ -473,6 +483,8 @@ export default function LandingPage() {
                     alt="AI-driven lead attribution card"
                     width={516}
                     height={421}
+                    loading="lazy"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
                     className="w-full h-auto"
                   />
                 </div>
@@ -556,6 +568,8 @@ export default function LandingPage() {
                     alt="Lead enrichment interface"
                     width={516}
                     height={421}
+                    loading="lazy"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
                     className="w-full h-auto"
                   />
                 </div>
@@ -595,6 +609,8 @@ export default function LandingPage() {
                   alt="Origami"
                   width={120}
                   height={28}
+                  loading="lazy"
+                  sizes="(max-width: 640px) 80px, (max-width: 768px) 100px, 120px"
                   className="h-5 sm:h-7 md:h-8 lg:h-9 w-auto mx-1 sm:mx-2 translate-y-1.5"
                 />
               </span>{' '}
@@ -630,6 +646,8 @@ export default function LandingPage() {
                   alt=""
                   width={1989}
                   height={1550}
+                  loading="lazy"
+                  sizes="(max-width: 768px) 200px, 400px"
                   className="w-full h-full object-cover opacity-40"
                 />
               </div>

@@ -47,9 +47,12 @@ export default function CTASection() {
                 <span className="sm:hidden">Track visitors from</span>
                 <span className="logo-flip-container text-[#191919]">
                   <span key={currentLogo} className="logo-flip">
-                    <img 
+                    <Image 
                       src={LOGOS[currentLogo].logo} 
                       alt={LOGOS[currentLogo].name}
+                      width={14}
+                      height={14}
+                      loading="eager"
                       className="w-3 sm:w-3.5 h-3 sm:h-3.5"
                     />
                     <span>

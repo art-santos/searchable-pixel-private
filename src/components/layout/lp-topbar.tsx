@@ -39,7 +39,7 @@ export function LPTopBar() {
     <>
       <div className={`fixed top-0 left-0 right-0 z-50 flex h-16 md:h-16 items-center justify-center transition-all duration-300 ${
         isScrolled || isMobileMenuOpen
-          ? 'bg-white border-b border-gray-200' 
+          ? 'bg-white' 
           : 'bg-transparent'
       }`}>
       <style jsx global>{`

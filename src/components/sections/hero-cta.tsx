@@ -130,19 +130,47 @@ export default function HeroCTA() {
           </div>
           <div className="flex items-center justify-start gap-4 md:gap-6 flex-wrap">
             <div className="flex items-center gap-2">
-              <img src="/images/chatgpt.svg" alt="ChatGPT" className="w-5 h-5 md:w-6 md:h-6" />
+              <Image 
+                src="/images/chatgpt.svg" 
+                alt="ChatGPT" 
+                width={24}
+                height={24}
+                loading="eager"
+                className="w-5 h-5 md:w-6 md:h-6" 
+              />
               <span className="text-gray-600 text-sm md:text-base">ChatGPT</span>
             </div>
             <div className="flex items-center gap-2">
-              <img src="/images/perplexity.svg" alt="Perplexity" className="w-5 h-5 md:w-6 md:h-6" />
+              <Image 
+                src="/images/perplexity.svg" 
+                alt="Perplexity" 
+                width={24}
+                height={24}
+                loading="eager"
+                className="w-5 h-5 md:w-6 md:h-6" 
+              />
               <span className="text-gray-600 text-sm md:text-base">Perplexity</span>
             </div>
             <div className="flex items-center gap-2">
-              <img src="/images/claude.svg" alt="Claude" className="w-5 h-5 md:w-6 md:h-6" />
+              <Image 
+                src="/images/claude.svg" 
+                alt="Claude" 
+                width={24}
+                height={24}
+                loading="eager"
+                className="w-5 h-5 md:w-6 md:h-6" 
+              />
               <span className="text-gray-600 text-sm md:text-base">Claude</span>
             </div>
             <div className="flex items-center gap-2">
-              <img src="/images/gemini.svg" alt="Gemini" className="w-5 h-5 md:w-6 md:h-6" />
+              <Image 
+                src="/images/gemini.svg" 
+                alt="Gemini" 
+                width={24}
+                height={24}
+                loading="eager"
+                className="w-5 h-5 md:w-6 md:h-6" 
+              />
               <span className="text-gray-600 text-sm md:text-base">Gemini</span>
             </div>
             <span className="text-gray-600 text-sm md:text-base font-medium">& more</span>
