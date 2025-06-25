@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
@@ -105,9 +105,9 @@ export default function LeadsPage() {
   const [adminLoading, setAdminLoading] = useState(true)
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [filterConfidence, setFilterConfidence] = useState<'all' | 'high' | 'medium' | 'low'>('all')
-  const [filterAttribution, setFilterAttribution] = useState<'all' | 'chatgpt' | 'perplexity' | 'claude' | 'google' | 'direct'>('all')
   const [showConfig, setShowConfig] = useState(false)
+  const [sortField, setSortField] = useState<string>('timestamp')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [configTab, setConfigTab] = useState<'icp' | 'tracking'>('icp')
   const [copied, setCopied] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -331,22 +331,160 @@ export default function LeadsPage() {
     }
   }
 
-  // Filter leads based on search and filters
+  const getAttributionBadge = (source: string | undefined) => {
+    if (!source) return <span className="font-medium text-gray-900 text-sm">Unknown</span>
+
+    // Check if it's an AI platform
+    const lowerSource = source.toLowerCase()
+    
+    if (lowerSource.includes('perplexity')) {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-cyan-50 text-cyan-700 border border-cyan-200">
+          <img src="/images/perplexity.svg" alt="Perplexity" className="w-3 h-3" />
+          Perplexity
+        </span>
+      )
+    }
+    
+    if (lowerSource.includes('chatgpt') || lowerSource.includes('gpt')) {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+          <img src="/images/chatgpt.svg" alt="ChatGPT" className="w-3 h-3" />
+          ChatGPT
+        </span>
+      )
+    }
+    
+    if (lowerSource.includes('claude')) {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-orange-50 text-orange-700 border border-orange-200">
+          <img src="/images/claude.svg" alt="Claude" className="w-3 h-3" />
+          Claude
+        </span>
+      )
+    }
+    
+    if (lowerSource.includes('gemini')) {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-gray-50 text-gray-700 border border-gray-200">
+          <img src="/images/gemini.svg" alt="Gemini" className="w-3 h-3" />
+          Gemini
+        </span>
+      )
+    }
+    
+    // For other sources, just show as regular text
+    return <span className="font-medium text-gray-900 text-sm">{source}</span>
+  }
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('desc')
+    }
+  }
+
+  const SortableHeader = ({ field, children, className }: { field: string, children: React.ReactNode, className: string }) => (
+    <th 
+      className={`${className} cursor-pointer hover:bg-gray-100 transition-colors`}
+      onClick={() => handleSort(field)}
+    >
+      <div className="flex items-center gap-1">
+        {children}
+        <div className="flex flex-col">
+          <svg className={`w-3 h-3 ${sortField === field && sortDirection === 'asc' ? 'text-gray-900' : 'text-gray-400'}`} fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+          </svg>
+          <svg className={`w-3 h-3 ${sortField === field && sortDirection === 'desc' ? 'text-gray-900' : 'text-gray-400'}`} fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+        </div>
+      </div>
+    </th>
+  )
+
+  // Filter and sort leads
   const filteredLeads = useMemo(() => {
-    return leads.filter(lead => {
+    let filtered = leads.filter(lead => {
       const matchesSearch = !searchQuery || 
         (lead.fullName?.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (lead.company?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (lead.email?.toLowerCase().includes(searchQuery.toLowerCase()))
+        (lead.email?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (lead.jobTitle?.toLowerCase().includes(searchQuery.toLowerCase()))
       
-      const matchesConfidence = filterConfidence === 'all' || lead.confidence === filterConfidence
-      
-      const matchesAttribution = filterAttribution === 'all' || 
-        lead.model?.toLowerCase().includes(filterAttribution)
-      
-      return matchesSearch && matchesConfidence && matchesAttribution
+      return matchesSearch
     })
-  }, [leads, searchQuery, filterConfidence, filterAttribution])
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue: any = ''
+      let bValue: any = ''
+
+      switch (sortField) {
+        case 'fullName':
+          aValue = a.fullName || ''
+          bValue = b.fullName || ''
+          break
+        case 'jobTitle':
+          aValue = a.jobTitle || ''
+          bValue = b.jobTitle || ''
+          break
+        case 'company':
+          aValue = a.company || ''
+          bValue = b.company || ''
+          break
+        case 'location':
+          aValue = a.location || ''
+          bValue = b.location || ''
+          break
+        case 'email':
+          aValue = a.email || ''
+          bValue = b.email || ''
+          break
+        case 'confidence':
+          const confidenceOrder = { 'high': 3, 'medium': 2, 'low': 1 }
+          aValue = confidenceOrder[a.confidence as keyof typeof confidenceOrder] || 0
+          bValue = confidenceOrder[b.confidence as keyof typeof confidenceOrder] || 0
+          break
+        case 'model':
+          aValue = a.model || ''
+          bValue = b.model || ''
+          break
+        case 'pageVisited':
+          aValue = a.pageVisited || ''
+          bValue = b.pageVisited || ''
+          break
+        case 'sessionDuration':
+          aValue = a.sessionDuration || 0
+          bValue = b.sessionDuration || 0
+          break
+        case 'pagesViewed':
+          aValue = a.pagesViewed || 0
+          bValue = b.pagesViewed || 0
+          break
+        case 'timestamp':
+          aValue = new Date(a.timestamp).getTime()
+          bValue = new Date(b.timestamp).getTime()
+          break
+        default:
+          return 0
+      }
+
+      // Handle string comparison
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        aValue = aValue.toLowerCase()
+        bValue = bValue.toLowerCase()
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
+      return 0
+    })
+
+         return filtered
+  }, [leads, searchQuery, sortField, sortDirection])
 
   // Show loading while checking admin access
   if (adminLoading) {
@@ -363,97 +501,65 @@ export default function LeadsPage() {
   return (
     <div className="min-h-screen bg-[#f9f9f9]">
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900 mb-1">Leads</h1>
-            <p className="text-gray-600 text-sm">AI-attributed leads from your website visitors</p>
-          </div>
-
-          <div className="flex items-center gap-6">
-            {stats && (
-              <div className="flex items-center gap-6 text-sm">
-                <div className="text-center">
-                  <div className="text-gray-900 font-medium">{stats.leadsToday}</div>
-                  <div className="text-gray-500">Today</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-gray-900 font-medium">{stats.topModel}</div>
-                  <div className="text-gray-500">Top Model</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-gray-900 font-medium">
-                    {stats.websetsEnriched || 0}/{stats.total || 0}
-                  </div>
-                  <div className="text-gray-500">Enhanced</div>
-                </div>
-              </div>
-            )}
-                    <Button 
-              onClick={() => setShowConfig(true)}
-              variant="outline"
-              size="sm"
-              className="border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 shadow-sm"
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Configure
-                    </Button>
-                  </div>
-                </div>
-
-        {/* Controls */}
+        {/* Header with Controls */}
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-gray-900 font-medium text-sm">
+                {filteredLeads.length}
+              </span>
+              <span className="text-gray-500 text-sm">
+                {filteredLeads.length === leads.length ? 'leads' : `of ${leads.length} leads`}
+              </span>
+            </div>
+            
+            {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${searchQuery ? 'text-blue-600' : 'text-gray-500'}`} />
               <Input
                 placeholder="Search leads..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 w-80 bg-white border-gray-200 text-gray-900 placeholder:text-gray-500 focus:border-gray-300 focus:ring-0 shadow-sm"
+                className={`pl-10 w-80 bg-white placeholder:text-gray-500 focus:ring-0 shadow-sm ${
+                  searchQuery 
+                    ? 'border-blue-300 bg-blue-50 text-blue-900 focus:border-blue-400' 
+                    : 'border-gray-200 text-gray-900 focus:border-gray-300'
+                }`}
               />
-                </div>
-
-            <select
-              value={filterConfidence}
-              onChange={(e) => setFilterConfidence(e.target.value as any)}
-              className="px-3 py-2 bg-white border border-gray-200 rounded-md text-gray-700 text-sm focus:border-gray-300 focus:outline-none focus:ring-0 shadow-sm"
-            >
-              <option value="all">All Confidence</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-
-            <select
-              value={filterAttribution}
-              onChange={(e) => setFilterAttribution(e.target.value as any)}
-              className="px-3 py-2 bg-white border border-gray-200 rounded-md text-gray-700 text-sm focus:border-gray-300 focus:outline-none focus:ring-0 shadow-sm"
-            >
-              <option value="all">All Models</option>
-              <option value="chatgpt">ChatGPT</option>
-              <option value="perplexity">Perplexity</option>
-              <option value="claude">Claude</option>
-              <option value="google">Google</option>
-            </select>
-                    </div>
-                    
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+          
           <div className="flex items-center gap-2">
-            <span className="text-gray-500 text-sm">
-              {filteredLeads.length} leads
-            </span>
-                <Button 
+            <Button 
               onClick={exportToCSV}
               disabled={filteredLeads.length === 0}
-                  variant="outline"
-                  size="sm"
+              variant="outline"
+              size="sm"
               className="border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 shadow-sm"
-                >
+            >
               <Download className="w-4 h-4 mr-2" />
               Export
-                </Button>
-              </div>
-            </div>
+            </Button>
+            <Button 
+              onClick={() => setShowConfig(true)}
+              variant="outline"
+              size="sm"
+              className="border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 shadow-sm px-2"
+            >
+              <Settings className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
 
         {/* Table */}
         <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
@@ -492,21 +598,60 @@ export default function LeadsPage() {
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full min-w-[1600px]">
                 <thead className="bg-gray-50">
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Confidence</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Page</th>
-                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                    {/* Contact Information */}
+                    <SortableHeader field="fullName" className="text-left py-3 px-6 text-xs font-medium text-gray-500 uppercase tracking-wider w-64 whitespace-nowrap">
+                      Contact Name
+                    </SortableHeader>
+                    <SortableHeader field="jobTitle" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider w-48 whitespace-nowrap">
+                      Title/Position
+                    </SortableHeader>
+                    <SortableHeader field="company" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider w-48 whitespace-nowrap">
+                      Company
+                    </SortableHeader>
+                    <SortableHeader field="location" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider w-32 whitespace-nowrap">
+                      Location
+                    </SortableHeader>
+                    
+                    {/* Contact Details */}
+                    <SortableHeader field="email" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider w-40 whitespace-nowrap">
+                      Email
+                    </SortableHeader>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider w-32 whitespace-nowrap">LinkedIn</th>
+                    
+                    {/* Professional Data */}
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider w-48 whitespace-nowrap">Current Role</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider w-64 whitespace-nowrap">Professional Headline</th>
+                    <th className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider w-48 whitespace-nowrap">Recent Activity</th>
+                    
+                    {/* Attribution Data */}
+                    <SortableHeader field="confidence" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider w-24 whitespace-nowrap">
+                      Confidence
+                    </SortableHeader>
+                    <SortableHeader field="model" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider w-32 whitespace-nowrap">
+                      AI Model
+                    </SortableHeader>
+                    <SortableHeader field="pageVisited" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider w-48 whitespace-nowrap">
+                      Page Visited
+                    </SortableHeader>
+                    
+                    {/* Engagement Metrics */}
+                    <SortableHeader field="sessionDuration" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider w-32 whitespace-nowrap">
+                      Session Time
+                    </SortableHeader>
+                    <SortableHeader field="pagesViewed" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider w-32 whitespace-nowrap">
+                      Pages Viewed
+                    </SortableHeader>
+                    <SortableHeader field="timestamp" className="text-left py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider w-32 whitespace-nowrap">
+                      First Seen
+                    </SortableHeader>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                   {filteredLeads.map((lead, index) => {
                     const modelInfo = getModelInfo(lead.model)
-                    const confidenceBadge = getConfidenceBadge(lead.confidence)
                     
                           return (
                             <motion.tr
@@ -517,50 +662,123 @@ export default function LeadsPage() {
                         className="hover:bg-gray-50 transition-colors cursor-pointer group"
                         onClick={() => setSelectedLead(lead)}
                             >
-                        {/* Contact */}
-                        <td className="py-3 px-6">
+                        {/* Contact Name */}
+                        <td className="py-2 px-6 whitespace-nowrap">
                           <div className="flex items-center gap-3">
                             {lead.picture_url ? (
                               <img 
                                 src={lead.picture_url} 
                                 alt={lead.fullName || 'Contact'} 
-                                className="w-8 h-8 rounded-full object-cover"
+                                className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                                 onError={(e) => {
                                   e.currentTarget.style.display = 'none';
                                   e.currentTarget.nextElementSibling?.classList.remove('hidden');
                                 }}
                               />
                             ) : null}
-                            <div className={`w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center ${lead.picture_url ? 'hidden' : ''}`}>
+                            <div className={`w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 ${lead.picture_url ? 'hidden' : ''}`}>
                               <User className="w-4 h-4 text-gray-500" />
                             </div>
-                            <div>
+                            <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
-                                <span className="text-gray-900 font-medium text-sm">{lead.fullName || 'Unknown'}</span>
+                                <span className="text-gray-900 font-medium text-sm truncate">{lead.fullName || 'Unknown'}</span>
                                 {lead.exa_webset_id && (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-50 border border-purple-200 text-purple-700">
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-50 border border-purple-200 text-purple-700 flex-shrink-0">
                                     Enhanced
                                   </span>
                                 )}
                               </div>
-                              <div className="text-gray-500 text-xs">{lead.jobTitle || 'Unknown'}</div>
-                              {lead.headline && (
-                                <div className="text-gray-600 text-xs mt-0.5 truncate max-w-[300px]">{lead.headline}</div>
-                              )}
                             </div>
-                                </div>
-                              </td>
+                          </div>
+                        </td>
+                              
+                        {/* Title/Position */}
+                        <td className="py-2 px-4 whitespace-nowrap">
+                          <span className="text-gray-900 text-sm truncate block">{lead.jobTitle || '-'}</span>
+                        </td>
                               
                         {/* Company */}
-                              <td className="py-3 px-4">
-                                <div>
-                            <div className="text-gray-900 font-medium text-sm">{lead.company || 'Unknown'}</div>
-                            <div className="text-gray-500 text-xs">{lead.location || 'Unknown'}</div>
-                                </div>
-                              </td>
+                        <td className="py-2 px-4 whitespace-nowrap">
+                          <span className="text-gray-900 text-sm truncate block">{lead.company || '-'}</span>
+                        </td>
+                        
+                        {/* Location */}
+                        <td className="py-2 px-4 whitespace-nowrap">
+                          <span className="text-gray-600 text-sm truncate block">{lead.location || '-'}</span>
+                        </td>
+                        
+                        {/* Email */}
+                        <td className="py-2 px-4 whitespace-nowrap">
+                          {lead.email ? (
+                            <a href={`mailto:${lead.email}`} className="text-blue-600 hover:text-blue-800 text-sm truncate block"
+                               onClick={(e) => e.stopPropagation()}>
+                              {lead.email}
+                            </a>
+                          ) : (
+                            <span className="text-gray-400 text-sm">-</span>
+                          )}
+                        </td>
+                        
+                        {/* LinkedIn */}
+                        <td className="py-2 px-4 whitespace-nowrap">
+                          {lead.linkedinUrl ? (
+                            <a href={lead.linkedinUrl} target="_blank" rel="noopener noreferrer" 
+                               className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
+                               onClick={(e) => e.stopPropagation()}>
+                              <Linkedin className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">Profile</span>
+                            </a>
+                          ) : (
+                            <span className="text-gray-400 text-sm">-</span>
+                          )}
+                        </td>
+                        
+                        {/* Current Role */}
+                        <td className="py-2 px-4 whitespace-nowrap">
+                          {lead.work_experience && lead.work_experience.length > 0 ? (
+                            <div className="text-sm min-w-0">
+                              <div className="text-gray-900 font-medium truncate">{lead.work_experience[0].role}</div>
+                              <div className="text-gray-600 text-xs truncate">at {lead.work_experience[0].company}</div>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-sm">-</span>
+                          )}
+                        </td>
+                        
+                        {/* Professional Headline */}
+                        <td className="py-2 px-4 whitespace-nowrap">
+                          {lead.headline ? (
+                            <div className="text-gray-700 text-sm truncate" title={lead.headline}>
+                              {lead.headline}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-sm">-</span>
+                          )}
+                        </td>
+                        
+                        {/* Recent Activity */}
+                        <td className="py-2 px-4 whitespace-nowrap">
+                          {lead.media_content && lead.media_content.length > 0 ? (
+                            <div className="text-sm min-w-0">
+                              <div className="text-gray-900 font-medium truncate">
+                                {lead.media_content[0].title || lead.media_content[0].snippet || 'Recent activity'}
+                              </div>
+                              <div className="text-gray-500 text-xs truncate">
+                                {lead.media_content[0].type} • {lead.media_content[0].published_date ? new Date(lead.media_content[0].published_date).toLocaleDateString() : 'Recent'}
+                              </div>
+                            </div>
+                          ) : lead.enrichment_data?.linkedin_posts ? (
+                            <div className="text-sm">
+                              <div className="text-gray-900 font-medium">LinkedIn Activity</div>
+                              <div className="text-gray-500 text-xs">Recent posts available</div>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 text-sm">-</span>
+                          )}
+                        </td>
                               
                         {/* Confidence */}
-                        <td className="py-3 px-4">
+                        <td className="py-2 px-4 whitespace-nowrap">
                           <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-medium ${
                             lead.confidence === 'high' ? 'bg-green-50 border-green-200 text-green-700' :
                             lead.confidence === 'medium' ? 'bg-yellow-50 border-yellow-200 text-yellow-700' :
@@ -568,31 +786,45 @@ export default function LeadsPage() {
                           }`}>
                             {lead.confidence}
                           </span>
-                              </td>
+                        </td>
                               
-                        {/* Model */}
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
+                        {/* AI Model */}
+                        <td className="py-2 px-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2 min-w-0">
                             {modelInfo.logo && (
-                              <img src={modelInfo.logo} alt={modelInfo.name} className="w-4 h-4" />
+                              <img src={modelInfo.logo} alt={modelInfo.name} className="w-4 h-4 flex-shrink-0" />
                             )}
-                            <span className="text-gray-900 text-sm">{modelInfo.name}</span>
-                                </div>
-                              </td>
-                              
-                        {/* Page */}
-                              <td className="py-3 px-4">
-                          <code className="text-gray-600 text-xs bg-gray-100 px-2 py-1 rounded">
-                            {lead.pageVisited}
-                                </code>
-                              </td>
-                        
-                        {/* Time */}
-                        <td className="py-3 px-4">
-                          <div className="text-gray-600 text-sm">
-                            {formatRelativeTime(lead.timestamp)}
+                            <span className="text-gray-900 text-sm truncate">{modelInfo.name}</span>
                           </div>
-                              </td>
+                        </td>
+                              
+                        {/* Page Visited */}
+                        <td className="py-2 px-4 whitespace-nowrap">
+                          <code className="text-gray-600 text-xs bg-gray-100 px-2 py-1 rounded truncate block">
+                            {lead.pageVisited}
+                          </code>
+                        </td>
+                              
+                        {/* Session Time */}
+                        <td className="py-2 px-4 whitespace-nowrap">
+                          <span className="text-gray-600 text-sm">
+                            {lead.sessionDuration ? `${lead.sessionDuration}s` : '-'}
+                          </span>
+                        </td>
+                              
+                        {/* Pages Viewed */}
+                        <td className="py-2 px-4 whitespace-nowrap">
+                          <span className="text-gray-600 text-sm">
+                            {lead.pagesViewed || '-'}
+                          </span>
+                        </td>
+                        
+                        {/* First Seen */}
+                        <td className="py-2 px-4 whitespace-nowrap">
+                          <span className="text-gray-600 text-sm">
+                            {new Date(lead.timestamp).toLocaleDateString()}
+                          </span>
+                        </td>
                             </motion.tr>
                           )
                         })}
@@ -941,514 +1173,264 @@ export default function LeadsPage() {
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
               className="fixed right-0 top-0 h-full w-full max-w-lg bg-white shadow-xl z-50 flex flex-col"
             >
-              {/* Header */}
-              <div className="flex items-center gap-3 p-4 border-b border-gray-100">
-                <button
-                  onClick={() => setSelectedLead(null)}
-                  className="p-1.5 hover:bg-gray-50 rounded-md transition-colors"
-                >
-                  <X className="w-4 h-4 text-gray-400" />
-                </button>
-                {selectedLead?.picture_url ? (
-                  <img 
-                    src={selectedLead.picture_url} 
-                    alt={selectedLead.fullName || 'Contact'} 
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center">
-                    <User className="w-5 h-5 text-gray-400" />
+              {/* Tabs Header */}
+              <div className="border-b border-gray-200">
+                <div className="flex">
+                  <button className="px-6 py-3 text-sm font-medium text-gray-900 border-b-2 border-gray-900">
+                    Information
+                  </button>
+                  <button className="px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700">
+                    Company
+                  </button>
+                  <button className="px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700">
+                    Similar
+                  </button>
+                  <button className="px-6 py-3 text-sm font-medium text-gray-500 hover:text-gray-700">
+                    Comments
+                  </button>
+                  <div className="flex-1 flex justify-end items-center pr-4">
+                    <button
+                      onClick={() => setSelectedLead(null)}
+                      className="p-1 hover:bg-gray-100 rounded"
+                    >
+                      <X className="w-4 h-4 text-gray-400" />
+                    </button>
                   </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-lg font-medium text-gray-900 truncate">
-                    {selectedLead?.fullName || 'Unknown Contact'}
-                  </h2>
-                  <p className="text-sm text-gray-500 truncate">
-                    {selectedLead?.jobTitle || 'Unknown Title'}
-                  </p>
-                  <p className="text-xs text-gray-400 truncate">
-                    {selectedLead?.company || 'Unknown Company'}
-                  </p>
                 </div>
-                {selectedLead?.exa_webset_id && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200">
-                    Enhanced
-                  </span>
-                )}
+              </div>
+
+              {/* Header Title */}
+              <div className="p-6 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <h1 className="text-xl font-semibold text-gray-900">Website Lead</h1>
+                  <div className="flex items-center gap-2">
+                    <button className="p-2 hover:bg-gray-100 rounded-md">
+                      <Globe className="w-4 h-4 text-gray-600" />
+                    </button>
+                    {selectedLead?.linkedinUrl && (
+                      <button 
+                        onClick={() => window.open(selectedLead.linkedinUrl, '_blank')}
+                        className="p-2 hover:bg-gray-100 rounded-md"
+                      >
+                        <Linkedin className="w-4 h-4 text-gray-600" />
+                      </button>
+                    )}
+                    {selectedLead?.email && (
+                      <button 
+                        onClick={() => window.open(`mailto:${selectedLead.email}`, '_blank')}
+                        className="p-2 hover:bg-gray-100 rounded-md"
+                      >
+                        <Mail className="w-4 h-4 text-gray-600" />
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-y-auto p-4 pb-8">
-                <div className="space-y-8">
-                  {/* Quick Actions */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 h-9"
-                      onClick={() => window.open(`mailto:${selectedLead?.email}`, '_blank')}
-                    >
-                      <Mail className="w-3.5 h-3.5 mr-1.5" />
-                      Email
-                    </Button>
-                    {selectedLead?.linkedinUrl ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 h-9"
-                        onClick={() => window.open(selectedLead.linkedinUrl, '_blank')}
-                      >
-                        <Linkedin className="w-3.5 h-3.5 mr-1.5" />
-                        LinkedIn
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 hover:text-gray-800 h-9"
-                        onClick={() => {
-                          navigator.clipboard.writeText(selectedLead?.email || '');
-                          setCopied(true);
-                          setTimeout(() => setCopied(false), 2000);
-                        }}
-                      >
-                        {copied ? <CheckCircle className="w-3.5 h-3.5 mr-1.5" /> : <Copy className="w-3.5 h-3.5 mr-1.5" />}
-                        {copied ? 'Copied!' : 'Copy'}
-                      </Button>
-                    )}
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-4 space-y-5">
+                  {/* Contact Name */}
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-600 text-sm">Contact Name</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {selectedLead?.picture_url ? (
+                        <img 
+                          src={selectedLead.picture_url} 
+                          alt={selectedLead.fullName || 'Contact'} 
+                          className="w-6 h-6 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center">
+                          <User className="w-3 h-3 text-gray-500" />
+                        </div>
+                      )}
+                      <span className="font-medium text-gray-900">{selectedLead?.fullName || 'Unknown'}</span>
+                    </div>
                   </div>
 
-                  {/* Contact Info */}
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-900 mb-3">Contact Information</h3>
-                    <div className="bg-gray-50 rounded-lg p-3 space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <span className="text-xs text-gray-500 uppercase tracking-wide">Email</span>
-                          <p className="text-sm text-gray-900 font-medium mt-0.5">
-                            {selectedLead?.email || 'No email'}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-xs text-gray-500 uppercase tracking-wide">Location</span>
-                          <p className="text-sm text-gray-900 mt-0.5">
-                            {selectedLead?.location || 'Unknown'}
-                          </p>
-                        </div>
+                  {/* Position */}
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Building className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-600 text-sm">Position</span>
+                    </div>
+                    <span className="font-medium text-gray-900">{selectedLead?.jobTitle || 'Unknown'}</span>
+                  </div>
+
+                  {/* Visited Website */}
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-600 text-sm">Visited your website</span>
+                    </div>
+                    <span className="font-medium text-gray-900">
+                      {selectedLead ? new Date(selectedLead.timestamp).toLocaleDateString('en-US', {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric'
+                      }) : ''}
+                    </span>
+                  </div>
+
+                  {/* Email */}
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-600 text-sm">Email</span>
+                    </div>
+                    <span className="font-medium text-gray-900">{selectedLead?.email || 'No email'}</span>
+                  </div>
+
+                  {/* Attribution Details */}
+                  <div className="space-y-3">
+                    <h3 className="text-base font-semibold text-gray-900">Attribution Details</h3>
+                    
+                    {/* Attribution Source */}
+                    <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                      <div className="flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-gray-400" />
+                        <span className="text-gray-600 text-sm">Attribution Source</span>
                       </div>
-                      <div className="pt-2 border-t border-gray-200">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <span className="text-xs text-gray-500 uppercase tracking-wide">Attribution</span>
-                            <p className="text-sm text-gray-900 mt-0.5">
-                              {selectedLead?.model} via {selectedLead?.pageVisited}
-                            </p>
+                      <div className="flex items-center gap-2">
+                        {getAttributionBadge(selectedLead?.model)}
+                      </div>
+                    </div>
+
+                    {/* Query */}
+                    <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                      <div className="flex items-center gap-2">
+                        <Search className="w-4 h-4 text-gray-400" />
+                        <span className="text-gray-600 text-sm">Query (if attached)</span>
+                      </div>
+                      <span className="font-medium text-gray-900 text-sm">
+                        {selectedLead?.inferredQuery ? `"${selectedLead.inferredQuery}"` : 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Qualifications */}
+                  <div className="space-y-3">
+                    <h3 className="text-base font-semibold text-gray-900">Qualifications</h3>
+                    <div className="space-y-2">
+                      {/* Location */}
+                      {selectedLead?.location && (
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                            <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
                           </div>
-                          <div className="text-right">
-                            <span className="text-xs text-gray-500 uppercase tracking-wide">Confidence</span>
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                selectedLead?.confidence === 'high' ? 'bg-green-100 text-green-700' :
-                                selectedLead?.confidence === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                                'bg-gray-100 text-gray-700'
-                              }`}>
-                                {selectedLead?.confidence}
-                              </span>
-                              {selectedLead?.confidence_score && (
-                                <span className="text-xs text-gray-500">
-                                  {(selectedLead.confidence_score * 100).toFixed(0)}%
-                                </span>
-                              )}
-                            </div>
-                          </div>
+                          <span className="text-gray-600 text-sm">Location: <span className="text-gray-900">{selectedLead.location}</span></span>
                         </div>
+                      )}
+
+                      {/* Company Headcount */}
+                      {selectedLead?.company && (
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                            <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <span className="text-gray-600 text-sm">Company Headcount: <span className="text-gray-900">249-500</span></span>
+                        </div>
+                      )}
+
+                      {/* Industry */}
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                          <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                        <span className="text-gray-600 text-sm">Industry: <span className="text-gray-900">SaaS</span></span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Professional Profile */}
-                  {selectedLead?.exa_webset_id && (selectedLead.headline || selectedLead.summary) && (
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-900 mb-3">Professional Profile</h3>
-                      <div className="bg-gray-50 rounded-lg p-3 space-y-3">
-                        {selectedLead.headline && (
-                          <div>
-                            <span className="text-xs text-gray-500 uppercase tracking-wide">LinkedIn Headline</span>
-                            <p className="text-sm text-gray-700 mt-1 leading-relaxed">{selectedLead.headline}</p>
-                          </div>
-                        )}
-                        
-                        {selectedLead.summary && (
-                          <>
-                            {selectedLead.headline && <div className="border-t border-gray-200 pt-3" />}
-                            <div>
-                              <span className="text-xs text-gray-500 uppercase tracking-wide">Summary</span>
-                              <p className="text-sm text-gray-700 mt-1 leading-relaxed">
-                                {selectedLead.summary}
-                              </p>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Display enrichment data from Websets */}
-                  {selectedLead?.enrichment_data && (
-                    <>
-                      {/* Enhanced Insights */}
-                      {(selectedLead.enrichment_data.focus_areas || selectedLead.enrichment_data.linkedin_posts) && (
-                        <div>
-                          <h3 className="text-sm font-medium text-gray-900 mb-3">Enhanced Insights</h3>
-                          <div className="bg-gray-50 rounded-lg p-3 space-y-4">
-                            {/* Current Focus Areas */}
-                            {selectedLead.enrichment_data.focus_areas && (
-                              <div>
-                                <span className="text-xs text-gray-500 uppercase tracking-wide">Current Focus Areas</span>
-                                <p className="text-sm text-gray-700 mt-1 leading-relaxed">
-                                  {selectedLead.enrichment_data.focus_areas}
+                  {/* Social Media Activity */}
+                  <div className="space-y-3">
+                    <h3 className="text-base font-semibold text-gray-900">Social Media Activity</h3>
+                    
+                    {selectedLead?.media_content && selectedLead.media_content.length > 0 ? (
+                      <div className="space-y-3">
+                        {selectedLead.media_content.slice(0, 2).map((item: any, idx: number) => (
+                          <div key={idx} className="border border-gray-200 rounded-lg p-3">
+                            <div className="flex items-start gap-3">
+                              <div className="w-6 h-6 rounded bg-blue-50 flex items-center justify-center flex-shrink-0">
+                                {item.type === 'linkedin_post' ? '📝' : 
+                                 item.type === 'article' ? '📰' :
+                                 item.type === 'quote' ? '💬' : '🔗'}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                {item.url ? (
+                                  <a href={item.url} target="_blank" rel="noopener noreferrer" 
+                                     className="text-sm font-medium text-blue-600 hover:underline block">
+                                    {item.title || item.snippet || 'Activity'}
+                                  </a>
+                                ) : (
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {item.title || item.snippet || 'Activity'}
+                                  </p>
+                                )}
+                                {item.description && (
+                                  <p className="mt-1 text-xs text-gray-600 line-clamp-2">
+                                    {item.description}
+                                  </p>
+                                )}
+                                <p className="mt-1 text-xs text-gray-500">
+                                  {item.published_date ? new Date(item.published_date).toLocaleDateString() : 'Recent'}
                                 </p>
                               </div>
-                            )}
-
-                            {/* Recent LinkedIn Posts */}
-                            {selectedLead.enrichment_data.linkedin_posts && (
-                              <>
-                                {selectedLead.enrichment_data.focus_areas && <div className="border-t border-gray-200 pt-4" />}
-                                <div>
-                                  <span className="text-xs text-gray-500 uppercase tracking-wide">Recent Activity</span>
-                                  <div className="space-y-2 mt-2">
-                                    {selectedLead.enrichment_data.linkedin_posts.split('\n\n').slice(0, 2).map((post: string, idx: number) => (
-                                      <div key={idx} className="bg-white p-2 rounded border border-gray-200">
-                                        <p className="text-xs text-gray-700 leading-relaxed">
-                                          {post.replace(/URL:\s*https:\/\/[^\s]+/, '').trim()}
-                                        </p>
-                                        {post.includes('URL:') && (
-                                          <a href={post.match(/URL:\s*(https:\/\/[^\s]+)/)?.[1]} 
-                                             target="_blank" 
-                                             rel="noopener noreferrer"
-                                             className="text-xs text-blue-600 hover:underline mt-1 inline-block">
-                                            View Post →
-                                          </a>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </>
-                            )}
+                            </div>
                           </div>
-                        </div>
-                      )}
-
-                      {/* Press Quotes */}
-                      {selectedLead.enrichment_data.press_quotes && (
-                        <div>
-                          <h3 className="text-sm font-medium text-gray-900 mb-3">Press Quotes</h3>
-                          <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                            {selectedLead.enrichment_data.press_quotes.split('\n\n').slice(0, 2).map((quote: string, idx: number) => {
-                              const quoteMatch = quote.match(/"([^"]+)"/);
-                              const sourceMatch = quote.match(/quoted in\s+([^(]+)/i);
-                              const dateMatch = quote.match(/\(([^)]+)\)/);
-                              
-                              return (
-                                <div key={idx} className="bg-white p-3 rounded border border-gray-200">
-                                  {quoteMatch && (
-                                    <>
-                                      <p className="text-sm italic text-gray-700">
-                                        "{quoteMatch[1]}"
-                                      </p>
-                                      <p className="text-xs text-gray-500 mt-1">
-                                        {sourceMatch ? `— ${sourceMatch[1].trim()}` : '— Press'} 
-                                        {dateMatch && ` (${dateMatch[1]})`}
-                                      </p>
-                                    </>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Key Works */}
-                      {selectedLead.enrichment_data.key_works && (
-                        <div>
-                          <h3 className="text-sm font-medium text-gray-900 mb-3">Key Works & Projects</h3>
-                          <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                            {selectedLead.enrichment_data.key_works.split('\n\n').slice(0, 3).map((work: string, idx: number) => {
-                              const titleMatch = work.match(/"([^"]+)"/);
-                              const typeMatch = work.match(/\(([^,]+),/);
-                              
-                              return (
-                                <div key={idx} className="bg-white p-3 rounded border border-gray-200">
-                                  <p className="text-sm font-medium text-gray-900">
-                                    {titleMatch ? titleMatch[1] : work.split('(')[0].trim()}
-                                  </p>
-                                  {typeMatch && (
-                                    <p className="text-xs text-gray-500 mt-0.5">
-                                      {typeMatch[1]}
-                                    </p>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {/* Public Activity */}
-                  {selectedLead?.media_content && selectedLead.media_content.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-900 mb-3">Public Activity</h3>
-                      <div className="bg-gray-50 rounded-lg p-3">
-                      <div className="space-y-3">
-                        {/* LinkedIn Posts */}
-                        {selectedLead.media_content
-                          .filter((media: any) => media.type === 'linkedin_post' || media.type === 'post')
-                          .slice(0, 3)
-                          .map((post: any, idx: number) => (
-                            <div key={`linkedin-${idx}`} className="space-y-2">
-                              <div className="flex items-start gap-2">
-                                <div className="w-8 h-8 rounded bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                                  <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                                  </svg>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  {post.url ? (
-                                    <a href={post.url} target="_blank" rel="noopener noreferrer" 
-                                       className="text-sm font-medium text-blue-600 hover:underline line-clamp-2">
-                                      {post.title || post.snippet || 'LinkedIn Post'}
-                                    </a>
-                                  ) : (
-                                    <p className="text-sm font-medium text-gray-900 line-clamp-2">
-                                      {post.title || post.snippet || 'LinkedIn Post'}
-                                    </p>
-                                  )}
-                                  {(post.description || post.snippet) && (
-                                    <p className="mt-1 text-xs text-gray-600 line-clamp-3">
-                                      {post.description || post.snippet}
-                                    </p>
-                                  )}
-                                  {post.published_date && (
-                                    <p className="mt-1 text-xs text-gray-500">
-                                      {new Date(post.published_date).toLocaleDateString()}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-
-                        {/* Articles & Thought Leadership */}
-                        {selectedLead.media_content
-                          .filter((media: any) => ['article', 'blog', 'interview', 'podcast', 'webinar', 'talk'].includes(media.type))
-                          .slice(0, 3)
-                          .map((article: any, idx: number) => (
-                            <div key={`article-${idx}`} className="space-y-2">
-                              <div className="flex items-start gap-2">
-                                <div className="w-8 h-8 rounded bg-purple-500/10 flex items-center justify-center flex-shrink-0">
-                                  {article.type === 'podcast' ? '🎙️' : 
-                                   article.type === 'webinar' ? '🖥️' :
-                                   article.type === 'talk' ? '🎤' : '📝'}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <a href={article.url} target="_blank" rel="noopener noreferrer" 
-                                     className="text-sm font-medium text-purple-600 dark:text-purple-400 hover:underline line-clamp-2">
-                                    {article.title}
-                                  </a>
-                                  {article.description && (
-                                    <p className="mt-1 text-xs text-gray-600 line-clamp-3">
-                                      {article.description}
-                                    </p>
-                                  )}
-                                  <p className="mt-1 text-xs text-gray-500">
-                                    {article.type.charAt(0).toUpperCase() + article.type.slice(1)} • {new Date(article.published_date).toLocaleDateString()}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-
-                        {/* Press Quotes & Media Mentions */}
-                        {selectedLead.media_content
-                          .filter((media: any) => media.type === 'quote' || media.type === 'news' || media.type === 'article')
-                          .slice(0, 5)
-                          .map((item: any, idx: number) => (
-                            <div key={`media-${idx}`} className="space-y-2">
-                              <div className="flex items-start gap-2">
-                                <div className="w-8 h-8 rounded bg-green-500/10 flex items-center justify-center flex-shrink-0">
-                                  {item.type === 'quote' ? '💬' : '📰'}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  {item.type === 'quote' && item.quote ? (
-                                    <>
-                                      <p className="text-sm italic text-gray-700">
-                                        "{item.quote}"
-                                      </p>
-                                      <p className="mt-1 text-xs text-gray-500">
-                                        — {item.publication || item.platform || 'Press'} 
-                                        {item.published_date && ` • ${new Date(item.published_date).toLocaleDateString()}`}
-                                      </p>
-                                    </>
-                                  ) : (
-                                    <>
-                                      {item.url ? (
-                                        <a href={item.url} target="_blank" rel="noopener noreferrer" 
-                                           className="text-sm font-medium text-green-600 dark:text-green-400 hover:underline line-clamp-2">
-                                          {item.title || 'Media Mention'}
-                                        </a>
-                                      ) : (
-                                        <p className="text-sm font-medium text-gray-900 line-clamp-2">
-                                          {item.title || 'Media Mention'}
-                                        </p>
-                                      )}
-                                      {item.description && !item.quote && (
-                                        <p className="mt-1 text-xs text-gray-600 line-clamp-3">
-                                          {item.description}
-                                        </p>
-                                      )}
-                                      <p className="mt-1 text-xs text-gray-500">
-                                        {item.platform || item.publication || 'Media'} • {new Date(item.published_date).toLocaleDateString()}
-                                      </p>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-
-                        {/* Patents */}
-                        {selectedLead.media_content
-                          .filter((media: any) => media.type === 'patent')
-                          .slice(0, 2)
-                          .map((patent: any, idx: number) => (
-                            <div key={`patent-${idx}`} className="space-y-2">
-                              <div className="flex items-start gap-2">
-                                <div className="w-8 h-8 rounded bg-orange-500/10 flex items-center justify-center flex-shrink-0">
-                                  🔬
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <a href={patent.url} target="_blank" rel="noopener noreferrer" 
-                                     className="text-sm font-medium text-orange-600 dark:text-orange-400 hover:underline line-clamp-2">
-                                    {patent.title}
-                                  </a>
-                                  <p className="mt-1 text-xs text-gray-500">
-                                    Patent • {new Date(patent.published_date).toLocaleDateString()}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                        ))}
                       </div>
-                    </div>
-                  )}
-
-                  {/* Work Experience */}
-                  {selectedLead?.work_experience && selectedLead.work_experience.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-900 mb-3">Experience</h3>
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <div className="space-y-3">
-                          {selectedLead.work_experience.slice(0, 3).map((exp, idx) => (
-                            <div key={`exp-${idx}`} className={idx > 0 ? 'pt-3 border-t border-gray-200' : ''}>
-                              <div className="flex items-start justify-between mb-1">
-                                <div className="flex-1">
-                                  <h4 className="text-sm font-medium text-gray-900">{exp.role}</h4>
-                                  <p className="text-sm text-gray-600">{exp.company}</p>
-                                </div>
-                                {exp.is_current && (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
-                                    Current
-                                  </span>
+                    ) : selectedLead?.enrichment_data?.linkedin_posts ? (
+                      <div className="space-y-3">
+                        {selectedLead.enrichment_data.linkedin_posts.split('\n\n').slice(0, 2).map((post: string, idx: number) => (
+                          <div key={idx} className="border border-gray-200 rounded-lg p-3">
+                            <div className="flex items-start gap-3">
+                              <div className="w-6 h-6 rounded bg-blue-50 flex items-center justify-center flex-shrink-0">
+                                📝
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-gray-700 leading-relaxed">
+                                  {post.replace(/URL:\s*https:\/\/[^\s]+/, '').trim()}
+                                </p>
+                                {post.includes('URL:') && (
+                                  <a href={post.match(/URL:\s*(https:\/\/[^\s]+)/)?.[1]} 
+                                     target="_blank" 
+                                     rel="noopener noreferrer"
+                                     className="text-xs text-blue-600 hover:underline mt-1 inline-block">
+                                    View Post →
+                                  </a>
                                 )}
                               </div>
-                              <p className="text-xs text-gray-500">
-                                {exp.start_date} - {exp.end_date || 'Present'}
-                              </p>
-                              {exp.description && (
-                                <p className="mt-1 text-xs text-gray-600 leading-relaxed">{exp.description}</p>
-                              )}
                             </div>
-                          ))}
-                        </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                  )}
-
-                  {/* Education */}
-                  {selectedLead?.education && selectedLead.education.length > 0 && (
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-900 mb-3">Education</h3>
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <div className="space-y-3">
-                          {selectedLead.education.map((edu, idx) => (
-                            <div key={`edu-${idx}`} className={idx > 0 ? 'pt-3 border-t border-gray-200' : ''}>
-                              <h4 className="text-sm font-medium text-gray-900">{edu.institution}</h4>
-                              <p className="text-sm text-gray-600">
-                                {edu.degree} {edu.field_of_study && `in ${edu.field_of_study}`}
-                              </p>
-                              {(edu.start_year || edu.end_year) && (
-                                <p className="text-xs text-gray-500 mt-1">
-                                  {edu.start_year} - {edu.end_year}
-                                </p>
-                              )}
-                            </div>
-                          ))}
+                    ) : (
+                      <div className="text-center py-6 text-gray-500">
+                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                          <Activity className="w-5 h-5 text-gray-400" />
                         </div>
+                        <p className="text-sm">No social media activity available</p>
                       </div>
-                    </div>
-                  )}
-
-                  {/* Engagement Metrics */}
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-900 mb-3">Engagement Metrics</h3>
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-xs text-gray-500 uppercase tracking-wide">Session Duration</p>
-                          <p className="text-sm font-medium text-gray-900 mt-0.5">
-                            {selectedLead?.sessionDuration ? `${selectedLead.sessionDuration}s` : 'Unknown'}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 uppercase tracking-wide">Pages Viewed</p>
-                          <p className="text-sm font-medium text-gray-900 mt-0.5">
-                            {selectedLead?.pagesViewed || 'Unknown'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 pt-3 mt-3 border-t border-gray-200">
-                        <div>
-                          <p className="text-xs text-gray-500 uppercase tracking-wide">First Seen</p>
-                          <p className="text-sm font-medium text-gray-900 mt-0.5">
-                            {selectedLead ? new Date(selectedLead.timestamp).toLocaleDateString() : ''}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500 uppercase tracking-wide">Time</p>
-                          <p className="text-sm font-medium text-gray-900 mt-0.5">
-                            {selectedLead ? new Date(selectedLead.timestamp).toLocaleTimeString() : ''}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                    )}
                   </div>
-
-
                 </div>
               </div>
-
-
             </motion.div>
           </>
         )}
       </AnimatePresence>
+
     </div>
   )
 } 

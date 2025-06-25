@@ -43,7 +43,7 @@ export default function ResourcesClientContent({
   const displayTags = [{ name: 'All Topics', count: posts.length }, ...popularTags];
 
   return (
-    <div className="-mt-20 bg-[#0c0c0c] text-white">
+    <div className="-mt-20 bg-white text-[#191919]">
       <style jsx global>{`
         .fade-in {
           opacity: 0;
@@ -99,38 +99,33 @@ export default function ResourcesClientContent({
       `}</style>
 
       {/* Hero Section */}
-      <OptimizedBackground
-        src="/images/split-bg.png"
-        className="min-h-[50vh] md:min-h-[60vh] w-full relative flex items-center justify-center pt-48 md:pt-52"
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0c0c0c]/50 via-[#0c0c0c]/80 to-[#0c0c0c]" />
-        
+      <div className="min-h-[50vh] md:min-h-[60vh] w-full relative flex items-center justify-center pt-48 md:pt-52 bg-white">
         <div className="relative z-10 w-[92%] md:w-[80%] max-w-7xl mx-auto px-2 md:px-4">
           <div className="text-center">
             <div className={`fade-in ${isLoaded ? 'visible' : ''}`}>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 md:mb-6">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-[#191919] mb-4 md:mb-6">
                 LLM-Search Attribution<span className="font-serif font-light italic tracking-tight"> Playbooks</span>
               </h1>
             </div>
             <div className={`fade-in stagger-1 ${isLoaded ? 'visible' : ''}`}>
-              <p className="text-lg md:text-xl text-gray-200 max-w-3xl mx-auto mb-8 md:mb-12">
+              <p className="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto mb-8 md:mb-12">
                 Master AI crawler tracking, contact mapping, and attribution strategies to turn AI citations into qualified pipeline
               </p>
             </div>
           </div>
         </div>
-      </OptimizedBackground>
+      </div>
 
       {/* Featured Posts */}
       {featuredPosts.length > 0 && (
-        <section className="w-full py-12 md:py-16 bg-[#0c0c0c] relative">
+        <section className="w-full py-12 md:py-16 bg-white relative">
           <div className="w-[92%] md:w-[80%] max-w-7xl mx-auto">
             <div className={`fade-in stagger-2 ${isLoaded ? 'visible' : ''}`}>
               <div className="text-center mb-12 md:mb-16">
-                <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-4">
+                <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#191919] mb-4">
                   Featured Resources
                 </h2>
-                <div className="w-16 h-px bg-gray-600 mx-auto"></div>
+                <div className="w-16 h-px bg-gray-300 mx-auto"></div>
               </div>
             </div>
             
@@ -152,17 +147,17 @@ export default function ResourcesClientContent({
       )}
 
       {/* Main Resources Section */}
-      <section className="w-full py-12 md:py-16 bg-[#0c0c0c] relative">
+      <section className="w-full py-12 md:py-16 bg-white relative">
         <div className="w-[92%] md:w-[80%] max-w-7xl mx-auto">
           
           {/* Section Header */}
           <div className={`slide-up stagger-4 ${isLoaded ? 'visible' : ''}`}>
             <div className="text-center mb-12 md:mb-16">
-              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-4">
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#191919] mb-4">
                 {selectedTag ? selectedTag.charAt(0).toUpperCase() + selectedTag.slice(1) : 'All Resources'}
               </h2>
-              <div className="w-16 h-px bg-gray-600 mx-auto mb-8"></div>
-              <p className="text-gray-300 text-lg max-w-2xl mx-auto">
+              <div className="w-16 h-px bg-gray-300 mx-auto mb-8"></div>
+              <p className="text-gray-700 text-lg max-w-2xl mx-auto">
                 Expert insights on LLM-search attribution, crawler tracking, and contact identification strategies
               </p>
             </div>
@@ -177,15 +172,15 @@ export default function ResourcesClientContent({
                   onClick={() => handleTagClick(tagObj.name === 'All Topics' ? null : tagObj.name)}
                   className={`tag-button inline-flex items-center border px-4 py-2.5 text-sm font-medium transition-all duration-300
                     ${selectedTag === tagObj.name || (selectedTag === null && tagObj.name === 'All Topics')
-                      ? 'bg-white text-[#0c0c0c] border-white active shadow-lg' 
-                      : 'bg-[#0c0c0c] text-gray-300 border-[#333333] hover:border-[#444444] hover:bg-[#1a1a1a]'
+                      ? 'bg-[#191919] text-white border-[#191919] active shadow-lg' 
+                      : 'bg-white text-gray-700 border-[#e5e5e5] hover:border-[#d1d1d1] hover:bg-[#f5f5f5]'
                     }
                   `}
                   style={{ transitionDelay: `${0.6 + index * 0.05}s` }}
                 >
                   {tagObj.name}
                   {tagObj.name !== 'All Topics' && tagObj.count !== undefined && (
-                    <span className={`ml-2 text-xs ${selectedTag === tagObj.name ? 'text-[#666666]' : 'text-gray-500'}`}>
+                    <span className={`ml-2 text-xs ${selectedTag === tagObj.name ? 'text-gray-300' : 'text-gray-500'}`}>
                       ({tagObj.count})
                     </span>
                   )}
@@ -211,15 +206,15 @@ export default function ResourcesClientContent({
             ) : (
               <div className="text-center py-16 md:py-24">
                 <div className="max-w-md mx-auto">
-                  <div className="w-16 h-16 bg-[#1a1a1a] border border-[#333333] rounded-full flex items-center justify-center mx-auto mb-6">
-                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-16 h-16 bg-[#f5f5f5] border border-[#e5e5e5] rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">
+                  <h3 className="text-xl font-semibold text-[#191919] mb-3">
                     {selectedTag ? `No resources found for "${selectedTag}"` : 'No resources available'}
                   </h3>
-                  <p className="text-gray-400 mb-6">
+                  <p className="text-gray-600 mb-6">
                     {selectedTag 
                       ? 'Try selecting a different topic or view all resources.' 
                       : 'Check back soon for new content and insights!'
@@ -228,7 +223,7 @@ export default function ResourcesClientContent({
                   {selectedTag && (
                     <button
                       onClick={() => handleTagClick(null)}
-                      className="inline-flex items-center gap-2 bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333333] hover:border-[#444444] px-6 py-3 transition-all duration-200 text-white font-medium"
+                      className="inline-flex items-center gap-2 bg-[#191919] hover:bg-[#333333] border border-[#191919] hover:border-[#333333] px-6 py-3 transition-all duration-200 text-white font-medium"
                     >
                       <span>View All Resources</span>
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -113,20 +113,20 @@ export function TableRenderer({ htmlContent }: TableRendererProps) {
         console.error('Error rendering table:', error)
         // Fallback to original table
         tableContainer.innerHTML = `
-          <div class="my-6 overflow-x-auto border border-[#2f2f2f]">
+          <div class="my-6 overflow-x-auto border border-[#e5e5e5]">
             <table class="w-full">
-              <thead class="bg-[#161616] border-b border-[#2f2f2f]">
+              <thead class="bg-[#f9f9f9] border-b border-[#e5e5e5]">
                 <tr>
                   ${tableData.columns.map(col => 
-                    `<th class="px-4 py-3 text-sm font-medium text-gray-400 text-left">${col.header}</th>`
+                    `<th class="px-4 py-3 text-sm font-medium text-gray-600 text-left">${col.header}</th>`
                   ).join('')}
                 </tr>
               </thead>
               <tbody>
                 ${tableData.data.map(row => 
-                  `<tr class="border-b border-[#2f2f2f] hover:bg-[#161616]">
+                  `<tr class="border-b border-[#e5e5e5] hover:bg-[#f9f9f9]">
                     ${tableData.columns.map((col, i) => 
-                      `<td class="px-4 py-3 text-sm text-gray-300">${row[`col${i}`]}</td>`
+                      `<td class="px-4 py-3 text-sm text-gray-700">${row[`col${i}`]}</td>`
                     ).join('')}
                   </tr>`
                 ).join('')}

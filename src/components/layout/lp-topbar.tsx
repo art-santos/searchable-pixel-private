@@ -39,7 +39,7 @@ export function LPTopBar() {
     <>
       <div className={`fixed top-0 left-0 right-0 z-50 flex h-16 md:h-16 items-center justify-center transition-all duration-300 ${
         isScrolled 
-          ? 'bg-[#0c0c0c]/60 backdrop-blur-md' 
+          ? 'bg-white/60 backdrop-blur-md border-b border-gray-200' 
           : 'bg-transparent'
       }`}>
       <style jsx global>{`
@@ -61,7 +61,7 @@ export function LPTopBar() {
           height: 1px;
           bottom: -2px;
           left: 0;
-          background-color: white;
+          background-color: #191919;
           transform: scaleX(0);
           transform-origin: right;
           transition: transform 0.3s ease-out;
@@ -83,7 +83,7 @@ export function LPTopBar() {
         }
         .auth-button-primary:hover {
           transform: translateY(-2px) scale(1.02);
-          box-shadow: 0 5px 15px rgba(47, 47, 47, 0.2);
+          box-shadow: 0 5px 15px rgba(25, 25, 25, 0.2);
         }
       `}</style>
 
@@ -92,11 +92,11 @@ export function LPTopBar() {
         <div className="flex-1">
           <Link href="/" className="logo-container flex items-center">
             <Image 
-              src="/images/split-icon.svg" 
+              src="/images/split-icon-black.svg" 
               alt="Split" 
               width={28} 
               height={28} 
-              className="logo-rotate text-white md:w-8 md:h-8" 
+              className="logo-rotate text-[#191919] md:w-8 md:h-8" 
             />
           </Link>
         </div>
@@ -105,19 +105,19 @@ export function LPTopBar() {
         <nav className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
             <button 
               onClick={scrollToHowItWorks}
-              className="nav-link text-sm text-gray-300 hover:text-white transition-colors cursor-pointer"
+              className="nav-link text-sm text-gray-600 hover:text-[#191919] transition-colors cursor-pointer"
           >
             Product
             </button>
           <Link 
             href="/customers" 
-            className="nav-link text-sm text-gray-300 hover:text-white transition-colors"
+            className="nav-link text-sm text-gray-600 hover:text-[#191919] transition-colors"
           >
             Customers
           </Link>
           <Link 
             href="/resources" 
-            className="nav-link text-sm text-gray-300 hover:text-white transition-colors"
+            className="nav-link text-sm text-gray-600 hover:text-[#191919] transition-colors"
           >
             Resources
           </Link>
@@ -128,7 +128,7 @@ export function LPTopBar() {
             {/* Mobile Hamburger Menu */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 text-gray-300 hover:text-white transition-colors"
+              className="md:hidden p-2 text-gray-600 hover:text-[#191919] transition-colors"
               aria-label="Toggle mobile menu"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -139,14 +139,14 @@ export function LPTopBar() {
           <Link href="/login">
             <Button 
               variant="ghost" 
-              className="auth-button-ghost text-gray-300 hover:text-white hover:bg-white/10 hidden md:inline-flex"
+              className="auth-button-ghost text-gray-600 hover:text-[#191919] hover:bg-gray-100 hidden md:inline-flex"
             >
               Sign in
             </Button>
           </Link>
           <Link href="/waitlist">
             <Button 
-              className="auth-button-primary bg-[#0c0c0c]/80 text-white border border-[#2f2f2f] hover:bg-[#0c0c0c]/90 hover:border-[#3f3f3f] text-sm md:text-base px-3 py-1.5 md:px-4 md:py-2"
+              className="auth-button-primary bg-[#191919] text-white border border-[#191919] hover:bg-[#333333] hover:border-[#333333] text-sm md:text-base px-3 py-1.5 md:px-4 md:py-2"
             >
               Get Started
             </Button>
@@ -170,7 +170,7 @@ export function LPTopBar() {
         ></div>
         
         {/* Menu Panel */}
-        <div className={`absolute top-16 left-0 right-0 bg-[#0c0c0c]/95 backdrop-blur-md border-b border-[#1a1a1a] transition-all duration-300 ease-out ${
+        <div className={`absolute top-16 left-0 right-0 bg-white/95 backdrop-blur-md border-b border-gray-200 transition-all duration-300 ease-out ${
           isMobileMenuOpen 
             ? 'transform translate-y-0 opacity-100' 
             : 'transform -translate-y-4 opacity-0'
@@ -179,7 +179,7 @@ export function LPTopBar() {
             {/* Staggered animation for menu items */}
             <button 
               onClick={scrollToHowItWorks}
-              className={`block w-full text-left text-gray-300 hover:text-white transition-all duration-200 ease-out py-2 text-base hover:transform hover:translate-x-1 ${
+              className={`block w-full text-left text-gray-600 hover:text-[#191919] transition-all duration-200 ease-out py-2 text-base hover:transform hover:translate-x-1 ${
                 isMobileMenuOpen ? 'transform translate-y-0 opacity-100' : 'transform translate-y-2 opacity-0'
               }`}
               style={{ transitionDelay: isMobileMenuOpen ? '100ms' : '0ms' }}
@@ -189,7 +189,7 @@ export function LPTopBar() {
             <Link 
               href="/customers" 
               onClick={closeMobileMenu}
-              className={`block text-gray-300 hover:text-white transition-all duration-200 ease-out py-2 text-base hover:transform hover:translate-x-1 ${
+              className={`block text-gray-600 hover:text-[#191919] transition-all duration-200 ease-out py-2 text-base hover:transform hover:translate-x-1 ${
                 isMobileMenuOpen ? 'transform translate-y-0 opacity-100' : 'transform translate-y-2 opacity-0'
               }`}
               style={{ transitionDelay: isMobileMenuOpen ? '150ms' : '0ms' }}
@@ -199,7 +199,7 @@ export function LPTopBar() {
             <Link 
               href="/resources" 
               onClick={closeMobileMenu}
-              className={`block text-gray-300 hover:text-white transition-all duration-200 ease-out py-2 text-base hover:transform hover:translate-x-1 ${
+              className={`block text-gray-600 hover:text-[#191919] transition-all duration-200 ease-out py-2 text-base hover:transform hover:translate-x-1 ${
                 isMobileMenuOpen ? 'transform translate-y-0 opacity-100' : 'transform translate-y-2 opacity-0'
               }`}
               style={{ transitionDelay: isMobileMenuOpen ? '200ms' : '0ms' }}
@@ -209,7 +209,7 @@ export function LPTopBar() {
             <Link 
               href="/case-studies/origami" 
               onClick={closeMobileMenu}
-              className={`block text-gray-300 hover:text-white transition-all duration-200 ease-out py-2 text-base hover:transform hover:translate-x-1 ${
+              className={`block text-gray-600 hover:text-[#191919] transition-all duration-200 ease-out py-2 text-base hover:transform hover:translate-x-1 ${
                 isMobileMenuOpen ? 'transform translate-y-0 opacity-100' : 'transform translate-y-2 opacity-0'
               }`}
               style={{ transitionDelay: isMobileMenuOpen ? '250ms' : '0ms' }}
@@ -218,7 +218,7 @@ export function LPTopBar() {
             </Link>
             
             {/* Mobile Auth Links */}
-            <div className={`pt-4 border-t border-[#1a1a1a] space-y-3 transition-all duration-200 ease-out ${
+            <div className={`pt-4 border-t border-gray-200 space-y-3 transition-all duration-200 ease-out ${
               isMobileMenuOpen ? 'transform translate-y-0 opacity-100' : 'transform translate-y-2 opacity-0'
             }`}
             style={{ transitionDelay: isMobileMenuOpen ? '300ms' : '0ms' }}
@@ -226,14 +226,14 @@ export function LPTopBar() {
               <Link 
                 href="/login" 
                 onClick={closeMobileMenu}
-                className="block text-gray-300 hover:text-white transition-all duration-200 ease-out py-2 text-base hover:transform hover:translate-x-1"
+                className="block text-gray-600 hover:text-[#191919] transition-all duration-200 ease-out py-2 text-base hover:transform hover:translate-x-1"
               >
                 Sign in
               </Link>
               <Link 
                 href="/waitlist" 
                 onClick={closeMobileMenu}
-                className="block bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333333] hover:border-[#444444] px-4 py-3 text-white text-center transition-all duration-200 ease-out hover:transform hover:scale-105"
+                className="block bg-[#191919] hover:bg-[#333333] border border-[#191919] hover:border-[#333333] px-4 py-3 text-white text-center transition-all duration-200 ease-out hover:transform hover:scale-105"
               >
                 Get Started
               </Link>

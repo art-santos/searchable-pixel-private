@@ -69,42 +69,36 @@ export default function CustomersPage() {
       `}</style>
 
       {/* Hero Section */}
-      <OptimizedBackground
-        src="/images/split-bg.png"
-        className="min-h-[50vh] md:min-h-[60vh] w-full relative flex items-center justify-center pt-32 md:pt-40"
-      >
-        {/* Overlay with gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0c0c0c]/50 via-[#0c0c0c]/80 to-[#0c0c0c]" />
-        
+      <div className="min-h-[50vh] md:min-h-[60vh] w-full relative flex items-center justify-center pt-32 md:pt-40 bg-white">
         <div className="relative z-10 w-[92%] md:w-[80%] max-w-7xl mx-auto px-2 md:px-4">
           <div className="text-center">
             <div className={`fade-in ${isLoaded ? 'visible' : ''}`}>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 md:mb-6">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-[#191919] mb-4 md:mb-6">
                 Our<span className="font-serif font-light italic tracking-tight"> Customers</span>
               </h1>
             </div>
             <div className={`fade-in stagger-1 ${isLoaded ? 'visible' : ''}`}>
-              <p className="text-lg md:text-xl text-gray-200 max-w-3xl mx-auto mb-8 md:mb-12">
+              <p className="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto mb-8 md:mb-12">
                 See how leading companies are using Split to dominate AI engine visibility and get cited by ChatGPT, Perplexity, and Google AI.
               </p>
             </div>
           </div>
         </div>
-      </OptimizedBackground>
+      </div>
 
       {/* Customer Showcase Section - Moved closer to header */}
-      <section className="w-full py-8 md:py-12 bg-[#0c0c0c] relative">
+      <section className="w-full py-8 md:py-12 bg-white relative">
         <div className="w-[92%] md:w-[80%] max-w-7xl mx-auto">
 
           {/* Featured Case Study - Origami */}
           <div className={`scale-in stagger-2 ${isLoaded ? 'visible' : ''}`}>
-            <div className="relative bg-[#0c0c0c] border border-[#1a1a1a] p-6 sm:p-8 md:p-12 overflow-hidden group hover:border-[#333333] transition-all duration-300 shadow-xl">
+            <div className="relative bg-white border border-[#e5e5e5] p-6 sm:p-8 md:p-12 overflow-hidden group hover:border-[#d1d1d1] transition-all duration-300 shadow-xl">
               
               {/* Case Study Label */}
               <div className={`slide-up stagger-3 ${isLoaded ? 'visible' : ''}`}>
-                <div className="inline-flex items-center gap-2 bg-[#0c0c0c] border border-[#2a2a2a] px-3 py-1.5 mb-6 md:mb-8">
-                  <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                  <span className="text-xs text-gray-400 uppercase tracking-[0.15em] font-medium">
+                <div className="inline-flex items-center gap-2 bg-white border border-[#e5e5e5] px-3 py-1.5 mb-6 md:mb-8">
+                  <div className="w-1.5 h-1.5 bg-[#191919] rounded-full"></div>
+                  <span className="text-xs text-gray-600 uppercase tracking-[0.15em] font-medium">
                     Case Study
                   </span>
                 </div>
@@ -112,11 +106,11 @@ export default function CustomersPage() {
 
               {/* Main Headline */}
               <div className={`slide-up stagger-4 ${isLoaded ? 'visible' : ''}`}>
-                <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-white mb-6 md:mb-8 leading-tight max-w-4xl">
+                <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-[#191919] mb-6 md:mb-8 leading-tight max-w-4xl">
                   We took{' '}
                   <span className="inline-flex items-center">
                     <Image
-                      src="/images/origami-pink.svg"
+                      src="/images/origami-dark.svg"
                       alt="Origami"
                       width={120}
                       height={28}
@@ -129,16 +123,16 @@ export default function CustomersPage() {
 
               {/* Description */}
               <div className={`fade-in stagger-4 ${isLoaded ? 'visible' : ''}`}>
-                <p className="text-base sm:text-lg md:text-xl text-gray-300 leading-relaxed font-light mb-6 md:mb-8 max-w-3xl">
+                <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed font-light mb-6 md:mb-8 max-w-3xl">
                   Origami launched an autonomous agent that identified structural issues, filled key content gaps, and quickly earned visibility across{' '}
-                  <span className="text-white">ChatGPT, Perplexity, and Google AI</span>, ranking for the exact queries their customers were asking.
+                  <span className="text-[#191919]">ChatGPT, Perplexity, and Google AI</span>, ranking for the exact queries their customers were asking.
                 </p>
               </div>
 
               {/* CTA Button */}
               <div className={`scale-in stagger-4 ${isLoaded ? 'visible' : ''}`}>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                  <Link href="/case-studies/origami" className="group inline-flex items-center gap-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333333] hover:border-[#444444] px-4 sm:px-6 py-2.5 sm:py-3 transition-all duration-200 text-white text-sm sm:text-base">
+                  <Link href="/case-studies/origami" className="group inline-flex items-center gap-3 bg-[#191919] hover:bg-[#333333] border border-[#191919] hover:border-[#333333] px-4 sm:px-6 py-2.5 sm:py-3 transition-all duration-200 text-white text-sm sm:text-base">
                     <span>Read the full case study</span>
                     <svg 
                       className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" 
@@ -166,7 +160,7 @@ export default function CustomersPage() {
               </div>
 
               {/* Subtle gradient overlay for depth */}
-              <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-[#0a0a0a]/30 pointer-events-none"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-[#f9f9f9]/30 pointer-events-none"></div>
             </div>
           </div>
 

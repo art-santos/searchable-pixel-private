@@ -76,20 +76,20 @@ export default function HeroCTA() {
   }
 
   return (
-    <div className="text-center">
-      <h1 className="blur-in-up text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-3 md:mb-6 md:max-w-[70%] mx-auto">
-        LLM-Search <span className="font-serif font-light italic tracking-tight"> Attribution Infrastructure </span>
+    <div className="text-left">
+      <h1 className="blur-in-up text-5xl md:text-6xl lg:text-7xl font-medium text-[#191919] mb-3 md:mb-6 tracking-[-0.03em]" style={{ fontFamily: 'Instrument Serif, serif' }}>
+      Turn AI conversations about your brand <span className="font-light italic tracking-tight"> into real leads</span>
       </h1>
-      <p className="blur-in-up-delay-1 text-sm md:text-lg lg:text-xl text-gray-200 md:max-w-[85%] mx-auto mb-6 md:mb-8 px-2 md:px-0">
-      Track every ChatGPT, Perplexity, or AI crawler visit, map it to real buyers, and prove which AI answers drive pipeline.
-      </p>
+                             <p className="blur-in-up-delay-1 tracking-tight text-sm md:text-lg lg:text-xl text-[#191919] mb-6 md:mb-8 px-0 text-left">
+       Track every ChatGPT, Perplexity, or AI crawler visit, map it to real buyers, and prove which AI answers drive pipeline.
+        </p>
       
-      <div className="blur-in-up-delay-2 flex flex-col md:flex-row gap-4 justify-center items-center">
+      <div className="blur-in-up-delay-2 flex flex-col md:flex-row gap-4 justify-start items-start">
         <form onSubmit={handleSubmit} className="relative w-[80%] md:w-[400px] group">
           <input
             type="email"
-            placeholder="Enter your email to get started"
-            className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-[#0c0c0c]/80 border border-[#2f2f2f] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-[#3f3f3f] pr-12 transition-all duration-200 text-sm md:text-base disabled:opacity-50"
+            placeholder="Enter your company email"
+            className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-white border border-[#e5e5e5] rounded-lg text-[#191919] placeholder-gray-500 focus:outline-none focus:border-[#191919] pr-12 transition-all duration-200 text-sm md:text-base disabled:opacity-50"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -99,7 +99,7 @@ export default function HeroCTA() {
           <button 
             type="submit"
             disabled={!email || isSubmitting}
-            className="absolute right-[5px] top-1/2 -translate-y-1/2 bg-[#222222] border border-[#333333] text-white w-[34px] h-[34px] md:w-[40px] md:h-[40px] flex items-center justify-center rounded-md hover:bg-[#282828] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            className="absolute right-[5px] top-1/2 -translate-y-1/2 bg-[#191919] border border-[#191919] text-white w-[34px] h-[34px] md:w-[40px] md:h-[40px] flex items-center justify-center rounded-md hover:bg-[#333333] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             aria-label="Get started"
           >
             {isSubmitting ? (
@@ -113,30 +113,41 @@ export default function HeroCTA() {
       
       {/* Status Messages */}
       {status === 'success' && (
-        <div className="blur-in-up-delay-2 text-sm text-green-400 mt-3 md:mt-4">
+        <div className="blur-in-up-delay-2 text-sm text-green-600 mt-3 md:mt-4">
           ✓ You've been added to our newsletter! Check your email for updates.
         </div>
       )}
       {status === 'error' && (
-        <div className="blur-in-up-delay-2 text-sm text-red-400 mt-3 md:mt-4">
+        <div className="blur-in-up-delay-2 text-sm text-red-600 mt-3 md:mt-4">
           Failed to subscribe. Please check your email and try again.
         </div>
       )}
       
-      <div className="blur-in-up-delay-2 text-xs md:text-sm text-gray-400 mt-3 md:mt-4 mb-6 md:mb-24 flex items-center justify-center gap-1">
-        Track bot-to-person journeys from 
-        <span className="text-white logo-flip-container">
-          <span key={currentLogo} className="logo-flip">
-            <img 
-              src={LOGOS[currentLogo].logo} 
-              alt={LOGOS[currentLogo].name}
-            />
-            <span>
-              {LOGOS[currentLogo].name}
-            </span>
-          </span>
-        </span>
-      </div>
+              {/* AI Platforms Section */}
+        <div className="blur-in-up-delay-2 mt-12 md:mt-8 mb-6 md:mb-24">
+          <div className="text-ms font-mono md:text-base text-gray-600 mb-4">
+            DISCOVER WHO FOUND YOU THROUGH
+          </div>
+          <div className="flex items-center justify-start gap-4 md:gap-6 flex-wrap">
+            <div className="flex items-center gap-2">
+              <img src="/images/chatgpt.svg" alt="ChatGPT" className="w-5 h-5 md:w-6 md:h-6" />
+              <span className="text-gray-600 text-sm md:text-base">ChatGPT</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <img src="/images/perplexity.svg" alt="Perplexity" className="w-5 h-5 md:w-6 md:h-6" />
+              <span className="text-gray-600 text-sm md:text-base">Perplexity</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <img src="/images/claude.svg" alt="Claude" className="w-5 h-5 md:w-6 md:h-6" />
+              <span className="text-gray-600 text-sm md:text-base">Claude</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <img src="/images/gemini.svg" alt="Gemini" className="w-5 h-5 md:w-6 md:h-6" />
+              <span className="text-gray-600 text-sm md:text-base">Gemini</span>
+            </div>
+            <span className="text-gray-600 text-sm md:text-base font-medium">& more</span>
+          </div>
+        </div>
     </div>
   )
 } 

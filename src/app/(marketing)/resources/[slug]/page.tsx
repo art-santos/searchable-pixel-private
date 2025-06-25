@@ -67,17 +67,17 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     .slice(0, 6)
   
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-white">
       <LPTopBar />
       
       <main className="flex-1 pt-16">
         {/* Article header */}
-        <header className="relative py-12 md:py-16">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#111] to-[#0c0c0c] -mt-20"></div>
+        <header className="relative py-12 md:py-16 bg-white">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#f9f9f9] to-white -mt-20"></div>
           
           <div className="relative z-10 mx-auto w-[92%] max-w-3xl">
             {/* Title - moved above tags */}
-            <h1 className="mb-6 text-3xl font-bold text-white md:text-4xl lg:text-5xl">
+            <h1 className="mb-6 text-3xl font-bold text-[#191919] md:text-4xl lg:text-5xl">
               {post.title}
             </h1>
             
@@ -100,7 +100,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             )}
             
             {/* Meta info - simplified */}
-            <div className="mb-2 text-sm text-gray-400">
+            <div className="mb-2 text-sm text-gray-600">
               <time dateTime={new Date(post.date).toISOString()}>
                 {formattedDate}
               </time>
@@ -147,18 +147,18 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           />
           
           {/* Content with client-side table rendering */}
-          <div className="prose prose-invert max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-h2:text-2xl prose-h3:text-xl prose-p:text-gray-300 prose-a:text-blue-400 prose-img:border prose-img:border-[#2f2f2f] prose-pre:border prose-pre:border-[#2f2f2f] prose-pre:bg-[#161616]">
+          <div className="prose max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-h2:text-2xl prose-h3:text-xl prose-p:text-gray-700 prose-a:text-blue-600 prose-img:border prose-img:border-[#e5e5e5] prose-pre:border prose-pre:border-[#e5e5e5] prose-pre:bg-[#f9f9f9] prose-code:bg-[#f5f5f5] prose-code:text-[#333333] prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:font-mono prose-code:text-sm prose-code:before:content-none prose-code:after:content-none">
             <TableRenderer htmlContent={post.content} />
           </div>
         </article>
         
         {/* Related Topics & Share */}
         <div className="mx-auto mb-8 w-[92%] max-w-3xl md:w-[80%]">
-          <div className="border-t border-[#2f2f2f] pt-8">
+          <div className="border-t border-[#e5e5e5] pt-8">
             {/* Related Topics */}
             {relatedTags.length > 0 && (
               <div className="mb-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Related Topics</h3>
+                <h3 className="text-lg font-semibold text-[#191919] mb-4">Related Topics</h3>
                 <div className="flex flex-wrap gap-2">
                   {relatedTags.map(tag => (
                     <TagBadge key={tag.name} tag={tag.name} />
@@ -169,7 +169,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             
             {/* Share Button */}
             <div className="mb-8">
-              <h3 className="text-lg font-semibold text-white mb-4">Share this article</h3>
+              <h3 className="text-lg font-semibold text-[#191919] mb-4">Share this article</h3>
               <ShareButton 
                 url={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://split.ai'}/resources/${post.slug}`}
                 title={post.title}
@@ -182,7 +182,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         <div className="mx-auto mb-16 w-[92%] max-w-3xl md:w-[80%]">
           <Link
             href="/resources"
-            className="inline-flex items-center text-sm text-gray-400 underline-offset-4 hover:text-white hover:underline"
+            className="inline-flex items-center text-sm text-gray-600 underline-offset-4 hover:text-[#191919] hover:underline"
           >
             ← Back to all resources
           </Link>

@@ -10,7 +10,6 @@ import CTASection from '@/components/sections/cta-section'
 import HeroCTA from '@/components/sections/hero-cta'
 import { StepOneAudit, StepTwoMonitor, StepThreeImplement } from '@/components/sections/step-cards'
 import { Analytics } from "@vercel/analytics/next"
-import { OptimizedBackground } from '@/components/ui/optimized-background'
 
 const faqSchema = {
   "@context": "https://schema.org",
@@ -42,6 +41,29 @@ export default function LandingPage() {
       router.push('/dashboard')
     }
   }, [user, loading, router, redirecting])
+
+  // Set up scroll animations
+  useEffect(() => {
+    if (typeof window === 'undefined' || redirecting) return;
+
+    const handleScroll = () => {
+      const elements = document.querySelectorAll('.fade-in-section');
+      
+      elements.forEach(element => {
+        const rect = element.getBoundingClientRect();
+        const isVisible = rect.top < window.innerHeight * 0.8;
+        
+        if (isVisible && !element.classList.contains('visible')) {
+          element.classList.add('visible');
+        }
+      });
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Check on initial load
+    
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [redirecting])
 
   // Show loading while auth is loading or while redirecting
   if (loading || redirecting) {
@@ -182,6 +204,20 @@ export default function LandingPage() {
         .stagger-2 { animation-delay: 200ms; }
         .stagger-3 { animation-delay: 300ms; }
         
+        /* Scroll animations */
+        .fade-in-section {
+          opacity: 0;
+          filter: blur(4px);
+          transform: translateY(20px);
+          transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .fade-in-section.visible {
+          opacity: 1;
+          filter: blur(0);
+          transform: translateY(0);
+        }
+        
         @media (prefers-reduced-motion: reduce) {
           .dashboard-fall-in {
             animation: none;
@@ -201,17 +237,19 @@ export default function LandingPage() {
           .deploy-button:hover {
             transform: none;
           }
+          .fade-in-section {
+            opacity: 1 !important;
+            filter: none !important;
+            transform: none !important;
+            transition: none !important;
+          }
         }
       `}</style>
       
-      {/* Hero Section with Gradient Transition */}
-      <OptimizedBackground
-        src="/images/split-bg.png"
-        className="min-h-[70vh] md:min-h-[90vh] w-full relative flex items-start md:items-center justify-center pt-48 md:pt-64 lg:pt-80"
-      >
-        {/* Overlay with gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0c0c0c]/50 via-[#0c0c0c]/80 to-[#0c0c0c]" />
-        
+
+      
+      {/* Hero Section */}
+      <div className="min-h-[70vh] md:min-h-[90vh] w-full relative flex items-start md:items-center justify-center pt-42 md:pt-52 lg:pt-66 bg-white">
         <div className="relative z-10 w-[92%] md:w-[80%] max-w-7xl mx-auto px-2 md:px-4">
           <HeroCTA />
 
@@ -220,7 +258,7 @@ export default function LandingPage() {
             {/* Mobile version - no frame */}
             <div className="relative -mx-[calc(92vw/12)] md:hidden">
               <Image
-                src="/images/mobile-dash.svg"
+                src="/images/Backdrop.svg"
                 alt="Split Dashboard"
                 width={1200}
                 height={900}
@@ -228,9 +266,9 @@ export default function LandingPage() {
               />
             </div>
             {/* Desktop version - with frame */}
-            <div className="hidden md:block w-full rounded-2xl border-[8px] border-[#2f2f2f]/30 overflow-hidden shadow-2xl dashboard-fall-in">
+            <div className="hidden md:block w-full rounded-2xl border-[3px] border-[#e5e5e5]/15 overflow-hidden shadow-2xl dashboard-fall-in">
               <Image
-                src="/images/split-dash.svg"
+                src="/images/Backdrop.svg"
                 alt="Split Dashboard"
                 width={1200}
                 height={800}
@@ -239,209 +277,212 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-      </OptimizedBackground>
+      </div>
 
       {/* How It Works Header */}
-      <section data-section="how-it-works" className="w-full py-16 md:py-32 bg-[#0c0c0c] relative overflow-hidden scroll-mt-20">
+      <section data-section="how-it-works" className="w-full py-16 md:py-32 bg-white relative overflow-hidden scroll-mt-20">
         {/* Background Grid Pattern */}
         <div className="absolute inset-0 opacity-[0.015]" style={{
-          backgroundImage: `linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)`,
+          backgroundImage: `linear-gradient(#191919 1px, transparent 1px), linear-gradient(90deg, #191919 1px, transparent 1px)`,
           backgroundSize: '32px 32px'
         }}></div>
         
-        <div className="w-[92%] md:w-[80%] max-w-7xl mx-auto text-center relative">
-          {/* Step Indicators */}
-          <div className="flex justify-center items-center gap-2 sm:gap-4 mb-6 md:mb-12">
-            <div className="w-6 sm:w-8 h-6 sm:h-8 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white text-xs sm:text-sm font-mono">1</div>
-            <div className="w-8 sm:w-12 h-px bg-[#333333]"></div>
-            <div className="w-6 sm:w-8 h-6 sm:h-8 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white text-xs sm:text-sm font-mono">2</div>
-            <div className="w-8 sm:w-12 h-px bg-[#333333]"></div>
-            <div className="w-6 sm:w-8 h-6 sm:h-8 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white text-xs sm:text-sm font-mono">3</div>
-          </div>
-
+        <div className="w-[92%] md:w-[80%] max-w-7xl mx-auto relative">
           {/* Header Content */}
-          <div className="mb-4 md:mb-8">
-            <div className="text-xs text-gray-500 uppercase tracking-[0.2em] mb-3 md:mb-4">Process Overview</div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 md:mb-8 leading-tight">
+          <div className="text-center mb-16 md:mb-24">
+            <div className="text-xs text-gray-600 uppercase tracking-[0.2em] mb-3 md:mb-4">Process Overview</div>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#191919] mb-4 md:mb-8 leading-tight">
               How It<span className="font-serif font-light italic"> Works</span>
             </h2>
-          </div>
-          
-          <div className="max-w-5xl mx-auto mb-12 md:mb-16">
-            <p className="text-lg sm:text-xl md:text-2xl text-gray-300 leading-relaxed font-light mb-4 md:mb-6">
-              From audit to attribution—track what AI crawlers see, monitor who's visiting, and convert insights into pipeline.
-            </p>
-            <div className="text-xs sm:text-sm text-gray-500 font-mono">
-              AUDIT → TRACK → CONVERT
-            </div>
-          </div>
-
-          {/* Three Steps in One Row */}
-          <div className="grid md:grid-cols-3 gap-8 md:gap-12 text-left">
-            
-            {/* Step 1: Audit Your Visibility */}
-            <div className="bg-[#0c0c0c] border border-[#1a1a1a] p-6 md:p-8 hover:border-[#333333] transition-all duration-300">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-8 h-8 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white font-bold text-sm">
-                  1
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Step One</div>
-                  <h3 className="text-lg md:text-xl font-bold text-white leading-tight">
-                    Audit Your Visibility
-                  </h3>
-                </div>
-              </div>
-              
-              <p className="text-gray-300 mb-6 text-sm md:text-base leading-relaxed font-light">
-                We scan your site like an AI crawler would—flagging broken schema, missing citations, and content that LLMs ignore.
+            <div className="max-w-5xl mx-auto">
+              <p className="text-lg sm:text-xl md:text-2xl text-gray-700 leading-relaxed font-light mb-4 md:mb-6">
+                From audit to attribution—track what AI crawlers see, monitor who's visiting, and convert insights into pipeline.
               </p>
-
-              {/* Features List */}
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
-                  <div>
-                    <span className="text-gray-100 font-medium text-sm">LLMBot coverage report</span>
-                    <div className="text-xs text-gray-500 mt-1">Comprehensive analysis of AI crawler accessibility</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
-                  <div>
-                    <span className="text-gray-100 font-medium text-sm">Schema & llms.txt check</span>
-                    <div className="text-xs text-gray-500 mt-1">Structured data validation and optimization</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
-                  <div>
-                    <span className="text-gray-100 font-medium text-sm">Direct & indirect citation gaps</span>
-                    <div className="text-xs text-gray-500 mt-1">Identify missed opportunities for AI citations</div>
-                  </div>
-                </div>
+              <div className="text-xs sm:text-sm text-gray-600 font-mono">
+                AUDIT → TRACK → CONVERT
               </div>
             </div>
-
-            {/* Step 2: Track Crawler Activity */}
-            <div className="bg-[#0c0c0c] border border-[#1a1a1a] p-6 md:p-8 hover:border-[#333333] transition-all duration-300">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-8 h-8 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white font-bold text-sm">
-                  2
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Step Two</div>
-                  <h3 className="text-lg md:text-xl font-bold text-white leading-tight">
-                    Track Crawler Activity
-                  </h3>
-                </div>
-              </div>
-              
-              <p className="text-gray-300 mb-6 text-sm md:text-base leading-relaxed font-light">
-                Monitor which pages AI crawlers are actually hitting, identify traffic patterns, and spot content that needs optimization to boost visibility.
-              </p>
-
-              {/* Features List */}
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
-                  <div>
-                    <span className="text-gray-100 font-medium text-sm">Live crawler monitoring</span>
-                    <div className="text-xs text-gray-500 mt-1">See which AI bots are visiting your pages in real-time</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
-                  <div>
-                    <span className="text-gray-100 font-medium text-sm">Page traffic insights</span>
-                    <div className="text-xs text-gray-500 mt-1">Identify which pages get the most crawler attention</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
-                  <div>
-                    <span className="text-gray-100 font-medium text-sm">Content performance alerts</span>
-                    <div className="text-xs text-gray-500 mt-1">Get notified when pages need optimization to increase crawl frequency</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Step 3: Convert Attribution to Pipeline */}
-            <div className="bg-[#0c0c0c] border border-[#1a1a1a] p-6 md:p-8 hover:border-[#333333] transition-all duration-300">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-8 h-8 bg-[#1a1a1a] border border-[#333333] flex items-center justify-center text-white font-bold text-sm">
-                  3
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">Step Three</div>
-                  <h3 className="text-lg md:text-xl font-bold text-white leading-tight">
-                    Convert Attribution to Pipeline
-                  </h3>
-                </div>
-              </div>
-              
-              <p className="text-gray-300 mb-6 text-sm md:text-base leading-relaxed font-light">
-                See exactly who's visiting from AI search results, identify which companies are engaging with your content, and convert attribution insights into qualified leads.
-              </p>
-
-              {/* Features List */}
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
-                  <div>
-                    <span className="text-gray-100 font-medium text-sm">Visitor identification & enrichment</span>
-                    <div className="text-xs text-gray-500 mt-1">See which companies are visiting after AI search citations</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
-                  <div>
-                    <span className="text-gray-100 font-medium text-sm">Attribution tracking</span>
-                    <div className="text-xs text-gray-500 mt-1">Connect traffic spikes to specific AI mentions and citations</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-1 h-1 bg-white mt-2 flex-shrink-0"></div>
-                  <div>
-                    <span className="text-gray-100 font-medium text-sm">Lead scoring & pipeline integration</span>
-                    <div className="text-xs text-gray-500 mt-1">Push qualified AI-driven leads directly to your CRM</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
           </div>
+
+          {/* Section 1: Detect AI Traffic - Image Right */}
+          <section id="detect-ai-traffic" className="mb-20 md:mb-32">
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+              <div className="order-2 lg:order-1 fade-in-section">
+                <h3 className="text-2xl md:text-3xl font-medium text-[#191919] mb-4">
+                  Detect AI Traffic
+                </h3>
+                <p className="text-lg text-gray-700 leading-relaxed font-light mb-6">
+                  See every time an AI assistant lands on your site. Our server logs spot ChatGPT, Perplexity, Gemini, etc., in real time.
+                </p>
+                <div className="space-y-3 mb-8">
+                  <div className="flex items-start gap-3">
+                    <div className="w-1.5 h-1.5 bg-[#191919] rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-gray-600">Real-time AI crawler detection across 25+ platforms</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-1.5 h-1.5 bg-[#191919] rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-gray-600">Server-side logging captures all AI bot visits</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-1.5 h-1.5 bg-[#191919] rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-gray-600">Zero false positives with smart pattern matching</span>
+                  </div>
+                </div>
+                
+                {/* CTA Button */}
+                <Link 
+                  href="/signup" 
+                  className="inline-flex items-center gap-2 bg-[#191919] hover:bg-[#333333] text-white px-4 py-2.5 text-sm transition-all duration-200 hover:scale-105"
+                >
+                  Start detecting AI traffic
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </Link>
+              </div>
+              <div className="order-1 lg:order-2 fade-in-section">
+                <div className="bg-gray-50 p-8 rounded-sm shadow-sm hover:shadow transition-all duration-300">
+                  <Image
+                    src="/images/section1.svg"
+                    alt="AI traffic detection dashboard"
+                    width={516}
+                    height={421}
+                    className="w-full h-auto"
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Section 2: Attribute AI-Driven Leads - Image Left */}
+          <section id="attribute-leads" className="mb-20 md:mb-32">
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+              <div className="order-1 fade-in-section">
+                <div className="bg-gray-50 p-8 rounded-sm shadow-sm hover:shadow transition-all duration-300">
+                  <Image
+                    src="/images/section2.svg"
+                    alt="AI-driven lead attribution card"
+                    width={516}
+                    height={421}
+                    className="w-full h-auto"
+                  />
+                </div>
+              </div>
+              <div className="order-2 fade-in-section">
+                <h3 className="text-2xl md:text-3xl font-medium text-[#191919] mb-4">
+                  Attribute AI-Driven Leads
+                </h3>
+                <p className="text-lg text-gray-700 leading-relaxed font-light mb-6">
+                  Turn AI visits into prospects. Each intent-rich session auto-creates a lead card with contact info and the exact query.
+                </p>
+                <div className="space-y-3 mb-8">
+                  <div className="flex items-start gap-3">
+                    <div className="w-1.5 h-1.5 bg-[#191919] rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-gray-600">Automatic lead generation from AI referral traffic</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-1.5 h-1.5 bg-[#191919] rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-gray-600">Capture the exact search query that brought them</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-1.5 h-1.5 bg-[#191919] rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-gray-600">Intent scoring based on engagement and query context</span>
+                  </div>
+                </div>
+                
+                {/* CTA Button */}
+                <Link 
+                  href="/signup" 
+                  className="inline-flex items-center gap-2 bg-[#191919] hover:bg-[#333333] text-white px-4 py-2.5 text-sm transition-all duration-200 hover:scale-105"
+                >
+                  Start capturing leads
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          {/* Section 3: Enrich & Win - Image Right */}
+          <section id="enrich-win">
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+              <div className="order-2 lg:order-1 fade-in-section">
+                <h3 className="text-2xl md:text-3xl font-medium text-[#191919] mb-4">
+                  Enrich & Win
+                </h3>
+                <p className="text-lg text-gray-700 leading-relaxed font-light mb-6">
+                  Enrich any AI-sourced lead with social profiles, patent filings, job history, and more—context you can act on.
+                </p>
+                <div className="space-y-3 mb-8">
+                  <div className="flex items-start gap-3">
+                    <div className="w-1.5 h-1.5 bg-[#191919] rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-gray-600">Complete professional profiles with social media</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-1.5 h-1.5 bg-[#191919] rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-gray-600">Company intelligence and recent news alerts</span>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-1.5 h-1.5 bg-[#191919] rounded-full mt-2 flex-shrink-0"></div>
+                    <span className="text-gray-600">Patent filings, job history, and buying signals</span>
+                  </div>
+                </div>
+                
+                {/* CTA Button */}
+                <Link 
+                  href="/signup" 
+                  className="inline-flex items-center gap-2 bg-[#191919] hover:bg-[#333333] text-white px-4 py-2.5 text-sm transition-all duration-200 hover:scale-105"
+                >
+                  Start enriching leads
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </Link>
+              </div>
+              <div className="order-1 lg:order-2 fade-in-section">
+                <div className="bg-gray-50 p-8 rounded-sm shadow-sm hover:shadow transition-all duration-300">
+                  <Image
+                    src="/images/section3.svg"
+                    alt="Lead enrichment interface"
+                    width={516}
+                    height={421}
+                    className="w-full h-auto"
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </section>
 
       {/* Origami Case Study */}
-      <section className="w-full py-16 md:py-28 bg-[#0c0c0c] relative border-t border-[#1a1a1a]">
+      <section className="w-full py-16 md:py-28 bg-white relative border-t border-[#e5e5e5]">
         {/* Subtle background pattern */}
         <div className="absolute inset-0 opacity-[0.02]" style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
+          backgroundImage: `radial-gradient(circle at 1px 1px, #191919 1px, transparent 0)`,
           backgroundSize: '24px 24px'
         }}></div>
         
         <div className="w-[92%] md:w-[80%] max-w-7xl mx-auto relative z-10">
           
-          {/* Case Study Card - Darker */}
-          <div className="relative bg-[#0c0c0c] border border-[#1a1a1a] p-6 sm:p-8 md:p-12 overflow-hidden group hover:border-[#333333] transition-all duration-300 shadow-xl">
+          {/* Case Study Card */}
+          <div className="relative bg-white border border-[#e5e5e5] p-6 sm:p-8 md:p-12 overflow-hidden group hover:border-[#d1d1d1] transition-all duration-300 shadow-xl">
             
             {/* Case Study Label */}
-            <div className="inline-flex items-center gap-2 bg-[#0c0c0c] border border-[#2a2a2a] px-3 py-1.5 mb-6 md:mb-8">
-              <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-              <span className="text-xs text-gray-400 uppercase tracking-[0.15em] font-medium">
+            <div className="inline-flex items-center gap-2 bg-white border border-[#e5e5e5] px-3 py-1.5 mb-6 md:mb-8">
+              <div className="w-1.5 h-1.5 bg-[#191919] rounded-full"></div>
+              <span className="text-xs text-gray-600 uppercase tracking-[0.15em] font-medium">
                 Case Study
               </span>
             </div>
 
             {/* Main Headline */}
-            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-white mb-6 md:mb-8 leading-tight max-w-4xl">
+            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold text-[#191919] mb-6 md:mb-8 leading-tight max-w-4xl">
               We took{' '}
               <span className="inline-flex items-center">
                 <Image
-                  src="/images/origami-pink.svg"
+                  src="/images/origami-dark.svg"
                   alt="Origami"
                   width={120}
                   height={28}
@@ -452,14 +493,14 @@ export default function LandingPage() {
             </h2>
 
             {/* Description */}
-            <p className="text-base sm:text-lg md:text-xl text-gray-300 leading-relaxed font-light mb-6 md:mb-8 max-w-3xl">
+            <p className="text-base sm:text-lg md:text-xl text-gray-700 leading-relaxed font-light mb-6 md:mb-8 max-w-3xl">
               Origami launched an autonomous agent that identified structural issues, filled key content gaps, and quickly earned visibility across{' '}
-              <span className="text-white">ChatGPT, Perplexity, and Google AI</span>, ranking for the exact queries their customers were asking.
+              <span className="text-[#191919]">ChatGPT, Perplexity, and Google AI</span>, ranking for the exact queries their customers were asking.
             </p>
 
             {/* CTA Button */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <Link href="/customers" className="group inline-flex items-center gap-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] border border-[#333333] hover:border-[#444444] px-4 sm:px-6 py-2.5 sm:py-3 transition-all duration-200 text-white text-sm sm:text-base">
+              <Link href="/customers" className="group inline-flex items-center gap-3 bg-[#191919] hover:bg-[#333333] border border-[#191919] hover:border-[#333333] px-4 sm:px-6 py-2.5 sm:py-3 transition-all duration-200 text-white text-sm sm:text-base">
                 <span>Read the full case study</span>
                 <svg 
                   className="w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" 
@@ -486,14 +527,14 @@ export default function LandingPage() {
             </div>
 
             {/* Subtle gradient overlay for depth */}
-            <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-[#0a0a0a]/30 pointer-events-none"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-[#f9f9f9]/30 pointer-events-none"></div>
           </div>
           
         </div>
       </section>
 
       {/* Divider Line */}
-      <div className="w-full border-t border-[#1a1a1a] bg-[#0c0c0c]"></div>
+      <div className="w-full border-t border-[#e5e5e5] bg-white"></div>
 
       {/* CTA Section */}
       <CTASection />

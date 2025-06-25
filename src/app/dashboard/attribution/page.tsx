@@ -111,13 +111,13 @@ export default function AttributionPage() {
 
   return (
     <div className="min-h-screen min-w-screen bg-[#f9f9f9] text-gray-900">
-        <div className="flex h-[calc(100vh-80px)] gap-6 p-6">
-          {/* Large Graph - 60% width */}
+        <div className="flex flex-col h-[calc(100vh-80px)] gap-6 p-6">
+          {/* Main Chart - Full width at top */}
           <motion.div
             initial="hidden"
             animate="visible"
             variants={cardVariants}
-            className="w-[60%] h-[calc(100vh-72px)]"
+            className="h-[45%]"
           >
             <Card className="h-full bg-white border-gray-200 shadow-sm">
               <CardContent className="p-0 h-full flex flex-col">
@@ -180,8 +180,8 @@ export default function AttributionPage() {
             </Card>
           </motion.div>
 
-          {/* Right Side Cards - 40% width */}
-          <div className="w-[40%] h-[calc(100vh-72px)] flex flex-col gap-6">
+          {/* Bottom Charts - Two cards side by side */}
+          <div className="flex gap-6 h-[55%]">
             {/* Attribution by Source Card */}
             <motion.div
               initial="hidden"

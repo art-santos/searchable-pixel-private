@@ -20,6 +20,9 @@ dependencies:
   '@dnd-kit/utilities':
     specifier: ^3.2.2
     version: 3.2.2(react@18.3.1)
+  '@fontsource/instrument-serif':
+    specifier: ^5.2.6
+    version: 5.2.6
   '@geist-ui/react-icons':
     specifier: ^1.0.1
     version: 1.0.1(@geist-ui/react@2.2.5)(react@18.3.1)
@@ -892,6 +895,10 @@ packages:
 
   /@floating-ui/utils@0.2.9:
     resolution: {integrity: sha512-MDWhGtE+eHw5JW7lq4qhc5yRLS11ERl1c7Z6Xd0a58DozHES6EnNNwUWbMiG4J9Cgj053Bhk8zvlhFYKVhULwg==}
+    dev: false
+
+  /@fontsource/instrument-serif@5.2.6:
+    resolution: {integrity: sha512-uvAmjVbzV26yaPesOQxwQcVU8ALbpgZ8E329KoAr19aH0Vr5BPHzSq7ImtmYmlla4kC3qcbhePdXUJEB20ZbpA==}
     dev: false
 
   /@geist-ui/react-icons@1.0.1(@geist-ui/react@2.2.5)(react@18.3.1):

@@ -46,18 +46,18 @@ export default async function TagPage({ params }: { params: Promise<{ tag: strin
   const formattedTag = tagSlug.charAt(0).toUpperCase() + tagSlug.slice(1)
   
   return (
-    <div className="flex min-h-screen flex-col bg-[#0c0c0c]">
+    <div className="flex min-h-screen flex-col bg-white">
       <LPTopBar />
       
       {/* Hero Section */}
-      <section className="relative mt-16 py-12 md:py-16">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#111] to-[#0c0c0c]" />
+      <section className="relative mt-16 py-12 md:py-16 bg-white">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#f9f9f9] to-white" />
         
         <div className="relative z-10 mx-auto w-[92%] max-w-7xl md:w-[80%]">
           <div className="flex flex-col items-center text-center">
             <Link
               href="/resources"
-              className="mb-4 text-sm text-gray-400 hover:text-white"
+              className="mb-4 text-sm text-gray-600 hover:text-[#191919]"
             >
               ← Back to all resources
             </Link>
@@ -66,11 +66,11 @@ export default async function TagPage({ params }: { params: Promise<{ tag: strin
               <TagBadge tag={formattedTag} clickable={false} className="text-sm px-4 py-1" />
             </div>
             
-            <h1 className="mb-4 text-3xl font-bold text-white md:text-4xl lg:text-5xl">
+            <h1 className="mb-4 text-3xl font-bold text-[#191919] md:text-4xl lg:text-5xl">
               {formattedTag} Resources
             </h1>
             
-            <p className="mx-auto mb-6 max-w-2xl text-base text-gray-300 md:text-lg">
+            <p className="mx-auto mb-6 max-w-2xl text-base text-gray-700 md:text-lg">
               Articles, guides, and insights about {formattedTag.toLowerCase()}
             </p>
           </div>
@@ -88,10 +88,10 @@ export default async function TagPage({ params }: { params: Promise<{ tag: strin
             </div>
           ) : (
             <div className="text-center py-16">
-              <p className="text-gray-400 mb-6">No posts found for this tag.</p>
+              <p className="text-gray-600 mb-6">No posts found for this tag.</p>
               <Link
                 href="/resources"
-                className="inline-flex items-center justify-center bg-white px-6 py-2.5 font-medium text-[#0c0c0c] transition-colors hover:bg-gray-100 border border-white"
+                className="inline-flex items-center justify-center bg-[#191919] px-6 py-2.5 font-medium text-white transition-colors hover:bg-[#333333] border border-[#191919]"
               >
                 Browse All Resources
               </Link>
@@ -101,9 +101,9 @@ export default async function TagPage({ params }: { params: Promise<{ tag: strin
       </section>
       
       {/* Related Tags */}
-      <section className="py-12 bg-[#0a0a0a]">
+      <section className="py-12 bg-[#f9f9f9]">
         <div className="mx-auto w-[92%] max-w-7xl md:w-[80%]">
-          <h2 className="mb-6 text-xl font-bold text-white md:text-2xl">
+          <h2 className="mb-6 text-xl font-bold text-[#191919] md:text-2xl">
             Related Topics
           </h2>
           
