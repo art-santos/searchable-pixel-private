@@ -10,6 +10,53 @@ export default function LoginPage() {
   const router = useRouter()
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
+      {/* JSON-LD Schema for Login Page */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "WebPage",
+                "@id": "https://split.dev/login#webpage",
+                "url": "https://split.dev/login",
+                "name": "Login to Split | AI Crawler Tracking Platform",
+                "description": "Access your Split dashboard to monitor AI crawler visits, track lead attribution, and optimize your AI search visibility.",
+                "isPartOf": {
+                  "@type": "WebSite",
+                  "url": "https://split.dev",
+                  "name": "Split"
+                },
+                "significantLink": "https://split.dev/login",
+                "about": {
+                  "@type": "SoftwareApplication",
+                  "name": "Split Dashboard",
+                  "description": "AI-powered platform for tracking crawler visits and lead attribution"
+                }
+              },
+              {
+                "@type": "BreadcrumbList",
+                "itemListElement": [
+                  {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "Home",
+                    "item": "https://split.dev"
+                  },
+                  {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": "Login",
+                    "item": "https://split.dev/login"
+                  }
+                ]
+              }
+            ]
+          })
+        }}
+      />
+      
       <div className="flex flex-col gap-4 p-6 md:p-10 bg-[#0c0c0c] text-white">
         <div className="flex justify-center gap-2 md:justify-start">
           <Link href="/" className="flex items-center gap-2 font-medium">

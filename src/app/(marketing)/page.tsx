@@ -11,19 +11,128 @@ import HeroCTA from '@/components/sections/hero-cta'
 import { StepOneAudit, StepTwoMonitor, StepThreeImplement } from '@/components/sections/step-cards'
 import { Analytics } from "@vercel/analytics/next"
 
-const faqSchema = {
+const comprehensiveSchema = {
   "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: [
+  "@graph": [
     {
-      "@type": "Question",
-      name: "How does Split.dev attribute AI-driven search visits?",
-      acceptedAnswer: { "@type": "Answer", text: "Split.dev inspects AI crawler visits and citations, then resolves them to real people inside your CRM within seconds." }
+      "@type": "Organization",
+      "@id": "https://split.dev/#organization",
+      "name": "Split",
+      "url": "https://split.dev",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://split.dev/images/split-logo.png"
+      },
+      "description": "LLM-Search Attribution & AI-Lead Generation platform that reveals how AI engines see your content and converts AI traffic into qualified leads.",
+      "foundingDate": "2025",
+      "sameAs": [
+        "https://x.com/imsamhogan",
+        "https://linkedin.com/in/samuelhhogan/"
+      ]
     },
     {
-      "@type": "Question",
-      name: "What is LLM-Search Attribution?",
-      acceptedAnswer: { "@type": "Answer", text: "LLM-Search Attribution tracks AI crawler visits, maps citations to real contacts, and identifies companies visiting from AI platforms like ChatGPT and Perplexity." }
+      "@type": "WebSite",
+      "@id": "https://split.dev/#website",
+      "url": "https://split.dev",
+      "name": "Split - LLM-Search Attribution & AI-Lead Generation",
+      "description": "Track AI crawler visits, attribute AI-driven leads, and convert AI traffic into qualified revenue opportunities.",
+      "publisher": {
+        "@id": "https://split.dev/#organization"
+      },
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://split.dev/resources?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://split.dev/#webpage",
+      "url": "https://split.dev",
+      "name": "Split - LLM-Search Attribution & AI-Lead Generation",
+      "description": "Track AI crawler visits, attribute AI-driven leads, and convert AI traffic into qualified revenue opportunities.",
+      "isPartOf": {
+        "@id": "https://split.dev/#website"
+      },
+      "about": {
+        "@id": "https://split.dev/#software"
+      }
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://split.dev/#software",
+      "name": "Split",
+      "applicationCategory": "Business Intelligence Software",
+      "description": "AI-powered platform that tracks crawler visits, attributes leads from AI engines, and converts AI traffic into qualified revenue opportunities.",
+      "offers": [
+        {
+          "@type": "Offer",
+          "name": "Visibility Plan",
+          "price": "30",
+          "priceCurrency": "USD",
+          "description": "AI-crawler tracking, visibility scores, snapshot audits"
+        },
+        {
+          "@type": "Offer",
+          "name": "Lead Credit Packs",
+          "price": "100",
+          "priceCurrency": "USD",
+          "description": "Convert AI-referred visitors into enriched lead profiles"
+        }
+      ],
+      "featureList": [
+        "AI-crawler tracking across 25+ platforms",
+        "Real-time visibility scoring",
+        "Lead attribution and enrichment",
+        "Snapshot audits and simulations",
+        "CRM integration"
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://split.dev/#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "How does Split.dev attribute AI-driven search visits?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Split.dev inspects AI crawler visits and citations, then resolves them to real people inside your CRM within seconds."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is LLM-Search Attribution?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "LLM-Search Attribution tracks AI crawler visits, maps citations to real contacts, and identifies companies visiting from AI platforms like ChatGPT and Perplexity."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Which AI platforms does Split track?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Split tracks AI crawler visits from ChatGPT, Claude, Perplexity, Google AI, Gemini, and 20+ other AI platforms in real-time."
+          }
+        }
+      ]
+    },
+    {
+      "@type": "Service",
+      "name": "AI Crawler Tracking",
+      "description": "Real-time detection and logging of AI crawler visits from major AI platforms",
+      "provider": {
+        "@id": "https://split.dev/#organization"
+      }
+    },
+    {
+      "@type": "Service",
+      "name": "Lead Attribution",
+      "description": "Convert anonymous AI-referred visitors into enriched lead profiles with contact data and intelligence",
+      "provider": {
+        "@id": "https://split.dev/#organization"
+      }
     }
   ]
 };
@@ -539,7 +648,7 @@ export default function LandingPage() {
       {/* CTA Section */}
       <CTASection />
 
-      <Schema json={faqSchema} />
+      <Schema json={comprehensiveSchema} />
       <Analytics />
       </div>
     )

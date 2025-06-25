@@ -5,6 +5,72 @@ import Link from 'next/link'
 export default function TermsOfService() {
   return (
     <div className="min-h-screen bg-[#0c0c0c] text-white">
+      {/* JSON-LD Schema for Terms of Service */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "WebPage",
+                "@id": "https://split.dev/terms#webpage",
+                "url": "https://split.dev/terms",
+                "name": "Terms of Service | Split Legal Terms",
+                "description": "Read Split's terms of service covering usage of our AI crawler tracking and lead attribution platform. Legal terms and conditions for users.",
+                "isPartOf": {
+                  "@type": "WebSite",
+                  "url": "https://split.dev",
+                  "name": "Split"
+                },
+                "dateModified": new Date().toISOString().split('T')[0],
+                "about": {
+                  "@type": "DigitalDocument",
+                  "name": "Terms of Service",
+                  "description": "Legal document outlining service terms and user obligations"
+                }
+              },
+              {
+                "@type": "DigitalDocument",
+                "@id": "https://split.dev/terms#terms-of-service",
+                "name": "Split Terms of Service",
+                "description": "Legal terms and conditions for using Split's AI tracking and lead attribution platform",
+                "dateModified": new Date().toISOString().split('T')[0],
+                "publisher": {
+                  "@type": "Organization",
+                  "name": "1000X LLC",
+                  "legalName": "1000X LLC"
+                },
+                "about": [
+                  "Service Terms",
+                  "User Obligations",
+                  "Data Usage",
+                  "Payment Terms",
+                  "Legal Compliance"
+                ]
+              },
+              {
+                "@type": "BreadcrumbList",
+                "itemListElement": [
+                  {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "Home",
+                    "item": "https://split.dev"
+                  },
+                  {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": "Terms of Service",
+                    "item": "https://split.dev/terms"
+                  }
+                ]
+              }
+            ]
+          })
+        }}
+      />
+      
       {/* Header */}
       <section className="w-full py-16 md:py-24 bg-[#0c0c0c] border-b border-[#1a1a1a]">
         <div className="w-[92%] md:w-[80%] max-w-4xl mx-auto">

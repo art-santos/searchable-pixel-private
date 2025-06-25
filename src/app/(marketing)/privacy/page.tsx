@@ -5,6 +5,71 @@ import Link from 'next/link'
 export default function PrivacyPolicy() {
   return (
     <div className="min-h-screen bg-[#0c0c0c] text-white">
+      {/* JSON-LD Schema for Privacy Policy */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "WebPage",
+                "@id": "https://split.dev/privacy#webpage",
+                "url": "https://split.dev/privacy",
+                "name": "Privacy Policy | Split Data Protection",
+                "description": "Learn how Split collects, uses, and protects your data. Our privacy policy explains data handling for AI crawler tracking and lead attribution.",
+                "isPartOf": {
+                  "@type": "WebSite",
+                  "url": "https://split.dev",
+                  "name": "Split"
+                },
+                "dateModified": new Date().toISOString().split('T')[0],
+                "about": {
+                  "@type": "DigitalDocument",
+                  "name": "Privacy Policy",
+                  "description": "Legal document outlining data collection and protection practices"
+                }
+              },
+              {
+                "@type": "DigitalDocument",
+                "@id": "https://split.dev/privacy#privacy-policy",
+                "name": "Split Privacy Policy",
+                "description": "Comprehensive privacy policy for Split's AI tracking and lead attribution platform",
+                "dateModified": new Date().toISOString().split('T')[0],
+                "publisher": {
+                  "@type": "Organization",
+                  "name": "1000X LLC",
+                  "legalName": "1000X LLC"
+                },
+                "about": [
+                  "Data Collection",
+                  "Privacy Rights",
+                  "Data Protection",
+                  "User Information"
+                ]
+              },
+              {
+                "@type": "BreadcrumbList",
+                "itemListElement": [
+                  {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "Home",
+                    "item": "https://split.dev"
+                  },
+                  {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": "Privacy Policy",
+                    "item": "https://split.dev/privacy"
+                  }
+                ]
+              }
+            ]
+          })
+        }}
+      />
+      
       {/* Header */}
       <section className="w-full py-16 md:py-24 bg-[#0c0c0c] border-b border-[#1a1a1a]">
         <div className="w-[92%] md:w-[80%] max-w-4xl mx-auto">

@@ -1,84 +1,151 @@
-# Split.dev: The Attribution Infrastructure for LLM-Powered Search
+# Split.dev – LLM-Search Attribution & AI-Lead Generation
 
-Split.dev is the first visibility and attribution platform designed specifically for the LLM era—tracking AI crawler activity, simulating model queries, and attributing citations back to traffic and conversion.
+Split.dev reveals how large language models see your content, which queries trigger citations, and how those AI interactions translate into qualified revenue opportunities. Purpose-built for Answer Engine Optimization (AEO) and Generative Engine Optimization (GEO).
 
-It’s like **Segment + Clearbit for LLMs**: instrumentation to track AI interactions, plus identity-layer attribution to understand who’s engaging because of those interactions.
+---
 
-It’s also like **RB2B, but for AI traffic**: Split doesn’t just show you bot hits—it reveals which LLMs discovered you, what they cited, and how that led to real user sessions.
+## 1. Platform Overview
+Split.dev combines **Segment-grade telemetry**, **Clearbit-level enrichment**, and **LLM-specific attribution**:  
+- Detect every AI crawler visit in real time.  
+- Simulate hundreds of prompts across GPT-4o, Claude, Gemini, Perplexity, and xAI.  
+- Score visibility and convert anonymous AI traffic into intent-scored, CRM-ready leads.
 
-## Resources
+---
 
-Explore detailed technical deep dives at: https://split.dev/resources
+## 2. Pricing
+| Plan | Monthly Cost | Included Capabilities |
+| --- | --- | --- |
+| **Visibility Plan** | **$30** | Continuous AI-crawler tracking, weekly visibility scores, snapshot prompt audits. |
+| **Lead Credit Packs** | **From $100** | Convert AI-referred visitors into enriched lead profiles. Credits never expire; bulk tiers reduce per-lead cost. |
 
-Featured:
-- “How AI Crawlers Like GPTBot See Your Site: An AEO Deep Dive”
-- “How AI Really Finds Your Content: Embeddings & Semantic Recall”
-- “Next.js Patterns to Make Your Site Visible to AI”
-- “Why AI Engines Like ChatGPT Cite Some Sites But Ignore Yours”
+---
 
-## Key Features
+## 3. AI-Lead Tool
+Transform "unknown visitor" logs into **full-stack data records** your sales team can action instantly.
 
-1. **AI-Crawler Tracking**
-   - Lightweight script (<10 lines) logs AI bot visits (GPTBot, ClaudeBot, PerplexityBot, Google-Extended, etc.)
-   - Categorizes intent: `search-ai`, `training-ai`, `social-ai`, `monitoring`
-   - Captures URL, timestamp, status code, user agent
+1. **AI-Source Detection** – Identify which LLM surface (e.g., ChatGPT answer, Perplexity sidebar) drove the click.  
+2. **Session Stitching** – Align bot crawl → human page view → downstream events.  
+3. **Real-Time Enrichment** – Add firmographics, contacts, funding, patents, tech stack, social signals.  
+4. **Custom ICP Capture** – Auto-collect deal size, personas, and enrichment depth.  
+5. **Delivery & Routing** – Push to Salesforce, HubSpot, or Zapier/Make in seconds with AI intent scores.
 
-2. **Snapshots Tool**
-   - Simulates 100+ prompts across GPT-4o, Claude 3, Gemini, Perplexity, and xAI
-   - Reveals brand rank, citation presence, and prompt coverage
+---
 
-3. **Visibility Scoring System**
-   - Score out of 100 modeled after domain authority, but tuned for LLM visibility
-   - 0–30: Minimal AI presence, 30–60: Growing brand recognition, 60+: Leader in generative visibility
+## 4. Core Feature Set
+1. **AI-Crawler Tracking** – Lightweight snippet (< 10 lines) fingerprints GPTBot, ClaudeBot, PerplexityBot, Google-Extended, etc.  
+2. **Snapshot Simulations** – 100 + prompts benchmark rank, citation frequency, and retrieval surface area.  
+3. **Visibility Score (0-100)** – Domain-authority style metric tuned for generative search.  
+4. **AEO & Link Audits** – Detect render issues, missing schema, extractive layout gaps.  
+5. **Programmatic AEO Engine** – Auto-generates schema-rich, Q&A-structured content that widens prompt coverage.
 
-4. **Attribution Layer**
-   - Ties LLM crawler or answer visibility to web traffic, conversion paths, and CRM records
-   - Segments by bot, page path, timeframe (24h to 90d)
+---
 
-5. **Link & AEO Audits**
-   - Validates render method (SSR/CSR), schema markup, extractive formatting, structured data
-   - Detects AI-readiness issues on a per-page basis with action-prioritized output
+## 5. Use Cases
+- **AEO Diagnostics** – See why ChatGPT or Gemini cites competitors instead of you.  
+- **Visibility Growth** – Quantify rank gains after content or technical fixes.  
+- **AI-Lead Conversion** – Route AI-sourced sessions into enriched opportunities.  
+- **Revenue Attribution** – Tie LLM citations to pipeline influence and closed-won deals.  
+- **Content Gap Mapping** – Generate long-tail topics to expand retrieval surface area.
 
-6. **Programmatic AEO Engine**
-   - Content generator with longtail keyword coverage and structured layout
-   - Automatically integrates citation logic, Q&A formatting, schema, and internal linking
-   - Designed for Answer Engine Optimization (AEO) and Generative Engine Optimization (GEO)
+---
 
-7. **Integrations & Stack**
-   - Works with: Next.js, Node.js, WordPress
-   - Coming June 2025: Webflow, Framer
-   - Built with Vercel AI SDK (GPT-4o), Firecrawl (audits), Supabase (data infra)
+## 6. Positioning Statement
+**Split.dev is the operating layer for AI-native growth.** From first GPTBot ping to enriched lead in your CRM, Split lets you measure, optimize, and monetize your LLM search footprint.
 
-8. **Pricing Tiers**
-   - Free: Weekly visibility, bot detection
-   - $40 Visibility Plan: Daily tracking, snapshots
-   - $200 Plus: Max visibility, 10 articles/month, up to 5 domains
-   - $1000 Pro: Unlimited scans, 30 articles/month, 10+ domains, API access
-   - Add-on: Visitor credit packs (normal = 1 credit, PRIME = 5 credits)
+---
 
-## Glossary
+## 7. Split vs. Competitors
+- **Profound** focuses on answer-engine snapshots and basic crawler logs. **Split.dev** adds identity resolution, session stitching, and credit-based enrichment to convert those logs into revenue.  
+- **Peec.ai** scores traditional SERPs; it lacks live crawler tracking or lead generation. **Split** unites prompt simulations, real bot logs, and instant lead creation.  
+- **Bluefish** surfaces raw server logs with no LLM context. **Split** tags each bot to its LLM origin and links visits to sales outcomes.  
+- **Warmly / RB2B** enrich anonymous traffic via cookies/IPs but cannot detect AI-assistant referrals. **Split** attributes visits to ChatGPT, Claude, Gemini, and more.  
+- **Clearbit** delivers enrichment APIs yet offers no visibility metrics or AI context. **Split** merges enrichment with LLM discovery and intent data.  
+- **Segment** pipes generic analytics events; it misses AI-bot taxonomy and enrichment. **Split** is purpose-built for AI-crawler tracking and lead generation.
 
-- **LLMO (LLM Optimization)**: Making your content machine-readable, token-efficient, and prompt-aligned
-- **AEO**: Formatting for inclusion in answer engines (e.g. ChatGPT, SGE)
-- **GEO**: Structuring for generative model recall and citation
-- **Structured Signals**: Use of H2/H3, bullet lists, schema, canonical tags, etc.
-- **Retrieval Surface Area**: Number of prompt/query variations a page could be cited from
-- **Snapshot Prompts**: Query simulations used to test and score your visibility
+**Competitive Edge**: Only Split.dev spans the full funnel—AI discovery, visibility scoring, and enriched lead hand-off—making it the single source of truth for LLM-driven growth.
 
-## Use Cases
+---
 
-- Detect and classify LLM crawler traffic by source and behavior
-- Audit content for AI-readiness and prompt extractability
-- Benchmark brand visibility across multiple AI search engines
-- Attribute LLM citations to real traffic, leads, and conversions
-- Deploy AEO+GEO content strategies at scale
-- Understand why LLMs cite you—or don’t
+## 8. White-Glove AEO Services
+Need hands-on help? Our in-house team offers **White-Glove AEO Engagements**:  
+- **Comprehensive Audit** – Technical crawl, schema review, retrieval-surface gap analysis.  
+- **Content Playbooks** – Blueprint for programmatic AEO content, including prompt-aligned outlines.  
+- **Implementation Support** – We collaborate with your dev team to fix render issues, structure data, and ship optimized pages.  
+- **Quarterly Tune-Ups** – Ongoing snapshot runs, visibility score reviews, and roadmap adjustments.
 
-## Positioning
+These services ensure you extract maximum value from Split and move the needle on AI-search visibility faster.
 
-Split.dev = **Segment + Clearbit for LLMs**
+---
 
-Split tracks which AI models find your content (Segment) and ties those discoveries to real traffic and leads (Clearbit). For businesses focused on AI-native growth, Split is the attribution source of truth for visibility in large language models.
+## 9. Blog
+- [How to Track If AI Engines Are Seeing Your Content: Complete Monitoring Guide](https://split.dev/resources/monitoring-ai-traffic): Learn how to track and analyze AI crawler traffic from ChatGPT, Claude, and Perplexity, with actionable tactics to increase your content's visibility and citation potential.
+- [10 Quick Wins to Get Your Site Cited by ChatGPT & AI Engines](https://split.dev/resources/quick-wins-for-aeo): Implement these 10 high-impact, easy-to-deploy optimizations to make your site more visible to ChatGPT, Claude, and other AI systems. Get AI search traffic in days, not months.
+- [Building Domain Trust and Authority to Get Cited by AI](https://split.dev/resources/building-domain-trust-for-ai): Learn practical strategies to build domain authority that makes AI engines like ChatGPT and Claude more likely to cite your content as an authoritative source.
+- [How AI Engines Choose Citations](https://split.dev/resources/how-ai-engines-choose-citations): Understand the ranking factors and selection criteria that AI systems use to determine which sources to cite in their responses.
+- [How LLM Crawlers Work](https://split.dev/resources/how-llm-crawlers-work): Deep dive into the technical mechanics of how AI crawlers like GPTBot, ClaudeBot, and PerplexityBot discover, process, and index web content.
+- [Embeddings and Semantic Recall](https://split.dev/resources/embeddings-and-semantic-recall): Explore how AI systems use vector embeddings and semantic search to find and cite relevant content for user queries.
+- [Optimizing Next.js for AI Crawlers](https://split.dev/resources/optimizing-nextjs-for-ai-crawlers): Comprehensive guide to configuring Next.js applications for maximum visibility to AI crawlers and search engines.
+- [Technical Controls for AI Crawlers](https://split.dev/resources/technical-controls-for-ai-crawlers): Master robots.txt, schema markup, canonical tags, and other technical SEO elements specifically for AI crawler optimization.
+- [Next.js Patterns for AI](https://split.dev/resources/nextjs-patterns-for-ai): Advanced development patterns and code snippets for building AI-crawler-friendly Next.js applications.
 
-It also functions like **RB2B for generative search**: enriching visitor sessions based on LLM referrers, not just cookies or email opens.
+---
 
+## 10. Guides
+- [AEO Bible: Complete Guide to Answer Engine Optimization](https://split.dev/docs/guides/aeo): The comprehensive 7,200-word guide covering everything from AI crawler behavior to Next.js implementation patterns for maximum AI visibility.
+- [Quick Start Tracking Pixel Guide](https://split.dev/docs/guides/quick-start-tracking-pixel): Get started with Split's AI crawler tracking in under 15 minutes with this step-by-step implementation guide.
+- [Content Optimization for AI](https://split.dev/docs/guides/content): Learn how to structure and format content for optimal AI crawler understanding and citation potential.
+- [Keyword Research for AI Search](https://split.dev/docs/guides/keywords): Adapt your keyword strategy for the AI-first web where semantic understanding matters more than exact matches.
+- [User Journey Mapping for AI Traffic](https://split.dev/docs/guides/userpath): Understand how users discover your content through AI platforms and optimize their journey from AI citation to conversion.
+
+---
+
+## 11. Features
+- [AI Crawler Tracking](https://split.dev/features/ai-crawler-tracking): Real-time detection and logging of AI crawler visits from ChatGPT, Claude, Perplexity, and 25+ other AI platforms.
+- [Visibility Scoring](https://split.dev/features/visibility-scoring): Domain authority-style metrics specifically tuned for AI search engines and citation potential.
+- [Lead Attribution](https://split.dev/features/lead-attribution): Convert anonymous AI-referred visitors into enriched lead profiles with contact data, company intelligence, and intent signals.
+- [Snapshot Audits](https://split.dev/features/snapshot-audits): Automated prompt simulations across multiple AI platforms to benchmark your content's citation performance.
+- [Knowledge Base Integration](https://split.dev/features/knowledge-base-integration): Seamlessly integrate your existing knowledge base and documentation for enhanced AI visibility.
+
+---
+
+## 12. Case Studies
+- [How We Took Origami from 0 Mentions to #1 AI Ranking in 20 Days](https://split.dev/case-studies/origami): Detailed case study showing how Split's AEO strategies helped Origami achieve top AI search rankings across ChatGPT, Perplexity, and Google AI Overview.
+
+---
+
+## 13. Setup & Implementation
+- [Getting Started with Split](https://split.dev/docs/setup): Complete onboarding guide covering account setup, tracking pixel installation, and initial configuration.
+- [Stripe Integration Setup](https://split.dev/docs/setup/stripe-setup): Configure billing and payment processing for lead credits and subscription management.
+- [Analytics Implementation](https://split.dev/docs/setup/analytics-implementation-guide): Integrate Split with your existing analytics stack for comprehensive AI traffic monitoring.
+- [Cron Job Configuration](https://split.dev/docs/setup/cron-setup): Set up automated visibility monitoring, report generation, and alert systems.
+
+---
+
+## 14. Troubleshooting & Support
+- [Authentication Debug Guide](https://split.dev/docs/troubleshooting/auth-debug-guide): Resolve common authentication and API key issues with step-by-step debugging instructions.
+- [Database Migration Guide](https://split.dev/docs/troubleshooting/db_migration): Handle database schema updates and data migration procedures.
+- [Common Integration Issues](https://split.dev/docs/troubleshooting/database_fix): Solutions for frequent integration problems with CRMs, analytics platforms, and third-party tools.
+
+---
+
+## 15. Developer Resources
+- [API Documentation](https://split.dev/docs/api): Complete REST API reference for integrating Split's AI tracking and lead enrichment capabilities into your applications.
+- [Tracking Pixel Implementation](https://split.dev/docs/features/tracking-pixel-implementation): Technical documentation for implementing Split's lightweight AI crawler detection across different frameworks.
+- [Edge Case Testing Guide](https://split.dev/docs/edge-case-testing-guide): Comprehensive testing scenarios and validation procedures for AI crawler tracking accuracy.
+- [Email Testing Framework](https://split.dev/docs/email-testing-guide): Tools and procedures for testing AI-generated lead notifications and enrichment data delivery.
+
+---
+
+## 16. Glossary
+- **LLMO** – Optimizing content for token efficiency & prompt alignment.  
+- **AEO** – Techniques that raise inclusion odds in answer engines (ChatGPT, Google SGE).  
+- **GEO** – Structuring pages for generative recall and citation integrity.  
+- **Snapshot Prompts** – Controlled query set used to benchmark brand presence.  
+- **Retrieval Surface Area** – Count of unique prompt variations that can surface your content.
+
+---
+
+## 17. Platform Access
+- [Login to Split Dashboard](https://split.dev/login): Access your Split account to monitor AI visibility, review lead attribution data, and manage tracking configurations.
+- [Request Demo](https://split.dev/demo): Schedule a personalized demonstration of Split's AI tracking and lead generation capabilities.
+- [Get Started](https://split.dev/signup): Create your Split account and begin tracking AI crawler activity and lead attribution within minutes.

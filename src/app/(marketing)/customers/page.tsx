@@ -17,6 +17,95 @@ export default function CustomersPage() {
 
   return (
     <div className="-mt-20">
+      {/* JSON-LD Schema for Customers Page */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "WebPage",
+                "@id": "https://split.dev/customers#webpage",
+                "url": "https://split.dev/customers",
+                "name": "Our Customers | Split Case Studies",
+                "description": "See how leading companies use Split to dominate AI engine visibility and get cited by ChatGPT, Perplexity, and Google AI.",
+                "isPartOf": {
+                  "@type": "WebSite",
+                  "url": "https://split.dev",
+                  "name": "Split"
+                },
+                "mainEntity": {
+                  "@type": "ItemList",
+                  "name": "Split Customer Case Studies",
+                  "description": "Real results from companies using Split for AI visibility and lead attribution",
+                  "numberOfItems": 1,
+                  "itemListElement": [
+                    {
+                      "@type": "ListItem",
+                      "position": 1,
+                      "item": {
+                        "@id": "https://split.dev/case-studies/origami#casestudy"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "@type": "CaseStudy",
+                "@id": "https://split.dev/case-studies/origami#casestudy",
+                "name": "Origami: From 0 Mentions to #1 AI Ranking in 60 Days",
+                "description": "How Origami achieved top AI search rankings across ChatGPT, Perplexity, and Google AI using Split's AEO strategies.",
+                "url": "https://split.dev/case-studies/origami",
+                "about": {
+                  "@type": "Organization",
+                  "name": "Origami",
+                  "description": "Autonomous AI agent company"
+                },
+                "provider": {
+                  "@type": "Organization",
+                  "name": "Split",
+                  "url": "https://split.dev"
+                },
+                "result": [
+                  {
+                    "@type": "QuantitativeValue",
+                    "description": "Time to #1 AI ranking",
+                    "value": "60",
+                    "unitText": "days"
+                  },
+                  {
+                    "@type": "QuantitativeValue",
+                    "description": "Starting AI mentions",
+                    "value": "0",
+                    "unitText": "mentions"
+                  }
+                ],
+                "datePublished": "2024",
+                "keywords": "AI visibility, ChatGPT ranking, Perplexity, Google AI, AEO, answer engine optimization"
+              },
+              {
+                "@type": "BreadcrumbList",
+                "itemListElement": [
+                  {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "Home",
+                    "item": "https://split.dev"
+                  },
+                  {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": "Customers",
+                    "item": "https://split.dev/customers"
+                  }
+                ]
+              }
+            ]
+          })
+        }}
+      />
+      
       <style jsx global>{`
         .fade-in {
           opacity: 0;
