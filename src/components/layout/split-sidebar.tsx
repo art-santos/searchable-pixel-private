@@ -8,6 +8,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext"
 import { useState, useEffect } from "react"
 import { getUserInitials } from '@/lib/profile/avatar'
 import { createClient } from '@/lib/supabase/client'
+import { LeadsEarlyAccessDialog } from '@/components/leads/leads-early-access-dialog'
 import {
   LayoutDashboardIcon,
   SettingsIcon,
@@ -50,6 +51,7 @@ export function SplitSidebar({ isCollapsed = false, onToggle }: SplitSidebarProp
   const [isAdmin, setIsAdmin] = useState(false)
   const [showUpgrade] = useState(true)
   const [showCollapseIndicator, setShowCollapseIndicator] = useState(false)
+  const [showLeadsDialog, setShowLeadsDialog] = useState(false)
 
   const pathname = usePathname()
 
@@ -310,21 +312,19 @@ export function SplitSidebar({ isCollapsed = false, onToggle }: SplitSidebarProp
                     <div className="flex h-8 w-8 items-center justify-center bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg shadow-sm transition-transform duration-200 ease-out hover:scale-110 transform-gpu">
                       <Crown className="h-4 w-4 text-white" />
                     </div>
-                    <span className="text-sm font-semibold text-gray-900">Upgrade to Pro</span>
+                    <span className="text-sm font-semibold text-gray-900">Try out 'Leads' for free</span>
                   </div>
                   
                   <p className="text-xs text-gray-600 leading-relaxed">
-                    Get unlimited lead credits and advanced attribution insights
+                    AI-powered lead attribution and enrichment—get your first month free
                   </p>
                   
                   <Button 
                     size="sm" 
                     className="w-full bg-gray-900 text-white hover:bg-gray-800 text-xs font-medium h-9 rounded-lg transition-all duration-200 ease-out shadow-sm hover:shadow-md active:scale-[0.98] hover:scale-[1.02] transform-gpu"
-                    asChild
+                    onClick={() => setShowLeadsDialog(true)}
                   >
-                    <Link href="/settings/billing">
-                      Upgrade now
-                    </Link>
+                    Try for free
                   </Button>
                 </div>
               </div>
@@ -421,6 +421,12 @@ export function SplitSidebar({ isCollapsed = false, onToggle }: SplitSidebarProp
           </div>
         </div>
       )}
+
+      {/* Leads Early Access Dialog */}
+      <LeadsEarlyAccessDialog 
+        isOpen={showLeadsDialog} 
+        onClose={() => setShowLeadsDialog(false)} 
+      />
     </div>
   )
 } 

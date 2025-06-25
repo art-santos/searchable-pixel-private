@@ -38,8 +38,8 @@ export function LPTopBar() {
   return (
     <>
       <div className={`fixed top-0 left-0 right-0 z-50 flex h-16 md:h-16 items-center justify-center transition-all duration-300 ${
-        isScrolled 
-          ? 'bg-white/60 backdrop-blur-md border-b border-gray-200' 
+        isScrolled || isMobileMenuOpen
+          ? 'bg-white border-b border-gray-200' 
           : 'bg-transparent'
       }`}>
       <style jsx global>{`
@@ -170,7 +170,7 @@ export function LPTopBar() {
         ></div>
         
         {/* Menu Panel */}
-        <div className={`absolute top-16 left-0 right-0 bg-white/95 backdrop-blur-md border-b border-gray-200 transition-all duration-300 ease-out ${
+        <div className={`absolute top-16 left-0 right-0 bg-white border-b border-gray-200 transition-all duration-300 ease-out ${
           isMobileMenuOpen 
             ? 'transform translate-y-0 opacity-100' 
             : 'transform -translate-y-4 opacity-0'

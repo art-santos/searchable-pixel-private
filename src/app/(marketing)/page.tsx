@@ -249,20 +249,20 @@ export default function LandingPage() {
 
       
       {/* Hero Section */}
-      <div className="min-h-[70vh] md:min-h-[90vh] w-full relative flex items-start md:items-center justify-center pt-42 md:pt-52 lg:pt-66 bg-white">
+      <div className="min-h-[70vh] md:min-h-[90vh] w-full relative flex items-start md:items-center justify-center pt-48 md:pt-52 lg:pt-64 bg-white">
         <div className="relative z-10 w-[92%] md:w-[80%] max-w-7xl mx-auto px-2 md:px-4">
           <HeroCTA />
 
           {/* Dashboard Preview */}
           <div className="relative mt-2 md:mt-8 pb-5">
-            {/* Mobile version - no frame */}
-            <div className="relative -mx-[calc(92vw/12)] md:hidden">
+            {/* Mobile version - scaled up and translated */}
+            <div className="relative md:hidden overflow-hidden">
               <Image
-                src="/images/Backdrop.svg"
+                src="/images/mobile-dash.svg"
                 alt="Split Dashboard"
                 width={1200}
                 height={900}
-                className="w-full h-auto dashboard-fall-in"
+                className="w-[180%] h-auto dashboard-fall-in transform translate-x-[15%] scale-125"
               />
             </div>
             {/* Desktop version - with frame */}
