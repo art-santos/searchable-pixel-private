@@ -4,17 +4,20 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Loader2, 
   ArrowRight,
   Lock,
   Check,
-  X
+  X,
+  HelpCircle
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
-import { PRICING_PLANS } from '@/components/onboarding/utils/onboarding-constants'
+import { PRICING_PLANS, CREDIT_PRICING_TIERS } from '@/components/onboarding/utils/onboarding-constants'
 
 // Text sequence for cinematic intro - optimized timing under 300ms transitions
 const textSequence = [
@@ -40,10 +43,16 @@ export default function PaymentRequiredPage() {
   const [showModal, setShowModal] = useState(false)
   const [isAnnual, setIsAnnual] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
+  const [selectedCredits, setSelectedCredits] = useState(250)
   
   // Check for reduced motion preference
   const prefersReducedMotion = typeof window !== 'undefined' && 
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  // Get current credit pricing for Pro plan
+  const getCurrentCreditTier = (credits: number) => {
+    return CREDIT_PRICING_TIERS.find(tier => tier.credits === credits) || CREDIT_PRICING_TIERS[0]
+  }
 
   // Check payment status on mount
   useEffect(() => {
@@ -117,6 +126,7 @@ export default function PaymentRequiredPage() {
           planId,
           isAnnual,
           customerEmail: user?.email || '',
+          credits: planId === 'pro' ? selectedCredits : undefined,
           // Success URL will redirect to dashboard after payment
           successUrl: `${window.location.origin}/dashboard?payment=success`,
           cancelUrl: window.location.href
@@ -157,7 +167,7 @@ export default function PaymentRequiredPage() {
   }
 
   return (
-    <>
+    <TooltipProvider>
       <div 
         className="min-h-screen bg-[#0c0c0c] flex items-center justify-center p-6 relative cursor-pointer"
         onClick={() => showButton && setShowModal(true)}
@@ -404,11 +414,59 @@ export default function PaymentRequiredPage() {
                         <div className="mb-6">
                           <h3 className="text-lg font-medium text-white mb-1 font-mono" style={{ letterSpacing: '-0.05em' }}>{plan.name}</h3>
                           <p className="text-xs text-[#666] mb-4 font-mono" style={{ letterSpacing: '-0.05em' }}>{plan.description}</p>
-                          <div className="text-3xl font-bold text-white mb-0.5 font-mono" style={{ letterSpacing: '-0.05em' }}>
-                            ${isAnnual ? plan.annualPrice : plan.monthlyPrice}
-                          </div>
+                          
+                          {plan.id === 'pro' ? (
+                            <div className="text-3xl font-bold text-white mb-0.5 font-mono" style={{ letterSpacing: '-0.05em' }}>
+                              ${isAnnual ? Math.round(getCurrentCreditTier(selectedCredits).totalPrice * 0.83) : getCurrentCreditTier(selectedCredits).totalPrice}
+                            </div>
+                          ) : plan.isEnterprise ? (
+                            <div className="text-3xl font-bold text-white mb-0.5 font-mono" style={{ letterSpacing: '-0.05em' }}>
+                              Custom
+                            </div>
+                          ) : (
+                            <div className="text-3xl font-bold text-white mb-0.5 font-mono" style={{ letterSpacing: '-0.05em' }}>
+                              ${isAnnual ? plan.annualPrice : plan.monthlyPrice}
+                            </div>
+                          )}
+                          
                           <div className="text-xs text-[#666] font-mono" style={{ letterSpacing: '-0.05em' }}>per month</div>
                         </div>
+
+                        {/* Pro Plan Credit Selection */}
+                        {plan.id === 'pro' && (
+                          <div className="mb-6">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <label className="flex items-center gap-2 text-xs font-medium text-white mb-2 cursor-help font-mono" style={{ letterSpacing: '-0.05em' }}>
+                                  Monthly Lead Credits
+                                  <HelpCircle className="w-3 h-3 text-[#666]" />
+                                </label>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Normal Lead = 1 credit • Max Lead = 5 credits</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            <Select
+                              value={selectedCredits.toString()}
+                              onValueChange={(value) => setSelectedCredits(parseInt(value))}
+                            >
+                              <SelectTrigger className="w-full bg-[#111] border-[#333] text-white hover:bg-[#222] h-8 text-xs font-mono">
+                                <SelectValue placeholder="Select credits" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-[#111] border-[#333]">
+                                {CREDIT_PRICING_TIERS.map((tier) => (
+                                  <SelectItem 
+                                    key={tier.credits} 
+                                    value={tier.credits.toString()} 
+                                    className="text-white hover:bg-[#333] focus:bg-[#333] text-xs font-mono"
+                                  >
+                                    {tier.credits.toLocaleString()} credits - ${isAnnual ? Math.round(tier.totalPrice * 0.83) : tier.totalPrice}/mo
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                         
                         <div className="space-y-2 mb-6">
                           {plan.features.slice(0, 6).map((feature, index) => (
@@ -492,6 +550,6 @@ export default function PaymentRequiredPage() {
           </>
         )}
       </AnimatePresence>
-    </>
+    </TooltipProvider>
   )
 } 
