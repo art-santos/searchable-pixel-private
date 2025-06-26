@@ -50,7 +50,7 @@ import {
 } from '@/lib/api/enhanced-snapshots';
 import { SnapshotReportSkeleton, SnapshotProcessingSkeleton } from '@/components/skeletons';
 
-type TabType = 'visibility' | 'technical';
+type TabType = 'visibility' | 'linkaudit';
 
 // Helper functions for safe URL handling
 const safeParseUrl = (url: string): URL | null => {
@@ -102,6 +102,9 @@ export default function EnhancedSnapshotReportPage() {
   const [recommendations, setRecommendations] = useState<TechnicalRecommendation[]>([]);
   const [visibilityResults, setVisibilityResults] = useState<VisibilityResult[]>([]);
   const [checklistResults, setChecklistResults] = useState<TechnicalChecklistItem[]>([]);
+  const [comprehensiveAudit, setComprehensiveAudit] = useState<any>(null);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditError, setAuditError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('visibility');
@@ -119,6 +122,48 @@ export default function EnhancedSnapshotReportPage() {
       }
       return newSet;
     });
+  };
+
+  // Load comprehensive audit data
+  const loadComprehensiveAudit = async (url: string, force = false) => {
+    if (!force && (comprehensiveAudit || auditLoading)) return; // Don't reload if already loaded or loading
+    
+    setAuditLoading(true);
+    setAuditError(null);
+    
+    try {
+      console.log('🔍 Loading comprehensive audit for:', url);
+      
+      const response = await fetch('/api/audit/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          url,
+          options: {
+            includeContentAudit: true,
+            waitFor: 3000,
+            timeout: 45000
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      const auditData = await response.json();
+      console.log('✅ Comprehensive audit loaded:', auditData);
+      
+      setComprehensiveAudit(auditData);
+    } catch (error: any) {
+      console.error('❌ Failed to load comprehensive audit:', error);
+      setAuditError(error.message || 'Failed to load comprehensive audit');
+    } finally {
+      setAuditLoading(false);
+    }
   };
 
   // Get fix suggestions for checklist items
@@ -264,6 +309,7 @@ export default function EnhancedSnapshotReportPage() {
       // Load additional data if completed
       if (targetSnapshot.status === 'completed' && targetSnapshot.url) {
         try {
+          // Load traditional data and comprehensive audit in parallel
           const [issuesData, recsData, visData, checklistData] = await Promise.all([
             getTechnicalIssues(targetSnapshot.url).catch(() => []),
             getTechnicalRecommendations(targetSnapshot.url).catch(() => []),
@@ -285,6 +331,11 @@ export default function EnhancedSnapshotReportPage() {
             categories: [...new Set(checklistData.map(c => c.category))],
             sample: checklistData.slice(0, 5)
           });
+
+          // Start comprehensive audit automatically for completed snapshots
+          console.log('🚀 Starting comprehensive audit automatically for completed snapshot');
+          loadComprehensiveAudit(targetSnapshot.url, false);
+          
         } catch (dataError) {
           console.error('Error loading additional data:', dataError);
           // Continue anyway - we have the main snapshot data
@@ -499,8 +550,8 @@ export default function EnhancedSnapshotReportPage() {
                 {/* Left: Circular Score Display (30% width) */}
                 <div className="col-span-12 lg:col-span-4 flex items-center justify-center">
                                       {(() => {
-                      // Use the same calculation as preview cards for consistency
-                      const displayScore = Math.round((snapshot.visibility_score * 0.6) + ((snapshot.calculated_technical_score || snapshot.weighted_aeo_score || snapshot.aeo_score || 0) * 0.4));
+                      // Use the new weighting: 40% visibility + 60% link audit for consistency
+                      const displayScore = Math.round((snapshot.visibility_score * 0.4) + ((snapshot.calculated_technical_score || snapshot.weighted_aeo_score || snapshot.aeo_score || 0) * 0.6));
                       
                       return (
                       <div className="relative w-64 h-64">
@@ -585,8 +636,10 @@ export default function EnhancedSnapshotReportPage() {
                         </div>
                           
                           <div>
-                            <div className="text-gray-500 text-xs uppercase tracking-wider mb-2">Technical Health</div>
-                            <div className="text-2xl font-semibold text-gray-900">{technicalScore}</div>
+                            <div className="text-gray-500 text-xs uppercase tracking-wider mb-2">Link Audit</div>
+                            <div className="text-2xl font-semibold text-gray-900">
+                              {comprehensiveAudit?.pageScore || technicalScore}
+                            </div>
                     </div>
               
                           <div>
@@ -640,18 +693,28 @@ export default function EnhancedSnapshotReportPage() {
                   <span>AI Visibility</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('technical')}
+                  onClick={() => {
+                    setActiveTab('linkaudit');
+                    // Only load audit if it hasn't been started yet (fallback)
+                    if (snapshot?.url && !comprehensiveAudit && !auditLoading) {
+                      loadComprehensiveAudit(snapshot.url);
+                    }
+                  }}
                   className={`flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-medium transition-all ${
-                    activeTab === 'technical'
+                    activeTab === 'linkaudit'
                       ? 'bg-gray-900 text-white border border-gray-700'
                       : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
-                  <Settings className="w-4 h-4" />
-                  <span>Technical Health</span>
-                  <span className="px-1.5 py-0.5 text-xs rounded-sm bg-orange-50 text-orange-700 border border-orange-200 ml-1">
-                    Beta
-                  </span>
+                  <LinkIcon className="w-4 h-4" />
+                  <span>Link Audit</span>
+                  {auditLoading ? (
+                    <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin ml-2"></div>
+                  ) : (
+                    <span className="px-1.5 py-0.5 text-xs rounded-sm bg-blue-50 text-blue-700 border border-blue-200 ml-1">
+                      New
+                    </span>
+                  )}
                 </button>
                       </div>
                     </div>
@@ -1027,192 +1090,387 @@ export default function EnhancedSnapshotReportPage() {
                       </div>
                     )}
 
-            {/* Technical Health Tab */}
-            {activeTab === 'technical' && (
+            {/* Link Audit Tab */}
+            {activeTab === 'linkaudit' && (
               <div className="space-y-8">
-                {/* Technical Health Overview */}
-                <div className="bg-white rounded-lg p-8 border border-gray-200 shadow-sm">
-                  <div className="grid grid-cols-12 gap-8 items-center">
-                    <div className="col-span-12 lg:col-span-5">
-                      {(() => {
-                        // Use real checklist data from database
-                        const technicalChecklist = checklistResults;
-                        
-                        if (technicalChecklist.length === 0) {
-                          const legacyScore = snapshot.weighted_aeo_score || snapshot.aeo_score || 0;
-                          return (
-                            <div>
-                              <div className="text-gray-500 text-xs uppercase tracking-wider mb-2">Technical Audit</div>
-                              <div className="flex items-baseline gap-3 mb-3">
-                                <div className="text-6xl font-bold text-gray-900">{legacyScore}<span className="text-2xl text-gray-400">%</span></div>
-                                <div className="text-gray-500 text-sm">
-                                  (legacy scoring)
+                {/* Loading State */}
+                {auditLoading && (
+                  <div className="pt-6">
+                    <SnapshotReportSkeleton />
                   </div>
-                </div>
-                              <p className="text-gray-400 text-sm leading-relaxed">
-                                No detailed checklist data available. Showing legacy technical score.
-                              </p>
-                            </div>
-                          );
-                        }
-                        
-                        const totalPossiblePoints = technicalChecklist.reduce((sum, check) => sum + check.weight, 0);
-                        const earnedPoints = technicalChecklist.filter(check => check.passed).reduce((sum, check) => sum + check.weight, 0);
-                        const calculatedScore = Math.round((earnedPoints / totalPossiblePoints) * 100);
-                        const passedChecks = technicalChecklist.filter(check => check.passed).length;
-                        const failedChecks = technicalChecklist.length - passedChecks;
-                        
-                        // Debug technical scoring
-                        console.log('Technical scoring:', {
-                          totalChecks: technicalChecklist.length,
-                          passedChecks,
-                          failedChecks,
-                          totalPossiblePoints,
-                          earnedPoints,
-                          calculatedScore
-                        });
-                        
-                                                  return (
-                            <div>
-                              <div className="text-gray-500 text-xs uppercase tracking-wider mb-2">Technical Health Performance</div>
-                              <div className="text-6xl font-bold text-gray-900 mb-3">{calculatedScore}<span className="text-2xl text-gray-400">%</span></div>
-                              <p className="text-gray-400 text-sm leading-relaxed">
-                                How well your page is optimized for AI crawlers with proper structure, accessibility, and technical implementation.
-                              </p>
-                            </div>
-                          );
-                      })()}
+                )}
+
+                {/* Error State */}
+                {auditError && !auditLoading && (
+                  <div className="bg-white rounded-lg p-8 border border-gray-200 shadow-sm">
+                    <div className="text-center">
+                      <AlertTriangle className="w-8 h-8 text-red-500 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Audit Failed</h3>
+                      <p className="text-gray-600 text-sm mb-4">{auditError}</p>
+                      <button
+                        onClick={() => {
+                          if (snapshot?.url) {
+                            setComprehensiveAudit(null);
+                            loadComprehensiveAudit(snapshot.url);
+                          }
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                      >
+                        Retry Audit
+                      </button>
                     </div>
-                    
-                    <div className="col-span-12 lg:col-span-7">
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div>
-                          <div className="text-gray-500 text-xs uppercase tracking-wider mb-3">Audit Progress</div>
-                          <div className="text-3xl font-bold text-gray-900 mb-2">{checklistResults.length || 0}</div>
-                          <div className="text-gray-400 text-sm mb-3">comprehensive checks</div>
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
-                              <span className="text-gray-400 text-xs">
-                                {checklistResults.filter(check => check.passed).length} passed
-                              </span>
+                  </div>
+                )}
+
+                {/* Comprehensive Audit Results */}
+                {comprehensiveAudit && !auditLoading && (
+                  <>
+                    {/* Overall Score Overview */}
+                    <div className="bg-white rounded-lg p-8 border border-gray-200 shadow-sm">
+                      <div className="grid grid-cols-12 gap-8 items-center">
+                        <div className="col-span-12 lg:col-span-5">
+                          <div>
+                            <div className="text-gray-500 text-xs uppercase tracking-wider mb-2">Comprehensive Page Score</div>
+                            <div className="text-6xl font-bold text-gray-900 mb-3">
+                              {comprehensiveAudit.pageScore}<span className="text-2xl text-gray-400">%</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                              <span className="text-gray-400 text-xs">
-                                {checklistResults.filter(check => !check.passed).length} failed
-                              </span>
-                            </div>
+                            <p className="text-gray-600 text-sm leading-relaxed">
+                              Combined technical and content analysis measuring SEO readiness, accessibility, and AI visibility optimization.
+                            </p>
                           </div>
                         </div>
                         
-                        <div>
-                          <div className="text-gray-500 text-xs uppercase tracking-wider mb-3">Category Breakdown</div>
-                          <div className="text-3xl font-bold text-gray-900 mb-2">
-                            {[...new Set(checklistResults.map(check => check.category))].length || 0}
-                          </div>
-                          <div className="text-gray-400 text-sm mb-3">audit categories</div>
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                              <span className="text-gray-400 text-xs">Weighted scoring</span>
+                        <div className="col-span-12 lg:col-span-7">
+                          <div className="grid grid-cols-2 gap-6">
+                            <div>
+                              <div className="text-gray-500 text-xs uppercase tracking-wider mb-2">Technical Score</div>
+                              <div className="text-2xl font-semibold text-gray-900">
+                                {comprehensiveAudit.debugData?.technicalScore || 'N/A'}%
+                              </div>
+                              <div className="text-gray-500 text-xs mt-1">Structure & Performance</div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
-                              <span className="text-gray-400 text-xs">Transparent calc</span>
+                            <div>
+                              <div className="text-gray-500 text-xs uppercase tracking-wider mb-2">Content Score</div>
+                              <div className="text-2xl font-semibold text-gray-900">
+                                {comprehensiveAudit.contentAnalysis?.overallScore || 'N/A'}%
+                              </div>
+                              <div className="text-gray-500 text-xs mt-1">AI Content Quality</div>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                                {/* Comprehensive 55-Item Checklist */}
-                <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-6">Comprehensive Technical Audit Checklist</h2>
-                  
-                  {(() => {
-                    // Use real checklist data from database
-                    const technicalChecklist = checklistResults;
-                    
-                    if (technicalChecklist.length === 0) {
-                      return (
-                        <div className="text-center py-8 border border-gray-800/30 rounded-lg">
-                          <AlertCircle className="w-8 h-8 text-gray-500 mx-auto mb-3" />
-                          <p className="text-gray-900 text-sm font-medium mb-1">No Checklist Data Available</p>
-                          <p className="text-gray-500 text-xs">Detailed checklist analysis not available for this snapshot</p>
-                        </div>
-                      );
-                    }
-                    
-                    // Group checklist items by category
-                    const categories = [...new Set(technicalChecklist.map(check => check.category))].sort();
-                    
-                    return categories.map(category => {
-                      const categoryChecks = technicalChecklist.filter(check => check.category === category);
-                      // Sort failed items (red dots) above passed items (green dots)
-                      const sortedChecks = [...categoryChecks].sort((a, b) => {
-                        if (a.passed === b.passed) return 0;
-                        return a.passed ? 1 : -1; // Failed items first
-                      });
+                    {/* Technical Analysis */}
+                    <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+                      <h2 className="text-xl font-semibold text-gray-900 mb-6">Technical Analysis</h2>
                       
-                      return (
-                        <div key={category} className="mb-6">
-                          <h3 className="text-gray-900 text-lg font-medium mb-4">{category}</h3>
-                          
-                          <div className="space-y-2">
-                            {sortedChecks.map(check => {
-                              const isExpanded = expandedItems.has(check.id);
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Left Column - SEO & Structure */}
+                        <div className="space-y-6">
+                          <div>
+                            <h3 className="text-lg font-medium text-gray-900 mb-4">SEO & Structure</h3>
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 text-sm">Meta Description</span>
+                                <div className="flex items-center gap-2">
+                                  {comprehensiveAudit.seoAnalysis.metaDescriptionPresent ? (
+                                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                                  ) : (
+                                    <XCircle className="w-4 h-4 text-red-500" />
+                                  )}
+                                  <span className="text-gray-900 text-sm font-medium">
+                                    {comprehensiveAudit.seoAnalysis.metaDescriptionPresent ? 'Present' : 'Missing'}
+                                  </span>
+                                </div>
+                              </div>
                               
-                              return (
-                                <div key={check.id} className="bg-gray-800/50 rounded-lg overflow-hidden">
-                                  <div 
-                                    className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-800/70 transition-colors"
-                                    onClick={() => toggleExpanded(check.id)}
-                                  >
-                                    <div className="flex items-center gap-3 flex-1">
-                                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                                        check.passed ? 'bg-emerald-400' : 'bg-red-400'
-                                      }`}></div>
-                                      <div className="flex-1 min-w-0">
-                                        <div className="text-gray-900 text-sm font-medium">{check.check_name}</div>
-                                        <div className="text-gray-400 text-xs truncate">{check.details}</div>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      {check.passed ? (
-                                        <CheckCircle className="w-4 h-4 text-emerald-400" />
-                                      ) : (
-                                        <XCircle className="w-4 h-4 text-red-400" />
-                                      )}
-                                      <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${
-                                        isExpanded ? 'rotate-180' : ''
-                                      }`} />
-                                    </div>
-                                  </div>
-                                  
-                                                                     {isExpanded && (
-                                     <div className="border-t border-gray-700/50 p-4 bg-gray-900/60">
-                                       <div className="text-gray-300 text-sm font-medium mb-2">
-                                         {check.passed ? 'Status:' : 'How to fix:'}
-                                       </div>
-                                       <p className="text-gray-400 text-sm leading-relaxed">
-                                         {getFixSuggestion(check.check_name, check.details, check.passed)}
-                                       </p>
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 text-sm">H1 Heading</span>
+                                <div className="flex items-center gap-2">
+                                  {comprehensiveAudit.seoAnalysis.h1Present ? (
+                                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                                  ) : (
+                                    <XCircle className="w-4 h-4 text-red-500" />
+                                  )}
+                                  <span className="text-gray-900 text-sm font-medium">
+                                    {comprehensiveAudit.seoAnalysis.h1Count} found
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 text-sm">Word Count</span>
+                                <span className="text-gray-900 text-sm font-medium">
+                                  {comprehensiveAudit.seoAnalysis.wordCount?.toLocaleString()} words
+                                </span>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 text-sm">Heading Depth</span>
+                                <span className="text-gray-900 text-sm font-medium">
+                                  H1-H{comprehensiveAudit.seoAnalysis.headingDepth}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <h3 className="text-lg font-medium text-gray-900 mb-4">Performance Metrics</h3>
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 text-sm">Performance Score</span>
+                                <span className="text-gray-900 text-sm font-medium">
+                                  {comprehensiveAudit.performanceScore}%
+                                </span>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 text-sm">HTML Size</span>
+                                <span className="text-gray-900 text-sm font-medium">
+                                  {comprehensiveAudit.htmlSizeKb} KB
+                                </span>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 text-sm">DOM Complexity</span>
+                                <span className="text-gray-900 text-sm font-medium">
+                                  {comprehensiveAudit.technicalMetrics.domNodes?.toLocaleString()} nodes
+                                </span>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 text-sm">SSR Rendered</span>
+                                <div className="flex items-center gap-2">
+                                  {comprehensiveAudit.ssrRendered ? (
+                                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                                  ) : (
+                                    <XCircle className="w-4 h-4 text-red-500" />
+                                  )}
+                                  <span className="text-gray-900 text-sm font-medium">
+                                    {comprehensiveAudit.ssrRendered ? 'Yes' : 'No'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right Column - Links & Images */}
+                        <div className="space-y-6">
+                          <div>
+                            <h3 className="text-lg font-medium text-gray-900 mb-4">Link Analysis</h3>
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 text-sm">Total Links</span>
+                                <span className="text-gray-900 text-sm font-medium">
+                                  {comprehensiveAudit.linkAnalysis.totalLinks}
+                                </span>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 text-sm">Internal Links</span>
+                                <span className="text-gray-900 text-sm font-medium">
+                                  {comprehensiveAudit.linkAnalysis.internalLinkCount}
+                                </span>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 text-sm">E-E-A-T Links</span>
+                                <span className="text-gray-900 text-sm font-medium">
+                                  {comprehensiveAudit.linkAnalysis.externalEeatLinks}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <h3 className="text-lg font-medium text-gray-900 mb-4">Image Analysis</h3>
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 text-sm">Total Images</span>
+                                <span className="text-gray-900 text-sm font-medium">
+                                  {comprehensiveAudit.imageAnalysis.totalImages}
+                                </span>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 text-sm">Alt Text Coverage</span>
+                                <span className="text-gray-900 text-sm font-medium">
+                                  {comprehensiveAudit.imageAnalysis.imageAltPresentPercent}%
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <h3 className="text-lg font-medium text-gray-900 mb-4">Schema Analysis</h3>
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 text-sm">JSON-LD Valid</span>
+                                <div className="flex items-center gap-2">
+                                  {comprehensiveAudit.schemaAnalysis.jsonldValid ? (
+                                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                                  ) : (
+                                    <XCircle className="w-4 h-4 text-red-500" />
+                                  )}
+                                  <span className="text-gray-900 text-sm font-medium">
+                                    {comprehensiveAudit.schemaAnalysis.jsonldValid ? 'Yes' : 'No'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Content Analysis (if available) */}
+                    {comprehensiveAudit.contentAnalysis && (
+                      <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+                        <h2 className="text-xl font-semibold text-gray-900 mb-6">AI Content Analysis</h2>
+                        
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                          {/* Content Quality Metrics */}
+                          <div>
+                            <h3 className="text-lg font-medium text-gray-900 mb-4">Content Quality</h3>
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 text-sm">Overall Score</span>
+                                <span className="text-gray-900 text-sm font-medium">
+                                  {comprehensiveAudit.contentAnalysis.overallScore}/100
+                                </span>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 text-sm">Paragraphs Analyzed</span>
+                                <span className="text-gray-900 text-sm font-medium">
+                                  {comprehensiveAudit.contentAnalysis.totalParagraphs}
+                                </span>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 text-sm">Avg Clarity</span>
+                                <span className="text-gray-900 text-sm font-medium">
+                                  {comprehensiveAudit.contentAnalysis.avgClarity?.toFixed(1)}/5
+                                </span>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 text-sm">Avg Authority</span>
+                                <span className="text-gray-900 text-sm font-medium">
+                                  {comprehensiveAudit.contentAnalysis.avgAuthority?.toFixed(1)}/5
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Red Flags & Issues */}
+                          <div>
+                            <h3 className="text-lg font-medium text-gray-900 mb-4">Content Issues</h3>
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 text-sm">Red Flags</span>
+                                <div className="flex items-center gap-2">
+                                  {comprehensiveAudit.contentAnalysis.redFlagCount === 0 ? (
+                                    <CheckCircle className="w-4 h-4 text-emerald-500" />
+                                  ) : (
+                                    <AlertTriangle className="w-4 h-4 text-amber-500" />
+                                  )}
+                                  <span className="text-gray-900 text-sm font-medium">
+                                    {comprehensiveAudit.contentAnalysis.redFlagCount} found
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-600 text-sm">Red Flag Rate</span>
+                                <span className="text-gray-900 text-sm font-medium">
+                                  {comprehensiveAudit.contentAnalysis.redFlagPercentage?.toFixed(1)}%
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Key Takeaways */}
+                        {comprehensiveAudit.contentAnalysis.keyTakeaways && comprehensiveAudit.contentAnalysis.keyTakeaways.length > 0 && (
+                          <div className="mt-6 pt-6 border-t border-gray-200">
+                            <h3 className="text-lg font-medium text-gray-900 mb-4">Key Content Recommendations</h3>
+                            <div className="space-y-2">
+                              {comprehensiveAudit.contentAnalysis.keyTakeaways.slice(0, 5).map((takeaway: string, index: number) => (
+                                <div key={index} className="flex items-start gap-3">
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                                  <p className="text-gray-700 text-sm">{takeaway}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
-                                </div>
-                              );
-                            })}
+
+                    {/* Recommendations */}
+                    <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+                      <h2 className="text-xl font-semibold text-gray-900 mb-6">Priority Recommendations</h2>
+                      
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Technical Quick Win */}
+                        <div>
+                          <h3 className="text-lg font-medium text-gray-900 mb-4">Technical Quick Win</h3>
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div className="flex items-start gap-3">
+                              <Zap className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                              <p className="text-blue-800 text-sm leading-relaxed">
+                                {comprehensiveAudit.recommendations?.technicalQuickWin || 'No immediate technical issues found'}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      );
-                    });
-                  })()}
+
+                        {/* Priority Actions */}
+                        <div>
+                          <h3 className="text-lg font-medium text-gray-900 mb-4">Priority Actions</h3>
+                          <div className="space-y-2">
+                            {comprehensiveAudit.recommendations?.priorityActions?.slice(0, 3).map((action: string, index: number) => (
+                              <div key={index} className="flex items-start gap-3">
+                                <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
+                                <p className="text-gray-700 text-sm">{action}</p>
+                              </div>
+                            )) || (
+                              <p className="text-gray-500 text-sm">No priority actions identified</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* No Audit Available */}
+                {!comprehensiveAudit && !auditLoading && !auditError && (
+                  <div className="bg-white rounded-lg p-8 border border-gray-200 shadow-sm">
+                    <div className="text-center">
+                      <LinkIcon className="w-8 h-8 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Link Audit</h3>
+                      <p className="text-gray-600 text-sm mb-4">
+                        Comprehensive analysis automatically runs when your snapshot completes. This includes technical SEO, content quality, and AI optimization analysis.
+                      </p>
+                      <button
+                        onClick={() => {
+                          if (snapshot?.url) {
+                            loadComprehensiveAudit(snapshot.url, true);
+                          }
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                      >
+                        Run Audit Now
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+            )}
             </div>
         )}
       </div>

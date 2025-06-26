@@ -597,8 +597,8 @@ export function getCombinedScore(
   };
   grade: 'A' | 'B' | 'C' | 'D' | 'F';
 } {
-  const visibilityWeight = 0.6; // 60% weight on visibility
-  const technicalWeight = 0.4;  // 40% weight on technical
+  const visibilityWeight = 0.4; // 40% weight on visibility  
+  const technicalWeight = 0.6;  // 60% weight on technical (Link Audit)
 
   // Use custom visibility score if provided, otherwise use database score
   const visibilityScore = customVisibilityScore !== undefined ? customVisibilityScore : (snapshot.visibility_score || 0);

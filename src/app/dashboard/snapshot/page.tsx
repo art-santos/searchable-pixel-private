@@ -418,10 +418,10 @@ export default function SnapshotPage() {
             <SnapshotHistorySkeleton />
           ) : recentSnapshots.length > 0 ? (
               recentSnapshots.map((snapshot, index) => {
-                // For preview cards, just use the raw database visibility score
+                // For preview cards, use new weighting: 40% visibility + 60% link audit
                 // Detail page will do more sophisticated weighted calculations
                 const displayScore = snapshot.status === 'completed' ? 
-                  Math.round((snapshot.visibility_score * 0.6) + ((snapshot.calculated_technical_score || snapshot.weighted_aeo_score || snapshot.aeo_score || 0) * 0.4)) : 
+                  Math.round((snapshot.visibility_score * 0.4) + ((snapshot.calculated_technical_score || snapshot.weighted_aeo_score || snapshot.aeo_score || 0) * 0.6)) : 
                   0;
               const hostname = getHostname(snapshot.url);
               
