@@ -191,15 +191,26 @@ export async function updateSubscriptionStatus({
   status,
   plan,
   currentPeriodEnd,
+  cancelAtPeriodEnd = false,
 }: {
   subscriptionId: string
   status: string
   plan: string
   currentPeriodEnd: Date
+  cancelAtPeriodEnd?: boolean
 }) {
   const supabase = createServiceClient()
   
-  const { error } = await supabase
+  console.log('[updateSubscriptionStatus] Updating subscription:', {
+    subscriptionId,
+    status,
+    plan,
+    currentPeriodEnd,
+    cancelAtPeriodEnd
+  })
+  
+  // First update profiles table
+  const { error: profileError } = await supabase
     .from('profiles')
     .update({
       subscription_status: status,
@@ -208,8 +219,35 @@ export async function updateSubscriptionStatus({
     })
     .eq('subscription_id', subscriptionId)
   
-  if (error) {
-    console.error('Error updating subscription status:', error)
+  if (profileError) {
+    console.error('Error updating subscription status in profiles:', profileError)
+  }
+  
+  // Also update subscription_info table if it exists
+  // First find the user ID by subscription
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('subscription_id', subscriptionId)
+    .single()
+  
+  if (profile) {
+    const { error: subInfoError } = await supabase
+      .from('subscription_info')
+      .update({
+        plan_status: status,
+        plan_type: plan,
+        current_period_end: currentPeriodEnd.toISOString(),
+        cancel_at_period_end: cancelAtPeriodEnd,
+        updated_at: new Date().toISOString()
+      })
+      .eq('user_id', profile.id)
+    
+    if (subInfoError) {
+      console.error('Error updating subscription_info:', subInfoError)
+    } else {
+      console.log('Successfully updated cancel_at_period_end to:', cancelAtPeriodEnd)
+    }
   }
 }
 

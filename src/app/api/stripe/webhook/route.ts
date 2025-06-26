@@ -96,6 +96,7 @@ export async function POST(req: NextRequest) {
         // Handle subscription updates (plan changes, renewals, add-ons)
         console.log('Subscription updated:', subscription.id)
         console.log('Status:', subscription.status)
+        console.log('Cancel at period end:', subscription.cancel_at_period_end)
         console.log('Current plan:', mapSubscriptionToPlan(subscription))
         console.log('Items:', subscription.items.data.map(item => ({
           id: item.id,
@@ -108,7 +109,8 @@ export async function POST(req: NextRequest) {
           subscriptionId: subscription.id,
           status: subscription.status,
           plan: mapSubscriptionToPlan(subscription),
-          currentPeriodEnd: new Date(subscription.current_period_end * 1000)
+          currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+          cancelAtPeriodEnd: subscription.cancel_at_period_end
         })
 
         // Removed: Add-on functionality no longer supported
@@ -331,6 +333,7 @@ async function syncAllBillingTables(stripeCustomerId: string, subscriptionId: st
           new Date(stripeSubscription.current_period_start * 1000).toISOString() : subscriptionInfo.current_period_start,
         current_period_end: stripeSubscription ? 
           new Date(stripeSubscription.current_period_end * 1000).toISOString() : subscriptionInfo.current_period_end,
+        cancel_at_period_end: stripeSubscription?.cancel_at_period_end || false,
         domains_included: limits.domains,
         workspaces_included: limits.workspaces,
         ai_logs_included: limits.leadCredits, // Store lead credits in ai_logs_included for now

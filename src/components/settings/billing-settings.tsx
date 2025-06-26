@@ -24,6 +24,8 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
   const [currentPlan, setCurrentPlan] = useState('starter')
   const [stripeCustomerId, setStripeCustomerId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [cancelAtPeriodEnd, setCancelAtPeriodEnd] = useState(false)
+  const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null)
   const [showPricingModal, setShowPricingModal] = useState(false)
   const [isAnnualBilling, setIsAnnualBilling] = useState(true)
   const [selectedCredits, setSelectedCredits] = useState(250)
@@ -54,15 +56,17 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
           setStripeCustomerId(data.stripeCustomerId)
           const plan = data.subscriptionPlan || null
           setCurrentPlan(plan || 'starter')
+          setCancelAtPeriodEnd(data.cancelAtPeriodEnd || false)
+          setCurrentPeriodEnd(data.currentPeriodEnd || null)
           
           // If no active plan, force upgrade modal
-          if (!plan || data.subscriptionStatus !== 'active') {
+          if (!plan || (data.subscriptionStatus !== 'active' && !data.cancelAtPeriodEnd)) {
             setShowPricingModal(true)
           }
           
           // Determine if user is on annual billing
-          if (data.subscriptionStatus === 'active' && data.subscriptionPeriodEnd) {
-            const periodEnd = new Date(data.subscriptionPeriodEnd)
+          if (data.subscriptionStatus === 'active' && data.currentPeriodEnd) {
+            const periodEnd = new Date(data.currentPeriodEnd)
             const now = new Date()
             const monthsUntilEnd = (periodEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30)
             setIsAnnualBilling(monthsUntilEnd > 6)
@@ -296,6 +300,36 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
           {/* Plans & Billing Tab */}
           {billingTab === 'plans' && (
             <div className="space-y-8">
+              {/* Cancellation Warning */}
+              {cancelAtPeriodEnd && currentPeriodEnd && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <AlertCircle className="h-5 w-5 text-red-400" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-red-800">Your subscription is Cancelled</h3>
+                      <div className="mt-1 text-sm text-red-700">
+                        <p>You'll continue to have access until {new Date(currentPeriodEnd).toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}. You can reactivate your subscription at any time before this date.</p>
+                      </div>
+                      <div className="mt-3">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-white text-black border-gray-300 hover:bg-gray-100"
+                          onClick={() => window.open('/api/stripe/customer-portal', '_blank')}
+                        >
+                          Reactivate Subscription
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               {/* Current Plan */}
               <div className="py-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
@@ -303,8 +337,12 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-2xl font-medium text-gray-900 font-mono tracking-tight">{billingPlan.name}</h3>
                       {currentPlan !== 'starter' && (
-                        <span className="text-xs bg-gray-200 text-gray-500 px-2 py-1 rounded-sm border border-gray-300 font-mono tracking-tight">
-                          Active
+                        <span className={`text-xs px-2 py-1 rounded-sm border font-mono tracking-tight ${
+                          cancelAtPeriodEnd 
+                            ? 'bg-red-100 text-red-700 border-red-300' 
+                            : 'bg-gray-200 text-gray-500 border-gray-300'
+                        }`}>
+                          {cancelAtPeriodEnd ? 'Cancelled' : 'Active'}
                         </span>
                       )}
                     </div>
@@ -327,7 +365,17 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                           )}
                           {billingPlan.nextBilling && (
                             <p className="text-xs text-gray-500 font-mono tracking-tight">
-                              Next billing: {billingPlan.nextBilling}
+                              {cancelAtPeriodEnd ? (
+                                <span className="text-red-600">
+                                  Access ends: {currentPeriodEnd ? new Date(currentPeriodEnd).toLocaleDateString('en-US', { 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                  }) : billingPlan.nextBilling}
+                                </span>
+                              ) : (
+                                `Next billing: ${billingPlan.nextBilling}`
+                              )}
                             </p>
                           )}
                         </>
@@ -340,12 +388,14 @@ export function BillingSettings({ usageData, loadingUsage, onRefreshUsage }: Bil
                       className={`h-8 px-4 font-mono tracking-tight text-sm ${
                         !currentPlan || !['starter', 'pro', 'enterprise', 'admin'].includes(currentPlan)
                           ? 'bg-red-600 hover:bg-red-700 text-white border-red-500'
-                          : 'bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-gray-600 text-white'
+                          : 'bg-white text-black border border-gray-300 hover:bg-gray-100'
                       }`}
                       disabled={isLoading}
                     >
                       {!currentPlan || !['starter', 'pro', 'enterprise', 'admin'].includes(currentPlan) 
                         ? 'Choose Plan' 
+                        : cancelAtPeriodEnd
+                        ? 'Reactivate or Change Plan'
                         : 'Change Plan'}
                     </Button>
                   </div>
