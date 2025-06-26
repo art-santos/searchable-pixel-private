@@ -1,6 +1,17 @@
+# Allow all friendly crawlers
 User-Agent: *
 Allow: /
 Allow: /llms.txt
+
+# AI Crawlers
+User-Agent: GPTBot
+Allow: /
+
+User-Agent: PerplexityBot
+Allow: /
+
+User-Agent: ClaudeBot
+Allow: /
 
 Disallow: /dashboard
 Disallow: /settings
