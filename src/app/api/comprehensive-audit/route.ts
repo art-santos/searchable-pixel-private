@@ -114,12 +114,25 @@ export async function POST(request: NextRequest) {
     
     // Create audit run record
     console.log('💾 Creating audit run record...');
+    
+    // Handle user_id - if it's not a valid UUID, use null or generate one
+    let validUserId = null;
+    if (userId) {
+      // Check if userId is a valid UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(userId)) {
+        validUserId = userId;
+      } else {
+        console.log(`⚠️ Non-UUID user_id provided: "${userId}", proceeding without user_id`);
+      }
+    }
+    
     const { data: auditRun, error: auditError } = await supabase
       .from('audit_runs')
       .insert({
-        user_id: userId,
+        user_id: validUserId, // Use null if not a valid UUID
         name: `Comprehensive Audit - ${topic || 'Technical'}`,
-        description: `${auditType} audit for ${urls.length} URL(s)`,
+        description: `${auditType} audit for ${urls.length} URL(s)${userId && !validUserId ? ` (user: ${userId})` : ''}`,
         target_urls: urls,
         status: 'running',
         started_at: new Date().toISOString()
@@ -272,7 +285,37 @@ export async function POST(request: NextRequest) {
         let pageId: string | null = null;
         
         if (technicalResult && pageContent) {
-          // Store technical audit results
+          // Store technical audit results with enhanced metadata
+          const enhancedMetadata = {
+            ...technicalResult.analysis_metadata,
+            // Add comprehensive link analysis data
+            internal_link_count: pageContent.metadata?.links?.filter(l => l.isInternal)?.length || 0,
+            external_eeat_links: pageContent.metadata?.links?.filter(l => l.isEEAT)?.length || 0,
+            total_links: pageContent.metadata?.links?.length || 0,
+            // Add image analysis data
+            total_images: pageContent.metadata?.images?.length || 0,
+            image_alt_present_percent: pageContent.metadata?.images?.length > 0 ? 
+              Math.round((pageContent.metadata.images.filter(img => img.hasAlt).length / pageContent.metadata.images.length) * 100) : 0,
+            // Add technical metrics
+            html_size: pageContent.metadata?.htmlSize || 0,
+            html_size_kb: pageContent.metadata?.htmlSize ? Math.round((pageContent.metadata.htmlSize / 1024) * 100) / 100 : 0,
+            dom_nodes: pageContent.metadata?.domNodes || 0,
+            dom_size_kb: pageContent.metadata?.domNodes ? Math.round((pageContent.metadata.domNodes / 1000) * 100) / 100 : 0,
+            // Add schema data
+            jsonld_valid: pageContent.metadata?.hasJsonLd || false,
+            schema_types: pageContent.metadata?.schemaTypes || [],
+            // Add content structure data
+            h1_present: pageContent.metadata?.headings?.some(h => h.level === 1) || false,
+            h1_count: pageContent.metadata?.headings?.filter(h => h.level === 1)?.length || 0,
+            heading_depth: pageContent.metadata?.headings?.length > 0 ? 
+              Math.max(...pageContent.metadata.headings.map(h => h.level)) : 0,
+            // Store timestamp and rendering info in metadata
+            processed_at: new Date().toISOString(),
+            rendering_mode: technicalResult.rendering_mode || 'UNKNOWN',
+            ssr_score_penalty: technicalResult.ssr_score_penalty || 0
+          };
+
+          // Store page data without problematic constraint columns
           const { data: pageData, error: pageError } = await supabase
             .from('pages')
             .upsert({
@@ -289,94 +332,22 @@ export async function POST(request: NextRequest) {
               media_accessibility_score: technicalResult.category_scores.media_accessibility,
               schema_markup_score: technicalResult.category_scores.schema_markup,
               ai_optimization_score: technicalResult.category_scores.ai_optimization,
-              analysis_metadata: technicalResult.analysis_metadata,
+              analysis_metadata: enhancedMetadata,
               scraped_at: new Date().toISOString(),
-              analyzed_at: technicalResult.analysis_metadata.analyzed_at
+              analyzed_at: technicalResult.analysis_metadata.analyzed_at || new Date().toISOString()
             }, {
               onConflict: 'url'
             })
             .select('id')
             .single();
-          
-          if (!pageError && pageData) {
+
+          if (pageError) {
+            console.error('❌ Page storage failed:', pageError.message);
+          } else {
             pageId = pageData.id;
-            
-            // Store issues
-            if (technicalResult.issues.length > 0) {
-              const issueData = technicalResult.issues.map((issue: any) => ({
-                page_id: pageId,
-                severity: issue.severity,
-                category: issue.category,
-                title: issue.title,
-                description: issue.description,
-                impact: issue.impact,
-                fix_priority: issue.fix_priority
-              }));
-              
-              await supabase.from('page_issues').upsert(issueData, {
-                onConflict: 'page_id,title'
-              });
-            }
-            
-            // Store recommendations
-            if (technicalResult.recommendations.length > 0) {
-              const recData = technicalResult.recommendations.map((rec: any) => ({
-                page_id: pageId,
-                category: rec.category,
-                title: rec.title,
-                description: rec.description,
-                implementation: rec.implementation,
-                expected_impact: rec.expected_impact,
-                effort_level: rec.effort_level,
-                priority_score: rec.priority_score
-              }));
-              
-              await supabase.from('page_recommendations').upsert(recData, {
-                onConflict: 'page_id,title'
-              });
-            }
-            
-            // Link page to audit run
-            await supabase
-              .from('audit_run_pages')
-              .upsert({
-                audit_run_id: auditRunId,
-                page_id: pageId
-              }, {
-                onConflict: 'audit_run_id,page_id'
-              });
+            console.log(`✅ Stored page data: ${pageId}`);
           }
         }
-        
-        // Store visibility results if we have snapshot tables
-        if (visibilityResult && topic) {
-          try {
-            // Store in snapshot_summaries table
-            await supabase
-              .from('snapshot_summaries')
-              .upsert({
-                request_id: auditRunId, // Use audit run ID as request ID
-                url: normalizedUrl,
-                visibility_score: visibilityResult.score,
-                mentions_count: visibilityResult.mentions,
-                total_questions: visibilityResult.totalQuestions,
-                top_competitors: [...new Set(visibilityResult.allCompetitors)].slice(0, 5),
-                insights: [
-                  `AI visibility score: ${visibilityResult.score}%`,
-                  `Found in ${visibilityResult.mentions}/${visibilityResult.totalQuestions} search queries`,
-                  visibilityResult.averagePosition ? `Average position: ${visibilityResult.averagePosition.toFixed(1)}` : 'Not consistently positioned',
-                  visibilityResult.allCompetitors.length > 0 ? `Competitors: ${[...new Set(visibilityResult.allCompetitors)].slice(0, 3).join(', ')}` : 'No competitors identified'
-                ],
-                insights_summary: `${visibilityResult.score}% AI visibility across ${visibilityResult.totalQuestions} test queries`
-              }, {
-                onConflict: 'request_id,url'
-              });
-          } catch (snapError) {
-            console.warn('⚠️ Failed to store visibility results in snapshot tables:', snapError);
-          }
-        }
-        
-        console.log('✅ Results stored successfully');
         
         // Compile result summary
         const urlResult = {

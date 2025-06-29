@@ -134,6 +134,22 @@ export default function EnhancedSnapshotReportPage() {
     try {
       console.log('🔍 Loading comprehensive audit for:', url);
       
+      // First, try to retrieve existing data
+      const retrieveResponse = await fetch(`/api/audit/retrieve?url=${encodeURIComponent(url)}`);
+      
+      if (retrieveResponse.ok) {
+        const retrieveData = await retrieveResponse.json();
+        
+        if (retrieveData.exists && !force) {
+          console.log('✅ Found existing comprehensive audit data');
+          setComprehensiveAudit(retrieveData.data);
+          return;
+        }
+      }
+      
+      // If no existing data or force refresh, run new audit
+      console.log('🔄 Running new comprehensive audit...');
+      
       const response = await fetch('/api/audit/test', {
         method: 'POST',
         headers: {
@@ -155,7 +171,7 @@ export default function EnhancedSnapshotReportPage() {
       }
 
       const auditData = await response.json();
-      console.log('✅ Comprehensive audit loaded:', auditData);
+      console.log('✅ New comprehensive audit completed:', auditData);
       
       setComprehensiveAudit(auditData);
     } catch (error: any) {
