@@ -152,11 +152,27 @@ export async function POST(
               if (pageData.page_summary) {
                 updateData.page_summary = pageData.page_summary
               }
-              if (result.enhancedRecommendations?.technicalQuickWin) {
-                updateData.technical_recommendations = result.enhancedRecommendations.technicalQuickWin
-              }
-              if (result.enhancedRecommendations?.contentQuickWin) {
-                updateData.content_recommendations = result.enhancedRecommendations.contentQuickWin
+              // Use AEO audit data if available, otherwise fall back to enhanced recommendations
+              if (result.enhancedRecommendations?.aeoAudit) {
+                const aeoAudit = result.enhancedRecommendations.aeoAudit
+                updateData.technical_recommendations = aeoAudit.technical_recommendations
+                updateData.content_recommendations = aeoAudit.content_recommendations
+                updateData.page_summary = aeoAudit.page_summary
+                updateData.render_mode = aeoAudit.render_mode
+                updateData.semantic_url_quality = aeoAudit.semantic_url
+                updateData.meta_description_feedback = aeoAudit.meta_description_feedback
+                updateData.passage_slicing = aeoAudit.passage_slicing
+                updateData.corporate_jargon_flags = aeoAudit.corporate_jargon_flags
+                updateData.schema_suggestions = aeoAudit.schema_suggestions
+                updateData.recency_signal = aeoAudit.recency_signal
+                updateData.micro_niche_specificity = aeoAudit.micro_niche_specificity
+              } else {
+                if (result.enhancedRecommendations?.technicalQuickWin) {
+                  updateData.technical_recommendations = result.enhancedRecommendations.technicalQuickWin
+                }
+                if (result.enhancedRecommendations?.contentQuickWin) {
+                  updateData.content_recommendations = result.enhancedRecommendations.contentQuickWin
+                }
               }
             }
           }

@@ -60,8 +60,11 @@ import {
   XCircle,
   Minus,
   TrendingDown,
-  Lightbulb
+  Lightbulb,
+  Activity,
+  ArrowRight
 } from 'lucide-react'
+import NextImage from 'next/image'
 import { toast } from 'sonner'
 import {
   Area,
@@ -126,6 +129,15 @@ interface ProjectUrl {
   internal_link_count?: number
   image_alt_present?: number
   promotional_sentiment?: number
+  // AEO audit fields
+  render_mode?: string
+  semantic_url_quality?: string
+  meta_description_feedback?: string
+  passage_slicing?: string
+  corporate_jargon_flags?: string
+  schema_suggestions?: string
+  recency_signal?: string
+  micro_niche_specificity?: string
 }
 
 interface VisibilityData {
@@ -484,57 +496,84 @@ export default function ProjectsPage() {
             
             <Dialog open={showCreateProject} onOpenChange={setShowCreateProject}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="border-gray-200">
+                <Button variant="outline" className="border-gray-200 text-gray-700 hover:bg-gray-50">
                   <Plus className="h-4 w-4 mr-2" />
                   New Project
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-white border border-gray-200">
-                <DialogHeader>
-                  <DialogTitle>Create New Project</DialogTitle>
-                  <DialogDescription>
-                    Set up a new project for your website domain
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Project Name</label>
-                    <Input
-                      value={newProjectName}
-                      onChange={(e) => setNewProjectName(e.target.value)}
-                      placeholder="My Website Project"
-                      className="bg-white border-gray-200"
-                    />
+              <DialogContent className="bg-white border border-gray-200 max-w-4xl p-0 gap-0">
+                <DialogTitle className="sr-only">Create New Project</DialogTitle>
+                <div className="grid grid-cols-2 min-h-[500px]">
+                  {/* Left side - Form */}
+                  <div className="p-8 flex flex-col justify-between">
+                    <div>
+                      <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+                        Analyze Your Website
+                      </h2>
+                      <p className="text-gray-600 mb-8">
+                        Create a comprehensive technical and content analysis project for your website. We'll crawl your sitemap, analyze page structure, content quality, and provide actionable recommendations to improve your site's performance.
+                      </p>
+                      
+                      <div className="space-y-6">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">
+                            Project Name
+                          </label>
+                          <Input
+                            value={newProjectName}
+                            onChange={(e) => setNewProjectName(e.target.value)}
+                            placeholder="My Website"
+                            className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-gray-400 focus:ring-gray-400"
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">
+                            Website URL
+                          </label>
+                          <Input
+                            value={newProjectDomain}
+                            onChange={(e) => setNewProjectDomain(e.target.value)}
+                            placeholder="https://www.example.com"
+                            className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus:border-gray-400 focus:ring-gray-400"
+                          />
+                          <p className="text-xs text-gray-500">
+                            Enter your website's main domain or homepage URL
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Button 
+                        onClick={createProject}
+                        disabled={creatingProject || !newProjectName || !newProjectDomain}
+                        className="w-full bg-gray-900 text-white hover:bg-gray-800 disabled:bg-gray-300"
+                      >
+                        {creatingProject ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            Creating Project...
+                          </>
+                        ) : (
+                          <>
+                            Create Project
+                            <ArrowRight className="h-4 w-4 ml-2" />
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Root Domain</label>
-                    <Input
-                      value={newProjectDomain}
-                      onChange={(e) => setNewProjectDomain(e.target.value)}
-                      placeholder="example.com"
-                      className="bg-white border-gray-200"
+                  
+                  {/* Right side - Image */}
+                  <div className="relative overflow-hidden">
+                    <NextImage
+                      src="/images/library.png"
+                      alt="Website Analysis"
+                      fill
+                      className="object-cover"
+                      priority={true}
                     />
-                  </div>
-                  <div className="flex gap-2 pt-4">
-                    <Button 
-                      onClick={createProject}
-                      disabled={creatingProject}
-                      className="flex-1 bg-gray-900 text-white hover:bg-gray-800"
-                    >
-                      {creatingProject ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      ) : (
-                        <Globe className="h-4 w-4 mr-2" />
-                      )}
-                      Create Project
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setShowCreateProject(false)}
-                      className="border-gray-200"
-                    >
-                      Cancel
-                    </Button>
                   </div>
                 </div>
               </DialogContent>
@@ -1029,7 +1068,7 @@ export default function ProjectsPage() {
                             Crawl
                           </th>
                           <th className="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            SSR
+                            Render
                           </th>
                           <th className="text-center px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                             FAQ
@@ -1142,7 +1181,20 @@ export default function ProjectsPage() {
                                     {getBooleanIcon(url.crawlable)}
                                   </td>
                                   <td className="px-4 py-4 text-center">
-                                    {getBooleanIcon(url.ssr_rendered)}
+                                    {url.render_mode ? (
+                                      <span className={cn("text-xs font-medium px-2 py-1 rounded",
+                                        url.render_mode === 'SSR' ? 'bg-green-100 text-green-700' :
+                                        url.render_mode === 'STATIC' ? 'bg-blue-100 text-blue-700' :
+                                        url.render_mode === 'CSR-JS' ? 'bg-yellow-100 text-yellow-700' :
+                                        'bg-gray-100 text-gray-700'
+                                      )}>
+                                        {url.render_mode}
+                                      </span>
+                                    ) : url.ssr_rendered !== undefined ? (
+                                      getBooleanIcon(url.ssr_rendered)
+                                    ) : (
+                                      <Minus className="h-4 w-4 text-gray-300 mx-auto" />
+                                    )}
                                   </td>
                                   <td className="px-4 py-4 text-center">
                                     {getBooleanIcon(url.faq_schema_present)}
@@ -1452,14 +1504,104 @@ export default function ProjectsPage() {
                     </div>
                   </div>
 
-                  {/* Recommendations */}
+                  {/* AEO Audit Results */}
+                  {selectedUrlDetail.page_summary && (
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-medium text-gray-900">Page Summary</h4>
+                      <div className="p-4 bg-gray-50 rounded-lg">
+                        <p className="text-sm text-gray-700">
+                          {selectedUrlDetail.page_summary}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Technical Recommendations */}
                   {selectedUrlDetail.technical_recommendations && (
                     <div className="space-y-3">
-                      <h4 className="text-sm font-medium text-gray-900">Recommendations</h4>
+                      <h4 className="text-sm font-medium text-gray-900">Technical Recommendations</h4>
                       <div className="p-4 bg-blue-50 rounded-lg">
-                        <p className="text-sm text-blue-900">
-                          {selectedUrlDetail.technical_recommendations}
-                        </p>
+                        <div className="flex items-start space-x-2">
+                          <Settings className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                          <p className="text-sm text-blue-900">
+                            {selectedUrlDetail.technical_recommendations}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Content Recommendations */}
+                  {selectedUrlDetail.content_recommendations && (
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-medium text-gray-900">Content Recommendations</h4>
+                      <div className="p-4 bg-green-50 rounded-lg">
+                        <div className="flex items-start space-x-2">
+                          <FileText className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <p className="text-sm text-green-900">
+                            {selectedUrlDetail.content_recommendations}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* AEO Audit Details */}
+                  {(selectedUrlDetail.render_mode || selectedUrlDetail.semantic_url_quality || selectedUrlDetail.schema_suggestions) && (
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-medium text-gray-900">AEO Audit Analysis</h4>
+                      <div className="space-y-3">
+                        
+                        {selectedUrlDetail.render_mode && (
+                          <div className="p-3 bg-gray-50 rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-gray-700">Render Mode</span>
+                              <span className={cn("text-sm font-medium px-2 py-1 rounded",
+                                selectedUrlDetail.render_mode === 'SSR' ? 'bg-green-100 text-green-700' :
+                                selectedUrlDetail.render_mode === 'STATIC' ? 'bg-blue-100 text-blue-700' :
+                                'bg-yellow-100 text-yellow-700'
+                              )}>
+                                {selectedUrlDetail.render_mode}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {selectedUrlDetail.semantic_url_quality && (
+                          <div className="p-3 bg-gray-50 rounded-lg">
+                            <span className="text-sm font-medium text-gray-700 block mb-1">Semantic URL</span>
+                            <p className="text-sm text-gray-600">{selectedUrlDetail.semantic_url_quality}</p>
+                          </div>
+                        )}
+
+                        {selectedUrlDetail.schema_suggestions && (
+                          <div className="p-3 bg-purple-50 rounded-lg">
+                            <span className="text-sm font-medium text-gray-700 block mb-1">Schema Suggestions</span>
+                            <p className="text-sm text-purple-700">{selectedUrlDetail.schema_suggestions}</p>
+                          </div>
+                        )}
+
+                        {selectedUrlDetail.corporate_jargon_flags && selectedUrlDetail.corporate_jargon_flags !== 'N/A' && (
+                          <div className="p-3 bg-orange-50 rounded-lg">
+                            <span className="text-sm font-medium text-gray-700 block mb-1">Corporate Jargon Detected</span>
+                            <p className="text-sm text-orange-700">{selectedUrlDetail.corporate_jargon_flags}</p>
+                          </div>
+                        )}
+
+                        {selectedUrlDetail.micro_niche_specificity && (
+                          <div className="p-3 bg-gray-50 rounded-lg">
+                            <span className="text-sm font-medium text-gray-700 block mb-1">Content Specificity</span>
+                            <p className="text-sm text-gray-600">{selectedUrlDetail.micro_niche_specificity}</p>
+                          </div>
+                        )}
+
+                        {selectedUrlDetail.recency_signal && (
+                          <div className="p-3 bg-gray-50 rounded-lg">
+                            <span className="text-sm font-medium text-gray-700 block mb-1">Recency Signal</span>
+                            <p className="text-sm text-gray-600">{selectedUrlDetail.recency_signal}</p>
+                          </div>
+                        )}
+
                       </div>
                     </div>
                   )}

@@ -5,6 +5,7 @@ import { testVisibilityWithPerplexity } from '@/lib/perplexity-client';
 import { analyzePageWithAEO, type PageContent } from '@/lib/aeo/technical-analyzer';
 import { generateEnhancedRecommendations, formatRecommendationsAsMarkdown } from '@/lib/aeo/enhanced-recommendations'
 import { generateAIContentRecommendations } from '@/lib/aeo/ai-content-recommendations';
+import { generateAEOAudit } from '@/lib/aeo/aeo-auditor';
 import { EnhancedFirecrawlClient } from '@/lib/services/enhanced-firecrawl-client';
 
 /**
@@ -372,7 +373,34 @@ export async function POST(request: NextRequest) {
           console.log(`✅ Technical analysis complete: ${technicalResult.overall_score}/100 score`);
           console.log(`   Found ${technicalResult.issues.length} issues, ${technicalResult.recommendations.length} recommendations`);
           
-          // Step 3.5: Generate Enhanced Recommendations
+          // Step 3.5: Generate AEO Audit with GPT-4o
+          let aeoAuditResult = null;
+          if (process.env.OPENAI_API_KEY) {
+            console.log('🤖 Generating AEO audit with GPT-4o...');
+            try {
+              aeoAuditResult = await generateAEOAudit({
+                url: normalizedUrl,
+                html: pageContent.html || '',
+                content: pageContent.content,
+                metadata: {
+                  title: pageContent.title,
+                  description: pageContent.meta_description,
+                  headings: pageContent.metadata?.headings || [],
+                  links: pageContent.metadata?.links || [],
+                  images: pageContent.metadata?.images || [],
+                  hasJsonLd: pageContent.metadata?.hasJsonLd || false,
+                  schemaTypes: pageContent.metadata?.schemaTypes || [],
+                  htmlSize: pageContent.metadata?.htmlSize || 0,
+                  domNodes: pageContent.metadata?.domNodes || 0
+                }
+              });
+              console.log('✅ AEO audit generated with actionable recommendations');
+            } catch (aeoError: any) {
+              console.warn('⚠️ AEO audit failed, falling back to enhanced recommendations:', aeoError.message);
+            }
+          }
+          
+          // Step 3.6: Generate Enhanced Recommendations (fallback)
           console.log('📝 Generating enhanced recommendations...');
           try {
             enhancedRecommendations = await generateEnhancedRecommendations(
@@ -381,8 +409,20 @@ export async function POST(request: NextRequest) {
               enhancedData
             );
             
-            // Generate AI-powered content recommendations if OpenAI is available
-            if (process.env.OPENAI_API_KEY) {
+            // If we have AEO audit results, use those instead of default recommendations
+            if (aeoAuditResult) {
+              enhancedRecommendations.contentRecommendations = {
+                quickWin: aeoAuditResult.content_recommendations,
+                bullets: [aeoAuditResult.content_recommendations]
+              };
+              enhancedRecommendations.technicalRecommendations = {
+                quickWin: aeoAuditResult.technical_recommendations,
+                bullets: [aeoAuditResult.technical_recommendations]
+              };
+              enhancedRecommendations.pageSummary = aeoAuditResult.page_summary;
+              enhancedRecommendations.aeoAudit = aeoAuditResult;
+            } else if (process.env.OPENAI_API_KEY) {
+              // Generate AI-powered content recommendations as fallback
               console.log('🤖 Generating AI-powered content recommendations...');
               try {
                 const aiContentRecs = await generateAIContentRecommendations(
