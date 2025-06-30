@@ -15,11 +15,11 @@ import {
   Activity,
   HelpCircleIcon,
   Users,
-  Camera,
   Crown,
   PanelLeft,
   PanelRight,
   BadgeCheck,
+  FolderOpen,
 } from "lucide-react"
 import Image from 'next/image'
 
@@ -116,9 +116,9 @@ export function SplitSidebar({ isCollapsed = false, onToggle }: SplitSidebarProp
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboardIcon, exact: true },
+    { href: "/dashboard/projects", label: "Projects", icon: FolderOpen },
     { href: "/dashboard/attribution", label: "Attribution", icon: Activity },
     ...(isAdmin ? [{ href: "/dashboard/leads", label: "Leads", icon: Users }] : []),
-    { href: "/dashboard/snapshot", label: "Snapshot", icon: Camera },
   ]
 
   const secondaryItems = [

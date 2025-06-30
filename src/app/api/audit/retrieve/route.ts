@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { generateEnhancedRecommendations, formatRecommendationsAsMarkdown } from '@/lib/aeo/enhanced-recommendations';
+import { PageContent, AEOAnalysisResult } from '@/lib/aeo/technical-analyzer';
 
 export async function GET(request: NextRequest) {
   try {
@@ -146,6 +148,84 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('✅ Found existing comprehensive audit data');
+    
+    // Generate enhanced recommendations from stored data
+    let enhancedRecommendations = null;
+    try {
+      // Reconstruct PageContent from stored data
+      const pageContent: PageContent = {
+        url: pageData.url,
+        title: pageData.title,
+        meta_description: pageData.meta_description,
+        content: pageData.content || '',
+        markdown: pageData.markdown || '',
+        html: pageData.html || '',
+        word_count: pageData.word_count || 0,
+        metadata: {
+          statusCode: pageData.analysis_metadata?.status_code || 200,
+          ogTitle: pageData.analysis_metadata?.og_title,
+          ogDescription: pageData.analysis_metadata?.og_description,
+          ogImage: pageData.analysis_metadata?.og_image,
+          canonicalUrl: pageData.analysis_metadata?.canonical_url,
+          language: pageData.analysis_metadata?.language,
+          author: pageData.analysis_metadata?.author,
+          publishDate: pageData.analysis_metadata?.publish_date,
+          modifiedDate: pageData.analysis_metadata?.modified_date,
+          schema: pageData.analysis_metadata?.schema,
+          links: pageData.analysis_metadata?.links,
+          images: pageData.analysis_metadata?.images,
+          htmlSize: pageData.analysis_metadata?.html_size,
+          domNodes: pageData.analysis_metadata?.dom_nodes,
+          hasJsonLd: pageData.analysis_metadata?.jsonld_valid,
+          schemaTypes: pageData.analysis_metadata?.schema_types,
+          headings: pageData.analysis_metadata?.headings
+        }
+      };
+      
+      // Reconstruct AEOAnalysisResult from stored data
+      const analysisResult: AEOAnalysisResult = {
+        url: pageData.url,
+        overall_score: pageData.aeo_score || 0,
+        weighted_score: pageData.weighted_aeo_score || pageData.aeo_score || 0,
+        category_scores: {
+          content_quality: pageData.content_quality_score || 0,
+          technical_health: pageData.technical_health_score || 0,
+          media_accessibility: pageData.media_accessibility_score || 0,
+          schema_markup: pageData.schema_markup_score || 0,
+          ai_optimization: pageData.ai_optimization_score || 0
+        },
+        rendering_mode: (pageData.rendering_mode || pageData.analysis_metadata?.rendering_mode || 'UNKNOWN') as 'SSR' | 'CSR' | 'HYBRID',
+        ssr_score_penalty: pageData.ssr_score_penalty || pageData.analysis_metadata?.ssr_score_penalty || 0,
+        issues: pageData.page_issues || [],
+        recommendations: pageData.page_recommendations || [],
+        analysis_metadata: {
+          analyzed_at: pageData.analyzed_at,
+          analysis_duration_ms: pageData.analysis_metadata?.analysis_duration_ms || 0,
+          content_length: pageData.word_count || 0,
+          ai_analysis_used: pageData.analysis_metadata?.ai_analysis_used || false,
+          total_rules_evaluated: pageData.analysis_metadata?.total_rules_evaluated || 0,
+          diagnostics_generated: pageData.analysis_metadata?.diagnostics_generated || 0,
+          scoring_weights: pageData.analysis_metadata?.scoring_weights || {
+            content_quality: 0.25,
+            technical_health: 0.20,
+            ai_optimization: 0.20,
+            media_accessibility: 0.15,
+            schema_markup: 0.20
+          }
+        }
+      };
+      
+      // Generate enhanced recommendations
+      enhancedRecommendations = await generateEnhancedRecommendations(
+        pageContent,
+        analysisResult,
+        pageData.analysis_metadata // This contains the enhanced data
+      );
+      
+      console.log('✅ Generated enhanced recommendations');
+    } catch (recError: any) {
+      console.error('⚠️ Failed to generate enhanced recommendations:', recError.message);
+    }
 
     // Format the response to match the test API structure
     const comprehensiveAudit = {
@@ -198,7 +278,11 @@ export async function GET(request: NextRequest) {
       // Issues and recommendations
       issues: pageData.page_issues || [],
       recommendations: {
-        detailed: pageData.page_recommendations || []
+        detailed: pageData.page_recommendations || [],
+        technicalQuickWin: enhancedRecommendations?.technicalRecommendations?.quickWin,
+        contentQuickWin: enhancedRecommendations?.contentRecommendations?.quickWin,
+        pageSummary: enhancedRecommendations?.pageSummary,
+        formattedMarkdown: enhancedRecommendations ? formatRecommendationsAsMarkdown(enhancedRecommendations) : null
       },
 
       // Checklist results

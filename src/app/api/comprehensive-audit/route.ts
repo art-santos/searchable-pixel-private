@@ -3,6 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 import { generateQuestions } from '@/lib/question-generator';
 import { testVisibilityWithPerplexity } from '@/lib/perplexity-client';
 import { analyzePageWithAEO, type PageContent } from '@/lib/aeo/technical-analyzer';
+import { generateEnhancedRecommendations, formatRecommendationsAsMarkdown } from '@/lib/aeo/enhanced-recommendations'
+import { generateAIContentRecommendations } from '@/lib/aeo/ai-content-recommendations';
+import { EnhancedFirecrawlClient } from '@/lib/services/enhanced-firecrawl-client';
 
 /**
  * Enhanced URL normalization to avoid www/apex domain issues
@@ -61,6 +64,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // Only require topic for visibility audits
     if ((auditType === 'visibility' || auditType === 'both') && !topic) {
       return NextResponse.json(
         { error: 'Topic is required for visibility audits' },
@@ -171,19 +175,108 @@ export async function POST(request: NextRequest) {
         let visibilityResult = null;
         let technicalResult = null;
         let pageContent = null;
+        let enhancedData = null;
         
-        // Step 1: Scrape content with Firecrawl (needed for both audits)
+        // Step 1: Scrape content with Enhanced Firecrawl (needed for both audits)
         if (auditType === 'technical' || auditType === 'both') {
-          console.log('🕷️ Step 1: Scraping content with Firecrawl...');
-          pageContent = await scrapeWithFirecrawl(normalizedUrl);
+          console.log('🕷️ Step 1: Scraping content with Enhanced Firecrawl...');
           
-          if (!pageContent) {
-            console.error('❌ Firecrawl scraping failed, skipping technical audit');
-            if (auditType === 'technical') {
-              continue; // Skip this URL entirely if technical audit fails
+          const firecrawlClient = new EnhancedFirecrawlClient(process.env.FIRECRAWL_API_KEY!);
+          
+          try {
+            // Try different URL variations if needed
+            const urlVariations = [
+              normalizedUrl,
+              normalizedUrl.replace(/^https?:\/\//, 'https://www.'), // Add www
+              normalizedUrl.replace(/^https?:\/\/www\./, 'https://'), // Remove www
+            ];
+            
+            let successfulCrawl = null;
+            
+            for (const urlVariant of urlVariations) {
+              console.log(`🔄 Trying URL variant: ${urlVariant}`);
+              
+              try {
+                const crawlResult = await firecrawlClient.crawlUrl(urlVariant, {
+                  timeout: 60000, // 60 second timeout
+                  waitFor: 5000,  // Wait 5 seconds for JS
+                  includeHtml: true,
+                  includeMarkdown: true,
+                  extractMainContent: false // Get full content
+                });
+                
+                if (crawlResult && crawlResult.success) {
+                  successfulCrawl = crawlResult;
+                  console.log(`✅ Successfully crawled with variant: ${urlVariant}`);
+                  break;
+                }
+              } catch (variantError: any) {
+                console.log(`❌ Variant ${urlVariant} failed: ${variantError.message}`);
+              }
             }
-          } else {
-            console.log(`✅ Scraped: ${pageContent.word_count} words, status ${pageContent.metadata?.statusCode}`);
+            
+            if (!successfulCrawl) {
+              throw new Error('All URL variations failed');
+            }
+            
+            enhancedData = successfulCrawl;
+            
+            // Convert enhanced data to PageContent format
+            const crawlData = enhancedData.data!;
+            const content = crawlData.content || '';
+            const wordCount = content.split(/\s+/).filter(word => word.length > 0).length;
+            
+            // Extract headings from HTML for better H1 detection
+            const headings: any[] = [];
+            const h1Matches = crawlData.html?.matchAll(/<h1[^>]*>(.*?)<\/h1>/gi) || [];
+            for (const match of h1Matches) {
+              headings.push({ level: 1, text: match[1].replace(/<[^>]+>/g, '').trim() });
+            }
+            
+            pageContent = {
+              url: normalizedUrl,
+              title: crawlData.metadata?.title || '',
+              meta_description: crawlData.metadata?.description || crawlData.metadata?.['og:description'] || '',
+              content: content,
+              markdown: crawlData.markdown || '',
+              html: crawlData.html || '',
+              word_count: wordCount,
+              metadata: {
+                ...crawlData.metadata,
+                links: crawlData.links?.map((href: string) => ({ 
+                  href, 
+                  isInternal: href.includes(new URL(normalizedUrl).hostname),
+                  isEEAT: false // Will be determined by analyzer
+                })) || [],
+                images: [], // Will be extracted by analyzer
+                htmlSize: crawlData.html?.length || 0,
+                domNodes: 0, // Will be calculated by analyzer
+                hasJsonLd: false, // Will be determined by analyzer
+                schemaTypes: [], // Will be determined by analyzer
+                headings: headings // Pre-extracted headings for better detection
+              }
+            };
+            
+            console.log(`✅ Enhanced scraping complete: ${pageContent.word_count} words, ${headings.filter(h => h.level === 1).length} H1s found, method: ${enhancedData.method}`);
+            
+          } catch (scrapeError: any) {
+            console.error('❌ Enhanced Firecrawl scraping failed:', scrapeError.message);
+            console.log('📌 Falling back to standard Firecrawl...');
+            
+            // Fallback to standard scraping
+            try {
+              pageContent = await scrapeWithFirecrawl(normalizedUrl);
+              if (!pageContent) {
+                throw new Error('Standard Firecrawl also failed');
+              }
+              console.log('✅ Standard Firecrawl succeeded');
+            } catch (fallbackError: any) {
+              console.error('❌ Fallback scraping also failed:', fallbackError.message);
+              if (auditType === 'technical') {
+                continue; // Skip this URL entirely if technical audit fails
+              }
+              pageContent = null;
+            }
           }
         }
         
@@ -267,6 +360,7 @@ export async function POST(request: NextRequest) {
         }
         
         // Step 3: Technical Analysis
+        let enhancedRecommendations = null;
         if ((auditType === 'technical' || auditType === 'both') && pageContent) {
           console.log('🔍 Step 3: Technical AEO Analysis...');
           
@@ -277,6 +371,40 @@ export async function POST(request: NextRequest) {
           
           console.log(`✅ Technical analysis complete: ${technicalResult.overall_score}/100 score`);
           console.log(`   Found ${technicalResult.issues.length} issues, ${technicalResult.recommendations.length} recommendations`);
+          
+          // Step 3.5: Generate Enhanced Recommendations
+          console.log('📝 Generating enhanced recommendations...');
+          try {
+            enhancedRecommendations = await generateEnhancedRecommendations(
+              pageContent,
+              technicalResult,
+              enhancedData
+            );
+            
+            // Generate AI-powered content recommendations if OpenAI is available
+            if (process.env.OPENAI_API_KEY) {
+              console.log('🤖 Generating AI-powered content recommendations...');
+              try {
+                const aiContentRecs = await generateAIContentRecommendations(
+                  pageContent,
+                  technicalResult,
+                  topic
+                );
+                // Override the default content recommendations with AI-generated ones
+                enhancedRecommendations.contentRecommendations = {
+                  quickWin: aiContentRecs.quickWin,
+                  bullets: aiContentRecs.bullets
+                };
+                console.log('✅ AI content recommendations generated');
+              } catch (aiError: any) {
+                console.warn('⚠️ AI content recommendations failed, using default:', aiError.message);
+              }
+            }
+            
+            console.log('✅ Enhanced recommendations generated');
+          } catch (recError: any) {
+            console.error('⚠️ Failed to generate enhanced recommendations:', recError.message);
+          }
         }
         
         // Step 4: Store results in database
@@ -365,7 +493,17 @@ export async function POST(request: NextRequest) {
             issuesCount: technicalResult.issues.length,
             recommendationsCount: technicalResult.recommendations.length,
             criticalIssues: technicalResult.issues.filter(i => i.severity === 'critical').length,
-            warningIssues: technicalResult.issues.filter(i => i.severity === 'warning').length
+            warningIssues: technicalResult.issues.filter(i => i.severity === 'warning').length,
+            renderingMode: technicalResult.rendering_mode,
+            ssrPenalty: technicalResult.ssr_score_penalty
+          } : null,
+          enhancedRecommendations: enhancedRecommendations ? {
+            pageSummary: enhancedRecommendations.pageSummary,
+            technicalQuickWin: enhancedRecommendations.technicalRecommendations.quickWin,
+            contentQuickWin: enhancedRecommendations.contentRecommendations.quickWin,
+            technicalActions: enhancedRecommendations.technicalRecommendations.bullets.length,
+            contentActions: enhancedRecommendations.contentRecommendations.bullets.length,
+            formattedMarkdown: formatRecommendationsAsMarkdown(enhancedRecommendations)
           } : null,
           pageId
         };
@@ -466,86 +604,140 @@ export async function POST(request: NextRequest) {
 async function scrapeWithFirecrawl(url: string): Promise<PageContent | null> {
   console.log(`   🌐 Scraping: ${url}`);
   
-  // Retry logic for timeouts and server errors
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    try {
-      console.log(`   🔄 Attempt ${attempt}/3...`);
-      
-      const response = await fetch('https://api.firecrawl.dev/v0/scrape', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.FIRECRAWL_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url: url,
-          formats: ['markdown', 'html'],
-          includeTags: ['title', 'meta', 'h1', 'h2', 'h3', 'img'],
-          excludeTags: ['script', 'style', 'nav', 'footer', 'aside'],
-          waitFor: attempt === 1 ? 8000 : (attempt === 2 ? 5000 : 3000), // Progressive reduction: 8s -> 5s -> 3s  
-          timeout: attempt === 1 ? 35000 : (attempt === 2 ? 25000 : 20000), // Progressive reduction: 35s -> 25s -> 20s
-          onlyMainContent: true // Focus on main content to speed up processing
-        })
-      });
+  // Try different URL variations
+  const urlVariations = [
+    url,
+    url.replace(/^https?:\/\//, 'https://www.'), // Add www
+    url.replace(/^https?:\/\/www\./, 'https://'), // Remove www
+  ];
+  
+  for (const urlVariant of urlVariations) {
+    console.log(`   🔄 Trying URL variant: ${urlVariant}`);
+    
+    // Retry logic for timeouts and server errors
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        console.log(`   🔄 Attempt ${attempt}/3...`);
+        
+        const response = await fetch('https://api.firecrawl.dev/v0/scrape', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.FIRECRAWL_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url: urlVariant,
+            formats: ['markdown', 'html'],
+            includeTags: ['title', 'meta', 'h1', 'h2', 'h3', 'img', 'a'],
+            excludeTags: ['script', 'style'],
+            waitFor: 10000, // Wait 10s for JS to load
+            timeout: 60000, // 60s timeout
+            onlyMainContent: false // Get full content for better H1 detection
+          })
+        });
 
-      if (!response.ok) {
-        // Retry on server errors (5xx) and timeouts (408)
-        if ((response.status >= 500 || response.status === 408) && attempt < 3) {
-          console.log(`   ⚠️ ${response.status} ${response.statusText}, retrying...`);
-          await new Promise(resolve => setTimeout(resolve, attempt * 2000)); // Progressive delay
-          continue;
+        if (!response.ok) {
+          // Retry on server errors (5xx) and timeouts (408)
+          if ((response.status >= 500 || response.status === 408) && attempt < 3) {
+            console.log(`   ⚠️ ${response.status} ${response.statusText}, retrying...`);
+            await new Promise(resolve => setTimeout(resolve, attempt * 3000)); // Longer delay
+            continue;
+          }
+          throw new Error(`Firecrawl API error: ${response.status} ${response.statusText}`);
         }
-        throw new Error(`Firecrawl API error: ${response.status} ${response.statusText}`);
-      }
 
-      const data = await response.json();
-      console.log(`   ✅ Firecrawl response received (attempt ${attempt})`);
-      
-      const content = data.data?.content || '';
-      const markdown = data.data?.markdown || '';
-      const html = data.data?.html || '';
-      const metadata = data.data?.metadata || {};
-      
-      const wordCount = content.split(/\s+/).filter((word: string) => word.length > 0).length;
-      
-      const pageContent: PageContent = {
-        url,
-        title: metadata.title || '',
-        meta_description: metadata.description || '',
-        content,
-        markdown,
-        html: html.length > 100000 ? html.substring(0, 100000) + '...[truncated]' : html,
-        word_count: wordCount,
-        metadata: {
-          statusCode: metadata.statusCode || 200,
-          ogTitle: metadata.ogTitle,
-          ogDescription: metadata.ogDescription,
-          ogImage: metadata.ogImage,
-          canonicalUrl: metadata.canonicalUrl,
-          language: metadata.language,
-          author: metadata.author,
-          publishDate: metadata.publishDate,
-          modifiedDate: metadata.modifiedDate,
-          schema: metadata.schema
+        const data = await response.json();
+        console.log(`   ✅ Firecrawl response received (attempt ${attempt})`);
+        
+        const content = data.data?.content || '';
+        const markdown = data.data?.markdown || '';
+        const html = data.data?.html || '';
+        const metadata = data.data?.metadata || {};
+        
+        const wordCount = content.split(/\s+/).filter((word: string) => word.length > 0).length;
+        
+        // Extract H1s from HTML
+        const headings: any[] = [];
+        const h1Matches = html.matchAll(/<h1[^>]*>(.*?)<\/h1>/gi);
+        for (const match of h1Matches) {
+          const h1Text = match[1].replace(/<[^>]+>/g, '').trim();
+          if (h1Text) {
+            headings.push({ level: 1, text: h1Text });
+          }
         }
-      };
-      
-      console.log(`   📊 Processed: ${wordCount} words, ${html.length} chars HTML`);
-      
-      return pageContent;
-      
-    } catch (error: any) {
-      console.error(`   ❌ Attempt ${attempt} failed:`, error.message);
-      
-      if (attempt === 3) {
-        console.error(`   💥 All retry attempts failed for ${url}`);
-        return null;
+        
+        // Also check for H1s in markdown
+        const mdH1Matches = markdown.matchAll(/^#\s+(.+)$/gm);
+        for (const match of mdH1Matches) {
+          const h1Text = match[1].trim();
+          if (h1Text && !headings.some(h => h.text === h1Text)) {
+            headings.push({ level: 1, text: h1Text });
+          }
+        }
+        
+        // Extract links for EEAT analysis
+        const links: any[] = [];
+        const linkMatches = html.matchAll(/<a[^>]*href=["']([^"']+)["'][^>]*>/gi);
+        const urlObj = new URL(urlVariant);
+        
+        for (const match of linkMatches) {
+          const href = match[1];
+          try {
+            const linkUrl = new URL(href, urlVariant);
+            links.push({
+              href: linkUrl.href,
+              isInternal: linkUrl.hostname === urlObj.hostname,
+              isEEAT: false // Will be determined by analyzer
+            });
+          } catch {
+            // Invalid URL, skip
+          }
+        }
+        
+        const pageContent: PageContent = {
+          url: url, // Return original URL, not variant
+          title: metadata.title || '',
+          meta_description: metadata.description || '',
+          content,
+          markdown,
+          html: html.length > 100000 ? html.substring(0, 100000) + '...[truncated]' : html,
+          word_count: wordCount,
+          metadata: {
+            statusCode: metadata.statusCode || 200,
+            ogTitle: metadata.ogTitle,
+            ogDescription: metadata.ogDescription,
+            ogImage: metadata.ogImage,
+            canonicalUrl: metadata.canonicalUrl,
+            language: metadata.language,
+            author: metadata.author,
+            publishDate: metadata.publishDate,
+            modifiedDate: metadata.modifiedDate,
+            schema: metadata.schema,
+            headings: headings,
+            links: links,
+            htmlSize: html.length
+          }
+        };
+        
+        console.log(`   📊 Processed: ${wordCount} words, ${html.length} chars HTML, ${headings.filter(h => h.level === 1).length} H1s found`);
+        
+        return pageContent;
+        
+      } catch (error: any) {
+        console.error(`   ❌ Attempt ${attempt} failed:`, error.message);
+        
+        if (attempt === 3) {
+          console.error(`   💥 All retry attempts failed for ${urlVariant}`);
+          // Try next URL variant
+          break;
+        }
+        
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, attempt * 3000));
       }
-      
-      // Wait before retry
-      await new Promise(resolve => setTimeout(resolve, attempt * 2000));
     }
   }
   
+  console.error(`   💥 All URL variations failed for ${url}`);
   return null;
 } 

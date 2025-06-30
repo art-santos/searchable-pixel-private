@@ -1,4 +1,6 @@
 import OpenAI from 'openai';
+import { EnhancedHTMLAnalyzer } from './enhanced-html-analyzer';
+import { RenderingDetector } from './rendering-detector';
 
 function getOpenAIClient() {
   return new OpenAI({
@@ -15,135 +17,7 @@ const SCORING_WEIGHTS = {
   schema_markup: 0.20       // Structured data for AI understanding
 };
 
-/**
- * Enhanced detection of rendering mode with detailed analysis
- */
-function detectRenderingMode(html: string, markdown: string): {
-  mode: 'SSR' | 'CSR' | 'HYBRID';
-  confidence: number; // 0-100
-  indicators: string[];
-  ssrContent: boolean;
-  csrWarnings: string[];
-} {
-  if (!html) {
-    return {
-      mode: 'HYBRID',
-      confidence: 0,
-      indicators: ['No HTML content available'],
-      ssrContent: false,
-      csrWarnings: ['Cannot analyze rendering without HTML']
-    };
-  }
-  
-  const indicators: string[] = [];
-  const csrWarnings: string[] = [];
-  
-  // Check for meaningful server-rendered content BEFORE script tags
-  const htmlBeforeScripts = html.split(/<script[\s\S]*?<\/script>/i)[0] || '';
-  const hasSSRContent = /<(h1|h2|h3|article|main|section)[\s>]/i.test(htmlBeforeScripts) ||
-                       /<p[^>]*>[^<]{20,}/i.test(htmlBeforeScripts); // Paragraph with meaningful content
-  
-  if (hasSSRContent) {
-    indicators.push('Server-rendered semantic content detected');
-  } else {
-    csrWarnings.push('No meaningful content found before JavaScript execution');
-  }
-  
-  // Remove scripts and styles, get text content
-  const textOnly = html
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  
-  const meaningfulWords = textOnly.split(/\s+/).filter(word => 
-    word.length > 3 && 
-    !/^(the|and|for|are|but|not|you|all|can|had|her|was|one|our|out|day|get|has|him|his|how|man|new|now|old|see|two|way|who|boy|did|its|let|put|say|she|too|use)$/i.test(word)
-  );
-  
-  // Check for typical CSR indicators
-  const emptyReactRoot = /<div[^>]*id=["']?root["']?[^>]*>(\s*<\/div>|\s*$)/i.test(html);
-  const emptyVueApp = /<div[^>]*id=["']?app["']?[^>]*>(\s*<\/div>|\s*$)/i.test(html);
-  const loadingStates = /Loading\.\.\.|Please enable JavaScript|Loading\s*$/i.test(html);
-  const hasNoScript = /<noscript>/i.test(html);
-  
-  if (emptyReactRoot) {
-    indicators.push('Empty React root div detected');
-    csrWarnings.push('React app with no server-rendered content');
-  }
-  
-  if (emptyVueApp) {
-    indicators.push('Empty Vue app div detected');
-    csrWarnings.push('Vue app with no server-rendered content');
-  }
-  
-  if (loadingStates) {
-    indicators.push('Client-side loading states found');
-    csrWarnings.push('Page shows loading indicators suggesting client-side rendering');
-  }
-  
-  if (hasNoScript && meaningfulWords.length < 20) {
-    indicators.push('NoScript warning with minimal content');
-    csrWarnings.push('Page requires JavaScript with minimal fallback content');
-  }
-  
-  // Check content richness and structure
-  const hasRichContent = meaningfulWords.length > 50;
-  const hasStructuredContent = html.includes('<h1') || html.includes('<h2') || html.includes('<nav') || html.includes('<main');
-  const hasSemantic = /<(article|section|aside|header|footer|nav|main)[\s>]/i.test(html);
-  
-  if (hasRichContent) {
-    indicators.push(`Rich content: ${meaningfulWords.length} meaningful words`);
-  } else {
-    csrWarnings.push(`Thin content: only ${meaningfulWords.length} meaningful words`);
-  }
-  
-  if (hasStructuredContent) {
-    indicators.push('Proper heading structure detected');
-  } else {
-    csrWarnings.push('Missing heading structure (H1-H6)');
-  }
-  
-  if (hasSemantic) {
-    indicators.push('Semantic HTML5 elements found');
-  } else {
-    csrWarnings.push('No semantic HTML5 elements detected');
-  }
-  
-  // Determine mode and confidence
-  let mode: 'SSR' | 'CSR' | 'HYBRID';
-  let confidence: number;
-  
-  const csrScore = (emptyReactRoot ? 25 : 0) + 
-                   (emptyVueApp ? 25 : 0) + 
-                   (loadingStates ? 20 : 0) + 
-                   (!hasRichContent ? 30 : 0);
-  
-  const ssrScore = (hasSSRContent ? 40 : 0) + 
-                   (hasRichContent ? 30 : 0) + 
-                   (hasStructuredContent ? 20 : 0) + 
-                   (hasSemantic ? 10 : 0);
-  
-  if (csrScore > 50 && ssrScore < 30) {
-    mode = 'CSR';
-    confidence = Math.min(95, csrScore + 20);
-  } else if (ssrScore > 70 && csrScore < 30) {
-    mode = 'SSR';
-    confidence = Math.min(95, ssrScore + 10);
-  } else {
-    mode = 'HYBRID';
-    confidence = Math.abs(ssrScore - csrScore) < 20 ? 60 : 80;
-  }
-  
-  return {
-    mode,
-    confidence,
-    indicators,
-    ssrContent: hasSSRContent,
-    csrWarnings
-  };
-}
+
 
 /**
  * Generates AI-powered diagnostic for a technical issue
@@ -273,7 +147,7 @@ export async function analyzePageWithAEO(pageContent: PageContent): Promise<AEOA
   const recommendations: TechnicalRecommendation[] = [];
   
   // Core technical analysis
-  const contentAnalysis = analyzeContentQuality(pageContent);
+  const contentAnalysis = await analyzeContentQuality(pageContent);
   const technicalAnalysis = analyzeTechnicalHealth(pageContent);
   const mediaAnalysis = analyzeMediaAccessibility(pageContent);
   const schemaAnalysis = analyzeSchemaMarkup(pageContent);
@@ -298,7 +172,14 @@ export async function analyzePageWithAEO(pageContent: PageContent): Promise<AEOA
   }
   
   // Detect rendering mode with enhanced analysis
-  const renderingAnalysis = detectRenderingMode(pageContent.html || '', pageContent.markdown);
+  const renderingDetector = new RenderingDetector();
+  const renderingAnalysis = await renderingDetector.analyzeRenderingMode(
+    pageContent.html || '', 
+    pageContent.url,
+    { 
+      markdown: pageContent.markdown 
+    }
+  );
   const renderingMode = renderingAnalysis.mode;
   
   // Calculate SSR penalty
@@ -404,11 +285,11 @@ export async function analyzePageWithAEO(pageContent: PageContent): Promise<AEOA
 /**
  * Analyzes content quality and readability
  */
-function analyzeContentQuality(page: PageContent): {
+async function analyzeContentQuality(page: PageContent): Promise<{
   score: number;
   issues: TechnicalIssue[];
   recommendations: TechnicalRecommendation[];
-} {
+}> {
   const issues: TechnicalIssue[] = [];
   const recommendations: TechnicalRecommendation[] = [];
   let score = 100;
@@ -521,18 +402,69 @@ function analyzeContentQuality(page: PageContent): {
     score -= 20;
   }
   
-  // Content structure analysis
-  const headingMatches = content.match(/^#{1,6}\s+/gm) || [];
-  if (headingMatches.length === 0) {
+  // Enhanced heading structure analysis using our HTML analyzer
+  const htmlAnalyzer = new EnhancedHTMLAnalyzer();
+  const h1Detection = await htmlAnalyzer.detectH1(
+    page.html || '',
+    page.metadata,
+    page.metadata
+  );
+  
+  const headingAnalysis = await htmlAnalyzer.analyzeHeadingStructure(
+    page.html || '',
+    page.metadata
+  );
+  
+  // H1 specific checks
+  if (!h1Detection.hasH1) {
+    issues.push({
+      severity: 'critical',
+      category: 'seo',
+      title: 'No H1 detected',
+      description: 'Page lacks an H1 heading tag, which is crucial for SEO and content hierarchy',
+      impact: 'Major negative impact on search rankings and AI understanding of page topic',
+      fix_priority: 9,
+      html_snippet: (page.html || '').substring(0, 300),
+      rule_parameters: { 
+        detection_methods_tried: ['dom', 'enhanced-data', 'metadata', 'markdown', 'visual'],
+        all_headings_found: h1Detection.allHeadings 
+      }
+    });
+    score -= 20;
+  } else if (h1Detection.confidence < 0.8) {
     issues.push({
       severity: 'warning',
-      category: 'content',
-      title: 'No heading structure',
-      description: 'Page appears to lack clear heading structure (H1-H6)',
-      impact: 'Poor content organization affects readability and SEO',
-      fix_priority: 6
+      category: 'seo',
+      title: 'H1 detection uncertain',
+      description: `H1 found via ${h1Detection.detectionMethod} method with ${Math.round(h1Detection.confidence * 100)}% confidence: "${h1Detection.h1Text}"`,
+      impact: 'H1 may not be properly recognized by all crawlers',
+      fix_priority: 7,
+      rule_parameters: {
+        detection_method: h1Detection.detectionMethod,
+        confidence: h1Detection.confidence,
+        h1_text: h1Detection.h1Text
+      }
     });
-    score -= 10;
+    score -= 5;
+  }
+  
+  // General heading structure issues
+  if (headingAnalysis.issues.length > 0) {
+    headingAnalysis.issues.forEach(issue => {
+      issues.push({
+        severity: 'warning',
+        category: 'content',
+        title: issue,
+        description: headingAnalysis.recommendations.join('. '),
+        impact: 'Poor content organization affects readability and SEO',
+        fix_priority: 6,
+        rule_parameters: {
+          heading_counts: headingAnalysis.headingCounts,
+          has_proper_hierarchy: headingAnalysis.hasProperHierarchy
+        }
+      });
+    });
+    score -= 5 * headingAnalysis.issues.length;
   }
   
   // AI-friendly content check
