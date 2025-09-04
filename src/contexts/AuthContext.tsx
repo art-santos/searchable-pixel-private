@@ -47,6 +47,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // If this is a public route we can skip attempting to fetch/refresh the session entirely.
     if (isPublicRoute) {
       setLoading(false);
+      setSession(null);
+      setUser(null);
       return; // <-- do NOT call supabase.auth.getUser() on public pages
     }
 
@@ -89,7 +91,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     fetchInitialSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (event: any, session: Session | null) => {
         // Only log auth state changes for non-public routes to reduce noise
         if (!isPublicRoute) {
           console.log(`Auth state change event: ${event}`);

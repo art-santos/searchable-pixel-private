@@ -1,14 +1,11 @@
 import { Button } from "@/components/ui/button"
-import { ChevronDown, Lock } from "lucide-react"
+import { ChevronDown } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { getAllowedTimeframes, hasTimeframeAccess, PlanType } from "@/lib/subscription/config"
-import { useAuth } from "@/contexts/AuthContext"
-import { useState, useEffect } from "react"
 
 export type TimeframeOption =
   | "Last 24 hours"
@@ -31,7 +28,6 @@ interface TimeframeSelectorProps {
   title?: string
   titleColor?: string
   selectorColor?: string
-  userPlan?: PlanType
 }
 
 export function TimeframeSelector({ 
@@ -40,30 +36,7 @@ export function TimeframeSelector({
   title = "Page Views",
   titleColor = "text-gray-600 dark:text-[#A7A7A7]",
   selectorColor = "text-black dark:text-white",
-  userPlan
 }: TimeframeSelectorProps) {
-  const { user } = useAuth()
-  const [currentPlan, setCurrentPlan] = useState<PlanType>('starter')
-  const [allowedTimeframes, setAllowedTimeframes] = useState<TimeframeOption[]>([])
-
-  useEffect(() => {
-    // Use passed userPlan or determine from user
-    const planToUse = userPlan || 'starter' // Default fallback
-    console.log('🔍 [TimeframeSelector] Using plan:', planToUse, 'from userPlan prop:', userPlan)
-    setCurrentPlan(planToUse)
-    const allowed = getAllowedTimeframes(planToUse)
-    console.log('🔍 [TimeframeSelector] Allowed timeframes for plan', planToUse, ':', allowed)
-    setAllowedTimeframes(allowed)
-  }, [user, userPlan])
-
-  // Auto-correct timeframe if current selection is not allowed
-  useEffect(() => {
-    if (allowedTimeframes.length > 0 && !allowedTimeframes.includes(timeframe)) {
-      // Default to the first allowed timeframe
-      onTimeframeChange(allowedTimeframes[0])
-    }
-  }, [allowedTimeframes, timeframe, onTimeframeChange])
-
   return (
     <div className="space-y-1">
       <h3 className={`text-base font-medium ${titleColor}`}>{title}</h3>
@@ -84,24 +57,15 @@ export function TimeframeSelector({
           align="end"
           alignOffset={0}
         >
-          {ALL_TIMEFRAMES.map((option) => {
-            const isAllowed = allowedTimeframes.includes(option)
-            const isSelected = timeframe === option
-            
-            return (
-              <DropdownMenuItem 
-                key={option}
-                className={`hover:bg-gray-100 dark:hover:bg-[#222222] rounded-none flex items-center justify-between ${
-                  !isAllowed ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-                onClick={() => isAllowed && onTimeframeChange(option)}
-                disabled={!isAllowed}
-              >
-                <span className="text-sm">{option}</span>
-                {!isAllowed && <Lock className="h-3 w-3 text-gray-400 dark:text-[#666]" />}
-              </DropdownMenuItem>
-            )
-          })}
+          {ALL_TIMEFRAMES.map((option) => (
+            <DropdownMenuItem 
+              key={option}
+              className="hover:bg-gray-100 dark:hover:bg-[#222222] rounded-none"
+              onClick={() => onTimeframeChange(option)}
+            >
+              <span className="text-sm">{option}</span>
+            </DropdownMenuItem>
+          ))}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

@@ -341,6 +341,4 @@ export default function ResetPasswordPage() {
       </Suspense>
     </ResetPasswordErrorBoundary>
   )
-} /ResetPasswordErrorBoundary>
-  )
 } 

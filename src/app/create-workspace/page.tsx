@@ -155,23 +155,9 @@ export default function CreateWorkspacePage() {
       console.log('⏳ WORKSPACE CREATION: Allowing time for database sync...')
       await new Promise(resolve => setTimeout(resolve, 1000))
 
-      // Check if user is admin (admins skip payment requirement)
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', user.id)
-        .single()
-
-      const isAdmin = profile?.is_admin || false
-
-      // Redirect based on admin status
-      if (isAdmin) {
-        console.log('📍 WORKSPACE CREATION: Admin user - redirecting to dashboard...')
-        router.push('/dashboard')
-      } else {
-        console.log('📍 WORKSPACE CREATION: Regular user - redirecting to payment setup...')
-        router.push('/payment-required')
-      }
+      // Redirect to dashboard for all users
+      console.log('📍 WORKSPACE CREATION: Redirecting to dashboard...')
+      router.push('/dashboard')
 
     } catch (error) {
       console.error('❌ WORKSPACE CREATION: Unexpected error:', error)

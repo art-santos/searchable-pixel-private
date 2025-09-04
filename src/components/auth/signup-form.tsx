@@ -2,19 +2,13 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { motion, AnimatePresence } from "framer-motion"
-import { CheckCircle2, XCircle, AlertCircle, CheckCircle, Lock, Eye, EyeOff } from "lucide-react"
+import { CheckCircle2, XCircle, AlertCircle, Lock, Eye, EyeOff } from "lucide-react"
 
 type NotificationType = "error" | "success" | "info" | null;
-
-interface PasswordRequirement {
-  label: string;
-  met: boolean;
-  regex: RegExp;
-}
 
 interface SignupFormProps {
   className?: string;
@@ -31,44 +25,12 @@ export function SignupForm({
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState(lockedEmail || "")
   const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [notificationType, setNotificationType] = useState<NotificationType>(null)
   const [notificationMessage, setNotificationMessage] = useState<string | null>(null)
-  const [showConfirmPasswordField, setShowConfirmPasswordField] = useState(false)
-  const [passwordRequirements, setPasswordRequirements] = useState<PasswordRequirement[]>([
-    { label: "At least 8 characters", met: false, regex: /^.{8,}$/ },
-    { label: "At least one uppercase letter", met: false, regex: /[A-Z]/ },
-    { label: "At least one lowercase letter", met: false, regex: /[a-z]/ },
-    { label: "At least one number", met: false, regex: /[0-9]/ },
-    { label: "At least one special character", met: false, regex: /[\W_]/ },
-  ])
   const router = useRouter()
   const supabase = createClient()
 
-  // Check password requirements when password changes
-  useEffect(() => {
-    const updatedRequirements = passwordRequirements.map(req => ({
-      ...req,
-      met: req.regex.test(password)
-    }))
-    setPasswordRequirements(updatedRequirements)
-  }, [password])
-
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setPassword(value)
-    
-    // Show confirm password field when user starts typing
-    if (value.length > 0 && !showConfirmPasswordField) {
-      setShowConfirmPasswordField(true)
-    }
-  }
-
-  const isPasswordValid = () => {
-    return passwordRequirements.every(req => req.met)
-  }
 
   const showNotification = (type: NotificationType, message: string) => {
     setNotificationType(type)
@@ -86,15 +48,9 @@ export function SignupForm({
         return
       }
       
-      // Handle signup
-      if (password !== confirmPassword) {
-        showNotification("error", "Passwords don't match")
-        setIsLoading(false)
-        return
-      }
-
-      if (!isPasswordValid()) {
-        showNotification("error", "Password doesn't meet all requirements")
+      // Basic validation - just check password exists
+      if (!password || password.length < 6) {
+        showNotification("error", "Password must be at least 6 characters")
         setIsLoading(false)
         return
       }
@@ -110,42 +66,25 @@ export function SignupForm({
       }
 
       // Check if user was created and signed in
-      if (data.user) {
-        // Welcome email will be sent after workspace setup is complete
+      if (data.user && data.session) {
+        // User is immediately authenticated (no email confirmation required)
+        showNotification("success", "Account created successfully!")
         
         // Call success callback
         onSignupSuccess?.()
         
-        // Wait for auth state to be properly updated
-        // Give the auth context time to update by waiting for the next auth state change
-        // or using a timeout as fallback
-        await new Promise<void>((resolve) => {
-          let resolved = false
-          
-          const authListener = supabase.auth.onAuthStateChange((event, session) => {
-            if (!resolved && session?.user?.id === data.user?.id) {
-              resolved = true
-              authListener.data.subscription.unsubscribe()
-              resolve()
-            }
-          })
-          
-          // Fallback timeout in case the auth state change doesn't fire
-          setTimeout(() => {
-            if (!resolved) {
-              resolved = true
-              authListener.data.subscription.unsubscribe()
-              resolve()
-            }
-          }, 1000)
-        })
-        
-        // Check if user has @split.dev email for admin access
-        if (data.user.email?.endsWith('@split.dev')) {
-          router.push('/admin/verify')
-        } else {
-          router.push('/create-workspace')
-        }
+        // Small delay to show success message, then redirect
+        setTimeout(() => {
+          // Check if user has @split.dev email for admin access
+          if (data.user.email?.endsWith('@split.dev')) {
+            router.push('/admin/verify')
+          } else {
+            router.push('/create-workspace')
+          }
+        }, 1000)
+      } else if (data.user && !data.session) {
+        // Email confirmation required (fallback case)
+        showNotification("info", "Please check your email to verify your account")
       } else {
         showNotification("error", "Failed to create account")
       }
@@ -229,7 +168,7 @@ export function SignupForm({
                   autoComplete="new-password"
                   className="bg-[#161616] border-[#333333] text-white placeholder:text-gray-500 focus:border-white pr-10"
                   value={password}
-                  onChange={handlePasswordChange}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
                 <button
                   type="button"
@@ -240,75 +179,12 @@ export function SignupForm({
                 </button>
               </div>
 
-              {password.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="mt-2"
-                >
-                  <p className="text-xs text-gray-300 mb-1">Password requirements:</p>
-                  <ul className="grid gap-1">
-                    {passwordRequirements.map((req, index) => (
-                      <li key={index} className="flex items-center gap-2 text-xs">
-                        {req.met ? (
-                          <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-                        ) : (
-                          <AlertCircle className="h-3.5 w-3.5 text-red-500" />
-                        )}
-                        <span className={req.met ? "text-green-400" : "text-gray-400"}>
-                          {req.label}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </motion.div>
-              )}
             </div>
-            
-            <AnimatePresence>
-              {showConfirmPasswordField && (
-                <motion.div 
-                  className="grid gap-2"
-                  initial={{ opacity: 0, y: -20, height: 0 }}
-                  animate={{ opacity: 1, y: 0, height: 'auto' }}
-                  exit={{ opacity: 0, y: -20, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Label htmlFor="confirmPassword" className="text-white">Confirm Password</Label>
-                  <div className="relative">
-                    <Input 
-                      id="confirmPassword" 
-                      type={showConfirmPassword ? "text" : "password"}
-                      required
-                      placeholder="••••••••"
-                      autoComplete="new-password"
-                      className={cn(
-                        "bg-[#161616] border-[#333333] text-white placeholder:text-gray-500 focus:border-white pr-10",
-                        confirmPassword && password !== confirmPassword && "border-red-500 focus:border-red-500"
-                      )}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-white"
-                    >
-                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  {confirmPassword && password !== confirmPassword && (
-                    <p className="text-xs text-red-500 mt-1">Passwords don't match</p>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
             
             <Button 
               type="submit" 
               className="w-full bg-white hover:bg-gray-100 text-[#0c0c0c] font-medium transition-colors"
-              disabled={isLoading || !isPasswordValid() || password !== confirmPassword}
+              disabled={isLoading || !email || !password}
             >
               {isLoading 
                 ? "Creating Account..." 

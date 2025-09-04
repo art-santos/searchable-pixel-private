@@ -89,23 +89,16 @@ export default function AuthenticatedLayout({
           
           setOnboardingStatus('complete')
 
-          // Now check payment method status (only for non-admin users)
-          if (!isAdminUser) {
-            checkPaymentMethodStatus()
-          } else {
-            setPaymentStatus('verified') // Admins don't need payment methods
-          }
+          // Skip payment method check - always set as verified
+          setPaymentStatus('verified')
         } else if (profileSaysComplete) {
           // Profile says complete but no workspaces - this is inconsistent
           // but let them proceed (maybe workspaces were deleted)
           console.log('⚠️ Profile says onboarding complete but no workspaces found')
           setOnboardingStatus('complete')
           
-          if (!isAdminUser) {
-            checkPaymentMethodStatus()
-          } else {
-            setPaymentStatus('verified')
-          }
+          // Skip payment method check - always set as verified
+          setPaymentStatus('verified')
         } else {
           // No workspaces and profile says incomplete
           console.log('ℹ️ Onboarding incomplete - no workspaces found')
@@ -121,25 +114,8 @@ export default function AuthenticatedLayout({
       }
     }
 
-    const checkPaymentMethodStatus = async () => {
-      try {
-        const response = await fetch('/api/payment-method/verify')
-        if (response.ok) {
-          const data = await response.json()
-          if (data.verified || data.isAdmin || !data.requiresPaymentMethod) {
-            setPaymentStatus('verified')
-          } else {
-            setPaymentStatus('required')
-          }
-        } else {
-          // If API call fails, require payment method to be safe
-          setPaymentStatus('required')
-        }
-      } catch (error) {
-        console.error('❌ Error checking payment method status:', error)
-        setPaymentStatus('required')
-      }
-    }
+    // Payment method check disabled - all users bypass payment requirements
+    // const checkPaymentMethodStatus = async () => { ... }
 
     checkOnboarding()
 

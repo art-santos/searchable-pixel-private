@@ -8,7 +8,6 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { CheckCircle2, XCircle, X } from 'lucide-react'
 import { AttributionBySourceWhiteCard } from "./components/attribution-by-source-white-card"
-import { HelpCenterWhiteCard } from "./components/help-center-white-card"
 import { LeadsWhiteCard } from "./components/leads-white-card"
 
 export default function Dashboard() {
@@ -137,20 +136,7 @@ export default function Dashboard() {
         animate="visible"
         variants={containerVariants}
       >
-        {/* Payment Verification Banner */}
-        {isVerifyingPayment && (
-          <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-4 py-3 rounded-lg border flex items-center gap-3 bg-blue-900/20 border-blue-500/30 text-blue-300"
-          >
-            <div className="w-5 h-5 animate-spin rounded-full border-2 border-blue-500/30 border-t-blue-500" />
-            <span className="text-sm font-medium">
-              Verifying payment...
-            </span>
-          </motion.div>
-        )}
+       
 
         {/* Setup Status Banner */}
         {setupStatus && !isVerifyingPayment && (
@@ -217,13 +203,7 @@ export default function Dashboard() {
             <AttributionBySourceWhiteCard />
           </motion.div>
 
-          {/* Help Center Card */}
-          <motion.div 
-            variants={cardVariants}
-            className="lg:col-span-4 lg:row-span-1 h-[43vh] lg:h-[43vh] min-h-[350px] bg-white rounded-sm border border-gray-200 overflow-hidden"
-          >
-            <HelpCenterWhiteCard />
-          </motion.div>
+          
         </div>
       </motion.main>
 

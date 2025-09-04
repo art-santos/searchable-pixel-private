@@ -12,10 +12,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 // Removed inter import
 // Remove Footer import - it's handled in the (main) layout
 
-// Import debug utilities in development
-if (process.env.NODE_ENV === 'development') {
-  import('@/lib/debug/workspace-debug')
-}
+
 
 export const metadata: Metadata = {
   title: "Split | LLM-Search Lead Attribution for Marketing Teams",
@@ -170,7 +167,7 @@ export default function RootLayout({
             </AuthProvider>
           </ThemeProvider>
         </GlobalErrorBoundary>
-        <SpeedInsights />
+        <SpeedInsights debug={false} />
       </body>
     </html>
   );

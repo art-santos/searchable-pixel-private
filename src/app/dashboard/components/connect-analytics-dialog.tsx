@@ -12,7 +12,8 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { InstallationGuide } from '@/components/ai-crawler/installation-guide'
+
+
 import { Search, HelpCircle, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 

@@ -65,204 +65,9 @@ export async function saveOnboardingData(
       console.error('❌ Invalid domain provided:', cleanDomain)
       return { success: false, error: 'Invalid domain provided' }
     }
-    
-    // 1. Create/Update user profile with comprehensive data
-    const profileData: TablesInsert<'profiles'> = {
-      id: user.id,
-      email: onboardingData.userEmail,
-      first_name: onboardingData.userName || onboardingData.profileData?.first_name || onboardingData.userEmail.split('@')[0],
-      last_name: onboardingData.profileData?.last_name || null,
-      workspace_name: onboardingData.workspaceName,
-      domain: cleanDomain, // Associate profile with domain
-      team_size: onboardingData.profileData?.team_size ? parseInt(onboardingData.profileData.team_size) : null,
-      created_by: user.id,
-      updated_by: user.id,
-      onboarding_completed: false, // Will be set to true after workspace setup
-      onboarding_completed_at: null,
-      // Initialize usage tracking fields
-      monthly_articles_used: 0,
-      monthly_scans_used: 0,
-      monthly_snapshots_used: 0,
-      last_articles_reset_at: new Date().toISOString(),
-      last_scan_reset_at: new Date().toISOString(),
-      last_snapshot_reset_at: new Date().toISOString(),
-      // Set default subscription fields
-      subscription_plan: null,
-      subscription_status: 'active',
-    }
 
-    console.log('👤 Upserting profile for user:', user.id)
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .upsert(profileData)
-
-    if (profileError) {
-      console.error('❌ Error saving profile:', profileError)
-      return { success: false, error: `Failed to save profile: ${profileError.message}` }
-    }
-    console.log('✅ Profile saved successfully')
-
-    // 2. Create company entry using workspace name and domain
-    let domainUrl = onboardingData.domain
-    
-    // Ensure proper URL format
-    if (!domainUrl.startsWith('http')) {
-      domainUrl = `https://${domainUrl}`
-    }
-    
-    // Clean up domain (remove trailing slashes, etc.)
-    try {
-      const url = new URL(domainUrl)
-      domainUrl = `${url.protocol}//${url.hostname}`
-    } catch (e) {
-      // If URL parsing fails, use as-is
-    }
-
-    console.log('🏢 Checking for existing company for user:', user.id)
-    
-    // First, check if user already has a company
-    const { data: existingCompany, error: checkError } = await supabase
-      .from('companies')
-      .select('id, company_name, root_url')
-      .eq('submitted_by', user.id)
-      .limit(1)
-      .single()
-    
-    if (existingCompany && !checkError) {
-      console.log('✅ Found existing company:', existingCompany)
-      
-      // Check if we should update the company with new information
-      const newCompanyName = onboardingData.profileData?.company_name?.trim() || onboardingData.workspaceName
-      const needsUpdate = existingCompany.company_name !== newCompanyName || existingCompany.root_url !== domainUrl
-      
-      if (needsUpdate) {
-        console.log('🔄 Updating existing company with new information')
-        const { error: updateError } = await supabase
-          .from('companies')
-          .update({
-            company_name: newCompanyName,
-            root_url: domainUrl,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingCompany.id)
-        
-        if (updateError) {
-          console.warn('⚠️ Warning: Could not update company:', updateError)
-          // Don't fail the entire onboarding for this
-        } else {
-          console.log('✅ Company updated successfully')
-        }
-      }
-      
-      // Also check for existing workspace
-      const { data: existingWorkspace } = await supabase
-        .from('workspaces')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('is_primary', true)
-        .single()
-      
-      // 5. Mark onboarding as completed (before early return)
-      console.log('🎯 Marking onboarding as completed...')
-      const { error: completionError } = await supabase
-        .from('profiles')
-        .update({
-          onboarding_completed: true,
-          onboarding_completed_at: new Date().toISOString(),
-          updated_by: user.id
-        })
-        .eq('id', user.id)
-      
-      if (completionError) {
-        console.error('⚠️ Warning: Could not mark onboarding as completed:', completionError)
-        // Don't fail for this
-      } else {
-        console.log('✅ Onboarding marked as completed')
-      }
-      
-      return { 
-        success: true, 
-        companyId: existingCompany.id,
-        workspaceId: existingWorkspace?.id
-      }
-    }
-    
-    // No existing company found, create a new one
-    // Use company_name from profileData if available, otherwise fall back to workspaceName
-    const companyName = onboardingData.profileData?.company_name?.trim() || onboardingData.workspaceName
-    
-    const companyData: TablesInsert<'companies'> = {
-      company_name: companyName,
-      root_url: domainUrl,
-      submitted_by: user.id,
-    }
-
-    console.log('🏢 Creating new company:', companyName)
-    console.log('🏢 Company data:', companyData)
-    const { data: companyResult, error: companyError } = await supabase
-      .from('companies')
-      .insert(companyData)
-      .select('id')
-      .single()
-
-    if (companyError) {
-      console.error('❌ Error creating company:', companyError)
-      
-      // If insert failed due to duplicate, try to find the existing one
-      if (companyError.code === '23505') { // Unique constraint violation
-        console.log('🔍 Duplicate detected, finding existing company...')
-        const { data: foundCompany, error: findError } = await supabase
-          .from('companies')
-          .select('id')
-          .eq('submitted_by', user.id)
-          .limit(1)
-          .single()
-        
-        if (foundCompany && !findError) {
-          console.log('✅ Found existing company after duplicate error:', foundCompany.id)
-          
-          // Also check for existing workspace
-          const { data: existingWorkspace } = await supabase
-            .from('workspaces')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('is_primary', true)
-            .single()
-          
-          // Mark onboarding as completed (before early return)
-          console.log('🎯 Marking onboarding as completed...')
-          const { error: completionError } = await supabase
-            .from('profiles')
-            .update({
-              onboarding_completed: true,
-              onboarding_completed_at: new Date().toISOString(),
-              updated_by: user.id
-            })
-            .eq('id', user.id)
-          
-          if (completionError) {
-            console.error('⚠️ Warning: Could not mark onboarding as completed:', completionError)
-            // Don't fail for this
-          } else {
-            console.log('✅ Onboarding marked as completed')
-          }
-          
-          return { 
-            success: true, 
-            companyId: foundCompany.id,
-            workspaceId: existingWorkspace?.id
-          }
-        }
-      }
-      
-      return { success: false, error: `Failed to save company: ${companyError.message}` }
-    }
-    
-    console.log('✅ Company created successfully with ID:', companyResult.id)
-    const companyId = companyResult.id
-
-    // 3. Create or update workspace record - CRITICAL FOR NEW USERS
-    console.log('🏢 Creating/updating workspace for user:', user.id)
+    // 1. Create primary workspace FIRST (source of truth for domain/workspace data)
+    console.log('🏢 Creating primary workspace for user:', user.id)
     
     // Check if user already has a primary workspace
     const { data: existingWorkspace, error: workspaceCheckError } = await supabase
@@ -272,6 +77,8 @@ export async function saveOnboardingData(
       .eq('is_primary', true)
       .single()
     
+    let workspaceId: string
+    
     if (existingWorkspace && !workspaceCheckError) {
       console.log('✅ Found existing primary workspace:', existingWorkspace)
       
@@ -280,8 +87,7 @@ export async function saveOnboardingData(
         .from('workspaces')
         .update({
           domain: cleanDomain,
-          workspace_name: onboardingData.workspaceName,
-          updated_at: new Date().toISOString()
+          workspace_name: onboardingData.workspaceName
         })
         .eq('id', existingWorkspace.id)
       
@@ -290,6 +96,7 @@ export async function saveOnboardingData(
         return { success: false, error: `Failed to update workspace: ${updateError.message}` }
       }
       
+      workspaceId = existingWorkspace.id
       console.log('✅ Workspace updated successfully')
     } else {
       // Create new primary workspace
@@ -334,6 +141,7 @@ export async function saveOnboardingData(
               return { success: false, error: `Failed to set workspace as primary: ${makePrimaryError.message}` }
             }
             
+            workspaceId = foundWorkspace.id
             console.log('✅ Existing workspace set as primary')
           } else {
             return { success: false, error: `Failed to create workspace: ${createError.message}` }
@@ -342,99 +150,134 @@ export async function saveOnboardingData(
           return { success: false, error: `Failed to create workspace: ${createError.message}` }
         }
       } else {
+        workspaceId = newWorkspace.id
         console.log('✅ New primary workspace created with ID:', newWorkspace.id)
       }
     }
+    
+    // 2. Create/Update user profile (workspace trigger will sync domain/workspace_name)
+    const profileData: TablesInsert<'profiles'> = {
+      id: user.id,
+      email: onboardingData.userEmail,
+      first_name: onboardingData.userName || onboardingData.profileData?.first_name || onboardingData.userEmail.split('@')[0],
+      last_name: onboardingData.profileData?.last_name || null,
+      team_size: onboardingData.profileData?.team_size ? parseInt(onboardingData.profileData.team_size) : null,
+      created_by: user.id,
+      updated_by: user.id,
+      workspace_id: workspaceId, // Link to the workspace we just created/updated
+      onboarding_completed: false, // Will be set to true after workspace setup
+      onboarding_completed_at: null,
+      // Initialize usage tracking fields (defaults will be set by database)
+      monthly_articles_used: 0,
+      monthly_scans_used: 0,
+      monthly_snapshots_used: 0,
+      // Set default subscription fields (database will set defaults for timestamps)
+      subscription_plan: null,
+      subscription_status: 'active',
+    }
 
-    // 4. Initialize comprehensive subscription system (non-blocking)
-    console.log('💳 Initializing subscription system for user:', user.id)
+    console.log('👤 Upserting profile for user:', user.id)
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .upsert(profileData)
+
+    if (profileError) {
+      console.error('❌ Error saving profile:', profileError)
+      return { success: false, error: `Failed to save profile: ${profileError.message}` }
+    }
+    console.log('✅ Profile saved successfully')
+
+    // 3. Create company entry using workspace name and domain (optional, non-blocking)
+    let companyId: string | undefined
     
     try {
-      // First check if subscription_info already exists
-      const { data: existingSubscription } = await supabase
-        .from('subscription_info')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
+      let domainUrl = onboardingData.domain
       
-      if (!existingSubscription) {
-        // Create new subscription_info record
-        const subscriptionData: TablesInsert<'subscription_info'> = {
-          user_id: user.id,
-          plan_type: 'starter',
-          plan_status: 'active',
-          current_period_start: new Date().toISOString(),
-          current_period_end: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
-          domains_included: 1,
-          domains_used: 1, // Count the primary domain
-          workspaces_included: 1,
-          workspaces_used: 1, // Count the primary workspace
-          team_members_included: 1,
-          team_members_used: 1, // Count the user themselves
-          ai_logs_included: 1000,
-          ai_logs_used: 0,
-                // Removed: Add-ons no longer supported
-          cancel_at_period_end: false,
-        }
-        
-        const { error: subscriptionError } = await supabase
-          .from('subscription_info')
-          .insert(subscriptionData)
-
-        if (subscriptionError && subscriptionError.code !== '23505') {
-          console.warn('⚠️ Warning: Could not create subscription_info (will be created later):', subscriptionError.message)
-          // Note: Not returning error - subscription will be created lazily when needed
-        } else {
-          console.log('✅ Subscription info created successfully')
-        }
+      // Ensure proper URL format
+      if (!domainUrl.startsWith('http')) {
+        domainUrl = `https://${domainUrl}`
+      }
+      
+      // Clean up domain (remove trailing slashes, etc.)
+      try {
+        const url = new URL(domainUrl)
+        domainUrl = `${url.protocol}//${url.hostname}`
+      } catch (e) {
+        // If URL parsing fails, use as-is
       }
 
-      // Initialize subscription usage tracking (separate table for billing periods)
-      const { data: existingUsage } = await supabase
-        .from('subscription_usage')
-        .select('id')
-        .eq('user_id', user.id)
-        .gte('billing_period_end', new Date().toISOString())
+      console.log('🏢 Checking for existing company for user:', user.id)
+      
+      // First, check if user already has a company
+      const { data: existingCompany, error: checkError } = await supabase
+        .from('companies')
+        .select('id, company_name, root_url')
+        .eq('submitted_by', user.id)
+        .limit(1)
         .single()
       
-      if (!existingUsage) {
-        const usageData: TablesInsert<'subscription_usage'> = {
-          user_id: user.id,
-          plan_type: 'starter',
-          plan_status: 'active',
-          billing_period_start: new Date().toISOString(),
-          billing_period_end: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
-          next_billing_date: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
-          domains_included: 1,
-          domains_used: 1, // Count the primary domain
-          domains_purchased: 0,
-          ai_logs_included: 1000,
-          ai_logs_used: 0,
-          article_credits_included: 0,
-          article_credits_used: 0,
-          article_credits_purchased: 0,
-          daily_scans_used: 0,
-          max_scans_used: 0,
-          overage_amount_cents: 0,
-          overage_blocked: false,
-        }
+      if (existingCompany && !checkError) {
+        console.log('✅ Found existing company:', existingCompany)
+        companyId = existingCompany.id
         
-        const { error: usageError } = await supabase
-          .from('subscription_usage')
-          .insert(usageData)
+        // Check if we should update the company with new information
+        const newCompanyName = onboardingData.profileData?.company_name?.trim() || onboardingData.workspaceName
+        const needsUpdate = existingCompany.company_name !== newCompanyName || existingCompany.root_url !== domainUrl
+        
+        if (needsUpdate) {
+          console.log('🔄 Updating existing company with new information')
+          const { error: updateError } = await supabase
+            .from('companies')
+            .update({
+              company_name: newCompanyName,
+              root_url: domainUrl
+            })
+            .eq('id', existingCompany.id)
+          
+          if (updateError) {
+            console.warn('⚠️ Warning: Could not update company:', updateError)
+            // Don't fail the entire onboarding for this
+          } else {
+            console.log('✅ Company updated successfully')
+          }
+        }
+      } else {
+        // No existing company found, create a new one
+        const companyName = onboardingData.profileData?.company_name?.trim() || onboardingData.workspaceName
+        
+        const companyData: TablesInsert<'companies'> = {
+          company_name: companyName,
+          root_url: domainUrl,
+          submitted_by: user.id,
+        }
 
-        if (usageError && usageError.code !== '23505') {
-          console.warn('⚠️ Warning: Could not create subscription_usage (will be created later):', usageError.message)
-          // Note: Not returning error - subscription will be created lazily when needed
+        console.log('🏢 Creating new company:', companyName)
+        const { data: companyResult, error: companyError } = await supabase
+          .from('companies')
+          .insert(companyData)
+          .select('id')
+          .single()
+
+        if (companyError) {
+          console.warn('⚠️ Warning: Could not create company:', companyError)
+          // Don't fail the entire onboarding for this - company creation is optional
         } else {
-          console.log('✅ Subscription usage tracking initialized')
+          console.log('✅ Company created successfully with ID:', companyResult.id)
+          companyId = companyResult.id
         }
       }
-    } catch (subscriptionInitError) {
-      console.warn('⚠️ Warning: Subscription initialization failed during onboarding (will be initialized later):', subscriptionInitError)
-      // Don't fail the entire onboarding process for subscription initialization issues
-      // The subscription system has triggers and functions that will initialize it when needed
+    } catch (error) {
+      console.warn('⚠️ Warning: Company operations failed, continuing without company:', error)
+      // Company creation is optional - don't fail the entire onboarding
     }
+
+    // Workspace already created in step 1, so we skip this duplicate section
+
+    // 4. Initialize subscription system (skipped - tables don't exist yet)
+    console.log('💳 Skipping subscription initialization - tables not implemented yet')
+    
+    // TODO: Uncomment when subscription_info and subscription_usage tables are created
+    // This is optional and should not block user onboarding
 
     // 5. Mark onboarding as completed
     console.log('🎯 Marking onboarding as completed...')
@@ -442,8 +285,7 @@ export async function saveOnboardingData(
       .from('profiles')
       .update({
         onboarding_completed: true,
-        onboarding_completed_at: new Date().toISOString(),
-        updated_by: user.id
+        onboarding_completed_at: new Date().toISOString()
       })
       .eq('id', user.id)
     
@@ -454,19 +296,11 @@ export async function saveOnboardingData(
       console.log('✅ Onboarding marked as completed')
     }
 
-    // Get the workspace ID to return
-    const { data: finalWorkspace } = await supabase
-      .from('workspaces')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('is_primary', true)
-      .single()
-    
     console.log('🎉 Onboarding data save completed successfully')
     return { 
       success: true, 
       companyId,
-      workspaceId: finalWorkspace?.id
+      workspaceId: workspaceId
     }
 
   } catch (error) {
