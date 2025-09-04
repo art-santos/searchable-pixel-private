@@ -81,28 +81,7 @@ export default function SignupPage() {
           </div>
         </div>
       </div>
-      <div className="relative hidden lg:block bg-[#0c0c0c] overflow-hidden">
-        <div className="absolute inset-0 pattern-grid opacity-10"></div>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Image 
-            src="/images/signup.png" 
-            fill
-            alt="Signup" 
-            className="object-cover filter grayscale brightness-50"
-            priority
-          />
-        </div>
-        <div className="absolute bottom-8 left-0 right-0 text-center">
-        </div>
-      </div>
-
-      <style jsx>{`
-        .pattern-grid {
-          background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-                            linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-          background-size: 30px 30px;
-        }
-      `}</style>
+      
     </div>
   )
 } 

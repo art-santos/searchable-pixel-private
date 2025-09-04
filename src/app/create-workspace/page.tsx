@@ -286,16 +286,7 @@ export default function CreateWorkspacePage() {
       </div>
       
       {/* Right side - Visual/Branding */}
-      <div className="hidden lg:block bg-grid-small-white/[0.05] relative">
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0c0c0c] to-transparent"></div>
-        <div className="flex flex-col items-center justify-center h-full p-8">
-          <img 
-            src="/images/signup.png" 
-            alt="Split signup illustration" 
-            className="max-w-full max-h-full object-contain"
-          />
-        </div>
-      </div>
+      
     </div>
   )
 } 

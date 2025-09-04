@@ -274,19 +274,32 @@ export async function GET(
         // Insert into database (non-blocking)
         const insertVisit = async () => {
           try {
-            const { error } = await supabaseServiceRole
+            const { data, error } = await supabaseServiceRole
               .from('crawler_visits')
               .insert(crawlerVisit)
-            
+              .select();
+
             if (error) {
-              console.error(`[Tracking Pixel ${requestId}] ❌ Failed to insert visit:`, error)
+              console.error(`[Tracking Pixel ${requestId}] ❌ Failed to insert visit:`, error);
             } else {
-              console.log(`[Tracking Pixel ${requestId}] ✅ Successfully tracked ${crawlerInfo.name} visit`)
+              console.log(`[Tracking Pixel ${requestId}] ✅ Successfully tracked ${crawlerInfo.name} visit`);
+              if (data && data.length > 0) {
+                const channel = supabaseServiceRole.channel(`workspace-${workspace.id}`);
+                channel.subscribe((status) => {
+                  if (status === 'SUBSCRIBED') {
+                    channel.send({
+                      type: 'broadcast',
+                      event: 'new_visit',
+                      payload: { visit: data[0] },
+                    });
+                  }
+                });
+              }
             }
           } catch (err: any) {
-            console.error(`[Tracking Pixel ${requestId}] ❌ Database error:`, err)
+            console.error(`[Tracking Pixel ${requestId}] ❌ Database error:`, err);
           }
-        }
+        };
         
         // Execute insert without blocking response
         insertVisit()

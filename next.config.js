@@ -27,4 +27,11 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig 
+module.exports = { ...nextConfig,
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.alias['ws'] = false;
+    }
+    return config;
+  }
+} 

@@ -141,53 +141,31 @@ function ResetPasswordForm() {
 
   if (resetComplete) {
     return (
-      <div className="grid min-h-svh lg:grid-cols-2">
-        <div className="flex flex-col gap-4 p-6 md:p-10 bg-[#0c0c0c] text-white">
-          <div className="flex justify-center gap-2 md:justify-start">
+      <div className="flex items-center justify-center min-h-svh bg-[#0c0c0c] text-white">
+        <div className="w-full max-w-md text-center">
+          <div className="flex justify-center mb-4">
             <Link href="/" className="flex items-center gap-2 font-medium">
               <Image src="/images/split-icon-white.svg" width={36} height={36} alt="Split Logo" />
             </Link>
           </div>
-          <div className="flex flex-1 items-center justify-center">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="w-full max-w-md text-center"
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+          >
+            <h1 className="text-2xl font-bold text-white mb-2">
+              Password Reset Complete!
+            </h1>
+            <p className="text-gray-400 mb-6">
+              Your password has been successfully updated. You can now sign in with your new password.
+            </p>
+            <Button 
+              onClick={() => router.push('/login')}
+              className="w-full bg-white hover:bg-gray-100 text-[#0c0c0c] font-medium"
             >
-              <h1 className="text-2xl font-bold text-white mb-2">
-                Password Reset Complete!
-              </h1>
-              <p className="text-gray-400 mb-6">
-                Your password has been successfully updated. You can now sign in with your new password.
-              </p>
-              <Button 
-                onClick={() => router.push('/login')}
-                className="w-full bg-white hover:bg-gray-100 text-[#0c0c0c] font-medium"
-              >
-                Go to Sign In
-              </Button>
-            </motion.div>
-          </div>
+              Go to Sign In
+            </Button>
+          </motion.div>
         </div>
-        <div className="relative hidden lg:block bg-[#0c0c0c] overflow-hidden">
-          <div className="absolute inset-0 pattern-grid opacity-10"></div>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Image 
-              src="/images/signup.png" 
-              fill
-              alt="Signup" 
-              className="object-cover filter grayscale brightness-50"
-              priority
-            />
-          </div>
-        </div>
-        <style jsx>{`
-          .pattern-grid {
-            background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-            background-size: 30px 30px;
-          }
-        `}</style>
       </div>
     )
   }
@@ -362,5 +340,7 @@ export default function ResetPasswordPage() {
         <ResetPasswordForm />
       </Suspense>
     </ResetPasswordErrorBoundary>
+  )
+} /ResetPasswordErrorBoundary>
   )
 } 
