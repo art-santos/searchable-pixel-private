@@ -43,7 +43,7 @@ The following functionalities, files, and dependencies are **required** for the 
 *   `next`, `react`, `react-dom`
 *   `recharts`, `@tanstack/react-table` (for the dashboard)
 *   `resend`, `nodemailer` (highly recommended for sending verification and password reset emails)
-*   `zod`, `react-hook-form` (for form validation)
+*   `zod`, `react-hook-form` (for form validation), `tailwind` All tailwind must remain
 
 ---
 

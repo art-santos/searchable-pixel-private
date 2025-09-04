@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Custom Scrollbar Styles */
 /* Global scrollbar for all elements */
 ::-webkit-scrollbar {
@@ -51,10 +55,6 @@
   scrollbar-width: thin; /* "thin" or "auto" or "none" */
   scrollbar-color: #4a4a4a #1f1f1f; /* thumb track */
 }
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 body {
   background-color: #0c0c0c;
