@@ -181,7 +181,7 @@ export function MaxInsightsCard() {
     visible: { 
       opacity: 1, 
       y: 0,
-      transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] }
+      transition: { duration: 0.4, ease: [0.42, 0, 0.58, 1] }
     }
   }
 
@@ -199,28 +199,46 @@ export function MaxInsightsCard() {
 
   if (isLoading) {
     return (
-      <Card className="bg-[#111111] border-[#222222] h-full">
-        <CardContent className="flex items-center justify-center h-full">
-          <div className="flex items-center space-x-2">
-            <Sparkles className="h-4 w-4 animate-pulse text-yellow-500" />
-            <span className="text-[#666] text-sm">Loading MAX insights...</span>
-          </div>
-        </CardContent>
-      </Card>
+      <motion.div
+        key="loading-state"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        className="h-full"
+      >
+        <Card className="bg-[#111111] border-[#222222] h-full">
+          <CardContent className="flex items-center justify-center h-full">
+            <div className="flex items-center space-x-2">
+              <Sparkles className="h-4 w-4 animate-pulse text-yellow-500" />
+              <span className="text-[#666] text-sm">Loading MAX insights...</span>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
     )
   }
 
   if (!insightsData) {
     return (
-      <Card className="bg-[#111111] border-[#222222] h-full">
-        <CardContent className="flex flex-col items-center justify-center h-full space-y-4">
-          <AlertTriangle className="h-8 w-8 text-yellow-500" />
-          <div className="text-center">
-            <p className="text-white font-medium">MAX Insights</p>
-            <p className="text-[#666] text-sm mt-1">Unable to load insights data</p>
-          </div>
-        </CardContent>
-      </Card>
+      <motion.div
+        key="error-state"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.2 }}
+        className="h-full"
+      >
+        <Card className="bg-[#111111] border-[#222222] h-full">
+          <CardContent className="flex flex-col items-center justify-center h-full space-y-4">
+            <AlertTriangle className="h-8 w-8 text-yellow-500" />
+            <div className="text-center">
+              <p className="text-white font-medium">MAX Insights</p>
+              <p className="text-[#666] text-sm mt-1">Unable to load insights data</p>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
     )
   }
 
@@ -253,7 +271,12 @@ export function MaxInsightsCard() {
       <Card className="bg-[#111111] border-[#222222] h-full">
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3, ease: [0.42, 0, 0.58, 1] }}
+              className="flex items-center space-x-2"
+            >
               <Sparkles className="h-5 w-5 text-yellow-500" />
               <h2 className="text-white font-semibold">MAX Insights</h2>
               {hasMaxAccess && (
@@ -261,16 +284,22 @@ export function MaxInsightsCard() {
                   ACTIVE
                 </Badge>
               )}
-            </div>
+            </motion.div>
             {!hasMaxAccess && (
-              <Button
-                size="sm"
-                onClick={() => setShowUpgradeDetails(!showUpgradeDetails)}
-                className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium"
+              <motion.div
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2, duration: 0.3, ease: [0.42, 0, 0.58, 1] }}
               >
-                <Unlock className="h-3 w-3 mr-1" />
-                Unlock
-              </Button>
+                <Button
+                  size="sm"
+                  onClick={() => setShowUpgradeDetails(!showUpgradeDetails)}
+                  className="bg-yellow-500 hover:bg-yellow-600 text-black font-medium"
+                >
+                  <Unlock className="h-3 w-3 mr-1" />
+                  Unlock
+                </Button>
+              </motion.div>
             )}
           </div>
         </CardHeader>
@@ -278,7 +307,15 @@ export function MaxInsightsCard() {
         <CardContent className="space-y-6">
           {/* MAX Users: Show Insights */}
           {hasMaxAccess && insightsData.insights.length > 0 && (
-            <div className="space-y-3">
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={{
+                hidden: { opacity: 0 },
+                visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+              }}
+              className="space-y-3"
+            >
               <h3 className="text-white font-semibold text-sm">Recent Insights</h3>
               <div className="space-y-2">
                 {insightsData.insights.slice(0, 3).map((insight, index) => {
@@ -316,6 +353,7 @@ export function MaxInsightsCard() {
                                   initial={{ opacity: 0, height: 0 }}
                                   animate={{ opacity: 1, height: 'auto' }}
                                   exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.2, ease: [0.42, 0, 0.58, 1] }}
                                   className="space-y-2 pt-2 border-t border-[#333]"
                                 >
                                   <div className="flex items-center justify-between text-xs">
@@ -345,41 +383,59 @@ export function MaxInsightsCard() {
                             </AnimatePresence>
                           </div>
                         </div>
-                        <ChevronRight className={`h-4 w-4 text-[#666] transition-transform ${
-                          expandedInsight === insight.id ? 'rotate-90' : ''
-                        }`} />
+                        <ChevronRight className={`h-4 w-4 text-[#666] transition-transform ${ (expandedInsight === insight.id ? 'rotate-90' : '' ) }`} />
                       </div>
                     </motion.div>
                   )
                 })}
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* MAX Users: Usage Stats */}
           {hasMaxAccess && (
-            <div className="space-y-3">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.4, ease: [0.42, 0, 0.58, 1] }}
+              className="space-y-3"
+            >
               <h3 className="text-white font-semibold text-sm">MAX Impact</h3>
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-[#0a0a0a] border border-[#222] rounded-lg p-3 text-center">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6, duration: 0.3, ease: [0.42, 0, 0.58, 1] }}
+                  className="bg-[#0a0a0a] border border-[#222] rounded-lg p-3 text-center"
+                >
                   <div className="text-xl font-bold text-yellow-500">
                     {insightsData.usage_stats.insights_generated}
                   </div>
                   <div className="text-[#666] text-xs">Insights Generated</div>
-                </div>
-                <div className="bg-[#0a0a0a] border border-[#222] rounded-lg p-3 text-center">
+                </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7, duration: 0.3, ease: [0.42, 0, 0.58, 1] }}
+                  className="bg-[#0a0a0a] border border-[#222] rounded-lg p-3 text-center"
+                >
                   <div className="text-xl font-bold text-blue-400">
                     {insightsData.usage_stats.data_sources_analyzed}
                   </div>
                   <div className="text-[#666] text-xs">Data Sources</div>
-                </div>
+                </motion.div>
               </div>
-            </div>
+            </motion.div>
           )}
 
           {/* Lite Users: Upgrade Promotion */}
           {!hasMaxAccess && (
-            <div className="space-y-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.4, ease: [0.42, 0, 0.58, 1] }}
+              className="space-y-4"
+            >
               <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20 rounded-lg p-4 space-y-3">
                 <div className="flex items-center space-x-2">
                   <Rocket className="h-5 w-5 text-yellow-500" />
@@ -419,12 +475,27 @@ export function MaxInsightsCard() {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3, ease: [0.42, 0, 0.58, 1] }}
                     className="space-y-3"
                   >
                     <h4 className="text-white font-semibold text-sm">What You'll Get</h4>
-                    <div className="space-y-2">
+                    <motion.div
+                      initial="hidden"
+                      animate="visible"
+                      variants={{
+                        hidden: { opacity: 0 },
+                        visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+                      }}
+                      className="space-y-2"
+                    >
                       {insightsData.upgrade_features.map((feature, index) => (
-                        <div key={feature.feature_name} className="bg-[#0a0a0a] border border-[#222] rounded-lg p-3">
+                        <motion.div 
+                          key={feature.feature_name}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05, duration: 0.2, ease: [0.42, 0, 0.58, 1] }}
+                          className="bg-[#0a0a0a] border border-[#222] rounded-lg p-3"
+                        >
                           <div className="flex items-center space-x-2 mb-2">
                             <Star className="h-4 w-4 text-yellow-500" />
                             <span className="text-white font-medium text-sm">{feature.feature_name}</span>
@@ -438,25 +509,38 @@ export function MaxInsightsCard() {
                             <span className="text-[#666]">With MAX:</span>
                             <span className="text-green-400">{feature.max_capability}</span>
                           </div>
-                        </div>
+                        </motion.div>
                       ))}
-                    </div>
+                    </motion.div>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              <Button 
-                className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-medium"
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: (insightsData.upgrade_features.length * 0.05) + 0.5, duration: 0.3, ease: [0.42, 0, 0.58, 1] }}
               >
-                Upgrade to MAX
-                <ArrowUpRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
+                <Button 
+                  className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-medium"
+                >
+                  Upgrade to MAX
+                  <ArrowUpRight className="h-4 w-4 ml-1" />
+                </Button>
+              </motion.div>
+            </motion.div>
           )}
 
           {/* MAX Users: No Insights State */}
           {hasMaxAccess && insightsData.insights.length === 0 && (
-            <div className="text-center space-y-3 py-6">
+            <motion.div
+              key="no-insights-state"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="text-center space-y-3 py-6"
+            >
               <Brain className="h-12 w-12 text-[#666] mx-auto" />
               <div>
                 <p className="text-white font-medium">AI Analysis in Progress</p>
@@ -471,7 +555,7 @@ export function MaxInsightsCard() {
               >
                 View Analysis Status
               </Button>
-            </div>
+            </motion.div>
           )}
         </CardContent>
       </Card>

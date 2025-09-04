@@ -11,7 +11,6 @@ import {
 import { ConnectAnalyticsDialog } from "./connect-analytics-dialog"
 import { useAuth } from "@/contexts/AuthContext"
 import { useWorkspace } from "@/contexts/WorkspaceContext"
-import { PlanType } from "@/lib/subscription/config"
 import { ListSkeleton } from "@/components/skeletons"
 
 interface CrawlerData {
@@ -34,8 +33,6 @@ export function AttributionBySourceCard() {
   const [totalCrawls, setTotalCrawls] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [userPlan, setUserPlan] = useState<PlanType>('starter')
-  const [userPlanLoading, setUserPlanLoading] = useState(true)
 
   // Helper to get favicon URL for unknown crawlers
   const getFaviconForCrawler = (company: string) => {
@@ -86,34 +83,6 @@ export function AttributionBySourceCard() {
     return `https://www.google.com/s2/favicons?domain=${constructedDomain}&sz=128`
   }
 
-  // Fetch user subscription plan
-  useEffect(() => {
-    const fetchUserPlan = async () => {
-      try {
-        const response = await fetch('/api/user/subscription')
-        if (response.ok) {
-          const data = await response.json()
-          const plan = data.subscriptionPlan || 'starter'
-          console.log('🔍 [AttributionBySourceCard] Fetched user plan:', plan, 'isAdmin:', data.isAdmin)
-          setUserPlan(plan as PlanType)
-        } else {
-          console.error('Failed to fetch user plan, response not ok')
-        }
-      } catch (error) {
-        console.error('Error fetching user plan:', error)
-      } finally {
-        setUserPlanLoading(false)
-      }
-    }
-
-    fetchUserPlan()
-  }, [])
-
-  // Debug log when userPlan changes
-  useEffect(() => {
-    console.log('🔍 [AttributionBySourceCard] userPlan state updated to:', userPlan)
-  }, [userPlan])
-
   // Fetch crawler data when component mounts, timeframe changes, or workspace changes
   useEffect(() => {
     if (currentWorkspace) {
@@ -140,124 +109,67 @@ export function AttributionBySourceCard() {
       return
     }
 
-    console.log('🔍 [fetchCrawlerData] Starting fetch with:', {
-      workspaceId: currentWorkspace.id,
-      timeframe: timeframe
-    })
-
     setIsLoading(true)
     setError(null)
     
     try {
-      // Check if there's any crawler data for this workspace
-      const crawlerCheckResult = await supabase
-        ?.from('crawler_visits')
-        .select('id')
-        .eq('workspace_id', currentWorkspace.id)
-        .limit(1)
-        .single()
-      
-      if (!crawlerCheckResult?.data) {
-        // No crawler data found - user hasn't set up tracking yet
-        console.log('🔍 [fetchCrawlerData] No crawler data found - showing setup state')
-        setIsConnected(false)
-        setIsLoading(false)
-        return
-      }
-      
-      // Map timeframe to API parameter
-      const timeframeMap: Record<TimeframeOption, string> = {
-        'Last 24 hours': 'last24h',
-        'Last 7 days': 'last7d',
-        'Last 30 days': 'last30d',
-        'Last 90 days': 'last90d',
-        'Last 365 days': 'last365d'
-      }
-      
-      const apiUrl = `/api/dashboard/crawler-stats?timeframe=${timeframeMap[timeframe]}&workspaceId=${currentWorkspace.id}`
-      console.log('🔍 [fetchCrawlerData] Making API call to:', apiUrl)
-      
-      const response = await fetch(apiUrl, {
-        headers: {
-          'Authorization': session?.access_token ? `Bearer ${session.access_token}` : ''
-        }
-      })
-      
-      console.log('🔍 [fetchCrawlerData] API response status:', response.status)
-      
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('🔍 [fetchCrawlerData] API error response:', errorText)
-        throw new Error(`API request failed: ${response.status} - ${errorText}`)
-      }
-      
-      const data = await response.json()
-      console.log('🔍 [fetchCrawlerData] API response data:', {
-        totalCrawls: data.totalCrawls,
-        crawlersCount: data.crawlers?.length,
-        crawlers: data.crawlers?.map((c: any) => ({ name: c.name, company: c.company, crawls: c.crawls }))
-      })
-      
-      // Check if user has any data
-      if (data.totalCrawls > 0) {
-        console.log('🔍 [fetchCrawlerData] Setting connected state with data')
-        setIsConnected(true)
-        setCrawlerData(data.crawlers)
-        setTotalCrawls(data.totalCrawls)
-      } else {
-        console.log('🔍 [fetchCrawlerData] No data found, showing empty state')
-        setIsConnected(false)
-        // Use placeholder data for empty state preview
-        setCrawlerData([
+      // Mock data - simulate realistic crawler attribution
+      setTimeout(() => {
+        const mockCrawlerData = [
           { 
             name: 'GPTBot', 
             company: 'OpenAI',
             percentage: 34.8, 
-            crawls: 0,
+            crawls: 2847,
             icon: '/images/chatgpt.svg',
-            color: '#555'
+            color: '#10a37f'
           },
           { 
             name: 'ChatGPT-User', 
             company: 'OpenAI',
             percentage: 26.2, 
-            crawls: 0,
+            crawls: 2143,
             icon: '/images/chatgpt.svg',
-            color: '#555'
+            color: '#19c37d'
           },
           { 
             name: 'PerplexityBot', 
             company: 'Perplexity',
             percentage: 19.5, 
-            crawls: 0,
+            crawls: 1595,
             icon: '/images/perplexity.svg',
-            color: '#555'
+            color: '#2563eb'
           },
           { 
             name: 'Google-Extended', 
             company: 'Google',
             percentage: 12.3, 
-            crawls: 0,
+            crawls: 1006,
             icon: '/images/gemini.svg',
-            color: '#555'
+            color: '#ea4335'
           },
           { 
             name: 'Claude-Web', 
             company: 'Anthropic',
             percentage: 7.2, 
-            crawls: 0,
+            crawls: 589,
             icon: '/images/claude.svg',
-            color: '#555'
+            color: '#d97706'
           }
-        ])
-      }
+        ]
+        
+        const totalMockCrawls = mockCrawlerData.reduce((sum, item) => sum + item.crawls, 0)
+        
+        setIsConnected(true)
+        setCrawlerData(mockCrawlerData)
+        setTotalCrawls(totalMockCrawls)
+        setIsLoading(false)
+      }, 800)
     } catch (err) {
       console.error('🔍 [fetchCrawlerData] Error:', err)
       setError('Failed to load crawler data')
       setIsConnected(false)
-    } finally {
       setIsLoading(false)
-      console.log('🔍 [fetchCrawlerData] Fetch completed')
     }
   }
 
@@ -268,7 +180,7 @@ export function AttributionBySourceCard() {
         visible: {
           opacity: 1,
           y: 0,
-          transition: { duration: 0.4, ease: "easeOut" },
+          transition: { duration: 0.4, ease: [0.42, 0, 0.58, 1] },
         },
       }
 
@@ -282,7 +194,7 @@ export function AttributionBySourceCard() {
           transition: {
             delay: i * 0.05,
             duration: 0.3,
-            ease: "easeOut",
+            ease: [0.42, 0, 0.58, 1],
           },
         }),
       }
@@ -296,7 +208,7 @@ export function AttributionBySourceCard() {
           transition: {
             delay: i * 0.05 + 0.2,
             duration: 0.6,
-            ease: [0.16, 1, 0.3, 1],
+            ease: [0.42, 0, 0.58, 1],
           },
         }),
       }
@@ -321,23 +233,27 @@ export function AttributionBySourceCard() {
                 </p>
               )}
             </div>
-            {!userPlanLoading && (
-              <TimeframeSelector
-                key={userPlan}
-                title=""
-                timeframe={timeframe}
-                onTimeframeChange={setTimeframe}
-                titleColor="text-gray-900"
-                selectorColor="text-gray-600"
-                userPlan={userPlan}
-              />
-            )}
+            <TimeframeSelector
+              key={timeframe}
+              title=""
+              timeframe={timeframe}
+              onTimeframeChange={setTimeframe}
+              titleColor="text-gray-900"
+              selectorColor="text-gray-600"
+            />
           </div>
         </CardHeader>
 
         <CardContent className="flex-1 min-h-0 pt-6 pr-6 pb-8 pl-6 flex flex-col relative">
           {switching ? (
-            <div className="flex items-center justify-center h-full">
+            <motion.div 
+              key="switching"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="flex items-center justify-center h-full"
+            >
               <div className="text-center">
                 <div className="w-8 h-8 mx-auto mb-3">
                   <img 
@@ -349,17 +265,33 @@ export function AttributionBySourceCard() {
                 </div>
                 <p className="text-gray-600 text-sm">Switching workspace...</p>
               </div>
-            </div>
+            </motion.div>
           ) : isLoading ? (
-            <ListSkeleton 
-              itemType="crawler"
-              items={5}
-              showProgress={true}
-              showHeader={false}
-              className="bg-transparent border-none shadow-none h-full"
-            />
+            <motion.div
+              key="loading-skeleton"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="h-full"
+            >
+              <ListSkeleton 
+                itemType="crawler"
+                items={5}
+                showProgress={true}
+                showHeader={false}
+                className="bg-transparent border-none shadow-none h-full"
+              />
+            </motion.div>
           ) : error ? (
-            <div className="flex items-center justify-center h-full">
+            <motion.div
+              key="error-state"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="flex items-center justify-center h-full"
+            >
               <div className="text-center">
                 <p className="text-gray-600 text-sm">{error}</p>
                 <button 
@@ -369,7 +301,7 @@ export function AttributionBySourceCard() {
                   Try again
                 </button>
               </div>
-            </div>
+            </motion.div>
           ) : isConnected ? (
             <div className="flex-1 flex flex-col min-h-0">
               {/* Crawler List */}
@@ -456,7 +388,7 @@ export function AttributionBySourceCard() {
                     className="text-gray-900 font-semibold"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 1.2, duration: 0.3 }}
+                    transition={{ delay: 0.8, duration: 0.3, ease: [0.42, 0, 0.58, 1] }}
                   >
                     {totalCrawls.toLocaleString()}
                   </motion.span>
@@ -465,7 +397,14 @@ export function AttributionBySourceCard() {
             </div>
           ) : (
             /* Empty State */
-            <div className="relative h-full flex flex-col">
+            <motion.div
+              key="empty-state"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.3, ease: [0.42, 0, 0.58, 1] }}
+              className="relative h-full flex flex-col"
+            >
               {/* Preview - takes full height */}
               <div className="absolute inset-0 opacity-30 blur-sm pointer-events-none">
                 <div className="flex-1 space-y-5 overflow-hidden">
@@ -539,7 +478,12 @@ export function AttributionBySourceCard() {
               </div>
 
               {/* Empty state message - absolute positioned overlay */}
-              <div className="absolute inset-0 flex items-center justify-center z-10">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.3, ease: [0.42, 0, 0.58, 1] }}
+                className="absolute inset-0 flex items-center justify-center z-10"
+              >
                 <div className="text-center max-w-sm">
                   <h4 className="text-gray-900 font-medium mb-2">No data yet</h4>
                   <p className="text-gray-600 text-sm mb-6 leading-relaxed">
@@ -553,8 +497,8 @@ export function AttributionBySourceCard() {
                     Connect Analytics
                   </button>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           )}
         </CardContent>
       </motion.div>

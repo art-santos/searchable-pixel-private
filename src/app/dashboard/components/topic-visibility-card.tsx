@@ -102,14 +102,14 @@ export function TopicVisibilityCard() {
     ? { hidden: {}, visible: {} } 
     : {
         hidden: { opacity: 0, y: 40 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.42, 0, 0.58, 1] } },
       };
       
   const barVariants: Variants = shouldReduceMotion 
     ? { hidden: {}, visible: {} } 
     : {
         hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0, transition: { delay: 0.15, duration: 0.3, ease: 'easeOut' } },
+        visible: { opacity: 1, y: 0, transition: { delay: 0.15, duration: 0.3, ease: [0.42, 0, 0.58, 1] } },
       };
       
   const rowVariants: Variants = shouldReduceMotion 
@@ -118,7 +118,7 @@ export function TopicVisibilityCard() {
         hidden: { opacity: 0, y: 20 },
         visible: (i: number) => ({
           opacity: 1, y: 0,
-          transition: { delay: 0.25 + i * 0.07, duration: 0.25, ease: 'easeOut' }
+          transition: { delay: 0.25 + i * 0.07, duration: 0.25, ease: [0.42, 0, 0.58, 1] }
         }),
       };
 
@@ -131,7 +131,17 @@ export function TopicVisibilityCard() {
     >
       <CardHeader className="pb-2">
         <div className="flex flex-col gap-2">
-          {!userPlanLoading && (
+          {userPlanLoading ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2, ease: [0.42, 0, 0.58, 1] }}
+              className="flex justify-between items-center w-full"
+            >
+              <div className="h-5 w-40 bg-gray-200 animate-pulse rounded"></div>
+              <div className="h-8 w-24 bg-gray-200 animate-pulse rounded"></div>
+            </motion.div>
+          ) : (
             <TimeframeSelector 
               key={userPlan}
               title="Topic Visibility" 
@@ -187,9 +197,14 @@ export function TopicVisibilityCard() {
             </motion.div>
           ))}
         </div>
-        <div className="pt-2 pl-2">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: topics.length * 0.07 + 0.3, duration: 0.3, ease: [0.42, 0, 0.58, 1] }}
+          className="pt-2 pl-2"
+        >
           <a href="#" className="text-[#666] text-sm font-mono tracking-tight hover:text-white transition-colors">View more...</a>
-        </div>
+        </motion.div>
       </CardContent>
     </motion.div>
   );

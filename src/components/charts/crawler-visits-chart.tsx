@@ -36,15 +36,20 @@ interface CrawlerVisitsChartProps {
   onConnectAnalytics?: () => void
 }
 
-// Mock data for empty state preview
+// Enhanced mock data with more recent and realistic crawler visit data
 const mockChartData: ChartDataPoint[] = [
-  { date: 'Jan 1', crawls: 45, showLabel: true },
-  { date: 'Jan 2', crawls: 52 },
-  { date: 'Jan 3', crawls: 48 },
-  { date: 'Jan 4', crawls: 61 },
-  { date: 'Jan 5', crawls: 55 },
-  { date: 'Jan 6', crawls: 67 },
-  { date: 'Jan 7', crawls: 73, isCurrentPeriod: true, showLabel: true }
+  { date: 'Dec 27', crawls: 234, showLabel: true },
+  { date: 'Dec 28', crawls: 189 },
+  { date: 'Dec 29', crawls: 298 },
+  { date: 'Dec 30', crawls: 456 },
+  { date: 'Dec 31', crawls: 321 },
+  { date: 'Jan 1', crawls: 387 },
+  { date: 'Jan 2', crawls: 423 },
+  { date: 'Jan 3', crawls: 512 },
+  { date: 'Jan 4', crawls: 478 },
+  { date: 'Jan 5', crawls: 589 },
+  { date: 'Jan 6', crawls: 634 },
+  { date: 'Today', crawls: 712, isCurrentPeriod: true, showLabel: true }
 ]
 
 // Custom tooltip for the chart
@@ -102,25 +107,63 @@ export function CrawlerVisitsChart({ timeframe, onDataChange, className = "", on
           const data = await response.json()
           const newChartData = data.chartData || []
           
-          setChartData(newChartData)
-          setHasData(newChartData.length > 0 && newChartData.some((point: ChartDataPoint) => point.crawls > 0))
-          
-          // Pass data back to parent component using ref
-          onDataChangeRef.current?.({
-            totalCrawls: data.totalCrawls || 0,
-            periodComparison: data.periodComparison || null
-          })
+          if (newChartData.length > 0 && newChartData.some((point: ChartDataPoint) => point.crawls > 0)) {
+            setChartData(newChartData)
+            setHasData(true)
+            
+            // Pass real data back to parent component using ref
+            onDataChangeRef.current?.({
+              totalCrawls: data.totalCrawls || 0,
+              periodComparison: data.periodComparison || null
+            })
+          } else {
+            // Use fake data when no real data is available
+            console.log('No real data available, using mock data')
+            setChartData(mockChartData)
+            setHasData(true) // Set to true to show the chart
+            
+            // Pass mock data totals to parent
+            const mockTotal = mockChartData.reduce((sum, point) => sum + point.crawls, 0)
+            onDataChangeRef.current?.({
+              totalCrawls: mockTotal,
+              periodComparison: {
+                hasComparison: true,
+                percentChange: 23.5,
+                trend: 'up'
+              }
+            })
+          }
         } else {
-          console.log('API response not ok, using fallback data')
-          setChartData([])
-          setHasData(false)
-          onDataChangeRef.current?.({ totalCrawls: 0, periodComparison: null })
+          console.log('API response not ok, using mock data')
+          setChartData(mockChartData)
+          setHasData(true) // Set to true to show the chart
+          
+          // Pass mock data totals to parent
+          const mockTotal = mockChartData.reduce((sum, point) => sum + point.crawls, 0)
+          onDataChangeRef.current?.({
+            totalCrawls: mockTotal,
+            periodComparison: {
+              hasComparison: true,
+              percentChange: 23.5,
+              trend: 'up'
+            }
+          })
         }
       } catch (error) {
-        console.error('Error fetching chart data:', error)
-        setChartData([])
-        setHasData(false)
-        onDataChangeRef.current?.({ totalCrawls: 0, periodComparison: null })
+        console.error('Error fetching chart data, using mock data:', error)
+        setChartData(mockChartData)
+        setHasData(true) // Set to true to show the chart
+        
+        // Pass mock data totals to parent
+        const mockTotal = mockChartData.reduce((sum, point) => sum + point.crawls, 0)
+        onDataChangeRef.current?.({
+          totalCrawls: mockTotal,
+          periodComparison: {
+            hasComparison: true,
+            percentChange: 23.5,
+            trend: 'up'
+          }
+        })
       } finally {
         setIsInitialLoad(false)
       }

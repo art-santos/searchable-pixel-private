@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 const supabaseAdmin = createAdminClient(
@@ -113,6 +113,31 @@ export async function POST(request: NextRequest) {
         for (let i = 0; i < eventsThisRound; i++) {
           const crawler = getRandomElement(crawlers)
           const path = getRandomElement(pages)
+          const deviceType = getRandomElement(['desktop', 'mobile', 'tablet'])
+          
+          // Generate device info
+          const deviceData = {
+            desktop: { browser: 'Chrome', os: 'Windows 10' },
+            mobile: { browser: 'Mobile Safari', os: 'iOS 17' },
+            tablet: { browser: 'Safari', os: 'iPadOS 17' }
+          }
+          
+          const sessionId = 'sim_' + Math.random().toString(36).substring(2, 10)
+          
+          // Generate realistic referrers
+          const referrers = [
+            'https://chat.openai.com/',
+            'https://perplexity.ai/search', 
+            'https://claude.ai/chat',
+            'https://www.google.com/search',
+            null
+          ]
+          const referrer = Math.random() > 0.4 ? getRandomElement(referrers) : null
+          
+          // Extract LLM source
+          const llmReferralSource = referrer && referrer.includes('openai') ? 'chatgpt' :
+                                  referrer && referrer.includes('perplexity') ? 'perplexity' :
+                                  referrer && referrer.includes('claude') ? 'claude' : null
 
           events.push({
             user_id: user.id,
@@ -127,12 +152,18 @@ export async function POST(request: NextRequest) {
             status_code: Math.random() > 0.95 ? 404 : 200,
             response_time_ms: Math.floor(Math.random() * 1000) + 50,
             country: getRandomElement(['US', 'GB', 'CA', 'DE', 'FR', null]),
+            device_type: deviceType,
+            device_info: deviceData[deviceType],
+            session_id: sessionId,
+            referrer: referrer,
+            llm_referral_source: llmReferralSource,
             metadata: {
               source: 'realtime_simulation',
               simulation_run: true,
               generated_at: new Date().toISOString(),
               elapsed_seconds: Math.floor(elapsed / 1000),
-              event_batch: Math.floor(elapsed / 500)
+              event_batch: Math.floor(elapsed / 500),
+              session_event_count: Math.floor(Math.random() * 10) + 1
             }
           })
         }

@@ -111,15 +111,25 @@ function HelpCenterSkeleton() {
 
   return (
     <div className="h-full flex flex-col">
-      <WhiteSkeleton className="h-[180px] w-full rounded-lg mb-3 flex-shrink-0" />
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: [0.42, 0, 0.58, 1] }}
+      >
+        <WhiteSkeleton className="h-[180px] w-full rounded-lg mb-3 flex-shrink-0" />
+      </motion.div>
       <div className="space-y-2 flex-shrink-0">
-        <WhiteSkeleton className="h-4 w-full" />
-        <WhiteSkeleton className="h-4 w-3/4" />
-        <div className="flex items-center gap-2">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.3, ease: [0.42, 0, 0.58, 1] }}>
+          <WhiteSkeleton className="h-4 w-full" />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.3, ease: [0.42, 0, 0.58, 1] }}>
+          <WhiteSkeleton className="h-4 w-3/4" />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.3, ease: [0.42, 0, 0.58, 1] }} className="flex items-center gap-2">
           <WhiteSkeleton className="h-3 w-16" />
           <WhiteSkeleton className="h-3 w-20" />
           <WhiteSkeleton className="h-3 w-12" />
-        </div>
+        </motion.div>
       </div>
     </div>
   )
@@ -158,7 +168,7 @@ export function HelpCenterWhiteCard() {
           scale: 1,
           transition: { 
             duration: 0.4, 
-            ease: [0.25, 0.1, 0.25, 1], // Smooth ease for natural feel
+            ease: [0.42, 0, 0.58, 1], // Smooth ease for natural feel
             type: "spring",
             stiffness: 200,
             damping: 25
@@ -175,7 +185,7 @@ export function HelpCenterWhiteCard() {
           scale: 1,
           transition: { 
             duration: 0.8, 
-            ease: [0.25, 0.1, 0.25, 1], // Very smooth ease
+            ease: [0.42, 0, 0.58, 1], // Very smooth ease
             type: "spring",
             stiffness: 120,
             damping: 20
@@ -194,16 +204,26 @@ export function HelpCenterWhiteCard() {
         >
           {/* Header */}
           <div className="px-3 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex-shrink-0">
-            <div className="flex items-center justify-between">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: [0.42, 0, 0.58, 1] }}
+              className="flex items-center justify-between"
+            >
               <div className="min-w-0 flex-1">
                 <h3 className="text-sm sm:text-lg font-medium text-black">Help Center</h3>
                 <p className="text-xs sm:text-sm text-gray-500 mt-0.5 sm:mt-1">Top Resources</p>
               </div>
-              <button className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors flex-shrink-0 hidden sm:flex">
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.2, ease: [0.42, 0, 0.58, 1] }}
+                className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors flex-shrink-0 hidden sm:flex"
+              >
                 Get help/support
                 <ArrowUpRight className="w-3 h-3" />
-              </button>
-            </div>
+              </motion.button>
+            </motion.div>
           </div>
 
           {/* Content */}
@@ -221,7 +241,12 @@ export function HelpCenterWhiteCard() {
                 {/* Featured Article */}
                 <div className="flex flex-col h-full">
                   {/* Image with responsive height that scales with card */}
-                  <div className="relative flex-1 mb-3 sm:mb-4 flex-shrink-0 min-h-[180px]">
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1, duration: 0.4, ease: [0.42, 0, 0.58, 1] }}
+                    className="relative flex-1 mb-3 sm:mb-4 flex-shrink-0 min-h-[180px]"
+                  >
                     <img 
                       src={currentArticle.coverImage}
                       alt={currentArticle.title}
@@ -236,10 +261,15 @@ export function HelpCenterWhiteCard() {
                     <div className="hidden w-full h-full bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg items-center justify-center">
                       <span className="text-gray-400 text-sm">Article Cover</span>
                     </div>
-                  </div>
+                  </motion.div>
 
                   {/* Text Content at bottom - guaranteed space */}
-                  <div className="space-y-2 sm:space-y-3 flex-shrink-0">
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, duration: 0.4, ease: [0.42, 0, 0.58, 1] }}
+                    className="space-y-2 sm:space-y-3 flex-shrink-0"
+                  >
                     <motion.a 
                       href={`/resources/${currentArticle.slug}`}
                       target="_blank"
@@ -249,7 +279,7 @@ export function HelpCenterWhiteCard() {
                         scale: 1.005,
                         transition: { 
                           duration: 0.3, 
-                          ease: [0.25, 0.1, 0.25, 1]
+                          ease: [0.42, 0, 0.58, 1]
                         }
                       }}
                       whileTap={{ scale: 0.995 }}
@@ -265,7 +295,7 @@ export function HelpCenterWhiteCard() {
                       <span>•</span>
                       <span>{currentArticle.readingTime}</span>
                     </div>
-                  </div>
+                  </motion.div>
                 </div>
               </motion.div>
             )}

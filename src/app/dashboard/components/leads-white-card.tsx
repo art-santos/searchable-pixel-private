@@ -5,6 +5,7 @@ import { useState, useEffect } from "react"
 import { ArrowUpRight, User } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useWorkspace } from "@/contexts/WorkspaceContext"
+import { AnimatePresence } from "framer-motion"
 
 interface Lead {
   id: string
@@ -41,16 +42,29 @@ function LeadsSkeleton() {
       transition={{
         duration: 2.5,
         repeat: Infinity,
-        ease: [0.25, 0.1, 0.25, 1],
+        ease: [0.42, 0, 0.58, 1],
         repeatType: "loop"
       }}
     />
   )
 
   return (
-    <div className="h-full flex flex-col justify-around space-y-4">
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={{
+        hidden: { opacity: 0 },
+        visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+      }}
+      className="h-full flex flex-col justify-around space-y-4"
+    >
       {/* First Lead Skeleton */}
-      <div className="space-y-2">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: [0.42, 0, 0.58, 1] }}
+        className="space-y-2"
+      >
         {/* Contact info with whiskers - matches new layout */}
         <div className="relative">
           {/* Whiskers and Contact Box */}
@@ -89,10 +103,15 @@ function LeadsSkeleton() {
             <WhiteSkeleton className="h-3 w-16" />
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Second Lead Skeleton */}
-      <div className="space-y-2">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.3, ease: [0.42, 0, 0.58, 1] }}
+        className="space-y-2"
+      >
         {/* Contact info with whiskers - matches new layout */}
         <div className="relative">
           {/* Whiskers and Contact Box */}
@@ -131,8 +150,8 @@ function LeadsSkeleton() {
             <WhiteSkeleton className="h-3 w-14" />
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }
 
@@ -356,7 +375,7 @@ export function LeadsWhiteCard() {
     ? { hidden: {}, visible: {} }
     : {
         hidden: { opacity: 0, y: 10 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } }
+        visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: [0.42, 0, 0.58, 1] } }
       }
 
   return (
@@ -386,36 +405,70 @@ export function LeadsWhiteCard() {
 
           {/* Content */}
           <div className="flex-1 px-3 sm:px-6 py-3 sm:py-4 min-h-0">
-            {switching ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <div className="w-8 h-8 mx-auto mb-3">
-                    <img 
-                      src="/images/split-icon-black.svg" 
-                      alt="Split" 
-                      className="w-full h-full animate-spin"
-                      style={{ animation: 'spin 1s linear infinite' }}
-                    />
+            <AnimatePresence mode="wait">
+              {switching ? (
+                <motion.div
+                  key="switching"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex items-center justify-center h-full"
+                >
+                  <div className="text-center">
+                    <div className="w-8 h-8 mx-auto mb-3">
+                      <img 
+                        src="/images/split-icon-black.svg" 
+                        alt="Split" 
+                        className="w-full h-full animate-spin"
+                        style={{ animation: 'spin 1s linear infinite' }}
+                      />
+                    </div>
+                    <p className="text-gray-500 text-sm">Switching workspace...</p>
                   </div>
-                  <p className="text-gray-500 text-sm">Switching workspace...</p>
-                </div>
-              </div>
-            ) : isLoading ? (
-              <LeadsSkeleton />
-                         ) : leads.length > 0 ? (
-               <div className="h-full flex flex-col justify-around space-y-4">
-                 {leads.map((lead, index) => (
-                   <LeadItem key={lead.id} lead={lead} index={index} />
-                 ))}
-               </div>
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <p className="text-gray-500 text-sm">No recent leads</p>
-                  <p className="text-gray-400 text-xs mt-1">Leads will appear here when visitors are identified</p>
-                </div>
-              </div>
-            )}
+                </motion.div>
+              ) : isLoading ? (
+                <motion.div
+                  key="loading-skeleton"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="h-full"
+                >
+                  <LeadsSkeleton />
+                </motion.div>
+              ) : leads.length > 0 ? (
+                <motion.div
+                  key="leads-content"
+                  initial="hidden"
+                  animate="visible"
+                  variants={{
+                    hidden: { opacity: 0 },
+                    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+                  }}
+                  className="h-full flex flex-col justify-around space-y-4"
+                >
+                  {leads.map((lead, index) => (
+                    <LeadItem key={lead.id} lead={lead} index={index} />
+                  ))}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="empty-state"
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{ duration: 0.3, ease: [0.42, 0, 0.58, 1] }}
+                  className="flex items-center justify-center h-full"
+                >
+                  <div className="text-center">
+                    <p className="text-gray-500 text-sm">No recent leads</p>
+                    <p className="text-gray-400 text-xs mt-1">Leads will appear here when visitors are identified</p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </motion.div>
       </CardContent>

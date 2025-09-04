@@ -11,7 +11,7 @@ export default function SignupPage() {
 
   // Render the actual signup form when waitlist is disabled
   return (
-    <div className="grid min-h-svh lg:grid-cols-2">
+    <div className="flex min-h-svh items-center justify-center bg-[#0c0c0c] text-white">
       {/* JSON-LD Schema for Signup Page */}
       <script
         type="application/ld+json"
@@ -69,16 +69,14 @@ export default function SignupPage() {
         }}
       />
       
-      <div className="flex flex-col gap-4 p-6 md:p-10 bg-[#0c0c0c] text-white">
-        <div className="flex justify-center gap-2 md:justify-start">
+      <div className="flex flex-col gap-4 p-6 md:p-10 w-full max-w-md">
+        <div className="flex justify-center">
           <Link href="/" className="flex items-center gap-2 font-medium">
             <Image src="/images/split-icon-white.svg" width={36} height={36} alt="Split Logo" />
           </Link>
         </div>
-        <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xs">
-            <SignupForm />
-          </div>
+        <div className="w-full">
+          <SignupForm />
         </div>
       </div>
       

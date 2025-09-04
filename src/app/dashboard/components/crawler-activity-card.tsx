@@ -5,8 +5,8 @@ import { TimeframeSelector, TimeframeOption } from "@/components/custom/timefram
 import { useState, useEffect, useCallback } from "react"
 import { useWorkspace } from "@/contexts/WorkspaceContext"
 import { Loader2, BarChart3 } from "lucide-react"
-import { PlanType } from "@/lib/subscription/config"
 import { CrawlerVisitsChart } from "@/components/charts/crawler-visits-chart"
+import { PlanType } from "@/lib/subscription/config"
 
 interface CrawlerLog {
   id: number
@@ -28,83 +28,203 @@ interface PeriodComparison {
 const crawlerLogs: CrawlerLog[] = [
   {
     id: 1,
-    date: 'MAY 23',
-    time: '22:02:35',
+    date: 'DEC 04',
+    time: '15:23:45',
     method: 'GET',
-    domain: 'www.origamiagents.com',
-    path: '/company',
+    domain: 'www.searchablepixel.com',
+    path: '/blog/llm-traffic-analytics-guide',
     provider: 'OPENAI',
     crawler: 'ChatGPT-User'
   },
   {
     id: 2,
-    date: 'MAY 23',
-    time: '22:02:34',
+    date: 'DEC 04',
+    time: '15:22:12',
     method: 'GET',
-    domain: 'www.origamiagents.com',
-    path: '/features/ai-research-agents',
-    provider: 'PERPLEXITY',
-    crawler: 'PerplexityBot'
-  },
-  {
-    id: 3,
-    date: 'MAY 23',
-    time: '22:02:33',
-    method: 'GET',
-    domain: 'www.origamiagents.com',
-    path: '/pricing',
-    provider: 'GOOGLE',
-    crawler: 'Google-Extended'
-  },
-  {
-    id: 4,
-    date: 'MAY 23',
-    time: '22:02:32',
-    method: 'GET',
-    domain: 'www.origamiagents.com',
-    path: '/blog/ai-sales-automation-guide',
-    provider: 'OPENAI',
-    crawler: 'GPTBot'
-  },
-  {
-    id: 5,
-    date: 'MAY 23',
-    time: '22:02:31',
-    method: 'GET',
-    domain: 'www.origamiagents.com',
-    path: '/use-cases',
+    domain: 'www.searchablepixel.com',
+    path: '/pricing/enterprise',
     provider: 'ANTHROPIC',
     crawler: 'ClaudeBot'
   },
   {
-    id: 6,
-    date: 'MAY 23',
-    time: '22:02:30',
+    id: 3,
+    date: 'DEC 04',
+    time: '15:21:38',
     method: 'GET',
-    domain: 'www.origamiagents.com',
-    path: '/api/health',
+    domain: 'www.searchablepixel.com',
+    path: '/features/real-time-analytics',
     provider: 'PERPLEXITY',
     crawler: 'PerplexityBot'
   },
   {
-    id: 7,
-    date: 'MAY 23',
-    time: '22:02:29',
+    id: 4,
+    date: 'DEC 04',
+    time: '15:20:56',
     method: 'GET',
-    domain: 'www.origamiagents.com',
-    path: '/demo/request',
+    domain: 'www.searchablepixel.com',
+    path: '/dashboard/demo',
+    provider: 'GOOGLE',
+    crawler: 'Gemini-Pro'
+  },
+  {
+    id: 5,
+    date: 'DEC 04',
+    time: '15:19:42',
+    method: 'GET',
+    domain: 'www.searchablepixel.com',
+    path: '/api/v1/analytics',
+    provider: 'OPENAI',
+    crawler: 'GPTBot'
+  },
+  {
+    id: 6,
+    date: 'DEC 04',
+    time: '15:18:29',
+    method: 'GET',
+    domain: 'www.searchablepixel.com',
+    path: '/docs/integration-guide',
+    provider: 'ANTHROPIC',
+    crawler: 'Claude-Web'
+  },
+  {
+    id: 7,
+    date: 'DEC 04',
+    time: '15:17:15',
+    method: 'GET',
+    domain: 'www.searchablepixel.com',
+    path: '/case-studies/e-commerce',
+    provider: 'MICROSOFT',
+    crawler: 'BingBot'
+  },
+  {
+    id: 8,
+    date: 'DEC 04',
+    time: '15:16:03',
+    method: 'GET',
+    domain: 'www.searchablepixel.com',
+    path: '/about/team',
+    provider: 'PERPLEXITY',
+    crawler: 'PerplexityBot'
+  },
+  {
+    id: 9,
+    date: 'DEC 04',
+    time: '15:14:47',
+    method: 'GET',
+    domain: 'www.searchablepixel.com',
+    path: '/blog/ai-vs-seo-traffic',
     provider: 'OPENAI',
     crawler: 'ChatGPT-User'
   },
   {
-    id: 8,
-    date: 'MAY 23',
-    time: '22:02:28',
+    id: 10,
+    date: 'DEC 04',
+    time: '15:13:21',
     method: 'GET',
-    domain: 'www.origamiagents.com',
-    path: '/about/team',
+    domain: 'www.searchablepixel.com',
+    path: '/integrations/wordpress',
+    provider: 'GOOGLE',
+    crawler: 'Bard'
+  },
+  {
+    id: 11,
+    date: 'DEC 04',
+    time: '15:12:08',
+    method: 'GET',
+    domain: 'www.searchablepixel.com',
+    path: '/contact/sales',
+    provider: 'ANTHROPIC',
+    crawler: 'ClaudeBot'
+  },
+  {
+    id: 12,
+    date: 'DEC 04',
+    time: '15:10:55',
+    method: 'GET',
+    domain: 'www.searchablepixel.com',
+    path: '/features/competitor-analysis',
+    provider: 'PERPLEXITY',
+    crawler: 'PerplexityBot'
+  },
+  {
+    id: 13,
+    date: 'DEC 04',
+    time: '15:09:32',
+    method: 'GET',
+    domain: 'www.searchablepixel.com',
+    path: '/blog/tracking-chatgpt-referrals',
+    provider: 'OPENAI',
+    crawler: 'GPTBot'
+  },
+  {
+    id: 14,
+    date: 'DEC 04',
+    time: '15:08:19',
+    method: 'GET',
+    domain: 'www.searchablepixel.com',
+    path: '/dashboard/settings',
+    provider: 'MICROSOFT',
+    crawler: 'EdgeGPT'
+  },
+  {
+    id: 15,
+    date: 'DEC 04',
+    time: '15:07:06',
+    method: 'GET',
+    domain: 'www.searchablepixel.com',
+    path: '/privacy-policy',
     provider: 'GOOGLE',
     crawler: 'Gemini-Pro'
+  },
+  {
+    id: 16,
+    date: 'DEC 04',
+    time: '15:05:43',
+    method: 'GET',
+    domain: 'www.searchablepixel.com',
+    path: '/api/v1/webhooks',
+    provider: 'ANTHROPIC',
+    crawler: 'Claude-Web'
+  },
+  {
+    id: 17,
+    date: 'DEC 04',
+    time: '15:04:30',
+    method: 'GET',
+    domain: 'www.searchablepixel.com',
+    path: '/blog/llm-seo-future',
+    provider: 'PERPLEXITY',
+    crawler: 'PerplexityBot'
+  },
+  {
+    id: 18,
+    date: 'DEC 04',
+    time: '15:03:17',
+    method: 'GET',
+    domain: 'www.searchablepixel.com',
+    path: '/features/device-analytics',
+    provider: 'OPENAI',
+    crawler: 'ChatGPT-User'
+  },
+  {
+    id: 19,
+    date: 'DEC 04',
+    time: '15:02:04',
+    method: 'GET',
+    domain: 'www.searchablepixel.com',
+    path: '/testimonials',
+    provider: 'YOUCOM',
+    crawler: 'YouBot'
+  },
+  {
+    id: 20,
+    date: 'DEC 04',
+    time: '15:00:51',
+    method: 'GET',
+    domain: 'www.searchablepixel.com',
+    path: '/changelog',
+    provider: 'GOOGLE',
+    crawler: 'Bard'
   }
 ]
 
@@ -124,7 +244,7 @@ export function CrawlerActivityCard() {
     ? { hidden: {}, visible: {} }
     : {
         hidden: { opacity: 0, y: 10 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } }
+        visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: [0.42, 0, 0.58, 1] } }
       }
 
   // Fetch user subscription plan
@@ -200,7 +320,7 @@ export function CrawlerActivityCard() {
                     <motion.div
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.1, duration: 0.2, ease: "easeOut" }}
+                      transition={{ delay: 0.1, duration: 0.2, ease: [0.42, 0, 0.58, 1] }}
                       className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
                         periodComparison.trend === 'up' 
                           ? 'bg-green-500/20 text-green-600 dark:bg-green-500/20 dark:text-green-400' 
@@ -231,7 +351,6 @@ export function CrawlerActivityCard() {
                     onTimeframeChange={setTimeframe}
                     titleColor="text-black dark:text-white"
                     selectorColor="text-gray-600 dark:text-[#A7A7A7]"
-                    userPlan={userPlan}
                   />
                 )}
               </div>
@@ -300,9 +419,23 @@ export function CrawlerActivityCard() {
                         scrollbarColor: '#ccc transparent'
                       }}
                     >
-                      <div className="space-y-3">
+                      <motion.div
+                        initial="hidden"
+                        animate="visible"
+                        variants={{
+                          hidden: { opacity: 0 },
+                          visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
+                        }}
+                        className="space-y-3"
+                      >
                         {crawlerLogs.map((log, index) => (
-                            <div key={log.id} className="group/item">
+                            <motion.div 
+                              key={log.id}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.2, ease: [0.42, 0, 0.58, 1] }}
+                              className="group/item"
+                            >
                               <div className="flex items-center justify-between py-2 px-0 rounded-lg hover:bg-gray-50 dark:hover:bg-[#0f0f0f] transition-all duration-200">
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-3 mb-1.5">
@@ -322,10 +455,10 @@ export function CrawlerActivityCard() {
                                   </div>
                                 </div>
                               </div>
-                            </div>
+                            </motion.div>
                           ))
                         }
-                      </div>
+                      </motion.div>
                     </div>
                     
                     {/* View More Section - Only on Hover */}
@@ -345,4 +478,4 @@ export function CrawlerActivityCard() {
       </Card>
     </>
   )
-} 
+}

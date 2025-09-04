@@ -71,7 +71,7 @@ const CustomDot = ({ cx, cy, payload, ...props }: CustomDotProps) => {
           transition={{
             duration: 2,
             repeat: Infinity,
-            ease: "easeInOut"
+            ease: [0.42, 0, 0.58, 1]
           }}
         />
         {/* Main dot */}
@@ -152,7 +152,7 @@ export function ViewsChart({ timeframe, isVisible, setIsVisible, data }: ViewsCh
             exit={{ opacity: 0, y: -10, scale: 0.98 }}
             transition={{ 
               duration: 0.3,
-              ease: [0.16, 1, 0.3, 1],
+              ease: [0.42, 0, 0.58, 1],
               type: "spring",
               stiffness: 300,
               damping: 30
@@ -164,7 +164,7 @@ export function ViewsChart({ timeframe, isVisible, setIsVisible, data }: ViewsCh
               animate={{ clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)" }}
               transition={{ 
                 duration: 1.5, 
-                ease: [0.16, 1, 0.3, 1],
+                ease: [0.42, 0, 0.58, 1],
                 delay: 0.4
               }}
             >

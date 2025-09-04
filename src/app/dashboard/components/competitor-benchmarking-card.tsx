@@ -89,7 +89,7 @@ export function CompetitorBenchmarkingCard() {
     ? { hidden: {}, visible: {} }
     : {
         hidden: { opacity: 0, y: 40 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.42, 0, 0.58, 1] } },
       };
   const rowVariants = shouldReduceMotion
     ? { hidden: {}, visible: {} }
@@ -97,7 +97,7 @@ export function CompetitorBenchmarkingCard() {
         hidden: { opacity: 0, y: 20 },
         visible: (i: number) => ({
           opacity: 1, y: 0,
-          transition: { delay: 0.25 + i * 0.07, duration: 0.25, ease: 'easeOut' },
+          transition: { delay: 0.25 + i * 0.07, duration: 0.25, ease: [0.42, 0, 0.58, 1] },
         }),
       };
 
@@ -110,7 +110,17 @@ export function CompetitorBenchmarkingCard() {
     >
       <CardHeader className="pb-2">
         <div className="flex flex-col gap-2">
-          {!userPlanLoading && (
+          {userPlanLoading ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2 }}
+              className="flex justify-between items-center w-full"
+            >
+              <div className="h-5 w-40 bg-gray-200 animate-pulse rounded"></div>
+              <div className="h-8 w-24 bg-gray-200 animate-pulse rounded"></div>
+            </motion.div>
+          ) : (
             <TimeframeSelector 
               key={userPlan}
               title="Competitor Benchmarking" 

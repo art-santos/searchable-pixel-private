@@ -136,7 +136,7 @@ function WhiteAttributionSkeleton() {
           y: 0,
           transition: {
             duration: 0.2,
-            ease: "easeOut"
+            ease: [0.42, 0, 0.58, 1]
           }
         }
       }
@@ -309,7 +309,7 @@ export function AttributionBySourceWhiteCard() {
     ? { hidden: {}, visible: {} }
     : {
         hidden: { opacity: 0, y: 10 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } }
+        visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: [0.42, 0, 0.58, 1] } }
       }
 
   return (
@@ -346,7 +346,14 @@ export function AttributionBySourceWhiteCard() {
           {/* Content */}
           <div className="flex-1 px-3 sm:px-6 py-3 sm:py-4 min-h-0">
             {switching ? (
-              <div className="flex items-center justify-center h-full">
+              <motion.div
+                key="switching"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="flex items-center justify-center h-full"
+              >
                 <div className="text-center">
                   <div className="w-8 h-8 mx-auto mb-3">
                     <img 
@@ -358,10 +365,19 @@ export function AttributionBySourceWhiteCard() {
                   </div>
                   <p className="text-gray-500 text-sm">Switching workspace...</p>
                 </div>
-              </div>
+              </motion.div>
             ) : isLoading ? (
-              <WhiteAttributionSkeleton />
-                        ) : isConnected && crawlerData.length > 0 ? (
+              <motion.div
+                key="loading-skeleton"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="h-full"
+              >
+                <WhiteAttributionSkeleton />
+              </motion.div>
+            ) : isConnected && crawlerData.length > 0 ? (
               <div className="h-full flex flex-col justify-between">
                 <div className="flex items-center justify-between text-xs text-gray-500 font-medium uppercase tracking-wider pb-2 flex-shrink-0">
                   <span>Crawler</span>
@@ -386,17 +402,24 @@ export function AttributionBySourceWhiteCard() {
                       <div className="text-gray-600 text-xs sm:text-sm font-medium flex-shrink-0">
                         {crawler.percentage.toFixed(1)}%
                       </div>
-                                        </motion.div>
+                    </motion.div>
                   ))}
                 </div>
               </div>
             ) : (
-              <div className="flex items-center justify-center h-full">
+              <motion.div
+                key="empty-state"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.3, ease: [0.42, 0, 0.58, 1] }}
+                className="flex items-center justify-center h-full"
+              >
                 <div className="text-center">
                   <p className="text-gray-500 text-sm">No crawler data available</p>
                   <p className="text-gray-400 text-xs mt-1">Set up tracking to see attribution data</p>
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
         </motion.div>

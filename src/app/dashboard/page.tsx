@@ -10,6 +10,13 @@ import { CheckCircle2, XCircle, X } from 'lucide-react'
 import { AttributionBySourceWhiteCard } from "./components/attribution-by-source-white-card"
 import { LeadsWhiteCard } from "./components/leads-white-card"
 import { ScriptCard } from "./components/script-card"
+import { TopKPIsCard } from "./components/top-kpis-card"
+import { SessionsChartCard } from "./components/sessions-chart-card"
+import { TopLLMsTableCard } from "./components/top-llms-table-card"
+import { MostVisitedPagesCard } from "./components/most-visited-pages-card"
+import { DeviceBreakdownCard } from "./components/device-breakdown-card"
+import { RecentReferralsCard } from "./components/recent-referrals-card"
+import { AttributionBySourceCard } from './components/attribution-by-source-card'
 
 export default function Dashboard() {
   const { user, supabase, loading } = useAuth()
@@ -170,49 +177,95 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* Responsive Card Grid */}
-        <div className="grid gap-4 lg:grid-cols-12 lg:grid-rows-2 grid-cols-1 auto-rows-fr">
+        {/* Header with Logo */}
+        <motion.div 
+          variants={cardVariants}
+          className="mb-6 bg-white border border-gray-200 rounded-lg p-4"
+        >
+          <div className="flex items-center gap-3">
+            <div className="text-2xl font-bold text-gray-900">Searchable</div>
+            <div className="text-gray-500">|</div>
+            <div className="text-lg text-gray-600">LLM Traffic Analytics</div>
+          </div>
+        </motion.div>
+        {/* Top KPI Row */}
+        <motion.div 
+          variants={cardVariants}
+          className="mb-4"
+        >
+          <TopKPIsCard />
+        </motion.div>
+        {/* Original Dashboard Components Row */}
+        <div className="grid gap-4 lg:grid-cols-12 mb-6">
           {/* Welcome Card */}
+         
+          {/* Crawler Visits Card - 70% of grid */}
           <motion.div 
             variants={cardVariants}
-            className="lg:col-span-3 lg:row-span-1 h-[43vh] lg:h-[43vh] min-h-[350px]"
-          >
-            <WelcomeCard />
-          </motion.div>
-
-          {/* Site Crawls Card */}
-          <motion.div 
-            variants={cardVariants}
-            className="lg:col-span-9 lg:row-span-1 h-[43vh] lg:h-[43vh] min-h-[350px]"
+            className="lg:col-span-8 h-[500px]"
           >
             <CrawlerVisitsCard />
           </motion.div>
 
-          {/* Leads Card */}
+          {/* Script Card - 30% of grid */}
           <motion.div 
             variants={cardVariants}
-            className="lg:col-span-4 lg:row-span-1 h-[43vh] lg:h-[43vh] min-h-[350px] bg-white rounded-sm border border-gray-200 overflow-hidden"
-          >
-            <LeadsWhiteCard />
-          </motion.div>
-
-          {/* Attribution by Source Card */}
-          <motion.div 
-            variants={cardVariants}
-            className="lg:col-span-4 lg:row-span-1 h-[43vh] lg:h-[43vh] min-h-[350px] bg-white rounded-sm border border-gray-200 overflow-hidden"
-          >
-            <AttributionBySourceWhiteCard />
-          </motion.div>
-
-          {/* Script Card */}
-          <motion.div 
-            variants={cardVariants}
-            className="lg:col-span-4 lg:row-span-1 h-[43vh] lg:h-[43vh] min-h-[350px]"
+            className="lg:col-span-4 h-[500px]"
           >
             <ScriptCard />
           </motion.div>
+        </div>
 
+
+
+        {/* Main Chart Section */}
+        <motion.div 
+          variants={cardVariants}
+          className="mb-4 h-[400px]"
+        >
+          <SessionsChartCard />
+        </motion.div>
+
+        {/* Middle Row: Top LLMs and Device Breakdown */}
+        <div className="grid gap-4 lg:grid-cols-2 mb-4">
+          <motion.div 
+            variants={cardVariants}
+            className="h-[600px]"
+          >
+            <TopLLMsTableCard />
+          </motion.div>
           
+          <motion.div 
+            variants={cardVariants}
+            className="h-[600px]"
+          >
+            <DeviceBreakdownCard />
+          </motion.div>
+        </div>
+
+        {/* Most Visited Pages */}
+        <motion.div 
+          variants={cardVariants}
+          className="mb-4 h-[900px]"
+        >
+          <MostVisitedPagesCard />
+        </motion.div>
+
+        {/* Recent Referrals and Attribution */}
+        <div className="grid gap-4 lg:grid-cols-2">
+          <motion.div 
+            variants={cardVariants}
+            className="h-[700px]"
+          >
+            <RecentReferralsCard />
+          </motion.div>
+          
+          <motion.div 
+            variants={cardVariants}
+            className="h-[700px]"
+          >
+            <AttributionBySourceCard />
+          </motion.div>
         </div>
       </motion.main>
 

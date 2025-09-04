@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useWorkspace } from "@/contexts/WorkspaceContext"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { BarChart3, FileText, Bot, HelpCircle, Rocket, ArrowRight, Activity, Settings, Users, UserCircle, Database, Loader2 } from "lucide-react"
+import { Activity, Database, Loader2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { ConnectAnalyticsDialog } from "./connect-analytics-dialog"
 
@@ -43,6 +43,16 @@ export function WelcomeCard() {
   const { toast } = useToast()
   
   const supabase = createClient()
+
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.42, 0, 0.58, 1] } }
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.42, 0, 0.58, 1] } }
+  }
 
   // Fetch user profile data
   useEffect(() => {
@@ -151,7 +161,7 @@ export function WelcomeCard() {
       y: 0,
       transition: { 
         duration: 0.4,
-        ease: "easeOut"
+        ease: [0.42, 0, 0.58, 1]
       },
     })
   }, [controls, shouldReduceMotion])
@@ -159,7 +169,7 @@ export function WelcomeCard() {
   // Generate welcome message based on crawler activity
   const getWelcomeMessage = (stats: CrawlerStats | null) => {
     if (!stats || stats.total_visits === 0) {
-      return "You've got excellent crawler traction, keep posting great content."
+      return ""
     }
     
     return "You've got excellent crawler traction, keep posting great content."
@@ -224,7 +234,7 @@ export function WelcomeCard() {
         body: JSON.stringify({
           workspaceId: currentWorkspace.id,
           count: 50
-        })
+        }) 
       })
 
       const result = await response.json()
@@ -299,6 +309,7 @@ export function WelcomeCard() {
     }
   }
 
+
   const quickActions = [
     { 
       icon: Activity, 
@@ -317,76 +328,96 @@ export function WelcomeCard() {
   ]
 
   return (
-    <Card className="bg-white border border-gray-200 shadow-sm h-full">
-      <CardContent className="p-6 h-full flex flex-col">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={controls}
-          className="h-full flex flex-col justify-between"
-        >
-          {/* Welcome Section */}
-          <div className="mb-4 sm:mb-6">
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-light text-gray-900 mb-2 sm:mb-3">
-              Welcome back, <span className="font-['Instrument_Serif'] italic tracking-tight">{getDisplayName()}</span>
-            </h1>
-            <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
-              {getWelcomeMessage(crawlerStats)}
-            </p>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="flex-shrink-0">
-            <div className="mb-1 sm:mb-2">
-              <h2 className="text-xs text-gray-500 uppercase tracking-wider font-mono">QUICK ACTIONS</h2>
-            </div>
-            
-            <div className="space-y-1 sm:space-y-2">
-              {quickActions.map((action, index) => (
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={cardVariants}
+      className="h-full"
+    >
+      <Card className="bg-white border border-gray-200 shadow-sm h-full">
+        <CardContent className="p-6 h-full">
+          {loading || loadingStats ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
                 <motion.div
-                  key={action.label}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1, duration: 0.3 }}
+                  transition={{ duration: 0.3, ease: [0.42, 0, 0.58, 1] }}
+                  className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent text-gray-400 mx-auto mb-4"
+                />
+                <motion.p
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.3, ease: [0.42, 0, 0.58, 1] }}
+                  className="text-gray-500 text-sm"
                 >
-                  <Button
-                    variant="outline"
-                    onClick={action.action}
-                    disabled={action.disabled || action.loading}
-                    className="w-full justify-start py-1.5 sm:py-2 pl-2 sm:pl-3 pr-3 sm:pr-4 h-auto bg-transparent border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
-                  >
-                    <div className="flex items-center gap-2 sm:gap-4 w-full">
-                      <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-100 flex items-center justify-center flex-shrink-0">
-                        {action.loading ? (
-                          <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 animate-spin" />
-                        ) : (
-                          <action.icon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 transition-colors" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0 text-left">
-                        <h3 className="text-xs sm:text-sm text-gray-600 transition-colors font-mono tracking-tight truncate">
-                          {action.loading ? (
-                            action.label === "Simulate Events" ? "Simulating..." : "Populating..."
-                          ) : (
-                            action.label
-                          )}
-                        </h3>
-                      </div>
-                      {!action.loading && (
-                        <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 transition-colors flex-shrink-0" />
-                      )}
-                    </div>
-                  </Button>
-                </motion.div>
-              ))}
+                  Loading workspace...
+                </motion.p>
+              </div>
             </div>
-          </div>
-        </motion.div>
-      </CardContent>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, ease: [0.42, 0, 0.58, 1] }}
+              className="h-full flex items-center justify-between gap-6"
+            >
+              {/* Left: Welcome Section */}
+              <div className="flex-1 min-w-0">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-light text-gray-900 mb-2 truncate">
+                  Welcome back, <span className="font-['Instrument_Serif'] italic tracking-tight">{getDisplayName()}</span>
+                </h1>
+                <p className="text-gray-600 text-sm sm:text-base leading-relaxed">
+                  {getWelcomeMessage(crawlerStats)}
+                </p>
+              </div>
 
-      <ConnectAnalyticsDialog 
-        open={showConnectDialog}
-        onOpenChange={setShowConnectDialog}
-      />
-    </Card>
+              {/* Right: Quick Actions */}
+              <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={{
+                  hidden: { opacity: 0 },
+                  visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+                }}
+                className="flex gap-3"
+              >
+                {quickActions.map((action, index) => (
+                  <motion.div
+                    key={action.label}
+                    variants={itemVariants}
+                  >
+                    <Button
+                      variant="outline"
+                      onClick={action.action}
+                      disabled={action.disabled || action.loading}
+                      className="flex items-center gap-2 bg-transparent border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200 px-4 py-2"
+                    >
+                      {action.loading ? (
+                        <Loader2 className="w-4 h-4 text-gray-600 animate-spin" />
+                      ) : (
+                        <action.icon className="w-4 h-4 text-gray-600" />
+                      )}
+                      <span className="text-sm font-mono text-gray-600">
+                        {action.loading ? (
+                          action.label === "Simulate Events" ? "Simulating..." : "Populating..."
+                        ) : (
+                          action.label
+                        )}
+                      </span>
+                    </Button>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </motion.div>
+          )}
+        </CardContent>
+
+        <ConnectAnalyticsDialog 
+          open={showConnectDialog}
+          onOpenChange={setShowConnectDialog}
+        />
+      </Card>
+    </motion.div>
   )
 } 

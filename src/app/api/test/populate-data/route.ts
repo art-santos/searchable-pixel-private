@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 const supabaseAdmin = createAdminClient(
@@ -58,16 +58,76 @@ function generateRandomTimestamp(daysBack: number): string {
   return new Date(randomTime).toISOString()
 }
 
+function generateDeviceInfo(deviceType: string) {
+  const deviceData: Record<string, {device_type: string, device_info: any}> = {
+    desktop: {
+      device_type: 'desktop',
+      device_info: {
+        browser: getRandomElement(['Chrome', 'Firefox', 'Safari', 'Edge']),
+        os: getRandomElement(['Windows 10', 'macOS', 'Ubuntu']),
+        screen_resolution: getRandomElement(['1920x1080', '2560x1440', '1440x900']),
+        viewport: getRandomElement(['1920x1080', '1366x768', '1440x900'])
+      }
+    },
+    mobile: {
+      device_type: 'mobile',
+      device_info: {
+        browser: getRandomElement(['Mobile Chrome', 'Mobile Safari', 'Samsung Browser']),
+        os: getRandomElement(['iOS 17', 'Android 14', 'iOS 16']),
+        screen_resolution: getRandomElement(['375x667', '414x896', '390x844']),
+        viewport: getRandomElement(['375x667', '414x896', '390x844'])
+      }
+    },
+    tablet: {
+      device_type: 'tablet',
+      device_info: {
+        browser: getRandomElement(['Chrome', 'Safari', 'Firefox']),
+        os: getRandomElement(['iPadOS 17', 'Android 14', 'iPadOS 16']),
+        screen_resolution: getRandomElement(['1024x768', '2048x1536', '1366x1024']),
+        viewport: getRandomElement(['1024x768', '2048x1536', '1366x1024'])
+      }
+    }
+  }
+  return deviceData[deviceType] || deviceData.desktop
+}
+
+function generateSessionId(): string {
+  return 'sess_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+}
+
+function getLLMReferralSource(referrer: string | null): string | null {
+  if (!referrer) return null
+  
+  const llmSources = {
+    'chat.openai.com': 'chatgpt',
+    'perplexity.ai': 'perplexity', 
+    'claude.ai': 'claude',
+    'bard.google.com': 'bard',
+    'gemini.google.com': 'gemini',
+    'copilot.microsoft.com': 'copilot',
+    'you.com': 'you'
+  }
+  
+  for (const [domain, source] of Object.entries(llmSources)) {
+    if (referrer.includes(domain)) {
+      return source
+    }
+  }
+  return null
+}
+
 export async function POST(request: NextRequest) {
   try {
+    // Create server-side Supabase client with session
     const supabase = createClient()
     
-    // Get the authenticated user
+    // Get the authenticated user from the session
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     
     if (authError || !user) {
+      console.error('Auth error:', authError)
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Unauthorized - Please log in' },
         { status: 401 }
       )
     }
@@ -111,6 +171,22 @@ export async function POST(request: NextRequest) {
       const crawler = getRandomElement(crawlers)
       const path = getRandomElement(pages)
       const timestamp = generateRandomTimestamp(30) // Last 30 days
+      const deviceType = getRandomElement(['desktop', 'mobile', 'tablet'])
+      const deviceInfo = generateDeviceInfo(deviceType)
+      const sessionId = generateSessionId()
+      
+      // Generate realistic referrers (some from LLMs, some organic)
+      const referrers = [
+        'https://chat.openai.com/',
+        'https://perplexity.ai/search',
+        'https://claude.ai/chat',
+        'https://gemini.google.com/',
+        'https://www.google.com/search',
+        'https://www.bing.com/search',
+        null // Direct traffic
+      ]
+      const referrer = Math.random() > 0.3 ? getRandomElement(referrers) : null
+      const llmReferralSource = getLLMReferralSource(referrer)
 
       testVisits.push({
         user_id: user.id,
@@ -125,12 +201,19 @@ export async function POST(request: NextRequest) {
         status_code: Math.random() > 0.95 ? 404 : 200, // 5% 404s
         response_time_ms: Math.floor(Math.random() * 2000) + 100, // 100-2100ms
         country: getRandomElement(['US', 'GB', 'CA', 'DE', 'FR', 'AU', 'JP', null]),
+        device_type: deviceInfo.device_type,
+        device_info: deviceInfo.device_info,
+        session_id: sessionId,
+        referrer: referrer,
+        llm_referral_source: llmReferralSource,
         metadata: {
           source: 'test_data_population',
           test_run: true,
           generated_at: new Date().toISOString(),
           page_title: `Test Page: ${path}`,
-          campaign: Math.random() > 0.7 ? getRandomElement(['seo', 'content', 'blog', 'docs']) : null
+          campaign: Math.random() > 0.7 ? getRandomElement(['seo', 'content', 'blog', 'docs']) : null,
+          session_duration: Math.floor(Math.random() * 300) + 30, // 30-330 seconds
+          bounce_rate: Math.random() > 0.7 ? true : false
         }
       })
     }

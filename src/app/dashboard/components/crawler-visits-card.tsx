@@ -4,15 +4,14 @@ import { motion, useReducedMotion } from "framer-motion"
 import { TimeframeSelector, TimeframeOption } from "@/components/custom/timeframe-selector"
 import { useState, useEffect, useCallback } from "react"
 import { useWorkspace } from "@/contexts/WorkspaceContext"
-import { PlanType } from "@/lib/subscription/config"
 import { CrawlerVisitsChart } from "@/components/charts/crawler-visits-chart"
 import { ChartSkeleton } from "@/components/skeletons"
+import { AnimatePresence } from "framer-motion"
 
 export function CrawlerVisitsCard() {
   const shouldReduceMotion = useReducedMotion()
   const [timeframe, setTimeframe] = useState<TimeframeOption>('Last 24 hours')
   const { currentWorkspace, switching } = useWorkspace()
-  const [userPlan, setUserPlan] = useState<PlanType>('starter')
   const [userPlanLoading, setUserPlanLoading] = useState(true)
   const [totalCrawls, setTotalCrawls] = useState(0)
   const [periodComparison, setPeriodComparison] = useState<any | null>(null)
@@ -22,29 +21,18 @@ export function CrawlerVisitsCard() {
     ? { hidden: {}, visible: {} }
     : {
         hidden: { opacity: 0, y: 10 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } }
+        visible: { opacity: 1, y: 0, transition: { duration: 0.2, ease: [0.42, 0, 0.58, 1] } }
       }
 
-  // Fetch user subscription plan
+
+  // Handle initial load completion
   useEffect(() => {
-    const fetchUserPlan = async () => {
-      try {
-        const response = await fetch('/api/user/subscription')
-        if (response.ok) {
-          const data = await response.json()
-          const plan = data.subscriptionPlan || 'starter'
-          setUserPlan(plan as PlanType)
-        }
-      } catch (error) {
-        console.error('Error fetching user plan:', error)
-      } finally {
-        setUserPlanLoading(false)
-        // Set initial load to false when user plan loading is complete
-        setTimeout(() => setIsInitialLoad(false), 100)
-      }
-    }
+    const timer = setTimeout(() => {
+      setIsInitialLoad(false)
+      setUserPlanLoading(false)
+    }, 500) // Short delay to show skeleton briefly
 
-    fetchUserPlan()
+    return () => clearTimeout(timer)
   }, [])
 
   // Handle data updates from the shared chart component
@@ -86,7 +74,7 @@ export function CrawlerVisitsCard() {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.1, duration: 0.2, ease: "easeOut" }}
+                    transition={{ delay: 0.1, duration: 0.2, ease: [0.42, 0, 0.58, 1] }}
                     className={`inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded border text-xs font-medium ${
                       periodComparison.trend === 'up' 
                         ? 'bg-green-50 border-green-200 text-green-700' 
@@ -108,48 +96,56 @@ export function CrawlerVisitsCard() {
             </div>
             <div className="timeframe-selector-light flex-shrink-0">
               <TimeframeSelector 
-                key={userPlan}
                 title=""
                 timeframe={timeframe}
                 onTimeframeChange={setTimeframe}
                 titleColor="text-gray-900"
                 selectorColor="text-gray-600"
-                userPlan={userPlan}
               />
             </div>
           </div>
 
           {/* Chart Area */}
           <div className="flex-1 overflow-hidden relative px-0 pb-1 sm:pb-2">
-            {switching ? (
-              <motion.div 
-                className="flex items-center justify-center h-full"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="text-center">
-                  <div className="w-8 h-8 mx-auto mb-3">
-                    <img 
-                      src="/images/split-icon-black.svg" 
-                      alt="Split" 
-                      className="w-full h-full animate-spin"
-                      style={{ animation: 'spin 1s linear infinite' }}
-                    />
+            <AnimatePresence mode="wait">
+              {switching ? (
+                <motion.div 
+                  key="switching"
+                  className="flex items-center justify-center h-full"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="text-center">
+                    <div className="w-8 h-8 mx-auto mb-3">
+                      <img 
+                        src="/images/split-icon-black.svg" 
+                        alt="Split" 
+                        className="w-full h-full animate-spin"
+                        style={{ animation: 'spin 1s linear infinite' }}
+                      />
+                    </div>
+                    <p className="text-gray-500 text-sm">Switching workspace...</p>
                   </div>
-                  <p className="text-gray-500 text-sm">Switching workspace...</p>
-                </div>
-              </motion.div>
-            ) : (
-              <div className="h-full">
-                <CrawlerVisitsChart 
-                  timeframe={timeframe}
-                  onDataChange={handleChartDataChange}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="chart-content"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
                   className="h-full"
-                />
-              </div>
-            )}
+                >
+                  <CrawlerVisitsChart 
+                    timeframe={timeframe}
+                    onDataChange={handleChartDataChange}
+                    className="h-full"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </motion.div>
       </CardContent>
