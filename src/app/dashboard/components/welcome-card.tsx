@@ -6,8 +6,8 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useWorkspace } from "@/contexts/WorkspaceContext"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { BarChart3, FileText, Bot, HelpCircle, Rocket, ArrowRight, Activity, Settings, Users, UserCircle } from "lucide-react"
-import Link from "next/link"
+import { BarChart3, FileText, Bot, HelpCircle, Rocket, ArrowRight, Activity, Settings, Users, UserCircle, Database, Loader2 } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
 import { ConnectAnalyticsDialog } from "./connect-analytics-dialog"
 
 interface UserProfile {
@@ -36,8 +36,11 @@ export function WelcomeCard() {
   const [latestCrawl, setLatestCrawl] = useState<LatestCrawl | null>(null)
   const [loadingStats, setLoadingStats] = useState(true)
   const [showConnectDialog, setShowConnectDialog] = useState(false)
+  const [isPopulating, setIsPopulating] = useState(false)
+  const [isSimulating, setIsSimulating] = useState(false)
   const shouldReduceMotion = useReducedMotion()
   const controls = useAnimation()
+  const { toast } = useToast()
   
   const supabase = createClient()
 
@@ -207,11 +210,109 @@ export function WelcomeCard() {
     return crawlTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
+  // Handle populate test data
+  const handlePopulateTestData = async () => {
+    if (!currentWorkspace || isPopulating) return
+
+    setIsPopulating(true)
+    try {
+      const response = await fetch('/api/test/populate-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          workspaceId: currentWorkspace.id,
+          count: 50
+        })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        toast({
+          title: "Test Data Populated",
+          description: `Successfully added ${result.details.total_visits} crawler visits with ${result.details.unique_crawlers} different crawlers`
+        })
+        // Refresh the page data
+        setTimeout(() => {
+          window.location.reload()
+        }, 1000)
+      } else {
+        throw new Error(result.error || 'Failed to populate test data')
+      }
+    } catch (error) {
+      console.error('Error populating test data:', error)
+      toast({
+        title: "Error",
+        description: "Failed to populate test data. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsPopulating(false)
+    }
+  }
+
+  // Handle simulate events
+  const handleSimulateEvents = async () => {
+    if (!currentWorkspace || isSimulating) return
+
+    setIsSimulating(true)
+    try {
+      const response = await fetch('/api/test/simulate-events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          workspaceId: currentWorkspace.id,
+          duration: 10
+        })
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        toast({
+          title: "Event Simulation Started",
+          description: "Simulating crawler events for 10 seconds. Watch the dashboard for real-time updates!"
+        })
+        // Stop simulating state after 10 seconds
+        setTimeout(() => {
+          setIsSimulating(false)
+          toast({
+            title: "Simulation Complete",
+            description: "Event simulation finished. Check your dashboard data!"
+          })
+        }, 10000)
+      } else {
+        throw new Error(result.error || 'Failed to start event simulation')
+      }
+    } catch (error) {
+      console.error('Error simulating events:', error)
+      toast({
+        title: "Error",
+        description: "Failed to start event simulation. Please try again.",
+        variant: "destructive"
+      })
+      setIsSimulating(false)
+    }
+  }
+
   const quickActions = [
     { 
       icon: Activity, 
-      label: "View Crawler Attribution", 
-      href: "/dashboard/attribution"
+      label: "Simulate Events",
+      action: handleSimulateEvents,
+      loading: isSimulating,
+      disabled: !currentWorkspace
+    },
+    { 
+      icon: Database,
+      label: "Populate with Test Data",
+      action: handlePopulateTestData,
+      loading: isPopulating,
+      disabled: !currentWorkspace
     }
   ]
 
@@ -247,22 +348,34 @@ export function WelcomeCard() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1, duration: 0.3 }}
                 >
-                  <Link
-                    href={action.href}
-                    className="group block py-1.5 sm:py-2 pl-2 sm:pl-3 pr-3 sm:pr-4 bg-transparent border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
+                  <Button
+                    variant="outline"
+                    onClick={action.action}
+                    disabled={action.disabled || action.loading}
+                    className="w-full justify-start py-1.5 sm:py-2 pl-2 sm:pl-3 pr-3 sm:pr-4 h-auto bg-transparent border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
                   >
-                    <div className="flex items-center gap-2 sm:gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4 w-full">
                       <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gray-100 flex items-center justify-center flex-shrink-0">
-                        <action.icon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 group-hover:text-gray-700 transition-colors" />
+                        {action.loading ? (
+                          <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 animate-spin" />
+                        ) : (
+                          <action.icon className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 transition-colors" />
+                        )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-xs sm:text-sm text-gray-600 group-hover:text-gray-700 transition-colors font-mono tracking-tight truncate">
-                          {action.label}
+                      <div className="flex-1 min-w-0 text-left">
+                        <h3 className="text-xs sm:text-sm text-gray-600 transition-colors font-mono tracking-tight truncate">
+                          {action.loading ? (
+                            action.label === "Simulate Events" ? "Simulating..." : "Populating..."
+                          ) : (
+                            action.label
+                          )}
                         </h3>
                       </div>
-                      <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 group-hover:text-gray-500 transition-colors flex-shrink-0" />
+                      {!action.loading && (
+                        <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 transition-colors flex-shrink-0" />
+                      )}
                     </div>
-                  </Link>
+                  </Button>
                 </motion.div>
               ))}
             </div>

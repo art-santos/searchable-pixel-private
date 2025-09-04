@@ -21,7 +21,7 @@ export function ScriptCard() {
     )
   }
 
-  const script = `<script src="https://cdn.youranalytics.com/p.js" data-id="${currentWorkspace.id}"></script>`
+  const script = `<script src="https://cdn.searchablepixel.cc/p.js" data-id="${currentWorkspace.id}"></script>`
 
   return (
     <Card className="bg-white border border-gray-200 shadow-sm h-full">
