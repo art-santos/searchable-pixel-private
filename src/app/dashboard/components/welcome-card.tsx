@@ -211,18 +211,8 @@ export function WelcomeCard() {
     { 
       icon: Activity, 
       label: "View Crawler Attribution", 
-      href: "/dashboard/attribution",
-    },
-    { 
-      icon: Users, 
-      label: "View your leads", 
-      href: "/dashboard/leads",
-    },
-    { 
-      icon: UserCircle, 
-      label: "Get Help/Support", 
-      href: "mailto:sam@split.dev",
-    },
+      href: "/dashboard/attribution"
+    }
   ]
 
   return (

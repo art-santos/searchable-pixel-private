@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { CheckCircle2, XCircle, X } from 'lucide-react'
 import { AttributionBySourceWhiteCard } from "./components/attribution-by-source-white-card"
 import { LeadsWhiteCard } from "./components/leads-white-card"
+import { ScriptCard } from "./components/script-card"
 
 export default function Dashboard() {
   const { user, supabase, loading } = useAuth()
@@ -201,6 +202,14 @@ export default function Dashboard() {
             className="lg:col-span-4 lg:row-span-1 h-[43vh] lg:h-[43vh] min-h-[350px] bg-white rounded-sm border border-gray-200 overflow-hidden"
           >
             <AttributionBySourceWhiteCard />
+          </motion.div>
+
+          {/* Script Card */}
+          <motion.div 
+            variants={cardVariants}
+            className="lg:col-span-4 lg:row-span-1 h-[43vh] lg:h-[43vh] min-h-[350px]"
+          >
+            <ScriptCard />
           </motion.div>
 
           
